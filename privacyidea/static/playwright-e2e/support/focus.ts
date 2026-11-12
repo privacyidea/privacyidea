@@ -83,9 +83,7 @@ export async function focusIndicatorMisses(page: Page, wanted = 40, maxStops = 1
         const name = e.tagName.toLowerCase() + (e.className ? "." + String(e.className).split(" ")[0] : "");
         // The position among the page's focusable elements tells two controls of the same kind apart.
         const index = [...document.querySelectorAll(".admin-content *")].indexOf(e);
-        return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight
-          ? { name, index, x: r.left - 8, y: r.top - 8, width: r.width + 16, height: r.height + 16 }
-          : null;
+        return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight ? { name, index } : null;
       });
       if (!target) {
         continue;

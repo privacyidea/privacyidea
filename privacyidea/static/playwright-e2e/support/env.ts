@@ -22,4 +22,5 @@
 if (process.env["CI"] && !process.env["BASE_URL"]) {
   throw new Error("BASE_URL must point at the WebUI under test, for example https://<instance>/app/v2/");
 }
-export const BASE_URL = process.env["BASE_URL"] ?? "https://localhost:4200/app/v2/";
+// The specs navigate with relative paths ("login", "tokens"), which resolve against the last "/" of the base.
+export const BASE_URL = (process.env["BASE_URL"] ?? "https://localhost:4200/app/v2/").replace(/\/*$/, "/");

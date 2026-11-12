@@ -53,9 +53,15 @@ function writeBaseline(name: string, theme: string, rules: string[]): void {
       break;
     } catch {
       try {
-        if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) fs.rmdirSync(lock);
+        if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) {
+          // Renaming is atomic: of several workers that see the stale lock, one moves it away and the others fail
+          // here, so none of them removes the lock its neighbour has just taken.
+          const stale = `${lock}.stale-${process.pid}`;
+          fs.renameSync(lock, stale);
+          fs.rmdirSync(stale);
+        }
       } catch {
-        // The holder released it in the meantime.
+        // The holder released it, or another worker took the stale lock over, in the meantime.
       }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
     }

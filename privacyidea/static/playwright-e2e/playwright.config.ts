@@ -41,7 +41,8 @@ export default defineConfig({
   globalSetup: path.join(__dirname, "support", "global-setup.ts"),
   fullyParallel: true,
   // The pages are independent, so they run side by side; E2E_WORKERS tunes it to the machine.
-  workers: Number(process.env["E2E_WORKERS"] ?? 8),
+  // An empty or non-numeric value falls back to the default.
+  workers: Number(process.env["E2E_WORKERS"]) || 8,
   forbidOnly: !!process.env["CI"],
   // One retry: a page measured while the dev server is still settling can fail once; a test that needs it is reported as flaky.
   retries: 1,
