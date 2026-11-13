@@ -310,6 +310,10 @@ chmod 644 secrets/database_uri
   `postgresql+psycopg2` (PostgreSQL) and `oracle+oracledb` (Oracle). For
   Oracle, give the service name of the database in the URI:
   `oracle+oracledb://pi:<password>@db.example.org:1521/?service_name=<service>`.
+- On Oracle, the image uses `oracledb` in thin mode. Thin mode needs Oracle
+  Database 12.1 or newer. It does not support Oracle Native Network
+  Encryption, and encrypts the connection with TLS only. See the
+  [feature comparison of python-oracledb](https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_a.html).
 - Percent-encode the characters `@ : / ? # %` in the user name and password
   (`@` becomes `%40`).
 - Create the database and its user first; the user needs the rights to create
