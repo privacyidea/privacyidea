@@ -64,7 +64,14 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withDefaultRealm, withUser } from "@utils/filter.utils";
+import {
+  REALM_FILTER_WITH_REALM,
+  REALM_FILTER_WITHOUT_REALM,
+  realmPresenceFilterOptions,
+  splitRealmFilterList,
+  withDefaultRealm,
+  withUser
+} from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
@@ -156,6 +163,7 @@ export class TokenTableComponent implements OnDestroy {
     )
   );
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
+  readonly tokenRealmFilterOptions = computed(() => realmPresenceFilterOptions(this.realmService.realmOptions()));
   readonly rolloutStateFilterOptions = ROLLOUT_STATE_VALUES.map((value) => ({
     value,
     label: valueDisplayLabel(value, ROLLOUT_STATE_VALUES, { vocabulary: true })
@@ -376,10 +384,22 @@ export class TokenTableComponent implements OnDestroy {
   }
 
   selectedFilterValues(keyword: string): string[] {
-    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+    const filter = this.tokenService.filterDraft();
+    // The raw map keeps the "*" of "With realm" and the quoted "" of "Without realm".
+    return this.tokenService.presenceKeys.has(keyword)
+      ? splitRealmFilterList(filter.rawFilterMap.get(keyword))
+      : StringUtils.splitFilterList(filter.getValueOfKey(keyword));
   }
 
   setFilterValues(keyword: string, values: string[]): void {
+    // "With realm" and "Without realm" are exclusive: a newly selected presence entry replaces everything else,
+    // otherwise a remaining presence entry is dropped in favour of the concrete realms.
+    if (this.tokenService.presenceKeys.has(keyword) && values.length > 1) {
+      const presence = [REALM_FILTER_WITH_REALM, REALM_FILTER_WITHOUT_REALM];
+      const before = this.selectedFilterValues(keyword);
+      const added = values.find((v) => presence.includes(v) && !before.includes(v));
+      values = added !== undefined ? [added] : values.filter((v) => !presence.includes(v));
+    }
     this.tokenService.updateFilter((current) =>
       values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
     );
