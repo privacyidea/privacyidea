@@ -357,6 +357,12 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "type": "hotp"}
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
+        # The token type is compared in lower case
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "type": "HOTP"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
 
         # enrolling the same HOTP token would succeed
         req.all_data = {"user": "cornelius",
@@ -482,6 +488,13 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "realm": self.realm1,
                         "serial": "NEW003",
                         "type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+        # also when the request names the token type in upper case
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW003",
+                        "type": "HOTP"}
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
@@ -1127,6 +1140,11 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("registration.length"), "6")
         self.assertEqual(req.all_data.get("registration.contents"), "+n")
+        # The token type of the request is compared in lower case
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "REGISTRATION"}
+        init_token_length_contents(req)
+        self.assertEqual("6", req.all_data.get("registration.length"))
+        self.assertEqual("+n", req.all_data.get("registration.contents"))
         # delete policy
         delete_policy("reg_length")
         delete_policy("reg_contents")
@@ -1162,6 +1180,16 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("pw.length"), "6")
         self.assertEqual(req.all_data.get("pw.contents"), "+n")
+        # The token type of the request is compared in lower case
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "PW"}
+        init_token_length_contents(req)
+        self.assertEqual("6", req.all_data.get("pw.length"))
+        self.assertEqual("+n", req.all_data.get("pw.contents"))
+        # request without a token type, that creates an HOTP token
+        req.all_data = {"user": "cornelius", "realm": "home", "genkey": "1"}
+        init_token_length_contents(req)
+        self.assertNotIn("pw.length", req.all_data)
+        self.assertNotIn("pw.contents", req.all_data)
         # request, that creates a different token type
         req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": "1"}
         init_token_length_contents(req)
@@ -1382,6 +1410,21 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                                "ERR303: Description required for hotp token.",
                                require_description, req)
 
+        # The token type of the request is compared in lower case
+        req.all_data = {"type": "HOTP"}
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
+
+        # and so are the token types of the policy
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION}=HOTP"])
+        req.all_data = {"type": "hotp"}
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
+
         delete_policy("require_description")
 
     def test_61a_required_description_on_edit(self):
@@ -1418,6 +1461,18 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
             self.assertEqual(res.status_code, 403)
             result = res.json.get("result")
             self.assertIn("Description required for hotp token.", result.get("error").get("message"))
+
+        # The token types of the policy are compared in lower case
+        set_policy(name="require_description_on_edit",
+                   scope=SCOPE.TOKEN,
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT}=HOTP"])
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn("Description required for hotp token.", res.json["result"]["error"]["message"])
 
         remove_token(serial=serial)
         delete_policy("require_description_on_edit")
