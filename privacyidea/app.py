@@ -764,7 +764,8 @@ def create_docker_app():
     with app.app_context():
         try:
             log.debug("Test Database using URL '%s'", app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
-            db.session.execute(sa.text('SELECT 1'))
+            # Compiled per dialect: "SELECT 1" on most databases, "SELECT 1 FROM DUAL" on Oracle, which needs a FROM
+            db.session.execute(sa.select(sa.literal_column("1")))
             log.debug("Database Connection successful!")
         except Exception as e:
             raise RuntimeError(f"Could not connect to database: {e}")

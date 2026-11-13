@@ -15,6 +15,7 @@ import logging
 import mock
 import sqlalchemy as sa
 from click.testing import Result
+from sqlalchemy.dialects import mysql, oracle, postgresql, sqlite
 from testfixtures import Comparison, compare, OutputCapture
 from contextlib import contextmanager
 
@@ -523,3 +524,27 @@ class DockerAppRequestClassTestCase(unittest.TestCase):
             with self.assertRaises(FactoryStopped):
                 create_docker_app()
         self.assertIs(check_config.call_args.args[0].request_class, PrivacyIDEARequest)
+
+
+class DockerAppDatabaseCheckTestCase(unittest.TestCase):
+
+    def test_01_connection_check_compiles_for_oracle(self) -> None:
+        # The Docker factory checks the database connection before it starts. Oracle 19c and 21c refuse a SELECT
+        # without FROM, so the check is a statement that SQLAlchemy compiles for the dialect of the database.
+        class FactoryStopped(Exception):
+            pass
+
+        env = {"PRIVACYIDEA_PI_ENCFILE": os.path.join(dirname, "tests/testdata/enckey"),
+               "PRIVACYIDEA_PI_PEPPER": "pepper",
+               "PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": "sqlite://"}
+        # The Docker factory also reads the pi.cfg of the machine the test runs on.
+        with (mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")),
+              mock.patch.dict(os.environ, env),
+              mock.patch("privacyidea.app._setup_logging"),
+              mock.patch.object(db.session, "execute", side_effect=FactoryStopped) as execute):
+            with self.assertRaisesRegex(RuntimeError, "Could not connect to database"):
+                create_docker_app()
+        statement = execute.call_args.args[0]
+        self.assertEqual("SELECT 1 FROM DUAL", str(statement.compile(dialect=oracle.dialect())))
+        for dialect in (mysql.dialect(), postgresql.dialect(), sqlite.dialect()):
+            self.assertEqual("SELECT 1", str(statement.compile(dialect=dialect)), dialect.name)
