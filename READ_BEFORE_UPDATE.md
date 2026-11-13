@@ -191,11 +191,6 @@
   login request whose `realm` parameter names another realm than REMOTE_USER does not use the REMOTE_USER
   login. Check `remote_user` policies that name a resolver.
 
-* **A RADIUS token without a RADIUS user forwards the authenticating user.** As documented, the request to the RADIUS
-  server is sent for the user who authenticates, or for the owner of the token if it is used by its serial.
-  Previously such a token sent the request with an empty user name, so it could never authenticate. Existing RADIUS
-  tokens with an empty RADIUS user start to forward the authentication requests of their users after the update.
-
 * **Updating an existing policy keeps the fields that are not sent.** `POST /policy/<name>` and
   `pi-manage config policy create` with the name of an existing policy keep the stored value of every field the request
   leaves out, e.g. a disabled policy stays disabled and its priority and description are kept. With 3.14 these fields
@@ -574,6 +569,9 @@
   token: a container is created without any token that could not be initialized, and the reason is only written to
   the log, so a template naming a service ID that is no longer defined silently produces a container with one token
   missing.
+
+* **A RADIUS token needs a RADIUS user.** `POST /token/init` refuses a RADIUS token with an empty `radius.user`
+  with ERR905. Add the RADIUS user to scripts that enroll RADIUS tokens.
 
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token

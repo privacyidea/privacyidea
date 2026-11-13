@@ -130,5 +130,21 @@ describe("EnrollRadiusComponent", () => {
 
       expect(fixture.nativeElement.textContent).toContain("RADIUS Server is required");
     });
+
+    it("refuses the build without a RADIUS user and renders its required error", async () => {
+      component.radiusServerConfiguration.set("radius-a");
+
+      expect(component.buildEnrollmentArgs({ type: "radius" } as TokenEnrollmentData)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("RADIUS User is required");
+      expect(fixture.nativeElement.textContent).not.toContain("RADIUS Server is required");
+
+      component.radiusUser.set("remote-user");
+
+      expect(component.buildEnrollmentArgs({ type: "radius" } as TokenEnrollmentData)?.data).toEqual(
+        expect.objectContaining({ radiusUser: "remote-user", radiusServerConfiguration: "radius-a" })
+      );
+    });
   });
 });

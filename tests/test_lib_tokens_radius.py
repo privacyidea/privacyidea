@@ -432,26 +432,30 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertIn("123456", result.failed_tokens, result)
 
     @radiusmock.activate
-    def test_19_empty_radius_user_is_the_authenticating_user(self):
-        # A token without a RADIUS user sends the request for the user who is authenticating, or for its owner if
-        # it is used by its serial. A RADIUS user of the token is always sent as it is.
+    def test_19_radius_user_is_required_and_always_sent(self):
+        # The enrollment refuses a RADIUS token without a RADIUS user. The request to the RADIUS server is always sent
+        # for the RADIUS user of the token, never for the user who is authenticating or for the owner.
         set_privacyidea_config("radius.dictfile", DICT_FILE)
         radiusmock.setdata(response=radiusmock.AccessAccept)
         add_radius(identifier="myserver", server="1.2.3.4", secret="testing123", dictionary=DICT_FILE)
         self.setUp_user_realms()
         owner = User("cornelius", self.realm1)
-        token = init_token({"type": "radius", "radius.identifier": "myserver", "radius.user": ""}, owner)
-        self.assert_empty_string(token.get_tokeninfo("radius.user"))
+        with self.assertRaises(ParameterError):
+            init_token({"type": "radius", "serial": "RADEMPTY", "radius.identifier": "myserver",
+                        "radius.user": ""}, owner)
+        with self.assertRaises(ParameterError):
+            init_token({"type": "radius", "serial": "RADMISSING", "radius.identifier": "myserver"}, owner)
 
+        token = init_token({"type": "radius", "radius.identifier": "myserver", "radius.user": "olduser"}, owner)
         with mock.patch.object(RADIUSServer, "request", autospec=True, side_effect=RADIUSServer.request) as request:
-            self.assertTrue(token.authenticate("radiuspassword", options={"user": User("hans", self.realm1)})[0])
-            self.assertEqual("hans", request.call_args.kwargs["user"])
-
-            self.assertTrue(token.authenticate("radiuspassword", options={})[0])
-            self.assertEqual("cornelius", request.call_args.kwargs["user"])
-
-            token.write_tokeninfo("radius.user", "olduser")
             self.assertTrue(token.authenticate("radiuspassword", options={"user": owner})[0])
             self.assertEqual("olduser", request.call_args.kwargs["user"])
+
+            # A token that has no RADIUS user sends the request with an empty user name
+            token.write_tokeninfo("radius.user", "")
+            token.authenticate("radiuspassword", options={"user": User("hans", self.realm1)})
+            self.assert_empty_string(request.call_args.kwargs["user"])
+            token.authenticate("radiuspassword", options={})
+            self.assert_empty_string(request.call_args.kwargs["user"])
 
         remove_token(token.get_serial())

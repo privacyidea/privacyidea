@@ -93,6 +93,7 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
     disabled(f, () => this.disabled());
   });
   radiusUserForm = form(this.radiusUser, (f) => {
+    required(f);
     disabled(f, () => this.disabled());
   });
 
@@ -128,8 +129,11 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RadiusEnrollmentData> | null {
-    if (!this.radiusServerConfigurationForm().valid()) {
+    const radiusServerValid = this.radiusServerConfigurationForm().valid();
+    const radiusUserValid = this.radiusUserForm().valid();
+    if (!radiusServerValid || !radiusUserValid) {
       this.radiusServerConfigurationForm().markAsTouched();
+      this.radiusUserForm().markAsTouched();
       return null;
     }
 
