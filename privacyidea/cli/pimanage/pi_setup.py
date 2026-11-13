@@ -18,8 +18,9 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import base64
+import binascii
+import os
 import pathlib
-import sys
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -38,13 +39,14 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout, show_default=False,
+@click.option("-o", "--outfile", type=click.Path(dir_okay=False, allow_dash=True), default="-", show_default=False,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
 @click.password_option(help="The password to encrypt the encryption key. "
                             "If this option is not given the user will be "
                             "prompted for the password.")
-def encrypt_enckey(encfile, outfile, password):
+@click.pass_context
+def encrypt_enckey(ctx, encfile, outfile, password):
     """
     You will be asked for a password and the given encryption key in the specified
     file will be encrypted with an AES key derived from your password.
@@ -61,8 +63,27 @@ def encrypt_enckey(encfile, outfile, password):
     # TODO: get the name/path of the encfile from the pi.cfg
     enckey = encfile.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
-    outfile.write(res)
-    outfile.write('\n')
+    if outfile == "-":
+        click.echo(res)
+        return
+    out_path = pathlib.Path(outfile)
+    # Writing the encrypted key into the key file itself would destroy the key, if writing fails
+    if out_path.exists():
+        key_stat = os.fstat(encfile.fileno())
+        out_stat = out_path.stat()
+        if (key_stat.st_dev, key_stat.st_ino) == (out_stat.st_dev, out_stat.st_ino):
+            click.secho("Error: The encrypted key can not be written to the key file itself. Write it to another "
+                        "file and point PI_ENCFILE to it.", fg="red", err=True)
+            ctx.exit(1)
+    # A new file is only readable by its owner. An existing file keeps its owner and permissions, which the server
+    # may need to read it.
+    try:
+        with os.fdopen(os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(res)
+            f.write('\n')
+    except OSError as e:
+        click.secho(f"Error: Could not write the encrypted key to {out_path}: {e}", fg="red", err=True)
+        ctx.exit(1)
 
 
 @setup_cli.command("create_enckey")
@@ -83,17 +104,29 @@ def create_enckey(ctx, enckey_b64):
         click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
                     fg="yellow")
         ctx.exit(1)
-    with open(enc_file, "wb") as f:
-        if enckey_b64 is None:
-            f.write(DefaultSecurityModule.random(96))
-        else:
-            click.secho("Warning: Passing enckey via cli input is considered harmful.",
-                        fg="yellow")
-            bin_enckey = base64.b64decode(enckey_b64)
-            if len(bin_enckey) != 96:
-                click.secho("Error: enckey must be 96 bytes length", fg="red")
-                ctx.exit(1)
-            f.write(bin_enckey)
+    if enckey_b64 is None:
+        bin_enckey = DefaultSecurityModule.random(96)
+    else:
+        click.secho("Warning: Passing enckey via cli input is considered harmful.",
+                    fg="yellow")
+        try:
+            # The base64 command wraps its output, so whitespace is removed before the strict check
+            bin_enckey = base64.b64decode("".join(enckey_b64.split()), validate=True)
+        except binascii.Error as e:
+            click.secho(f"Error: enckey is not valid base64: {e}", fg="red")
+            ctx.exit(1)
+        if len(bin_enckey) != 96:
+            click.secho("Error: enckey must be 96 bytes length", fg="red")
+            ctx.exit(1)
+    # The key file is created read-only for its owner, so it is never readable for others, and an existing file is
+    # not overwritten
+    try:
+        fd = os.open(enc_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+    except FileExistsError:
+        click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!", fg="yellow")
+        ctx.exit(1)
+    with os.fdopen(fd, "wb") as f:
+        f.write(bin_enckey)
     click.secho(f"Encryption key written to {enc_file}", fg="green")
     enc_file.chmod(0o400)
     click.secho(f"The file permission of {enc_file} was set to 400!", fg="yellow")
@@ -114,7 +147,7 @@ def create_pgp_keys(ctx, keysize, force):
     gpg_home = pathlib.Path(current_app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg"))
     if not gpg_home.exists():
         try:
-            gpg_home.mkdir(parents=True)
+            gpg_home.mkdir(mode=0o700, parents=True)
         except OSError as e:
             click.secho(f"Could not create PGP directory {gpg_home}: {e}", fg="red")
             ctx.exit(1)

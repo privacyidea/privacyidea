@@ -105,7 +105,7 @@ deprecated_commands = [
     (create_pgp_keys, None, "setup create_pgp_keys"),
     (create_tables, "createdb", "setup create_tables"),
     (drop_tables, None, "setup drop_tables"),
-    (drop_tables, "dropdb", "setup  drop_tables"),
+    (drop_tables, "dropdb", "setup drop_tables"),
     (realm_cli, None, "config realm"),
     (resolver_cli, None, "config resolver"),
     (policy_cli, None, "config policy"),

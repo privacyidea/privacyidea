@@ -31,7 +31,9 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import enable_token, get_one_token, init_token
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import get_version_number
 from privacyidea.models.token import TokenOwner
 
 OTP_KEY = "3132333435363738393031323334353637383930"
@@ -47,6 +49,12 @@ class PITokenJanitorLoadTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("Finds all tokens which match the conditions.",
                       result.output, result)
+
+    def test_02_version_shows_the_privacyidea_version(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_token_janitor, ["--version"])
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn(f"privacyIDEA {get_version_number()}", result.output)
 
 
 class TokenJanitorFindTestCase(CliTestCase):
@@ -177,6 +185,33 @@ class TokenJanitorFindTestCase(CliTestCase):
         self.assertEqual(0, result.exit_code, result.output)
         lines = sorted(result.stdout.splitlines())
         self.assertEqual([f"n/a, HOTPCSV, {OTP_KEY}, hotp, 6", f"n/a, TOTPCSV, {OTP_KEY}, totp, 6, 60"], lines)
+
+    def test_05_last_auth_without_timezone(self) -> None:
+        # Legacy last_auth values have no timezone, they are read as UTC
+        token = init_token({"serial": "LASTAUTHNAIVE", "type": "hotp", "otpkey": OTP_KEY})
+        token.write_tokeninfo("last_auth", "2020-01-01 10:00:00")
+
+        result = self.invoke_find("--serial", "^LASTAUTHNAIVE$", "--tokeninfo-key", "last_auth",
+                                  "--tokeninfo-value-before", "2021-01-01T00:00:00+00:00")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("LASTAUTHNAIVE", result.stdout)
+
+        result = self.invoke_find("--serial", "^LASTAUTHNAIVE$", "--tokeninfo-key", "last_auth",
+                                  "--tokeninfo-value-after", "2021-01-01T00:00:00+00:00")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertNotIn("LASTAUTHNAIVE", result.stdout)
+
+    def test_06_sum_skips_a_token_whose_user_can_not_be_determined(self) -> None:
+        user = User("cornelius", "janitorrealm")
+        init_token({"serial": "SUMUSER1", "type": "hotp", "otpkey": OTP_KEY}, user=user)
+        init_token({"serial": "SUMUSER2", "type": "hotp", "otpkey": OTP_KEY}, user=user)
+        # The owner of the first token is found, the user store fails for the second one
+        with mock.patch.object(TokenClass, "user", new_callable=mock.PropertyMock,
+                               side_effect=[user, ResolverError("user store not reachable")]):
+            result = self.invoke_find("--serial", "^SUMUSER", "--action", "listuser", "--sum")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("Failed to determine user for token", result.stderr)
+        self.assertRegex(result.stdout, r"'cornelius',.*,1\n")
 
 
 class TokenJanitorUpdateTestCase(CliTestCase):
