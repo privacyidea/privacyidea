@@ -259,7 +259,8 @@ The following comparators can be used in definitions of policy conditions:
   .. versionadded:: 3.12 ``date_before`` and ``date_after``
 
 * ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
-  interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
+  interval specified by the right-hand value. A date in the future is not within the past interval.
+  ``!date_within_last`` evaluates to true if this is not the case.
   The right-hand value must be a duration expressed as an integer
   immediately followed by a time unit:
 

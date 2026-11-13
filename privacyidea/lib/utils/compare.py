@@ -279,6 +279,10 @@ def _compare_date_within_last(date_to_check: str | datetime.datetime, time_delta
     now = datetime.datetime.now(datetime.timezone.utc)
     true_time_delta = now - date_to_check
 
+    # A date in the future is not within the past duration
+    if true_time_delta < datetime.timedelta(0):
+        return False
+
     # compare the true time value with the condition time value
     return true_time_delta < condition_time_delta
 
