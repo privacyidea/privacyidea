@@ -449,11 +449,11 @@
       <span i18n="@@common.clearFilter">Clear Filter</span>
     </button>
     <mat-divider />
-    @for (realm of realmService.realmOptions(); track realm) {
+    @for (option of realmMenuOptions(keyword); track option.value) {
       <button
-        (click)="onItemSelected(keyword, realm)"
+        (click)="onItemSelected(keyword, option.value)"
         mat-menu-item>
-        {{ realm }}
+        {{ option.label }}
       </button>
     }
   </ng-template>

@@ -20,7 +20,7 @@ import { computed, Signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { Debouncer } from "@utils/debounce.utils";
-import { buildFilterParams, filterParamsEqual } from "@utils/filter.utils";
+import { buildFilterParams, filterParamsEqual, typedFilterEntries } from "@utils/filter.utils";
 
 /** Structural type of the base service, for mocks and injection tokens. */
 export type FilterableTableServiceInterface = Pick<FilterableTableService, keyof FilterableTableService>;
@@ -70,6 +70,20 @@ export abstract class FilterableTableService {
   /** Keywords the backend matches exactly, i.e. that must not be wrapped in wildcards. */
   readonly exactMatchKeys = new Set<string>();
 
+  /**
+   * Keywords whose empty value is a filter of its own: `key:` and `key: ""` are both sent as `key=`
+   * instead of being dropped.
+   */
+  readonly keepEmptyKeys = new Set<string>();
+
+  /**
+   * Keywords that can ask whether a value is present at all. A wildcard-only value, or a list with a
+   * wildcard-only entry, is sent as `key=*` (any value), a quoted empty value `key: ""` as `key=` (none).
+   * A bare `key:` is still being typed and a list without entries like `,` names nothing, so neither is
+   * sent. For every other keyword a wildcard-only value means no filter.
+   */
+  readonly presenceKeys = new Set<string>();
+
   readonly allFilterKeys: Signal<string[]> = computed(() => [
     ...this.apiFilterKeys,
     ...this.advancedApiFilterKeys,
@@ -84,7 +98,11 @@ export abstract class FilterableTableService {
 
   /** The query parameters the list resource is built from. */
   readonly filterParams: Signal<Record<string, string>> = computed(
-    () => buildFilterParams(this.activeFilter().filterMap, this.allFilterKeys(), this.exactMatchKeys),
+    () =>
+      buildFilterParams(typedFilterEntries(this.activeFilter()), this.allFilterKeys(), this.exactMatchKeys, {
+        keepEmptyKeys: this.keepEmptyKeys,
+        presenceKeys: this.presenceKeys
+      }),
     { equal: filterParamsEqual }
   );
 

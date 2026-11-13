@@ -133,14 +133,9 @@ describe("AuditService (signals & helpers)", () => {
   });
 
   it("should not include empty filter values in filterParams", () => {
-    auditService.activeFilter.set({
-      filterMap: new Map([
-        ["action", ""],
-        ["authentication", "ACCEPT"],
-        ["serial", "   "],
-        ["container_serial", "*"]
-      ])
-    } as unknown as FilterValue);
+    auditService.activeFilter.set(
+      new FilterValue({ value: "action: authentication: ACCEPT serial: \"   \" container_serial: *" })
+    );
 
     const params = auditService.filterParams();
     expect(params).not.toHaveProperty("action");

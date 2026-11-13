@@ -548,8 +548,69 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
   });
 
+  it("setFilterValues keeps without realm exclusive", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }));
+
+    table.setFilterValues("tokenrealm", ["realm1", ""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", ["", "realm2"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: realm2");
+  });
+
+  it("setFilterValues keeps with realm exclusive", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }));
+
+    table.setFilterValues("tokenrealm", ["realm1", "*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+
+    table.setFilterValues("tokenrealm", ["*", "realm2"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: realm2");
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: *" }));
+    table.setFilterValues("tokenrealm", ["*", ""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", ["", "*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+  });
+
+  it("setFilterValues writes with realm as tokenrealm: * and without realm as tokenrealm: \"\"", () => {
+    tokenService.activeFilter.set(new FilterValue());
+
+    table.setFilterValues("tokenrealm", ["*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+
+    table.setFilterValues("tokenrealm", [""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", []);
+    expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
+  });
+
+  it("selectedFilterValues checks with realm and without realm from the filter text", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: *" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual(["*"]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: \"\"" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual([""]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm:" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual([]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "serial: *" }));
+    expect(table.selectedFilterValues("serial")).toEqual([]);
+  });
+
   it("tokenTypeFilterOptions offers the token type keys", () => {
     expect(table.tokenTypeFilterOptions()).toEqual(["hotp", "totp", "push"]);
+  });
+
+  it("tokenRealmFilterOptions offers with and without realm before the realms", () => {
+    const realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    realmService.realmOptions.set(["realm1"]);
+
+    expect(table.tokenRealmFilterOptions().map((o) => o.value)).toEqual(["*", "", "realm1"]);
   });
 
   describe("filterColumnTooltip", () => {

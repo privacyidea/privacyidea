@@ -321,3 +321,83 @@ describe("Edge cases", () => {
     expect(marked.isExactKey("tokenrealm")).toBe(true);
   });
 });
+
+describe("filterMap treats every key alike", () => {
+  test("drops a lone wildcard for every key, tokenrealm and container_realm included", () => {
+    const fv = new FilterValue({ value: "tokenrealm: * container_realm: * serial: * user: alice" });
+    expect(fv.filterMap.has("tokenrealm")).toBe(false);
+    expect(fv.filterMap.has("container_realm")).toBe(false);
+    expect(fv.filterMap.has("serial")).toBe(false);
+    expect(fv.filterMap.get("user")).toBe("alice");
+  });
+
+  test("reads a bare and a quoted empty value of every key as an empty value", () => {
+    const bare = new FilterValue({ value: "tokenrealm: container_realm: serial:" });
+    expect(bare.filterMap.get("tokenrealm")).toBe("");
+    expect(bare.filterMap.get("container_realm")).toBe("");
+    expect(bare.filterMap.get("serial")).toBe("");
+
+    const quoted = new FilterValue({ value: "tokenrealm: \"\" container_realm: \"\" serial: \"\"" });
+    expect(quoted.filterMap.get("tokenrealm")).toBe("");
+    expect(quoted.filterMap.get("container_realm")).toBe("");
+    expect(quoted.filterMap.get("serial")).toBe("");
+  });
+});
+
+describe("rawFilterMap", () => {
+  test("keeps a lone wildcard for every key", () => {
+    const fv = new FilterValue({ value: "tokenrealm: * container_realm: * serial: *" });
+    expect(fv.rawFilterMap.get("tokenrealm")).toBe("*");
+    expect(fv.rawFilterMap.get("container_realm")).toBe("*");
+    expect(fv.rawFilterMap.get("serial")).toBe("*");
+  });
+
+  test("keeps a quoted empty value for every key", () => {
+    const fv = new FilterValue({ value: "tokenrealm: \"\" serial: '' user: alice" });
+    expect(fv.rawFilterMap.get("tokenrealm")).toBe("");
+    expect(fv.rawFilterMap.get("serial")).toBe("");
+    expect(fv.rawFilterMap.get("user")).toBe("alice");
+  });
+
+  test("omits a bare key that is still being typed", () => {
+    const fv = new FilterValue({ value: "tokenrealm: serial: abc container_serial:" });
+    expect(fv.rawFilterMap.has("tokenrealm")).toBe(false);
+    expect(fv.rawFilterMap.has("container_serial")).toBe(false);
+    expect(fv.rawFilterMap.get("serial")).toBe("abc");
+    expect(fv.hasKey("tokenrealm")).toBe(true);
+  });
+
+  test("parses ordinary values like filterMap does", () => {
+    const fv = new FilterValue({ value: `description:"v1.2 release" user: bob tokenrealm: realm1,realm2` });
+    expect(fv.rawFilterMap.get("description")).toBe("v1.2 release");
+    expect(fv.rawFilterMap.get("user")).toBe("bob");
+    expect(fv.rawFilterMap.get("tokenrealm")).toBe("realm1,realm2");
+  });
+});
+
+describe("Writing wildcard and empty values", () => {
+  test("addEntry writes a wildcard as it is and an empty value quoted, for every key", () => {
+    expect(new FilterValue().addEntry("tokenrealm", "*").filterString).toBe("tokenrealm: *");
+    expect(new FilterValue().addEntry("tokenrealm", "").filterString).toBe("tokenrealm: \"\"");
+    expect(new FilterValue().addEntry("container_realm", "*").filterString).toBe("container_realm: *");
+    expect(new FilterValue().addEntry("container_realm", "").filterString).toBe("container_realm: \"\"");
+    // The model knows no key, so an empty value is quoted for every key: a bare one would be read as not yet typed.
+    expect(new FilterValue().addEntry("serial", "").filterString).toBe("serial: \"\"");
+  });
+
+  test("keeps the wildcard and the quoted empty value when another entry is added", () => {
+    const withRealm = new FilterValue({ value: "tokenrealm: *" }).addEntry("serial", "abc");
+    expect(withRealm.filterString).toBe("tokenrealm: * serial: abc");
+    expect(withRealm.rawFilterMap.get("tokenrealm")).toBe("*");
+
+    const withoutRealm = new FilterValue({ value: "tokenrealm: \"\"" }).addEntry("serial", "abc");
+    expect(withoutRealm.filterString).toBe("tokenrealm: \"\" serial: abc");
+    expect(withoutRealm.rawFilterMap.get("tokenrealm")).toBe("");
+  });
+
+  test("does not turn a bare keyword into a quoted empty value when another entry is added", () => {
+    const fv = new FilterValue({ value: "tokenrealm: user: alice" }).addEntry("serial", "abc");
+    expect(fv.rawFilterMap.has("tokenrealm")).toBe(false);
+    expect(fv.filterString).not.toContain("tokenrealm: \"\"");
+  });
+});

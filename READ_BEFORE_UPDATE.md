@@ -47,6 +47,11 @@
   start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
   start again for these clients.
 
+* **The realm filter of `GET /token/` and `GET /container/` now tells three cases apart.** `GET /token/?tokenrealm=*`
+  (also `**`) returns only tokens with at least one realm, `tokenrealm=` (empty) only tokens without any realm, and
+  without the parameter all tokens as before. The same applies to `container_realm` on `GET /container/`. Scripts that
+  send `tokenrealm=*` to mean "all tokens" must omit the parameter.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

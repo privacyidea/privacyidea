@@ -629,6 +629,86 @@ describe("TokenService", () => {
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
 
+    it("drops a token realm filter that maps to an empty value", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: ," }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("tokenrealm")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends tokenrealm=* for a typed wildcard and tokenrealm= for a quoted empty value", () => {
+      contentServiceMock.onTokens = signal(true);
+      const cases: { filter: string; expected: string | null }[] = [
+        { filter: "tokenrealm: *", expected: "*" },
+        { filter: "tokenrealm: **", expected: "*" },
+        { filter: "tokenrealm: \"\"", expected: "" },
+        { filter: "tokenrealm: \"\" serial: abc", expected: "" }
+      ];
+      // Each case carries its own description, because a case whose params equal the previous ones sends no request.
+      cases.forEach(({ filter, expected }, index) => {
+        tokenService.activeFilter.set(new FilterValue({ value: `${filter} description: case${index}` }));
+        TestBed.tick();
+
+        const req = mockBackend.expectOne((r) => r.url === "/token/");
+        const params = req.request.params;
+        expect({ filter, has: params.has("tokenrealm"), value: params.get("tokenrealm") }).toEqual({
+          filter,
+          has: expected !== null,
+          value: expected
+        });
+        req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+      });
+    });
+
+    it("sends no tokenrealm for a bare keyword the user is still typing", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm:" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("tokenrealm")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: serial: abc" }));
+      TestBed.tick();
+
+      const req2 = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req2.request.params.has("tokenrealm")).toBe(false);
+      expect(req2.request.params.get("serial")).toBe("*abc*");
+      req2.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("lets a wildcard entry in a token realm list dominate the named realms", () => {
+      contentServiceMock.onTokens = signal(true);
+      // Each case carries its own description, because a case whose params equal the previous ones sends no request.
+      ["tokenrealm: *,realm1", "tokenrealm: realm1,*", "tokenrealm: *,*"].forEach((filter, index) => {
+        tokenService.activeFilter.set(new FilterValue({ value: `${filter} description: case${index}` }));
+        TestBed.tick();
+
+        const req = mockBackend.expectOne((r) => r.url === "/token/");
+        expect({ filter, value: req.request.params.get("tokenrealm") }).toEqual({ filter, value: "*" });
+        req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+      });
+    });
+
+    it("keeps the wildcard and the quoted empty value meaning no filter for every other key", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "tokenrealm: * serial: * description: \"\" rollout_state: **" })
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*");
+      expect(req.request.params.has("serial")).toBe(false);
+      expect(req.request.params.has("description")).toBe(false);
+      expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
     it("sends a key marked exact as it is, so a realm handed over by a widget is not widened", () => {
       contentServiceMock.onTokens = signal(true);
       tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm"));
@@ -649,6 +729,22 @@ describe("TokenService", () => {
       const req = mockBackend.expectOne((r) => r.url === "/token/");
       expect(req.request.params.get("tokenrealm")).toBe("*realm1*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends container_serial= for an empty container_serial, bare or quoted, visible or hidden", () => {
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial:" }));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial: \"\"" }));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+
+      tokenService.activeFilter.set(new FilterValue().addHiddenKey("container_serial"));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+    });
+
+    it("sends no container_serial for a wildcard-only container_serial", () => {
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial: *" }));
+      expect(tokenService.filterParams()).toEqual({});
     });
 
     it("waits for the token table to take over a preset instead of loading without it", () => {

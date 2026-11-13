@@ -136,7 +136,7 @@
                       @if (apiFilterKeyMap[column.key] === "tokenrealm") {
                         <app-multi-select-filter
                           [label]="column.label"
-                          [options]="realmService.realmOptions()"
+                          [options]="tokenRealmFilterOptions()"
                           [selected]="selectedFilterValues('tokenrealm')"
                           (selectionChange)="setFilterValues('tokenrealm', $event)" />
                       } @else if (apiFilterKeyMap[column.key] === "type") {

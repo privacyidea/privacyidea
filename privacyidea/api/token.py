@@ -97,6 +97,7 @@ from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
+from ..lib.params import get_realm_presence_filter
 from privacyidea.lib.params import get_pagination_params
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.crypto import CENSORED
@@ -703,6 +704,13 @@ def list_api():
         comma-separated list of realm names also supported, where each
         entry may contain wildcards
         (e.g. ``realm1,realm2,realm3`` or ``staff*,students*``).
+        If the parameter is absent, tokens are not filtered by realm.
+        If it consists only of wildcards (e.g. ``*``), all tokens with
+        at least one realm are returned. If it is present but empty,
+        only tokens without any realm are returned. A wildcard-only
+        entry in a list means any realm. ``resolver`` and ``userid``
+        made only of wildcards still mean no filter, the presence of an
+        owner is expressed with ``assigned``.
     :query description: filter by description.
     :query assigned: ``True`` or ``False`` to limit to assigned or
         unassigned tokens.
@@ -744,7 +752,7 @@ def list_api():
     description = get_optional(param, "description")
     sort = get_optional(param, "sortby", default="serial")
     sdir = get_optional(param, "sortdir", default="asc")
-    realm = get_optional(param, "tokenrealm")
+    realm, has_realm = get_realm_presence_filter(param, "tokenrealm")
     userid = get_optional(param, "userid")
     resolver = get_optional(param, "resolver")
 
@@ -793,7 +801,8 @@ def list_api():
                                  description=description,
                                  userid=userid, allowed_realms=allowed_realms,
                                  tokeninfo=tokeninfo, rollout_state=rollout_state,
-                                 hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial)
+                                 hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial,
+                                 has_realm=has_realm)
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)

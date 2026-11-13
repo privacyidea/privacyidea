@@ -70,12 +70,28 @@ export class FilterValue {
     this._value = newValue;
   }
 
+  /**
+   * The entries of the filter text. A lone `*` means no filter and is left out, a key without a value
+   * yet maps to an empty value.
+   */
   get filterMap(): Map<string, string> {
-    return parseToMap(this._value);
+    return toFilterMap(parseEntries(this._value));
   }
 
   get hiddenFilterMap(): Map<string, string> {
-    return parseToMap(this._hiddenValue);
+    return toFilterMap(parseEntries(this._hiddenValue));
+  }
+
+  /**
+   * The entries of the filter text as they were written: a lone `*` and a quoted empty value `""` are
+   * kept, a key without a value yet is left out. What they mean is up to the service that reads them.
+   */
+  get rawFilterMap(): Map<string, string> {
+    return toRawFilterMap(parseEntries(this._value));
+  }
+
+  get rawHiddenFilterMap(): Map<string, string> {
+    return toRawFilterMap(parseEntries(this._hiddenValue));
   }
 
   /**
@@ -170,27 +186,23 @@ export class FilterValue {
    * @param value The value associated with the key.
    */
   public addEntry(key: string, value: string): FilterValue {
-    const map = this.filterMap;
-    map.set(key, value);
-    this.setFromMap(map);
+    // The other entries are written back as they were: a wildcard stays, and a key without a value yet
+    // stays bare instead of turning into a quoted empty value.
+    const entries = new Map<string, string | null>(
+      parseEntries(this._value).map((entry) => [entry.key, entry.bare ? null : entry.value])
+    );
+    entries.set(key, value);
+    this._value = serializeEntries(entries);
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
   /**
    * Sets the filter value from a map of key-value pairs.
-   * Converts the map to the normalized string format and updates _value.
+   * Converts the map to the normalized string format and updates _value. An empty value is written
+   * as `""`, because a bare key reads as one whose value is not typed yet.
    */
   public setFromMap(map: Map<string, string>): void {
-    const needsQuoting = (v: string) => /[\s"':]/.test(v);
-    const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
-
-    const entries: string[] = [];
-    map.forEach((value, key) => {
-      const val = value ?? "";
-      const rendered = val === "" ? "" : needsQuoting(val) ? quoteAndEscape(val) : val;
-      entries.push(`${key}: ${rendered}`);
-    });
-    this._value = entries.join(" ").trim();
+    this._value = serializeEntries(new Map([...map].map(([key, value]) => [key, value ?? ""])));
   }
 
   /**
@@ -231,26 +243,53 @@ function keyPresenceRe(key: string): RegExp {
   return new RegExp(`(?<=^|\\s)(${k}):(?=\\s|$)`, "g");
 }
 
-function parseToMap(text: string): Map<string, string> {
+/** One `key: value` pair of a filter text. `bare` is a key without a value yet, neither typed nor quoted. */
+interface ParsedEntry {
+  key: string;
+  value: string;
+  bare: boolean;
+}
+
+function parseEntries(text: string): ParsedEntry[] {
   const re = new RegExp(PAIR_RE_SRC, "g");
-  const map = new Map<string, string>();
+  const entries: ParsedEntry[] = [];
   let m: RegExpExecArray | null;
 
   while ((m = re.exec(text)) !== null) {
-    const key = m[1];
-    const valRaw =
+    const quoted = m[2] != null || m[3] != null;
+    const value =
       m[2] != null
         ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
         : m[3] != null
           ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
           : (m[4] ?? "").trim();
-
-    if (valRaw.trim() === "*") {
-      continue;
-    }
-
-    map.set(key, valRaw);
+    entries.push({ key: m[1], value, bare: !quoted && value === "" });
   }
 
-  return map;
+  return entries;
+}
+
+function toFilterMap(entries: ParsedEntry[]): Map<string, string> {
+  return new Map(entries.filter((entry) => entry.value.trim() !== "*").map((entry) => [entry.key, entry.value]));
+}
+
+function toRawFilterMap(entries: ParsedEntry[]): Map<string, string> {
+  return new Map(entries.filter((entry) => !entry.bare).map((entry) => [entry.key, entry.value]));
+}
+
+/** The filter text of the entries. A null value is written as a bare key, an empty one as `""`. */
+function serializeEntries(entries: Map<string, string | null>): string {
+  const needsQuoting = (v: string) => /[\s"':]/.test(v);
+  const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
+
+  const parts: string[] = [];
+  entries.forEach((value, key) => {
+    if (value === null) {
+      parts.push(`${key}:`);
+      return;
+    }
+    const rendered = value === "" || needsQuoting(value) ? quoteAndEscape(value) : value;
+    parts.push(`${key}: ${rendered}`);
+  });
+  return parts.join(" ").trim();
 }
