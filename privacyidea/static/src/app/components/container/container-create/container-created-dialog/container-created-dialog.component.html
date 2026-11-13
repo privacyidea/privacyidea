@@ -31,26 +31,9 @@
       {{ data()?.containerSerial() }} </a
     >.</span
   >
-  @if (data()?.tokensNotCreated?.length) {
-    <div
-      class="inline-callout inline-callout-error"
-      data-testid="tokens-not-created">
-      @if (data()?.allTokensFailed) {
-        <p
-          class="error-message"
-          i18n="@@container.noTokenCreatedNotice"
-          ><strong>None of the tokens of the template was created:</strong></p
-        >
-      } @else {
-        <p i18n="@@container.tokensNotCreatedNotice">{data()!.tokensNotCreated!.length, plural, =1 {This token of the template was not created:} other {These tokens of the template were not created:}}</p>
-      }
-      <ul>
-        @for (entry of data()!.tokensNotCreated; track $index) {
-          <li>{{ entry.type }} ({{ entry.error }})</li>
-        }
-      </ul>
-    </div>
-  }
+  <app-tokens-not-created-callout
+    [allFailed]="data()?.allTokensFailed ?? false"
+    [tokensNotCreated]="data()?.tokensNotCreated" />
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {
       <img

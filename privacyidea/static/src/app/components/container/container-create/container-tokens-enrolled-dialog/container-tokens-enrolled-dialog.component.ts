@@ -24,6 +24,7 @@ import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokensNotCreatedCalloutComponent } from "@components/container/container-create/tokens-not-created-callout/tokens-not-created-callout.component";
 import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { ContainerTokenNotCreated } from "@services/container/container.service";
@@ -43,7 +44,7 @@ export interface ContainerTokensEnrolledDialogData {
 
 @Component({
   selector: "app-container-tokens-enrolled-dialog",
-  imports: [MatProgressBar, TokenEnrollmentDataComponent, TitleCasePipe, DialogWrapperComponent],
+  imports: [MatProgressBar, TokenEnrollmentDataComponent, TitleCasePipe, DialogWrapperComponent, TokensNotCreatedCalloutComponent],
   templateUrl: "./container-tokens-enrolled-dialog.component.html",
   styleUrl: "./container-tokens-enrolled-dialog.component.scss"
 })

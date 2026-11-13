@@ -22,6 +22,7 @@ import { MatIcon } from "@angular/material/icon";
 import { PiResponse } from "@app/app.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { TokensNotCreatedCalloutComponent } from "@components/container/container-create/tokens-not-created-callout/tokens-not-created-callout.component";
 import {
   ContainerRegisterData,
   ContainerService,
@@ -41,7 +42,7 @@ export interface ContainerCreationDialogData {
 
 @Component({
   selector: "app-container-created-dialog",
-  imports: [MatButtonModule, MatIcon, DialogWrapperComponent],
+  imports: [MatButtonModule, MatIcon, DialogWrapperComponent, TokensNotCreatedCalloutComponent],
   templateUrl: "./container-created-dialog.component.html"
 })
 export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
