@@ -1015,6 +1015,10 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
                 } else {
                     $scope.tokenParams.sortdir = "asc";
                 }
+                // "**" would now only match tokens with a realm, an empty filter must list all tokens
+                if ($scope.tokenParams.tokenrealm === "**") {
+                    delete $scope.tokenParams.tokenrealm;
+                }
                 TokenFactory.getTokens(function (data) {
                     if (data) {
                         $scope.tokendata = data.result.value;

@@ -616,3 +616,22 @@ class UtilsTestCase(MyApiTestCase):
         # A non-integer value is a parameter error
         self.assertRaises(ParameterError, get_pagination_params, {"page": "abc"})
         self.assertRaises(ParameterError, get_pagination_params, {"pagesize": "abc"})
+
+    def test_18_get_realm_presence_filter(self):
+        from privacyidea.lib.params import get_realm_presence_filter
+        key = "tokenrealm"
+        # Key missing: no filter at all
+        self.assertEqual((None, None), get_realm_presence_filter({}, key))
+        # Empty or separator-only values carry no realm: tokens without realm
+        self.assertEqual((None, False), get_realm_presence_filter({key: ""}, key))
+        self.assertEqual((None, False), get_realm_presence_filter({key: " "}, key))
+        self.assertEqual((None, False), get_realm_presence_filter({key: ","}, key))
+        # Wildcard-only values: tokens with any realm
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "**"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*,*"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*,realm1"}, key))
+        # Concrete realm names or patterns are passed through
+        self.assertEqual(("realm1", None), get_realm_presence_filter({key: "realm1"}, key))
+        self.assertEqual(("realm*", None), get_realm_presence_filter({key: "realm*"}, key))
+        self.assertEqual(("realm1,realm2", None), get_realm_presence_filter({key: "realm1,realm2"}, key))

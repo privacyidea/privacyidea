@@ -1701,6 +1701,31 @@ class TokenTestCase(MyTestCase):
         finally:
             tok.delete_token()
 
+    def test_41d_get_tokens_paginate_has_realm(self):
+        """has_realm=True returns only tokens with a realm, has_realm=False only
+        tokens without any realm, has_realm=None does not filter.  An
+        allowed_realms restriction must not let realm-less tokens through."""
+        self.setUp_user_realms()
+        tok_realm = init_token({"serial": "HASREALM1", "type": "hotp", "genkey": True},
+                               tokenrealms=[self.realm1])
+        tok_none = init_token({"serial": "NOREALM1", "type": "hotp", "genkey": True})
+        try:
+            # serial pattern isolates from other tokens in the DB
+            def serials(**kwargs):
+                result = get_tokens_paginate(serial="*REALM1", **kwargs)
+                return sorted(t["serial"] for t in result["tokens"]), result["count"]
+
+            self.assertEqual((["HASREALM1"], 1), serials(has_realm=True))
+            self.assertEqual((["NOREALM1"], 1), serials(has_realm=False))
+            self.assertEqual((["HASREALM1", "NOREALM1"], 2), serials(has_realm=None))
+            self.assertEqual((["HASREALM1", "NOREALM1"], 2), serials())
+            # realm-less tokens are excluded by allowed_realms
+            self.assertEqual(([], 0), serials(has_realm=False, allowed_realms=[self.realm1]))
+            self.assertEqual((["HASREALM1"], 1), serials(has_realm=True, allowed_realms=[self.realm1]))
+        finally:
+            tok_realm.delete_token()
+            tok_none.delete_token()
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)

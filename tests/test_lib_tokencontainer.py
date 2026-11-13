@@ -1209,6 +1209,34 @@ class TokenContainerManagementTestCase(MyTestCase):
         for serial in ["CONTESCA", "CONTESCB"]:
             find_container_by_serial(serial).delete()
 
+    def test_28b_get_all_containers_has_realm(self):
+        self.setUp_user_realms()
+        with_realm = init_container({"type": "generic", "container_serial": "CONTHRA",
+                                     "realm": self.realm1})["container_serial"]
+        without_realm = init_container({"type": "generic", "container_serial": "CONTHRB"})["container_serial"]
+
+        def serials(**kwargs):
+            result = get_all_containers(pagesize=100, **kwargs)
+            return [container.serial for container in result["containers"]]
+
+        # has_realm=True: only containers with a realm
+        found = serials(has_realm=True)
+        self.assertIn(with_realm, found)
+        self.assertNotIn(without_realm, found)
+
+        # has_realm=False: only containers without a realm
+        found = serials(has_realm=False)
+        self.assertIn(without_realm, found)
+        self.assertNotIn(with_realm, found)
+
+        # has_realm=None: no filtering
+        found = serials(has_realm=None)
+        self.assertIn(with_realm, found)
+        self.assertIn(without_realm, found)
+
+        for serial in [with_realm, without_realm]:
+            find_container_by_serial(serial).delete()
+
     def test_29_gen_serial(self):
         # Test class prefix
         serial = _gen_serial(container_type="non_existing_type")

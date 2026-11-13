@@ -154,6 +154,31 @@ def get_optional(param: dict, key: str, default: Any = None,
     return value
 
 
+def get_realm_presence_filter(param: dict, key: str) -> tuple[str | None, bool | None]:
+    """
+    Interpret a realm filter parameter, where an empty value or a wildcard-only
+    value selects by the presence of a realm instead of by a realm name.
+
+    The value is split at commas, entries are stripped and empty entries are dropped.
+
+    :param param: the parameter dictionary
+    :param key: the key of the realm filter parameter
+    :return: ``(None, None)`` if the key is absent, ``(None, False)`` if no
+        entry is left (objects without realm), ``(None, True)`` if any entry
+        consists only of ``*`` (objects with any realm), otherwise
+        ``(value, None)`` with the unchanged value
+    """
+    value = get_optional(param, key)
+    if value is None:
+        return None, None
+    entries = [e.strip() for e in value.split(",") if e.strip()]
+    if not entries:
+        return None, False
+    if any(set(e) == {"*"} for e in entries):
+        return None, True
+    return value, None
+
+
 def get_optional_one_of(param: dict, keys: Iterable[str], default: Any = None) -> Any:
     """
     Return the first value from *param* whose key is in *keys*.
