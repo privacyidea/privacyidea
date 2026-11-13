@@ -36,7 +36,7 @@ import json
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from collections.abc import Generator, Callable
 
 import click
@@ -428,7 +428,7 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     value = getattr(db_containers[0], tokencontainer_key, None) if db_containers else None
                     if isinstance(value, datetime):
                         # The timestamps are stored in UTC without a timezone
-                        value = value.replace(tzinfo=UTC).isoformat()
+                        value = value.replace(tzinfo=timezone.utc).isoformat()
                     if value is None or not tokencontainer_comparator(value):
                         add = False
 
