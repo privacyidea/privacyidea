@@ -75,6 +75,9 @@ export class ContainerTemplateEditComponent {
     this.editBody()?.scrollToFirstInvalid();
   }
 
+  // True if a token row has checkbox changes that the template does not contain yet.
+  readonly hasRowChanges = computed(() => this.editBody()?.hasRowChanges() ?? false);
+
   readonly template = model<ContainerTemplate>({
     container_type: "",
     name: "",

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { tokenTypeLabel, tokenTypes } from "./token.utils";
+import { tokenTypeDisplayDescription, tokenTypeDisplayLabel, tokenTypeLabel, tokenTypes } from "./token.utils";
 
 describe("tokenTypeLabel", () => {
   it("returns the display name of a token type key", () => {
@@ -51,5 +51,29 @@ describe("tokenTypeLabel", () => {
 
   it("covers every token type", () => {
     expect(tokenTypes.filter((tokenType) => !tokenTypeLabel(tokenType.key))).toEqual([]);
+  });
+});
+
+describe("tokenTypeDisplayLabel", () => {
+  it.each([
+    { name: "the part before the colon", info: "HOTP: counter based", expected: "HOTP" },
+    { name: "the fallback when the info has no colon", info: "counter based", expected: "fallback" },
+    { name: "the fallback for an empty info", info: "", expected: "fallback" },
+    { name: "an empty label for a leading colon", info: ": desc", expected: "" },
+    { name: "the part before the first colon only", info: "Name: see http://x: more", expected: "Name" }
+  ])("returns $name", ({ info, expected }) => {
+    expect(tokenTypeDisplayLabel(info, "fallback")).toBe(expected);
+  });
+});
+
+describe("tokenTypeDisplayDescription", () => {
+  it.each([
+    { name: "the trimmed part after the colon", info: "Name:   some description ", expected: "some description" },
+    { name: "the whole text when the info has no colon", info: "only a description", expected: "only a description" },
+    { name: "an empty string for an empty info", info: "", expected: "" },
+    { name: "the description for a leading colon", info: ": desc", expected: "desc" },
+    { name: "the description with a colon inside it", info: "Name: see http://x: more", expected: "see http://x: more" }
+  ])("returns $name", ({ info, expected }) => {
+    expect(tokenTypeDisplayDescription(info)).toBe(expected);
   });
 });

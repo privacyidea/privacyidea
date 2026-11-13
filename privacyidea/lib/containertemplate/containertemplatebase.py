@@ -81,10 +81,21 @@ class ContainerTemplateBase:
             token_type = token.get("type", None)
             if token.get("type", None) not in supported_token_types:
                 raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
+            self.check_change_pin_on_first_use(token)
         validated_options["tokens"] = tokens
 
         self._db_template.options = json.dumps(validated_options)
         self._db_template.save()
+
+    @staticmethod
+    def check_change_pin_on_first_use(token: dict) -> None:
+        """
+        :param token: The enroll information of a template token
+        :raises ParameterError: If change_pin_on_first_use is present and not a boolean
+        """
+        if "change_pin_on_first_use" in token and not isinstance(token["change_pin_on_first_use"], bool):
+            raise ParameterError(f"'change_pin_on_first_use' of the {token.get('type')} token in the template must be "
+                                 "true or false!")
 
     @property
     def id(self) -> int:

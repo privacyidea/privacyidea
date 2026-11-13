@@ -12,7 +12,8 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (delete_container_by_serial)
 from privacyidea.lib.container import (init_container, find_container_by_serial, find_container_for_token,
-                                       add_token_to_container)
+                                       add_token_to_container, create_container_template,
+                                       delete_container_template)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.machine import attach_token
@@ -2632,3 +2633,32 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual([], find_container_by_serial(container_serial).get_tokens())
 
         delete_container_by_serial(container_serial)
+
+    def test_68_list_containers_filter_has_template(self):
+        template_name = "has_template_filter"
+        options = {"tokens": [{"type": "hotp", "genkey": True}]}
+        create_container_template(container_type="smartphone", template_name=template_name, options=options)
+        with_template = init_container({"type": "smartphone",
+                                        "template": {"name": template_name, "container_type": "smartphone",
+                                                     "template_options": options}})["container_serial"]
+        without_template = init_container({"type": "smartphone"})["container_serial"]
+        generic_without_template = init_container({"type": "generic"})["container_serial"]
+        own_serials = {with_template, without_template, generic_without_template}
+
+        def list_serials(**filters):
+            result = self.request_assert_success("/container/", {"pagesize": 100, **filters}, self.at, "GET")
+            return {c["serial"] for c in result["result"]["value"]["containers"]} & own_serials
+
+        try:
+            self.assertEqual({with_template}, list_serials(has_template="true"))
+            self.assertEqual({without_template, generic_without_template}, list_serials(has_template="false"))
+            self.assertEqual(own_serials, list_serials())
+            # combined with other filters
+            self.assertEqual({with_template}, list_serials(has_template="true", type="smartphone"))
+            self.assertEqual({without_template}, list_serials(has_template="false", type="smartphone"))
+            self.assertEqual(set(), list_serials(has_template="true", type="generic"))
+            self.assertEqual({with_template}, list_serials(has_template="true", template=template_name))
+        finally:
+            for serial in own_serials:
+                delete_container_by_serial(serial)
+            delete_container_template(template_name)
