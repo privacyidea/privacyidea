@@ -30,6 +30,7 @@ import { TokenService } from "@services/token/token.service";
 import { MockTokenService, MockSystemService } from "@testing/mock-services";
 import { SystemService } from "@services/system/system.service";
 import { clearOverlays, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 type CaConnectorResourceValue = PiResponse<CaConnectors> | undefined;
 
@@ -303,5 +304,11 @@ describe("EnrollCertComponent", () => {
       expect(component.caConnectorForm().disabled()).toBe(true);
       expect(component.certTemplateForm().disabled()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -33,6 +33,7 @@ import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-ta
 import { of } from "rxjs";
 import { PeriodicTaskComponent } from "./periodic-task.component";
 import { grantRights, toolbarAction } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("PeriodicTaskComponent", () => {
   let component: PeriodicTaskComponent;
@@ -414,5 +415,11 @@ describe("PeriodicTaskComponent", () => {
       toggle.click();
       expect(component.detailedView()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

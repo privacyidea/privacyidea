@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PanelIncompleteComponent } from "./panel-incomplete.component";
+import { axe } from "@testing/axe";
 
 describe("PanelIncompleteComponent", () => {
   let fixture: ComponentFixture<PanelIncompleteComponent>;
@@ -42,5 +43,12 @@ describe("PanelIncompleteComponent", () => {
 
     expect(indicator()?.textContent).toContain("Incomplete");
     expect(indicator()?.querySelector("mat-icon")?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("incomplete", false);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

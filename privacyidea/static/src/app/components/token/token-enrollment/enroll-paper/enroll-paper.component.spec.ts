@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollPaperComponent } from "./enroll-paper.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("EnrollPaperComponent", () => {
   let component: EnrollPaperComponent;
@@ -45,5 +46,11 @@ describe("EnrollPaperComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageDialogComponent, MessageDialogData } from "./message-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("MessageDialogComponent", () => {
   let component: MessageDialogComponent;
@@ -133,5 +134,11 @@ describe("MessageDialogComponent", () => {
     fixture.detectChanges();
     const textElements: NodeListOf<HTMLDivElement> = fixture.nativeElement.querySelectorAll(".text-center div");
     expect(textElements.length).toBe(0);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

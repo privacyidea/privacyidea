@@ -132,7 +132,8 @@ export class ContainerTemplateEditPageComponent {
   // The edit component holds the rules of the template, so the page can save only once it is mounted.
   readonly canSave = computed(() => this.editComponent()?.canSave() ?? false);
   readonly isDirty = computed(() => {
-    return JSON.stringify(this.template()) !== JSON.stringify(this.baseTemplate());
+    const templateChanged = JSON.stringify(this.template()) !== JSON.stringify(this.baseTemplate());
+    return templateChanged || (this.editComponent()?.hasRowChanges() ?? false);
   });
 
   async onSave(): Promise<boolean> {

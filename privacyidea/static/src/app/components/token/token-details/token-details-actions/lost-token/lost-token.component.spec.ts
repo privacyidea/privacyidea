@@ -28,6 +28,7 @@ import { MockContentService, MockNotificationService, MockTokenService } from "@
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { Observable, Subject } from "rxjs";
 import { LostTokenComponent } from "./lost-token.component";
+import { axe } from "@testing/axe";
 
 describe("LostTokenComponent", () => {
   let component: LostTokenComponent;
@@ -133,5 +134,11 @@ describe("LostTokenComponent", () => {
     expect(component.lostTokenData?.end_date).toBe("2025-01-31");
     expect(text).toContain(expectedLocalDateTimeFromInput("2025-01-31"));
     expect(text).not.toContain("2025-01-31");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

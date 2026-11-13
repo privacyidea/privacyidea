@@ -286,6 +286,7 @@ myApp.controller("containerTemplateEditController", ['$scope', '$http', '$q', 'C
                     if (token.state) {
                         delete token.state;
                     }
+                    token.change_pin_on_first_use = token.change_pin_on_first_use === true;
                     tokenList.push(token);
                 }
             });

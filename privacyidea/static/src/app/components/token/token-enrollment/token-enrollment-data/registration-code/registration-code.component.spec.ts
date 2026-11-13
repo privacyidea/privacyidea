@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { RegistrationCodeComponent } from "./registration-code.component";
+import { axe } from "@testing/axe";
 
 describe("RegistrationCodeComponent", () => {
   let component: RegistrationCodeComponent;
@@ -32,5 +33,12 @@ describe("RegistrationCodeComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("registrationCode", "ABCD-EFGH-IJKL");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

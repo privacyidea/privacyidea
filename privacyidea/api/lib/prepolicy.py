@@ -869,32 +869,25 @@ def init_token_length_contents(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API token init function.
 
-    It can set the parameters for automatic code or password created in regards to length and
-    contents for the tokentypes 'registration' and 'pw'.
+    It sets the length and the contents of the password, which is generated for token types that are derived from
+    the password token, like 'pw', 'registration' and 'applspec'.
 
-    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH / PASSWORD_LENGTH
-    and REGISTRATIONCODE_CONTENTS / PASSWORD_CONTENTS are added to request.all_data as
+    The values are taken from the policies ``<type>.length`` and ``<type>.contents`` or, if there is no policy, from
+    the defaults of the token class. They are added to request.all_data as
 
-    { 'registration.length': '10', 'registration.contents': 'cn' }
-    or
     { 'pw.length': '10', 'pw.contents': 'cn' }
+
+    Both values are always set, so that request parameters of the same names can not define the generated password.
     """
+    from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
     no_content_policy = True
     no_length_policy = True
     params = request.all_data
-    # Token types are stored in lower case, so the type of the request is compared in lower case
-    tokentype = (params.get("type") or "hotp").lower()
-
-    if tokentype == 'registration':
-        from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = PolicyAction.REGISTRATIONCODE_LENGTH
-        contents_action = PolicyAction.REGISTRATIONCODE_CONTENTS
-    elif tokentype == 'pw':
-        from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = PolicyAction.PASSWORD_LENGTH
-        contents_action = PolicyAction.PASSWORD_CONTENTS
-    else:
+    tokentype = params.get("type")
+    token_class = get_token_class(tokentype) if isinstance(tokentype, str) else None
+    if not token_class or not issubclass(token_class, PasswordTokenClass):
         return True
+    length_action, contents_action = token_class.get_password_policy_actions()
 
     user_object = get_user_from_param(params)
     length_pols = Match.user(g, scope=SCOPE.ENROLL, action=length_action,
@@ -909,9 +902,9 @@ def init_token_length_contents(request=None, action=None):
         no_content_policy = False
     # if there is no policy, set defaults.
     if no_length_policy:
-        request.all_data[length_action] = DEFAULT_LENGTH
+        request.all_data[length_action] = token_class.default_length
     if no_content_policy:
-        request.all_data[contents_action] = DEFAULT_CONTENTS
+        request.all_data[contents_action] = token_class.default_contents
     return True
 
 

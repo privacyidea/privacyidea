@@ -22,6 +22,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateAddTokenComponent", () => {
   let component: ContainerTemplateAddTokenComponent;
@@ -85,5 +86,11 @@ describe("ContainerTemplateAddTokenComponent", () => {
     const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
     expect(chips.length).toBe(1);
     expect(chips[0].nativeElement.textContent).toContain("Yubikey");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

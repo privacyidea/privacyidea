@@ -151,6 +151,23 @@ describe("ContainerTemplateService", () => {
       await Promise.resolve();
     });
 
+    // The container list compares containers of every type with their templates, so it needs every template.
+    it("fetches the templates of every container type on the container list", async () => {
+      (containerServiceMock.selectedContainerType as unknown as { set(v: unknown): void }).set({
+        containerType: "smartphone",
+        description: "",
+        token_types: []
+      });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((request) => request.url === service.containerTemplateBaseUrl);
+      expect(req.request.params.has("container_type")).toBe(false);
+      req.flush({ result: { value: { templates: [] } } });
+      TestBed.tick();
+      await Promise.resolve();
+    });
+
     it("should not fetch templates if action is not allowed", async () => {
       authServiceMock.actionAllowed.mockReturnValue(false);
       TestBed.tick();

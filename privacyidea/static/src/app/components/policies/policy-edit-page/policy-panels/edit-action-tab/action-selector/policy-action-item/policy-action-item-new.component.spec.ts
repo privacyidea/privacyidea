@@ -30,6 +30,7 @@ import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-g
 import { MockPolicyService } from "@testing/mock-services";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;
@@ -705,5 +706,11 @@ describe("PolicyActionItemComponent", () => {
 
       expect(mockButton.focus).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -38,7 +38,7 @@
   app-set-pin-action,
   app-resync-token-action,
   app-test-otp-pin-action,
-  .passkey-test-panel {
+  app-test-passkey-action {
     flex: 0 0 auto;
     width: fit-content;
     min-height: 0;
@@ -75,30 +75,6 @@
       flex-wrap: wrap;
     }
   }
-}
-
-.passkey-test-panel {
-  @include styles.card-raised(3);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 12px 12px;
-  box-sizing: border-box;
-}
-
-.passkey-test-result {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.passkey-test-result--success {
-  color: var(--mat-sys-primary);
-}
-
-.passkey-test-result--warning {
-  color: var(--mat-sys-error);
 }
 
 .lifecycle-buttons {
