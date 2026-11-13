@@ -769,10 +769,13 @@ Existing configuration objects with the same name are overwritten, all other
 existing configuration is kept as is. As with the export, ``-t`` and ``-n``
 restrict the import to certain types or to a single object.
 
-Events and periodic tasks are also found by their name, not by their ID.
-Several events can have the same name. Such an event is not imported, and
-neither is an event without a name. The other events are imported, and the
-command ends with an error. A periodic task keeps its nodes from the export.
+Events and periodic tasks are also found by their name, not by their ID. For
+events, the handler module must match as well. Several events can have the same
+name and handler module. Then the file must contain at least as many of them as
+the instance has, and they replace all of them. Otherwise these events are not
+imported, and neither is an event without a name. The other events are
+imported, and the command ends with an error. A periodic task keeps its nodes
+from the export.
 Check them if the target instance uses other node names.
 
 .. note:: In contrast to ``pi-manage backup``, the configuration export does not
