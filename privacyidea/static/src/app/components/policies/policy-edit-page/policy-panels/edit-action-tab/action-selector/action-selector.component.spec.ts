@@ -109,9 +109,26 @@ describe("ActionSelectorComponent", () => {
     hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
     fixture.detectChanges();
 
-    expect(component.actionGroups().map((group) => group.name)).toEqual(["tokenGroup", "systemGroup"]);
+    expect(component.actionGroups().map((group) => group.name)).toEqual(["systemGroup", "tokenGroup"]);
     const headers = fixture.debugElement.queryAll(By.css(".action-group-panel mat-expansion-panel-header"));
-    expect(headers.map((header) => header.nativeElement.textContent.trim())).toEqual(["tokenGroup1", "systemGroup1"]);
+    expect(headers.map((header) => header.nativeElement.textContent.trim())).toEqual(["systemGroup1", "tokenGroup1"]);
+  });
+
+  it("should sort the groups case-insensitively by name", () => {
+    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+      admin: { beta: {}, Zeta: {}, alpha: {}, Gamma: {} }
+    });
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+    fixture.detectChanges();
+
+    expect(component.actionGroups().map((group) => group.name)).toEqual(["alpha", "beta", "Gamma", "Zeta"]);
+  });
+
+  it("should show the policy scope in the section title", () => {
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css(".scope-hint")).nativeElement.textContent).toContain("admin");
   });
 
   it("should keep every group collapsed until one is opened", () => {
@@ -141,7 +158,7 @@ describe("ActionSelectorComponent", () => {
     fixture.detectChanges();
 
     component.actionFilter.set("enroll");
-    expect([...component.openGroups()]).toEqual(["tokenGroup", "systemGroup"]);
+    expect([...component.openGroups()]).toEqual(["systemGroup", "tokenGroup"]);
 
     component.actionFilter.set("");
     expect(component.openGroups().size).toBe(0);

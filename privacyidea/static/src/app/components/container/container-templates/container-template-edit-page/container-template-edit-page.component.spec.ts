@@ -26,6 +26,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
+import { TemplateAddedTokenRowComponent } from "@components/container/container-templates/container-template-edit-page/template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService } from "@services/auth/auth.service";
@@ -131,6 +132,24 @@ describe("ContainerTemplateEditPageComponent", () => {
     });
 
     expect(component.isDirty()).toBe(false);
+  });
+
+  it("is dirty when a token row has an unsaved checkbox change", () => {
+    component.initTemplate.set({
+      name: "Existing",
+      container_type: "generic",
+      template_options: { tokens: [hotpToken] },
+      default: true
+    });
+    fixture.detectChanges();
+    expect(component.isDirty()).toBe(false);
+
+    const row: TemplateAddedTokenRowComponent = fixture.debugElement.query(
+      By.directive(TemplateAddedTokenRowComponent)
+    ).componentInstance;
+    row.changePinOnFirstUse.set(true);
+
+    expect(component.isDirty()).toBe(true);
   });
 
   it("cannot save a name that another template has", () => {

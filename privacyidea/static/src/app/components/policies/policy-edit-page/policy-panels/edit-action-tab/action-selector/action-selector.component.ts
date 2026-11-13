@@ -75,15 +75,17 @@ export class ActionSelectorComponent {
     const scope = this.policyScope();
     if (!scope) return [];
     const groups = this.actionGroupsFiltered()[scope] ?? {};
-    return Object.keys(groups).map((name) => ({
-      name,
-      actions: Object.keys(groups[name]).map((actionName) => ({
-        label: actionName,
-        actionName,
-        scope,
-        detail: groups[name][actionName]
-      }))
-    }));
+    return Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .map((name) => ({
+        name,
+        actions: Object.keys(groups[name]).map((actionName) => ({
+          label: actionName,
+          actionName,
+          scope,
+          detail: groups[name][actionName]
+        }))
+      }));
   });
 
   /** Without a scope there are no groups to speak of, so every scope's actions are listed flat. */

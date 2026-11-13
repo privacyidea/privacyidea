@@ -48,6 +48,8 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { grantRights } from "@testing/toolbar-actions";
 import { AXE_TIMEOUT, axe } from "@testing/axe";
@@ -72,7 +74,7 @@ describe("ContainerTableComponent (Jest)", () => {
         { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: TokenService, useClass: MockTokenService },
-        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         provideRouter([]),
         MockLocalService,
         MockNotificationService
@@ -166,6 +168,199 @@ describe("ContainerTableComponent (Jest)", () => {
     const row = component.containerDataSource().data[0];
     expect(row.user_name).toBe("alice");
     expect(row.user_realm).toBe("r1");
+  });
+
+  describe("template column and comparison column", () => {
+    const containerWithSerial = (serial: string, template?: string) => ({
+      serial,
+      template,
+      states: [],
+      realms: [],
+      tokens: [],
+      type: "generic",
+      description: "",
+      users: []
+    });
+
+    const comparisonOf = (containerSerial: string, templateName = "base") => ({
+      containerSerial,
+      templateName,
+      equal: true,
+      missing: [] as string[],
+      additional: [] as string[]
+    });
+
+    const fourContainers = () =>
+      MockPiResponse.fromValue({
+        count: 4,
+        containers: [
+          containerWithSerial("C-1", "base"),
+          containerWithSerial("C-2", "base"),
+          containerWithSerial("C-3"),
+          containerWithSerial("C-4")
+        ]
+      });
+
+    const cellTexts = (columnClass: string) =>
+      Array.from(fixture.nativeElement.querySelectorAll(`td.mat-column-${columnClass}`)).map((cell) =>
+        (cell as HTMLElement).textContent?.replace(/\s+/g, " ").trim()
+      );
+
+    beforeEach(() => {
+      // The table is only rendered when the read right is granted (TableState "denied" otherwise),
+      // and toolbarFilterKeys is read once at construction, so the keys must exist before that.
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
+      containerService.advancedApiFilterKeys = ["token_serial", "template", "assigned"];
+      fixture.destroy();
+      fixture = TestBed.createComponent(ContainerTableComponent);
+      component = fixture.componentInstance;
+      containerService.containerResource.set(fourContainers());
+      fixture.detectChanges();
+    });
+
+    it("shows neither the template nor the differences column and no template toolbar filter before a comparison", () => {
+      expect(fixture.nativeElement.querySelector("th.mat-column-template")).toBeNull();
+      expect(fixture.nativeElement.querySelector("th.mat-column-differences")).toBeNull();
+      expect(component.toolbarFilterKeys).not.toContain("template");
+      expect(component.toolbarFilterKeys).toContain("assigned");
+    });
+
+    it("shows the template column with the template names and a header filter button while the comparison is visible", () => {
+      component.comparisonVisible.set(true);
+      fixture.detectChanges();
+      const header = fixture.nativeElement.querySelector("th.mat-column-template");
+      expect(header.textContent).toContain("Template");
+      expect(header.querySelector("button.filter-button")).not.toBeNull();
+      expect(header.querySelector("button.sort-button")).toBeNull();
+      expect(cellTexts("template")).toEqual(["base", "base", "", ""]);
+    });
+
+    it("offers the template filter options in the header filter menu", async () => {
+      component.comparisonVisible.set(true);
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector("th.mat-column-template button.filter-button").click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const menuText = document.querySelector(".mat-mdc-menu-panel")?.textContent ?? "";
+      expect(menuText).toContain("Clear Filter");
+      expect(document.querySelector(".mat-mdc-menu-panel mat-icon")?.textContent).toContain("filter_alt_off");
+      expect(menuText).toContain("With template");
+      expect(menuText).toContain("Without template");
+    });
+
+    it("renders template names and differences with their status classes", () => {
+      component.showComparison([
+        { containerSerial: "C-1", templateName: "base", equal: false, missing: ["hotp"], additional: ["totp"] },
+        { containerSerial: "C-2", templateName: "base", equal: true, missing: [], additional: [] },
+        { containerSerial: "C-3", templateName: "", equal: null, missing: [], additional: [] }
+      ]);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("th.mat-column-differences").textContent).toContain("Differences");
+      const texts = cellTexts("differences");
+      expect(texts[1]).toBe("Equal");
+      expect(texts[2]).toBe("");
+      expect(texts[3]).toBe("");
+      const missing = fixture.nativeElement.querySelector("td.mat-column-differences .highlight-false");
+      const additional = fixture.nativeElement.querySelector("td.mat-column-differences .highlight-warning");
+      expect(missing.textContent.trim()).toBe("- hotp");
+      expect(additional.textContent.trim()).toBe("+ totp");
+    });
+
+    it("does not report a container as equal when its comparison failed", () => {
+      component.showComparison([
+        {
+          containerSerial: "C-1",
+          templateName: "base",
+          equal: null,
+          missing: [],
+          additional: [],
+          error: "live-check-compare-failed"
+        },
+        comparisonOf("C-2")
+      ]);
+      fixture.detectChanges();
+
+      const texts = cellTexts("differences");
+      expect(texts[0]).not.toContain("Equal");
+      expect(texts[0]).not.toBe("");
+      expect(texts[1]).toBe("Equal");
+    });
+
+    it("keeps earlier results when further containers are compared", () => {
+      component.showComparison([comparisonOf("C-1")]);
+      component.showComparison([comparisonOf("C-2", "other")]);
+      fixture.detectChanges();
+
+      expect(cellTexts("differences")).toEqual(["Equal", "Equal", "", ""]);
+    });
+
+    it("removes the differences column and the results when the comparison is hidden", () => {
+      component.showComparison([comparisonOf("C-1")]);
+      fixture.detectChanges();
+
+      component.hideComparison();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("th.mat-column-differences")).toBeNull();
+      expect(fixture.nativeElement.querySelector("th.mat-column-template")).toBeNull();
+      expect(component.comparisonByContainerSerial()).toEqual({});
+    });
+
+    describe("re-compare on list change", () => {
+      const compareFirst = () => {
+        component.showComparison([comparisonOf("C-1")]);
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector("th.mat-column-differences")).not.toBeNull();
+        containerService.compareContainersWithTemplates.mockClear();
+      };
+
+      const triggers: { name: string; trigger: () => void }[] = [
+        { name: "the page index", trigger: () => containerService.pageIndex.set(1) },
+        { name: "the sort", trigger: () => containerService.sort.set({ active: "type", direction: "desc" }) },
+        {
+          name: "the active filter",
+          trigger: () => containerService.activeFilter.set(new FilterValue({ value: "type: smartphone" }))
+        },
+        { name: "the page size at page index 0", trigger: () => containerService.pageSize.set(25) }
+      ];
+
+      it.each(triggers)("compares the new list again after it loaded when $name changes", async ({ trigger }) => {
+        compareFirst();
+        containerService.compareContainersWithTemplates.mockResolvedValue([comparisonOf("C-9")]);
+        const newRows = MockPiResponse.fromValue({ count: 1, containers: [containerWithSerial("C-9", "base")] });
+
+        containerService.containerResource.isLoading.set(true);
+        trigger();
+        fixture.detectChanges();
+        // Still loading, so the old rows must not be compared.
+        expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
+
+        containerService.containerResource.set(newRows);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(containerService.compareContainersWithTemplates).toHaveBeenCalledTimes(1);
+        expect(containerService.compareContainersWithTemplates).toHaveBeenCalledWith(
+          newRows.result?.value?.containers
+        );
+        expect(component.comparisonVisible()).toBe(true);
+        expect(Object.keys(component.comparisonByContainerSerial())).toEqual(["C-9"]);
+      });
+
+      it("keeps the comparison when the container resource only reloads", () => {
+        compareFirst();
+        containerService.containerResource.set(fourContainers());
+        fixture.detectChanges();
+
+        expect(component.comparisonVisible()).toBe(true);
+        expect(component.comparisonByContainerSerial()["C-1"]).toBeDefined();
+        expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
+        expect(fixture.nativeElement.querySelector("th.mat-column-differences")).not.toBeNull();
+      });
+    });
   });
 
   it("names the More Filter button in a tooltip", () => {
@@ -352,6 +547,54 @@ describe("ContainerTableComponent (Jest)", () => {
 
       expect(containerService.activeFilter().getValueOfKey("user")).toBe("alice");
       expect(containerService.activeFilter().hasKey("realm")).toBe(false);
+    });
+  });
+
+  describe("template filter", () => {
+    const rows: {
+      name: string;
+      initial: string;
+      selection: "with-template" | "without-template" | "specific" | "all";
+      template?: string;
+      expected: string | null;
+      keepsType: boolean;
+    }[] = [
+      { name: "any template", initial: "", selection: "with-template", expected: "any", keepsType: false },
+      { name: "no template", initial: "", selection: "without-template", expected: "none", keepsType: false },
+      {
+        name: "a selected template, clearing previous template conditions",
+        initial: "template: none",
+        selection: "specific",
+        template: "baseline",
+        expected: "=baseline",
+        keepsType: false
+      },
+      {
+        name: "nothing on Clear Filter, keeping other conditions",
+        initial: "template: baseline type: smartphone",
+        selection: "all",
+        expected: null,
+        keepsType: true
+      }
+    ];
+
+    it.each(rows)("filters for $name", ({ initial, selection, template, expected, keepsType }) => {
+      if (initial) {
+        containerService.activeFilter.set(new FilterValue({ value: initial }));
+      }
+
+      component.onTemplateFilterSelected(selection, template);
+
+      const filter = containerService.activeFilter();
+      if (expected === null) {
+        expect(filter.hasKey("template")).toBe(false);
+      } else {
+        expect(filter.getValueOfKey("template")).toBe(expected);
+      }
+      expect(filter.hasKey("has_template")).toBe(false);
+      if (keepsType) {
+        expect(filter.hasKey("type")).toBe(true);
+      }
     });
   });
 });

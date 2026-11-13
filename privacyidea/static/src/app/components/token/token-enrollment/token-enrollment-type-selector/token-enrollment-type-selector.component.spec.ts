@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenService, TokenType } from "../../../../services/token/token.service";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector.component";
 import { axe } from "@testing/axe";
 
@@ -103,6 +104,71 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       fixture.detectChanges();
       const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
       expect(button.disabled).toBe(false);
+    });
+  });
+
+  describe("unsupported token types", () => {
+    const supportedType: TokenType = { key: "hotp", name: "HOTP", info: "HOTP: counter based", text: "" };
+    const unsupportedType = { key: "customtoken", name: "Custom", info: "", text: "" } as unknown as TokenType;
+
+    const openOptions = (): HTMLElement[] => {
+      (tokenService.tokenTypeOptions as unknown as WritableSignal<TokenType[]>).set([supportedType, unsupportedType]);
+      fixture.detectChanges();
+      const selectInstance: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      selectInstance.open();
+      fixture.detectChanges();
+      return Array.from(document.querySelectorAll<HTMLElement>("mat-option"));
+    };
+
+    it("renders an unsupported type as a disabled option with the info icon and a supported one as enabled without it", () => {
+      const [supportedOption, unsupportedOption] = openOptions();
+      expect(unsupportedOption.classList.contains("select-option-unsupported")).toBe(true);
+      expect(unsupportedOption.getAttribute("aria-disabled")).toBe("true");
+      expect(unsupportedOption.querySelector(".select-option-unsupported-icon mat-icon")?.textContent).toContain(
+        "info_outline"
+      );
+      expect(supportedOption.classList.contains("select-option-unsupported")).toBe(false);
+      expect(supportedOption.getAttribute("aria-disabled")).toBe("false");
+      expect(supportedOption.querySelector(".select-option-unsupported-icon")).toBeNull();
+    });
+
+    it("uses the unsupported hint as tooltip only for the unsupported type", () => {
+      openOptions();
+      const messages = fixture.debugElement
+        .queryAll(By.directive(MatTooltip))
+        .map((element) => element.injector.get(MatTooltip).message);
+      expect(messages).toContain(component["unsupportedTypeHint"]);
+      expect(messages.filter((message) => message === component["unsupportedTypeHint"])).toHaveLength(1);
+      expect(messages).toContain("counter based");
+    });
+
+    it("takes the option label from tokenTypeDisplayLabel", () => {
+      const colonSupported: TokenType = { key: "hotp", name: "Hotp key", info: "HOTP: counter based", text: "" };
+      const colonUnsupported = {
+        key: "customtoken",
+        name: "Custom name",
+        info: "Special: something else",
+        text: ""
+      } as unknown as TokenType;
+      const noColonUnsupported = {
+        key: "othertoken",
+        name: "Other name",
+        info: "no colon here",
+        text: ""
+      } as unknown as TokenType;
+      (tokenService.tokenTypeOptions as unknown as WritableSignal<TokenType[]>).set([
+        colonSupported,
+        colonUnsupported,
+        noColonUnsupported
+      ]);
+      fixture.detectChanges();
+      const selectInstance: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      selectInstance.open();
+      fixture.detectChanges();
+      const labels = Array.from(document.querySelectorAll<HTMLElement>("mat-option")).map((option) =>
+        option.querySelector(".select-option-label")?.textContent?.trim()
+      );
+      expect(labels).toEqual(["HOTP", "Special", "Other name"]);
     });
   });
 
