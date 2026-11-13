@@ -421,8 +421,9 @@ class PasskeyTokenClass(TokenClass):
             # The registration options only ask the browser for user verification. The user verified flag in the
             # signed authenticator data shows whether the authenticator verified the user. The requirement is the
             # one that the first step stored in the challenge, so the policy at the start of the enrollment applies.
-            # A challenge without a stored requirement, for example one created before an update, uses the current
-            # policy value.
+            # A challenge without a stored requirement, for example one created before an update, uses the value in
+            # param. Every API path that completes a registration runs the prepolicy fido2_enroll, and it sets this
+            # value from the current enroll policy.
             user_verification = (challenge_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
                                  or get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT))
             require_user_verification = user_verification == UserVerificationRequirement.REQUIRED
