@@ -128,8 +128,6 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     #  regardless of the given config directory (so they can differ).
     #  Since all the necessary paths are given in the config file, we should
     #  just use that for the gathering the files for backup.
-    # TODO: Remove generated/copied file in case of an error. Maybe create a
-    #  temporary folder where the data is collected
     cur_date = datetime.now(tz=tzlocal()).strftime("%Y%m%d-%H%M")
     base_name = "privacyidea-backup"
 
@@ -150,27 +148,30 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     backup_file = directory.joinpath(f"{base_name}-{cur_date}.tgz")
     sqlfile = directory.joinpath(f"dbdump-{cur_date}{DUMP_SUFFIXES[family]}")
 
-    # The archive name has a resolution of one minute.
-    if backup_file.exists():
+    # The archive name has a resolution of one minute. The archive is reserved before the dump is written, so a
+    # second backup in the same minute stops before it touches the dump of the first one. The archive holds pi.cfg and
+    # the dump, so it is only readable by its owner from the start.
+    try:
+        archive = os.fdopen(os.open(backup_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb")
+    except FileExistsError:
         click.secho(f"The backup file {backup_file} already exists. Wait a minute and try again.",
                     fg="red")
         sys.exit(2)
 
-    # The dump is not encrypted and contains the token seeds, so it must not
-    # be left in the backup directory, whatever happens after it was written.
+    # The dump is not encrypted and contains the token seeds. It is only readable by its owner, also in the archive,
+    # and it must not be left in the backup directory, whatever happens after it was written.
+    old_umask = os.umask(0o077)
     try:
-        if family == SQLITE:
-            _dump_sqlite(url, sqlfile)
-        elif family == MYSQL:
-            _report_obsolete_mysql_defaults(conf_dir)
-            _dump_mysql(url, sqlfile)
-        else:
-            _dump_postgresql(url, sqlfile)
+        with archive:
+            if family == SQLITE:
+                _dump_sqlite(url, sqlfile)
+            elif family == MYSQL:
+                _report_obsolete_mysql_defaults(conf_dir)
+                _dump_mysql(url, sqlfile)
+            else:
+                _dump_postgresql(url, sqlfile)
 
-        # The archive holds pi.cfg and the dump, so it is only readable by its owner from the start
-        archive_fd = os.open(backup_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        try:
-            with os.fdopen(archive_fd, "wb") as archive, tarfile.open(fileobj=archive, mode="w:gz") as tf:
+            with tarfile.open(fileobj=archive, mode="w:gz") as tf:
                 tf.add(sqlfile)
                 if radius_dir:
                     # Simply append the radius directory to the backup command
@@ -192,14 +193,14 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
                         click.secho(f"The encryption key {enc_file} is not in the config directory "
                                     f"{conf_dir} and is NOT included in the backup!", fg="yellow")
                     tf.add(conf_dir, recursive=True)
-        except BaseException:
-            # Do not leave a partial archive behind
-            backup_file.unlink(missing_ok=True)
-            raise
+    except BaseException:
+        # Do not leave a partial archive behind
+        backup_file.unlink(missing_ok=True)
+        raise
     finally:
+        os.umask(old_umask)
         sqlfile.unlink(missing_ok=True)
 
-    backup_file.chmod(0o600)
     click.echo(f"Backup written to file {backup_file}")
 
 
@@ -325,6 +326,8 @@ def backup_restore(backup_file, keep_db_uri):
         with tarfile.open(backup_file, "r:gz") as tf:
             _extract_backup(tf)
     except (tarfile.TarError, OSError) as e:
+        # The dump may already be extracted, it is not left behind unencrypted
+        sqlfile.unlink(missing_ok=True)
         click.secho(f"Extracting the backup file failed: {e}. The files may be only partially "
                     "restored, the database was not restored.", fg="red")
         sys.exit(2)

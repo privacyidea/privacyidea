@@ -1451,6 +1451,60 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertEqual(archive_content, archive.read_bytes())
             self.assertEqual([], list(backup_dir.glob("dbdump-*")))
 
+    def test_18c_concurrent_backup_in_the_same_minute_keeps_the_other_dump(self):
+        """
+        A second backup that starts while the first one of the same minute still
+        writes its archive stops before it writes a dump, so it can not destroy
+        the dump of the first one.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            backup_dir.mkdir()
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            # The first backup has created its archive and its dump, but has not finished yet
+            (backup_dir / "privacyidea-backup-20240101-1200.tgz").write_bytes(b"in progress")
+            other_dump = backup_dir / "dbdump-20240101-1200.sql"
+            other_dump.write_text("-- dump of the first backup\n")
+            exists = pathlib.Path.exists
+
+            def archive_not_there_yet(path):
+                return False if path.suffix == ".tgz" else exists(path)
+
+            with mock.patch("privacyidea.cli.pimanage.backup.datetime") as fake_datetime, \
+                    mock.patch.object(pathlib.Path, "exists", archive_not_there_yet):
+                fake_datetime.now.return_value = dt.datetime(2024, 1, 1, 12, 0)
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("already exists", result.output, result.output)
+            self.assertEqual("-- dump of the first backup\n", other_dump.read_text())
+
+    def test_18d_dump_is_only_readable_by_its_owner(self):
+        # The dump holds the token seeds unencrypted, also inside the archive
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            old_umask = os.umask(0o022)
+            try:
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                # The umask of the process is restored afterwards
+                self.assertEqual(0o022, os.umask(0o022))
+            finally:
+                os.umask(old_umask)
+            self.assertEqual(0, result.exit_code, result.output)
+            archive = next(backup_dir.glob("*.tgz"))
+            with tarfile.open(archive) as tf:
+                dump_member = next(m for m in tf.getmembers() if "dbdump-" in m.name)
+            self.assertEqual(0o600, dump_member.mode & 0o777)
+
     def test_18b_failed_backup_leaves_no_archive(self):
         """
         The archive holds pi.cfg and the database dump. It is only readable by
@@ -1531,11 +1585,17 @@ class PIManageBackupTestCase(CliTestCase):
             live_pi_cfg = pathlib.Path(tmp_dir) / "pi.cfg"
             fake_open = self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")
 
+            # The dump is extracted before the extraction fails
+            dump = pathlib.Path(tmp_dir) / "dbdump-20240101-1200.sqlite"
+
+            def extract_the_dump_and_fail(*args: Any, **kwargs: Any) -> None:
+                dump.write_text("seeds")
+                raise PermissionError(13, "Permission denied", "/etc/privacyidea/enckey")
+
             @contextlib.contextmanager
             def failing_extract(*args: Any, **kwargs: Any) -> Iterator[mock.MagicMock]:
                 with fake_open(*args, **kwargs) as tf:
-                    tf.extractall = mock.MagicMock(
-                        side_effect=PermissionError(13, "Permission denied", "/etc/privacyidea/enckey"))
+                    tf.extractall = mock.MagicMock(side_effect=extract_the_dump_and_fail)
                     yield tf
 
             runner = self.app.test_cli_runner()
@@ -1547,6 +1607,8 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertIn("Extracting the backup file failed", result.output, result.output)
             self.assertIn("/etc/privacyidea/enckey", result.output, result.output)
             copyfile.assert_not_called()
+            # The unencrypted dump is not left behind
+            self.assertFalse(dump.exists())
 
 
 class PIManageRealmTestCase(CliTestCase):
