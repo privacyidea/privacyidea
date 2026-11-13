@@ -865,3 +865,35 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             delete_policy("force_2step")
             delete_policy("verify_enrollment")
             remove_token(serial)
+
+    def test_04_admin_rollover_with_policy_for_realm_of_owner(self):
+        self.setUp_user_realms()
+        set_policy(name="force_2step_realm1",
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1"],
+                   scope=SCOPE.ADMIN, realm=self.realm1)
+        set_policy(name="2step_params_realm1",
+                   action=["hotp_2step_difficulty=12345", "hotp_2step_clientsize=11"],
+                   scope=SCOPE.ENROLL, realm=self.realm1)
+        token = init_token({"type": "hotp", "otpkey": self.otpkey},
+                           user=User("cornelius", realm=self.realm1, resolver=self.resolvername1))
+        serial = token.get_serial()
+
+        try:
+            # The rollover from the token details of the WebUI names only the serial of the token. The policies are
+            # matched for the owner of the token, so the policy for the realm of the owner forces the two-step
+            # enrollment.
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "hotp", "serial": serial, "genkey": 1, "rollover": 1},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                detail = res.json["detail"]
+                self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"))
+                self.assertEqual(12345, detail.get("2step_difficulty"))
+                self.assertEqual(11, detail.get("2step_salt"))
+            self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+        finally:
+            delete_policy("force_2step_realm1")
+            delete_policy("2step_params_realm1")
+            remove_token(serial)

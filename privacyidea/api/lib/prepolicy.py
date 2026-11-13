@@ -1013,8 +1013,11 @@ def twostep_enrollment_activation(request=None, action=None):
     :func:`check_token_init`, a request for a token whose enrollment is not pending rolls it over, with or without the
     ``rollover`` parameter. Such a request must not contain ``verify``, because only a token in the state ``verify``
     is verified. If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+
+    The policies are matched for ``request.User``: for a request that names only the serial of a token, this is the
+    owner of the token.
     """
-    user_object = get_user_from_param(request.all_data)
+    user_object = request.User
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type", default="hotp")
     token = None
