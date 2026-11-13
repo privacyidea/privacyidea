@@ -150,7 +150,8 @@ The response contains these members:
     response. This makes sure that the signed response belongs to the request of the client.
 
 ``auth_items``
-    The offline data of a token, only in a response of :http:post:`/validate/check`, see :ref:`application_offline`.
+    The offline data of a token, only in a response of :http:post:`/validate/check` and
+    :http:post:`/validate/offlinerefill`, see :ref:`application_offline`.
 
 ``jsonrpc`` and ``id``
     Members from the JSON-RPC format. They remain for compatibility with clients that read them. The response does
@@ -171,10 +172,15 @@ A response without an error has the HTTP status code ``200``. This also applies 
   header
 * ``403`` for a request that a policy denies
 * ``404`` for an object that does not exist
+* ``409`` for a change that conflicts with the change of another client, for example at
+  :http:put:`/conditionalaccess/policy/order` if the priority of a policy changed after the client read it
 * ``500`` for an internal error
+* ``501`` for a function that privacyIDEA does not implement
 
-At ``/auth`` and at the ``/validate`` endpoints, the hardening policy ``hide_auth_error_status`` changes all codes
-below ``500`` to ``401``, see :ref:`policies_hardening`.
+At ``/auth`` and at the ``/validate`` endpoints, the hardening policy ``hide_auth_error_status`` changes the status
+code of an error response in the format above to ``401`` if the code is below ``500``, see :ref:`policies_hardening`.
+The policy does not change the status codes of the responses in :ref:`rest_api_other_formats`, for example ``405``
+for a wrong HTTP method or ``400`` from :http:post:`/validate/radiuscheck`.
 
 .. _rest_api_response_signature:
 
@@ -182,8 +188,10 @@ Response signature
 ..................
 
 privacyIDEA signs each JSON response with the private key in ``PI_AUDIT_KEY_PRIVATE`` (see :ref:`cfgfile`). The
-algorithm is RSA-PSS with SHA-256. The member ``signature`` contains the name of the algorithm and the signature as a
-hexadecimal number, separated by a colon: ``rsa_sha256_pss:<hex>``.
+algorithm is RSA-PSS with SHA-256 and the mask generation function MGF1 with SHA-256. The salt length is the maximum
+that the key allows: the key length in bytes minus 34, for example 222 bytes for a 2048-bit key. The member
+``signature`` contains the name of the algorithm and the signature as a hexadecimal number, separated by a colon:
+``rsa_sha256_pss:<hex>``.
 
 The signed data is the response without the member ``signature``, as JSON in the same format as the response body:
 
@@ -197,7 +205,12 @@ To make sure that a response comes from your privacyIDEA server:
 
 #. Remove the member ``signature`` from the parsed response.
 #. Write the rest as JSON in the format above.
-#. Verify the signature of this text with the public key in ``PI_AUDIT_KEY_PUBLIC``.
+#. Verify the signature of this text with the public key in ``PI_AUDIT_KEY_PUBLIC``. Use the maximum salt length,
+   or let the library detect the salt length.
+
+.. note:: Some libraries use the length of the hash (32 bytes) as the salt length by default. With this default, the
+   verification of the signature fails. In the Python library ``cryptography``, use ``padding.PSS.MAX_LENGTH`` or
+   ``padding.PSS.AUTO``.
 
 A response contains no ``signature`` in these cases:
 
@@ -205,6 +218,7 @@ A response contains no ``signature`` in these cases:
 * privacyIDEA cannot load the private key. It then writes ``Could not load private key`` to the log file, at the log
   level INFO.
 * The response is not JSON, see :ref:`rest_api_other_formats`.
+* The URL of the request matches no endpoint, see :ref:`rest_api_other_formats`.
 * The response comes from a :ref:`health check endpoint <rest_healthcheck>`. These responses also never contain
   ``version`` and ``versionnumber``.
 
@@ -221,3 +235,13 @@ These endpoints do not send the JSON object described above:
 * :http:post:`/validate/radiuscheck` sends an empty body with the HTTP status code ``204`` or ``400``.
 * At ``/ttype/<type>``, some token types answer in their own format. Examples are the TiQR token and the Yubico
   validation protocol of the Yubikey token.
+
+These error responses also do not have the format described above. privacyIDEA does not sign them.
+
+* A request to a URL that matches no endpoint gets the HTTP status code ``404`` and the body
+  ``{"error": "Not found"}``. A ``GET`` request that accepts HTML, for example with the header ``Accept: */*``, gets
+  the WebUI or a redirect to the WebUI instead.
+* A request with an HTTP method that the endpoint does not support gets the HTTP status code ``405`` and an HTML
+  page.
+* A request with the content type ``application/json`` and a body that is not valid JSON gets the HTTP status code
+  ``400`` and an HTML page.
