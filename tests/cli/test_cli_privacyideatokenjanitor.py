@@ -31,6 +31,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import enable_token, get_one_token, init_token
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import get_version_number
 from privacyidea.models.token import TokenOwner
