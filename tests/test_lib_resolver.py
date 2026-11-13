@@ -2126,7 +2126,10 @@ class LDAPResolverTestCase(MyTestCase):
         only_tls_1_2 = {ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_3}
         # TLS v1.2 and TLS v1.3 use the generic client protocol and switch off all other versions.
         # TLS v1.0 and TLS v1.1 keep their fixed-version protocol numbers.
+        # An empty value and 0 mean that TLS_VERSION is not set
         tls_versions = {"": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "0": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        0: (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
                         "2": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
                         "5": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
                         5: (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
@@ -2135,8 +2138,13 @@ class LDAPResolverTestCase(MyTestCase):
         for tls_version_pi, (expected_protocol, expected_options) in tls_versions.items():
             check_tls_version_ldap3(tls_version_pi, expected_protocol, expected_options)
         for unsupported_version in ("1234", "16", "1", "version is nonsense"):
-            with self.assertRaises(ParameterError) as context:
+            # Loading the configuration fails like for any other resolver that cannot load its configuration
+            with self.assertRaises(ResolverError) as context:
                 check_tls_version_ldap3(unsupported_version, None, None)
+            self.assertIn(f"Unsupported TLS version '{unsupported_version}'", context.exception.message)
+            # The connection test reports the parameter
+            with self.assertRaises(ParameterError) as context:
+                LDAPResolver.testconnection({"LDAPURI": "ldaps://localhost", "TLS_VERSION": unsupported_version})
             self.assertIn(f"Unsupported TLS version '{unsupported_version}'", context.exception.message)
 
     @ldap3mock.activate
@@ -3543,6 +3551,30 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("RANDOM", random_pool.strategy)
         self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
 
+    def test_57_persistent_serverpool_per_tls_version(self):
+        # TLS v1.2 and TLS v1.3 differ only in the SSL options. Resolvers that differ only in the TLS version
+        # must not share a persistent server pool, so that a changed TLS version takes effect without a restart.
+        config = {"LDAPURI": "ldaps://server1",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        resolver = LDAPResolver()
+        resolver.loadConfig(config | {"TLS_VERSION": "2"})
+        tls_1_3_pool = resolver.get_serverpool_instance()
+        resolver.loadConfig(config | {"TLS_VERSION": "5"})
+        tls_1_2_pool = resolver.get_serverpool_instance()
+
+        self.assertIsNot(tls_1_3_pool, tls_1_2_pool)
+        self.assertIn(ssl.OP_NO_TLSv1_2, tls_1_3_pool.servers[0].tls.ssl_options)
+        self.assertIn(ssl.OP_NO_TLSv1_3, tls_1_2_pool.servers[0].tls.ssl_options)
+        self.assertNotIn(ssl.OP_NO_TLSv1_2, tls_1_2_pool.servers[0].tls.ssl_options)
+        # The same TLS version uses the same pool again
+        resolver.loadConfig(config | {"TLS_VERSION": "2"})
+        self.assertIs(tls_1_3_pool, resolver.get_serverpool_instance())
+
 
 def write_self_signed_certificate(directory: str, file_name: str, host_name: str) -> tuple[str, str]:
     """
@@ -3591,7 +3623,9 @@ class LDAPTLSHandshakeTestCase(unittest.TestCase):
         shutil.rmtree(cls.directory)
 
     def connect(self, tls_version: str, host: str = "localhost", tls_verify: bool = True,
-                tls_ca_file: str | None = None) -> str:
+                tls_ca_file: str | None = None,
+                server_minimum_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_2,
+                server_maximum_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_3) -> str:
         """
         Open an LDAPS connection to a local TLS server with the TLS object of the LDAP resolver.
 
@@ -3599,8 +3633,8 @@ class LDAPTLSHandshakeTestCase(unittest.TestCase):
         """
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(self.server_certificate, self.server_key)
-        server_context.minimum_version = ssl.TLSVersion.TLSv1_2
-        server_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        server_context.minimum_version = server_minimum_version
+        server_context.maximum_version = server_maximum_version
         listener = socket.create_server(("127.0.0.1", 0))
         listener.settimeout(10)
 
@@ -3637,11 +3671,17 @@ class LDAPTLSHandshakeTestCase(unittest.TestCase):
     def test_01_tls_v1_2_allows_only_tls_1_2(self):
         self.assertEqual("TLSv1.2", self.connect("5"))
         self.assertEqual("TLSv1.2", self.connect("5", tls_verify=False))
+        # A server that accepts only TLS v1.3 fails the handshake
+        with self.assertRaises(LDAPSocketOpenError):
+            self.connect("5", server_minimum_version=ssl.TLSVersion.TLSv1_3)
 
     def test_02_tls_v1_3_allows_only_tls_1_3(self):
         self.assertEqual("TLSv1.3", self.connect("2"))
         # Without TLS_VERSION, the resolver uses TLS v1.3
         self.assertEqual("TLSv1.3", self.connect(""))
+        # A server that accepts only TLS v1.2 fails the handshake
+        with self.assertRaises(LDAPSocketOpenError):
+            self.connect("2", server_maximum_version=ssl.TLSVersion.TLSv1_2)
 
     def test_03_wrong_host_name_fails(self):
         with self.assertRaises(LDAPSocketOpenError) as context:

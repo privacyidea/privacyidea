@@ -123,16 +123,18 @@ def get_tls_version_settings(tls_version: int | str | None) -> TlsVersionSetting
     """
     Return the ldap3 protocol and SSL options for a value of the resolver setting TLS_VERSION.
 
-    :param tls_version: The value of TLS_VERSION. An empty value selects DEFAULT_TLS_VERSION.
+    :param tls_version: The value of TLS_VERSION. An empty value and 0 select DEFAULT_TLS_VERSION.
     :return: The settings for the selected TLS version
-    :raises ParameterError: If the value is not one of the keys of TLS_VERSION_SETTINGS
+    :raises ParameterError: If the value is not 0 or one of the keys of TLS_VERSION_SETTINGS
     """
-    if not tls_version:
-        return TLS_VERSION_SETTINGS[DEFAULT_TLS_VERSION]
     try:
-        tls_settings = TLS_VERSION_SETTINGS.get(int(tls_version))
+        tls_version_number = int(tls_version) if tls_version else 0
     except (TypeError, ValueError):
-        tls_settings = None
+        tls_version_number = None
+    # An empty value and 0 mean that TLS_VERSION is not set
+    if tls_version_number == 0:
+        return TLS_VERSION_SETTINGS[DEFAULT_TLS_VERSION]
+    tls_settings = TLS_VERSION_SETTINGS.get(tls_version_number)
     if tls_settings is None:
         raise ParameterError(f"Unsupported TLS version {tls_version!r}. Use {TLS_VERSION_1_3} (TLS v1.3), "
                              f"{TLS_VERSION_1_0} (TLS v1.0), {TLS_VERSION_1_1} (TLS v1.1) "
@@ -723,7 +725,9 @@ class IdResolver(UserIdResolver):
         """
         This method creates the TLS object to be used with ldap3.
 
-        :param tls_version: The value of the resolver setting TLS_VERSION. An empty value selects TLS v1.3.
+        :param tls_version: The value of the resolver setting TLS_VERSION. An empty value and 0 select TLS v1.3.
+        :param tls_options: SSL options that replace the options of the TLS version. No caller in privacyIDEA
+            uses it. Without the options of the TLS version, the connection can allow other TLS versions.
         :raises ParameterError: If the URI or START_TLS needs TLS and tls_version is not a supported value
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
@@ -1258,13 +1262,17 @@ class IdResolver(UserIdResolver):
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.keytabfile = config.get('KEYTABFILE', None)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # get_tls_context checks the value. An empty value selects DEFAULT_TLS_VERSION.
+        # get_tls_context checks the value. An empty value and 0 select DEFAULT_TLS_VERSION.
         self.tls_version = config.get("TLS_VERSION")
         self.tls_ca_file = config.get("TLS_CA_FILE")
-        self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
-                                                tls_version=self.tls_version,
-                                                tls_verify=self.tls_verify,
-                                                tls_ca_file=self.tls_ca_file)
+        try:
+            self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
+                                                    tls_version=self.tls_version,
+                                                    tls_verify=self.tls_verify,
+                                                    tls_ca_file=self.tls_ca_file)
+        except ParameterError as error:
+            # A resolver that cannot load its configuration raises a ResolverError (see get_resolver_object)
+            raise ResolverError(error.message) from error
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
@@ -1411,6 +1419,8 @@ class IdResolver(UserIdResolver):
                             self.timeout,
                             get_info,
                             repr(self.tls_context),  # this is the string representation of the TLS context
+                            # The representation leaves out the SSL options, which select TLS v1.2 or TLS v1.3
+                            tuple(sorted(self.tls_context.ssl_options)) if self.tls_context else (),
                             self.serverpool_rounds,
                             self.serverpool_skip,
                             self.serverpool_strategy)
