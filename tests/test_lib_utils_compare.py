@@ -290,6 +290,14 @@ class UtilsCompareTestCase(MyTestCase):
         # Missing timezone info assumes UTC
         self.assertTrue(compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
 
+        # Dates in the future are not within the past duration
+        future = now + datetime.timedelta(days=30)
+        self.assertFalse(compare_values(future, PrimaryComparators.DATE_WITHIN_LAST, "1d"))
+        self.assertFalse(compare_values(future.isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1y"))
+        self.assertFalse(compare_values(now + datetime.timedelta(minutes=5), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
+        self.assertFalse(compare_values(future.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_WITHIN_LAST,
+                                        "1y"))
+
         # Invalid formats
         self.assertRaises(CompareError, compare_values, "2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
@@ -348,6 +356,11 @@ class UtilsCompareTestCase(MyTestCase):
         # Missing timezone info assumes UTC
         self.assertFalse(
             compare_values(now.replace(tzinfo=None).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
+
+        # Dates in the future are not within the past duration
+        future = now + datetime.timedelta(days=30)
+        self.assertTrue(compare_values(future, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1d"))
+        self.assertTrue(compare_values(future.isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1y"))
 
         # Invalid formats
         self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
