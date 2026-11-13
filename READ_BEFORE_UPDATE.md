@@ -102,6 +102,11 @@
   output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
   both scripts is accepted and has no effect.
 
+* **`pi-manage setup create_tables` stops on an existing database.** If the database holds privacyIDEA tables or a
+  schema revision stamp, the command exits with an error and changes nothing. Update an existing database with
+  `pi-manage db upgrade`. If a script runs `create_tables` on every start, run it only on an empty database.
+  `--force` keeps the previous behavior.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
