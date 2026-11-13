@@ -9,7 +9,10 @@ The scope *hardening* contains policies that reduce the amount of
 information privacyIDEA exposes to unauthenticated clients. They are
 system-level controls: unlike most other scopes they are evaluated
 without user, realm or resolver conditions (client IP, user agent and
-time conditions still apply).
+time conditions still apply). Additional conditions that need a user, a
+token or a container have missing data, see :ref:`policy_condition_checks`.
+On the API, an error in an additional condition turns the policy off. It
+does not stop the request.
 
 hide_version
 ~~~~~~~~~~~~
