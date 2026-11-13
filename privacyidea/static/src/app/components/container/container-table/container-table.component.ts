@@ -68,7 +68,8 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withUser } from "@utils/filter.utils";
+import { realmPresenceFilterOptions, withUser } from "@utils/filter.utils";
+import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
@@ -294,9 +295,15 @@ export class ContainerTableComponent implements OnDestroy {
     this.filterInput?.nativeElement.focus();
   }
 
+  realmMenuOptions(keyword: string): MultiSelectFilterOption[] {
+    if (keyword === "container_realm") return realmPresenceFilterOptions(this.realmService.realmOptions());
+    return this.realmService.realmOptions().map((realm) => ({ label: realm, value: realm }));
+  }
+
+  // An empty value is a choice of its own, "without realm", only undefined clears the filter.
   onItemSelected(keyword: string, value: string | undefined): void {
     this.containerService.updateFilter((current) =>
-      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+      value !== undefined ? current.addEntry(keyword, value) : current.removeKey(keyword)
     );
   }
 }
