@@ -104,7 +104,7 @@ from privacyidea.lib.realm import get_realms, split_realms, normalize_realm_name
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
-                                   get_token_owner, token_exist)
+                                   get_token_owner)
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
@@ -1089,20 +1089,6 @@ def twostep_enrollment_parameters(request=None, action=None):
                                           user_object=request.User).action_values(unique=True)
             if action_values:
                 request.all_data[parameter] = list(action_values)[0]
-
-
-def remember_existing_token(request=None, action=None):
-    """
-    This decorator is used in the /token/init endpoint. It records in g.token_existed whether a token with the
-    requested serial already exists before the token is created or updated. A request without a serial creates a new
-    token. The post-policies of /token/init use this to delete only a token the request created, if they fail.
-
-    :param request:
-    :param action:
-    :return: True
-    """
-    g.token_existed = token_exist(get_optional(request.all_data, "serial"))
-    return True
 
 
 def verify_enrollment(request=None, action=None):

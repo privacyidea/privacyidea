@@ -5053,17 +5053,31 @@ class APIRolloutState(MyApiTestCase):
         # A token the request created must not stay active without the enrollment policies applied
         self.assertFalse(token_exist("ROLLOUT_POST02"))
 
-    def test_04_reinit_keeps_existing_token_on_postpolicy_error(self):
-        self._remove_token_on_cleanup("ROLLOUT_POST03")
-        init_token({"serial": "ROLLOUT_POST03", "type": "hotp", "genkey": 1})
+    def test_04_reinit_disables_existing_token_on_postpolicy_error(self):
+        serial = "ROLLOUT_POST03"
+        old_key = "6162636465666768696a6b6c6d6e6f7071727374"
+        # RFC 4226 test key, the OTP at counter 0 is 755224 and at counter 1 is 287082
+        new_key = "3132333435363738393031323334353637383930"
+        new_key_otp = "755224"
+        next_otp = "287082"
+        self._remove_token_on_cleanup(serial)
+        init_token({"serial": serial, "type": "hotp", "otpkey": old_key})
         self._set_enroll_postpolicies(raise_error=True)
 
         # A rollover of an existing token runs into the same post-policy error
-        res = self._init_request({"type": "hotp", "genkey": 1, "serial": "ROLLOUT_POST03"})
+        res = self._init_request({"type": "hotp", "otpkey": new_key, "serial": serial})
         self.assertEqual(403, res.status_code, res.json)
         self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
         # The token existed before the request and must not be deleted
-        self.assertTrue(token_exist("ROLLOUT_POST03"))
+        self.assertTrue(token_exist(serial))
+        token = get_one_token(serial=serial)
+        # The new key was already written, so the OTP of the new key is valid for the token
+        self.assertGreaterEqual(token.check_otp(new_key_otp), 0)
+        # The token must not stay active with the new key and without the enrollment policies applied
+        self.assertFalse(token.token.active)
+        # check_otp moved the counter, so the next OTP of the new key is used for the authentication
+        r, _reply = check_serial_pass(serial, next_otp)
+        self.assertFalse(r)
 
     def test_05_enroll_removes_new_token_on_pin_change_policy_error(self):
         serial = "ROLLOUT_PIN05"
@@ -5162,6 +5176,24 @@ class APIRolloutState(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertIn(self.realm1, get_realms_of_token(serial))
         self.assertTrue(get_one_token(serial=serial).get_tokeninfo("next_pin_change"))
+
+    def test_10_reinit_through_pre_event_serial_keeps_existing_token_on_postpolicy_error(self):
+        serial = "ROLLOUT_EVT10"
+        self._remove_token_on_cleanup(serial)
+        init_token({"serial": serial, "type": "hotp", "genkey": 1})
+        # The request names no serial, a pre handler sets it to the serial of the existing token
+        event_id = set_event("token_init_set_serial", ["token_init"], "RequestMangler", "set", conditions={},
+                             options={"parameter": "serial", "value": serial}, position="pre")
+        self.addCleanup(delete_event, event_id)
+        self._set_enroll_postpolicies(raise_error=True)
+
+        res = self._init_request({"type": "hotp", "genkey": 1})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        # The request rolled over the existing token, so the token must not be deleted
+        self.assertTrue(token_exist(serial))
+        # The token must not stay active without the enrollment policies applied
+        self.assertFalse(get_one_token(serial=serial).token.active)
 
 
 @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,

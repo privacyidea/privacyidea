@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
                                            resolver_realm_access,
-                                           force_server_generate_key, remember_existing_token)
+                                           force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
@@ -191,7 +191,6 @@ overall policy concept.
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @prepolicy(force_server_generate_key, request)
-@prepolicy(remember_existing_token, request)
 @postpolicy(remove_new_token_on_error(save_pin_change), request)
 @event("token_init", request, g)
 @postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
@@ -361,7 +360,10 @@ def init():
     param["policies"] = g.get("policies", {})
 
     user = request.User
+    # The post-policies of /token/init clean up the token of this request if they fail
+    g.enrolled_token = None
     token = init_token(param, user)
+    g.enrolled_token = token
 
     if token:
         g.audit_object.log({"success": True})

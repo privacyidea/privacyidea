@@ -188,7 +188,8 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
     :type tokenrealms: list
     :param tokenkind: The kind of the token, can be "software",
         "hardware" or "virtual"
-    :return: token object or None
+    :return: token object or None. Its attribute ``newly_created`` is True if the token was created by this call and
+        False if an existing token was updated.
     :rtype: TokenClass
     """
     token_type = param.get("type") or "hotp"
@@ -301,6 +302,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
 
     # Safe the token object to make sure all changes are persisted in the db
     token.save()
+    token.newly_created = token_count == 0
     return token
 
 
