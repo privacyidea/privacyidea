@@ -15,7 +15,9 @@ import logging
 import mock
 import sqlalchemy as sa
 from click.testing import Result
+from sqlalchemy.dialects import mysql, oracle, postgresql, sqlite
 from testfixtures import Comparison, compare, OutputCapture
+from collections.abc import Iterator
 from contextlib import contextmanager
 
 from privacyidea.app import (ENV_KEY, PrivacyIDEARequest, create_app, create_docker_app,
@@ -35,6 +37,25 @@ def isolated_config_file():
     with tempfile.NamedTemporaryFile(suffix=".cfg") as config_file:
         with mock.patch.dict(os.environ, {ENV_KEY: config_file.name}):
             yield
+
+
+class FactoryStopped(Exception):
+    """Raised by a patched step of an app factory, so that a test stops the factory at that step."""
+
+
+@contextmanager
+def docker_app_environment(extra_environment: dict[str, str] | None = None) -> Iterator[None]:
+    """
+    The environment variables that create_docker_app() needs to get past its config check, plus the given ones.
+    The Docker factory also reads the pi.cfg of the machine the test runs on, so it reads a missing file instead.
+    """
+    environment = {"PRIVACYIDEA_PI_ENCFILE": os.path.join(dirname, "tests/testdata/enckey"),
+                   "PRIVACYIDEA_PI_PEPPER": "pepper",
+                   "PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": "sqlite://",
+                   **(extra_environment or {})}
+    with (mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")),
+          mock.patch.dict(os.environ, environment)):
+        yield
 
 
 class AppTestCase(unittest.TestCase):
@@ -246,13 +267,7 @@ class HashConfigTestCase(unittest.TestCase):
                 create_app(config_name="testing", silent=True)
 
     def test_02_create_docker_app_refuses_to_start(self):
-        env = {"PRIVACYIDEA_PI_ENCFILE": os.path.join(dirname, "tests/testdata/enckey"),
-               "PRIVACYIDEA_PI_PEPPER": "pepper",
-               "PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": "sqlite://",
-               "PRIVACYIDEA_PI_HASH_ALGO_LIST": json.dumps(["nosuchscheme"])}
-        # The Docker factory also reads the pi.cfg of the machine the test runs on.
-        with mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")), \
-                mock.patch.dict(os.environ, env):
+        with docker_app_environment({"PRIVACYIDEA_PI_HASH_ALGO_LIST": json.dumps(["nosuchscheme"])}):
             with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
                 create_docker_app()
 
@@ -511,15 +526,38 @@ class UrlencodedBodySizeTestCase(MyApiTestCase):
             self.assertEqual(413, self.post_urlencoded("/token/init", 1001, {"Authorization": self.at}).status_code)
 
 
-class DockerAppRequestClassTestCase(unittest.TestCase):
+class DockerAppFactoryTestCase(unittest.TestCase):
 
     def test_01_request_class(self) -> None:
-        class FactoryStopped(Exception):
-            pass
-
-        # The Docker factory also reads the pi.cfg of the machine the test runs on.
-        with (mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")),
+        with (docker_app_environment(),
               mock.patch("privacyidea.app._check_config", side_effect=FactoryStopped) as check_config):
             with self.assertRaises(FactoryStopped):
                 create_docker_app()
         self.assertIs(check_config.call_args.args[0].request_class, PrivacyIDEARequest)
+
+    def test_02_connection_check_compiles_for_oracle(self) -> None:
+        # The Docker factory checks the database connection before it starts. Oracle 19c and 21c refuse a SELECT
+        # without FROM, so the check is a statement that SQLAlchemy compiles for the dialect of the database.
+        with (docker_app_environment(),
+              mock.patch("privacyidea.app._setup_logging"),
+              mock.patch.object(db.session, "execute", side_effect=FactoryStopped) as execute):
+            with self.assertRaisesRegex(RuntimeError, "Could not connect to database"):
+                create_docker_app()
+        statement = execute.call_args.args[0]
+        self.assertEqual("SELECT 1 FROM DUAL", str(statement.compile(dialect=oracle.dialect())))
+        for dialect in (mysql.dialect(), postgresql.dialect(), sqlite.dialect()):
+            self.assertEqual("SELECT 1", str(statement.compile(dialect=dialect)), dialect.name)
+
+    def test_03_connection_check_logs_the_url_without_the_password(self) -> None:
+        database_uri = "mysql+pymysql://pi:TopSecret123@db.example.org/pi"
+        with (docker_app_environment({"PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": database_uri}),
+              mock.patch("privacyidea.app._setup_logging"),
+              mock.patch.object(db.session, "execute", side_effect=FactoryStopped),
+              self.assertLogs("privacyidea.app", level=logging.DEBUG) as logs):
+            with self.assertRaisesRegex(RuntimeError, "Could not connect to database") as error:
+                create_docker_app()
+        output = "\n".join(logs.output)
+        self.assertIn("Test Database using URL 'mysql+pymysql://pi:***@db.example.org/pi'", output)
+        self.assertNotIn("TopSecret123", output)
+        # The error of the database is the cause of the RuntimeError
+        self.assertIsInstance(error.exception.__cause__, FactoryStopped)

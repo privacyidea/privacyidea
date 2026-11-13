@@ -12,6 +12,8 @@ on:
       - 'requirements.txt'
       - 'tests/requirements.txt'
       - 'doc/requirements.txt'
+      - 'deploy/docker/requirements-image.in'
+      - 'deploy/docker/requirements-image.txt'
       - '.github/python-versions.env'
       - '.github/workflows/python-requirements-sync.yml'
 
@@ -48,6 +50,11 @@ jobs:
         run: pip-compile --allow-unsafe --extra=test --generate-hashes --output-file=tests/requirements.txt pyproject.toml
       - name: Recompile doc requirements
         run: pip-compile --allow-unsafe --extra=doc --generate-hashes --output-file=doc/requirements.txt pyproject.toml
+      - name: Recompile Docker image requirements
+        # Reads requirements.txt as a constraint, so it runs after "Recompile runtime requirements".
+        run: >-
+          pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes
+          --output-file=deploy/docker/requirements-image.txt deploy/docker/requirements-image.in
       - name: Fail on drift
         # -I ignores hunks whose changed lines all match the pattern. The
         # pip-compile invocation header records default-valued CLI flags
@@ -55,8 +62,9 @@ jobs:
         # reflecting any real dependency change.
         run: |
           if ! git diff --exit-code -I '^#    pip-compile' \
-                requirements.txt tests/requirements.txt doc/requirements.txt; then
-            echo "::error::pyproject.toml and the pinned requirements files are out of sync."
+                requirements.txt tests/requirements.txt doc/requirements.txt \
+                deploy/docker/requirements-image.txt; then
+            echo "::error::The pinned requirements files are out of sync with their sources."
             echo "Run pip-compile locally (see each file's header) and commit the result."
             exit 1
           fi

@@ -23,8 +23,6 @@ RUN npm run build
 FROM cgr.dev/chainguard/wolfi-base AS python-builder
 
 ARG PYTHON_VERSION=3.13
-ARG GUNICORN=23.0.0
-ARG PSYCOPG2=2.9.10
 
 # To override the package version since we copy only part of the repository.
 # See https://setuptools-scm.readthedocs.io/en/latest/usage/#with-dockerpodman
@@ -50,10 +48,13 @@ ENV PATH="/opt/privacyidea/bin:$PATH"
 
 RUN pip install --no-cache-dir --upgrade pip setuptools
 
-RUN pip install --no-cache-dir psycopg2-binary==${PSYCOPG2} gunicorn==${GUNICORN}
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# The packages that only the image installs: gunicorn and the drivers for PostgreSQL and Oracle. The file pins them
+# with hashes, and its shared dependencies have the versions of requirements.txt (see requirements-image.in).
+COPY deploy/docker/requirements-image.txt .
+RUN pip install --no-cache-dir -r requirements-image.txt
 
 COPY README.rst MANIFEST.in pyproject.toml ./
 COPY ./.git ./.git

@@ -9,11 +9,12 @@
 #
 #   postgresql+psycopg2://pi:<password>@db.example.org:5432/pi
 #   mysql+pymysql://pi:<password>@db.example.org:3306/pi
+#   oracle+oracledb://pi:<password>@db.example.org:1521/?service_name=<service>
 #
 # Percent-encode the characters @ : / ? # % in the user name and password
 # (@ becomes %40). The image has the drivers for MariaDB and MySQL
-# (mysql+pymysql) and for PostgreSQL (postgresql+psycopg2). Needs Docker Compose
-# 2.24 or newer, for "!reset".
+# (mysql+pymysql), for PostgreSQL (postgresql+psycopg2) and for Oracle
+# (oracle+oracledb). Needs Docker Compose 2.24 or newer, for "!reset".
 
 services:
   # Never started: no one activates the profile "bundled-db".
