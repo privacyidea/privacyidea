@@ -482,8 +482,8 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
     if range_of_serial:
         range_of_serial = range_of_serial.split("-")
         if len(range_of_serial) != 2 or not all(range_of_serial):
-            raise click.ClickException('The range of serial numbers requires the syntax "<first serial>-<last serial>", '
-                                       'e.g. HOTP10000000-HOTP20000000')
+            raise click.ClickException('The range of serial numbers requires the syntax '
+                                       '"<first serial>-<last serial>", e.g. HOTP10000000-HOTP20000000')
     ta_filter = []
     if tokenattributes:
         for tokenattribute in tokenattributes:
