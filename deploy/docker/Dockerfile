@@ -25,6 +25,7 @@ FROM cgr.dev/chainguard/wolfi-base AS python-builder
 ARG PYTHON_VERSION=3.13
 ARG GUNICORN=23.0.0
 ARG PSYCOPG2=2.9.10
+ARG ORACLEDB=26.1.0
 
 # To override the package version since we copy only part of the repository.
 # See https://setuptools-scm.readthedocs.io/en/latest/usage/#with-dockerpodman
@@ -54,6 +55,11 @@ RUN pip install --no-cache-dir psycopg2-binary==${PSYCOPG2} gunicorn==${GUNICORN
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# The Oracle driver for oracle+oracledb:// database URIs. Its thin mode is pure Python and needs no Oracle client
+# libraries in the image. Installed after requirements.txt, so that its dependencies (cryptography,
+# typing-extensions) are the pinned versions from there.
+RUN pip install --no-cache-dir oracledb==${ORACLEDB}
 
 COPY README.rst MANIFEST.in pyproject.toml ./
 COPY ./.git ./.git
