@@ -38,6 +38,7 @@ import traceback
 import requests
 from sqlalchemy import func, select, true, update
 
+from privacyidea.config import ConfigKey
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.crypto import Sign
@@ -861,10 +862,11 @@ def check_signature(subscription):
     if vendor != os.path.basename(vendor):
         raise SubscriptionError("Invalid vendor in the subscription.",
                                 application=subscription.get("application"))
-    enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
-    dirname = os.path.dirname(enckey)
-    # In dirname we are searching for <vendor>.pem
-    filename = f"{dirname!s}/{vendor!s}.pem"
+    # Without a configured key folder, the public key is searched next to the encryption key.
+    key_directory = get_app_config_value(ConfigKey.SUBSCRIPTION_KEY_DIRECTORY)
+    if not key_directory:
+        key_directory = os.path.dirname(get_app_config_value(ConfigKey.ENCFILE, "/etc/privacyidea/enckey"))
+    filename = os.path.join(key_directory, f"{vendor}.pem")
 
     try:
         # remove the minutes 00:00:00
@@ -882,6 +884,11 @@ def check_signature(subscription):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"),
             SUBSCRIPTION_DATE_FORMAT)
+    except OSError as error:
+        log.warning(f"Could not read the public key {filename} to verify the subscription: {error}")
+        log.debug(traceback.format_exc())
+        raise SubscriptionError("Verifying the signature of your subscription failed.",
+                                application=subscription.get("application"))
     except Exception as _e:
         log.debug(traceback.format_exc())
         raise SubscriptionError("Verifying the signature of your subscription "
