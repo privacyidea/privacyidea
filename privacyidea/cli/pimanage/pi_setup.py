@@ -21,6 +21,7 @@ import base64
 import binascii
 import os
 import pathlib
+import tempfile
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -45,7 +46,8 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 @click.password_option(help="The password to encrypt the encryption key. "
                             "If this option is not given the user will be "
                             "prompted for the password.")
-def encrypt_enckey(encfile, outfile, password):
+@click.pass_context
+def encrypt_enckey(ctx, encfile, outfile, password):
     """
     You will be asked for a password and the given encryption key in the specified
     file will be encrypted with an AES key derived from your password.
@@ -65,13 +67,23 @@ def encrypt_enckey(encfile, outfile, password):
     if outfile == "-":
         click.echo(res)
         return
-    # The output file is only opened after the key was read, so it can also be the key file itself. It is not
-    # readable for others before anything is written to it, and it stays writable for its owner.
-    out_path = pathlib.Path(outfile)
-    with os.fdopen(os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
-        out_path.chmod(0o600)
-        f.write(res)
-        f.write('\n')
+    # The output is written to a new file next to the target, which then replaces the target. So the target, which
+    # can also be the key file itself, is never left half written. mkstemp creates the file only readable by its owner.
+    out_path = pathlib.Path(outfile).resolve()
+    tmp_name = None
+    try:
+        fd, tmp_name = tempfile.mkstemp(dir=out_path.parent, prefix=f".{out_path.name}.")
+        with os.fdopen(fd, "w") as f:
+            f.write(res)
+            f.write('\n')
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, out_path)
+    except OSError as e:
+        if tmp_name:
+            pathlib.Path(tmp_name).unlink(missing_ok=True)
+        click.secho(f"Error: Could not write the encrypted key to {out_path}: {e}", fg="red", err=True)
+        ctx.exit(1)
     click.secho(f"The file permission of {out_path} was set to 600!", fg="yellow", err=True)
 
 
@@ -107,7 +119,14 @@ def create_enckey(ctx, enckey_b64):
         if len(bin_enckey) != 96:
             click.secho("Error: enckey must be 96 bytes length", fg="red")
             ctx.exit(1)
-    with open(enc_file, "wb") as f:
+    # The key file is created read-only for its owner, so it is never readable for others, and an existing file is
+    # not overwritten
+    try:
+        fd = os.open(enc_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+    except FileExistsError:
+        click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!", fg="yellow")
+        ctx.exit(1)
+    with os.fdopen(fd, "wb") as f:
         f.write(bin_enckey)
     click.secho(f"Encryption key written to {enc_file}", fg="green")
     enc_file.chmod(0o400)
