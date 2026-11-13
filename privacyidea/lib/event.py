@@ -21,6 +21,7 @@
 #
 #
 import functools
+from collections import Counter
 import logging
 import traceback
 
@@ -473,7 +474,7 @@ def import_event(data, name=None):
     log.debug(f'Import event config: {data!s}')
     failed = []
     # Otherwise the second event of a name would overwrite the first one, which the import has just created
-    imported_names = [res_data.get('name') for res_data in data]
+    name_counts = Counter(res_data.get('name') for res_data in data)
     for res_data in data:
         event_name = res_data.get('name')
         if name and name != event_name:
@@ -485,9 +486,9 @@ def import_event(data, name=None):
             log.warning("Not importing an event without a name, it can not be matched to an existing event.")
             failed.append("<without name>")
             continue
-        if imported_names.count(event_name) > 1:
-            log.warning(f'Not importing event "{event_name}", {imported_names.count(event_name)} events in the '
-                        f'imported data have this name.')
+        if name_counts[event_name] > 1:
+            log.warning(f'Not importing event "{event_name}", {name_counts[event_name]} events in the imported '
+                        f'data have this name.')
             if event_name not in failed:
                 failed.append(event_name)
             continue
