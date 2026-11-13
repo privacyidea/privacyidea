@@ -459,12 +459,12 @@ class PIManageAuditTestCase(CliTestCase):
 
     def test_19_rotate_uses_the_engine_options_of_the_audit_module(self):
         # Like the SQL audit module, rotate takes the engine options from PI_AUDIT_SQL_OPTIONS and falls back to
-        # SQLALCHEMY_ENGINE_OPTIONS.
+        # SQLALCHEMY_ENGINE_OPTIONS. pool_pre_ping is understood by every database the tests run against.
         import unittest.mock as mock
 
         for config_key in ["PI_AUDIT_SQL_OPTIONS", "SQLALCHEMY_ENGINE_OPTIONS"]:
             with self.subTest(config_key=config_key), \
-                    mock.patch.dict(self.app.config, {config_key: {"connect_args": {"timeout": 7}}}), \
+                    mock.patch.dict(self.app.config, {config_key: {"pool_pre_ping": True}}), \
                     mock.patch("privacyidea.cli.pimanage.audit.create_engine",
                                wraps=sa.create_engine) as create_engine:
                 if config_key == "SQLALCHEMY_ENGINE_OPTIONS":
@@ -472,7 +472,7 @@ class PIManageAuditTestCase(CliTestCase):
                 res = self._rotate("--age", "5")
 
                 self.assertEqual(0, res.exit_code, res.output)
-                self.assertEqual({"timeout": 7}, create_engine.call_args.kwargs.get("connect_args"))
+                self.assertIs(True, create_engine.call_args.kwargs.get("pool_pre_ping"))
 
     def test_20_rotate_rejects_a_chunksize_below_one(self):
         for chunksize in ["0", "-1"]:
