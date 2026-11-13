@@ -152,10 +152,12 @@ class PasskeyTestBase(unittest.TestCase):
             "credential_id": self.credential_id_multi_device,
         }
 
-    def validate_default_passkey_registration(self, passkey_registration: dict, expected_challenge: str | None = None):
+    def validate_default_passkey_registration(self, passkey_registration: dict, expected_challenge: str | None = None,
+                                              user_verification: str = "preferred") -> None:
         """
         Validates the passkey registration response with the default values and the values set in this class
         Only checks if pubKeyCredParams and excludeCredentials exists not their content
+        The user_verification is the expected value of authenticatorSelection.userVerification.
         """
         # RP
         self.assertIn("rp", passkey_registration)
@@ -178,6 +180,6 @@ class PasskeyTestBase(unittest.TestCase):
         self.assertIn("authenticatorSelection", passkey_registration)
         self.assertEqual(passkey_registration["authenticatorSelection"]["requireResidentKey"], True)
         self.assertEqual(passkey_registration["authenticatorSelection"]["residentKey"], "required")
-        self.assertEqual(passkey_registration["authenticatorSelection"]["userVerification"], "preferred")
+        self.assertEqual(user_verification, passkey_registration["authenticatorSelection"]["userVerification"])
         # Attestation is none by default
         self.assertEqual(passkey_registration["attestation"], "none")
