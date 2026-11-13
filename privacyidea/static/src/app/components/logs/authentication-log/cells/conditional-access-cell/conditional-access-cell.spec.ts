@@ -21,6 +21,7 @@ import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 
 import { ConditionalAccessCell } from "./conditional-access-cell";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessCell", () => {
   let component: ConditionalAccessCell;
@@ -254,5 +255,11 @@ describe("ConditionalAccessCell", () => {
     expect(details.textContent).toContain("LOCK_USER");
     expect(details.textContent).toContain("Lock 10 min");
     expect(details.textContent).toContain("5");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

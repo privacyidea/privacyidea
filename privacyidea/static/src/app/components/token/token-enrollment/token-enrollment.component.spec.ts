@@ -27,6 +27,7 @@ import {
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -71,6 +72,7 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -259,19 +261,13 @@ describe("TokenEnrollmentComponent", () => {
       );
     });
 
-    it("snacks when clickEnroll is not provided", async () => {
-      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+    it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
+      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-      component.setPin.set("1234");
-      component.repeatPin.set("1234");
-
-      installStrategy(component, undefined);
-
-      await component.enrollToken();
-
-      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
-        "Enrollment action is not available for the selected token type."
-      );
+      expect(component.enrollmentBlockedReason()).not.toBeNull();
+      expect(component.isFormInvalid()).toBe(true);
     });
 
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {
@@ -913,6 +909,44 @@ describe("TokenEnrollmentComponent", () => {
     });
   });
 
+  describe("openContainerCreateDialog()", () => {
+    it("passes the selected user to the dialog and preselects the created container", () => {
+      userService.selectedUser.set({ username: "alice" } as unknown as UserData);
+      userService.selectedUserRealm.set("realm1");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: ContainerCreateDialogComponent,
+          data: { username: "alice", userRealm: "realm1", checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close("CONT-NEW");
+
+      expect(component.selectedContainer()).toBe("CONT-NEW");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("passes no user to the dialog when none is selected and keeps the selection on cancel", () => {
+      userService.selectedUser.set(null);
+      component.selectedContainer.set("CONT-OLD");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { username: undefined, userRealm: undefined, checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close(undefined);
+
+      expect(component.selectedContainer()).toBe("CONT-OLD");
+    });
+  });
+
   describe("ngOnInit subscriptions", () => {
     it("selectedContainer signal updates containerService.selectedContainer", () => {
       const containers = TestBed.inject(ContainerService) as unknown as MockContainerService;
@@ -1274,14 +1308,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.isFormInvalid()).toBe(false);
     });
 
-    it("falls back to the session user where the assignment component is not rendered", () => {
+    it("falls back to the session user where the assignment component is not rendered", async () => {
       const selfService = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       userService.selectedUser.set(null);
+      await flushFixture(selfService);
 
       expect(selfService.componentInstance.isFormInvalid()).toBe(true);
 
       userService.selectedUser.set({ username: "alice" } as UserData);
+      await flushFixture(selfService);
       expect(selfService.componentInstance.isFormInvalid()).toBe(false);
     });
 
@@ -1320,6 +1356,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });
 
 describe("token-enrollment constants", () => {

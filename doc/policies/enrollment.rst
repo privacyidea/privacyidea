@@ -288,9 +288,9 @@ Default: ``cn``
 This defines what characters the registrationcodes should contain.
 
 The value uses the syntax of :ref:`admin_policies_otp_pin_contents`. A plain list such as ``cn`` only requires at
-least one character of each listed group; the other characters may come from all groups, including special
+least one character of each listed group. The other characters can come from all groups, including special
 characters. To generate codes from letters and digits only, use ``-s``. A list in brackets (``[...]``) is a literal
-list of characters, not a regular expression class, so every allowed character has to be written out.
+list of characters and not a regular expression class. You must write out every allowed character.
 
 .. versionadded:: 3.5
 
@@ -317,11 +317,51 @@ Default: ``cn``
 This is the content of an automatically generated password of a password token (pw token).
 
 The value uses the syntax of :ref:`admin_policies_otp_pin_contents`. A plain list such as ``cn`` only requires at
-least one character of each listed group; the other characters may come from all groups, including special
+least one character of each listed group. The other characters can come from all groups, including special
 characters. To generate passwords from letters and digits only, use ``-s``. A list in brackets (``[...]``) is a
-literal list of characters, not a regular expression class, so every allowed character has to be written out.
+literal list of characters and not a regular expression class. You must write out every allowed character.
 
 .. versionadded:: 3.7
+
+applspec.length
+~~~~~~~~~~~~~~~
+
+.. index:: application specific password token
+
+type: ``integer``
+
+This is the length of a password that the server generates for an application specific password token (applspec
+token).
+The default length is 23.
+
+.. versionadded:: 3.14.1
+
+applspec.contents
+~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Default: ``cn``
+
+This defines the characters of a password that the server generates for an application specific password token
+(applspec token).
+
+The value uses the syntax of :ref:`admin_policies_otp_pin_contents`. A plain list such as ``cn`` only requires at
+least one character of each listed group. The other characters can come from all groups, including special
+characters. To generate passwords from letters and digits only, use ``-s``. A list in brackets (``[...]``) is a
+literal list of characters and not a regular expression class. You must write out every allowed character.
+
+.. versionadded:: 3.14.1
+
+.. note:: For ``POST /token/init`` and for tokens from container templates, the policies ``registration.*``,
+   ``pw.*`` and ``applspec.*`` define a generated password. If no policy is set, the defaults of the token type apply.
+   These requests ignore parameters with the same names.
+
+   Two other ways to enroll a token do not use these policies:
+
+   * The action ``enroll`` of the :ref:`tokenhandler` uses the defaults of the token type. The option
+     ``additional_params`` of the action can set ``<type>.length`` and ``<type>.contents``.
+   * ``POST /register`` always uses the defaults of the registration token.
 
 losttoken_PW_length
 ~~~~~~~~~~~~~~~~~~~

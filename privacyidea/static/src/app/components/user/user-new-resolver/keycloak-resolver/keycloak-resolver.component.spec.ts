@@ -23,6 +23,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { KeycloakResolverComponent } from "./keycloak-resolver.component";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("KeycloakResolverComponent", () => {
   let component: KeycloakResolverComponent;
@@ -99,4 +100,14 @@ describe("KeycloakResolverComponent", () => {
     component.model.update((m) => ({ ...m, base_url: "http://localhost:8080" }));
     expect(component.isValid()).toBe(true);
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

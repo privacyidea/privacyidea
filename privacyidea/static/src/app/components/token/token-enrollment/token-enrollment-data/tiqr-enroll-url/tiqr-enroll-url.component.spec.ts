@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url.component";
+import { axe } from "@testing/axe";
 
 describe("TiqrEnrollUrlComponent", () => {
   let component: TiqrEnrollUrlComponent;
@@ -32,5 +33,12 @@ describe("TiqrEnrollUrlComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("url", "tiqrenroll://https://pi.example/ttype/tiqr?action=metadata");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

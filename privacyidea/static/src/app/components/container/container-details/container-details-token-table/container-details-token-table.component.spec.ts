@@ -46,6 +46,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Subject, of } from "rxjs";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
@@ -131,6 +132,13 @@ describe("ContainerDetailsTokenTableComponent", () => {
       Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a")).find(
         (a) => a.textContent?.trim() === text
       );
+
+    it.each(["admin", "user"] as const)("passes the axe accessibility checks for the %s", async (role) => {
+      (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).getDisplayText.mockReturnValue("Active");
+      showTokens(role);
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    });
 
     it("reloads the container details once the token state was toggled", () => {
       (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).canToggleActive.mockReturnValue(true);

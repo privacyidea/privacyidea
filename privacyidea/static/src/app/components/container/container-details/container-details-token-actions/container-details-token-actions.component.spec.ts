@@ -33,6 +33,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;
@@ -312,5 +313,11 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     mockDialog.open.mockReturnValueOnce({ afterClosed: () => of(false) });
     component.deleteAllTokens();
     expect(mockTokenService.bulkDeleteTokens).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

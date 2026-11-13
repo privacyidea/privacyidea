@@ -23,6 +23,7 @@ import { ContentService } from "@services/content/content.service";
 import { MockContentService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button.component";
+import { axe } from "@testing/axe";
 
 describe("NavigationSelfServiceButtonComponent", () => {
   let component: NavigationSelfServiceButtonComponent;
@@ -57,5 +58,9 @@ describe("NavigationSelfServiceButtonComponent", () => {
     fixture.detectChanges();
 
     expect(link.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -270,6 +270,52 @@ describe("RealmService", () => {
     httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
   });
 
+  describe("noRealm", () => {
+    const realmsUrl = `${environment.proxyUrl}/realm/`;
+    const defaultUrl = `${environment.proxyUrl}/defaultrealm`;
+    const realmA = { realmA: { default: true, id: 1, option: "", resolver: [] } };
+
+    const loadOnAllowedRoute = () => {
+      contentService.onAnyUsersRoute = signal(true);
+      TestBed.tick();
+      return {
+        realms: httpMock.expectOne(realmsUrl),
+        defaultRealm: httpMock.expectOne(defaultUrl),
+        admin: httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`)
+      };
+    };
+
+    it("is false without a value", () => {
+      expect(realmService.noRealm()).toBe(false);
+    });
+
+    it("is false while the realms are loading", () => {
+      loadOnAllowedRoute();
+      expect(realmService.noRealm()).toBe(false);
+    });
+
+    it.each([
+      { name: "realms exist", realms: realmA, expected: false },
+      { name: "the realms are loaded and empty", realms: {}, expected: true }
+    ])("is $expected when $name", async ({ realms, expected }) => {
+      const req = loadOnAllowedRoute();
+      req.realms.flush(MockPiResponse.fromValue(realms));
+      req.defaultRealm.flush(MockPiResponse.fromValue(realms));
+      await Promise.resolve();
+      expect(realmService.noRealm()).toBe(expected);
+    });
+
+    it("is false until the default realm is resolved", async () => {
+      const req = loadOnAllowedRoute();
+      req.realms.flush(MockPiResponse.fromValue({}));
+      await Promise.resolve();
+      expect(realmService.noRealm()).toBe(false);
+      req.defaultRealm.flush(MockPiResponse.fromValue({}));
+      await Promise.resolve();
+      expect(realmService.noRealm()).toBe(true);
+    });
+  });
+
   describe("adminRealmOptions", () => {
     it("should default to empty array if resource is empty", () => {
       expect(realmService.adminRealmOptions()).toEqual([]);

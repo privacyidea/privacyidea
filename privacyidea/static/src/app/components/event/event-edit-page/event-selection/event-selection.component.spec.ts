@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventSelectionComponent } from "./event-selection.component";
+import { axe } from "@testing/axe";
 
 describe("EventsSelectionComponent", () => {
   let component: EventSelectionComponent;
@@ -165,5 +166,11 @@ describe("EventsSelectionComponent", () => {
       expect(component.searchTerm()).toBe("");
       expect(searchInput().value).toBe("");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

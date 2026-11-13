@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyScopeEditComponent } from "./policy-scope-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyScopeEditComponent", () => {
   let component: PolicyScopeEditComponent;
@@ -85,5 +86,11 @@ describe("PolicyScopeEditComponent", () => {
 
     const select = fixture.debugElement.query(By.directive(MatSelect));
     expect(select.componentInstance.disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

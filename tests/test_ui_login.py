@@ -16,8 +16,10 @@ from flask_babel import refresh
 
 from privacyidea.app import create_app
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
-from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies, delete_policy
 from privacyidea.lib.utils import to_unicode, get_version_number
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, save_config_timestamp
 from .base import MyTestCase, MyApiTestCase
 
@@ -175,6 +177,81 @@ class LoginUITestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
 
+    def _set_login_text_policy(self, text: str, conditions: list | None = None) -> None:
+        delete_all_policies()
+        set_policy("logtext", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}={text}", conditions=conditions)
+        self.addCleanup(delete_policy, "logtext")
+
+    def test_condition_on_request_header(self):
+        self._set_login_text_policy("Hello browser", [
+            (ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS, "Mozilla", True,
+             ConditionHandleMissingData.RAISE_ERROR.value)])
+        with self.app.test_request_context('/', method='GET', headers={"User-Agent": "Mozilla/5.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertIn(b"Hello browser", res.data)
+
+        with self.app.test_request_context('/', method='GET', headers={"User-Agent": "curl/8.5.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertNotIn(b"Hello browser", res.data)
+
+    def test_condition_on_http_environment(self):
+        self._set_login_text_policy("Hello start page", [
+            (ConditionSection.HTTP_ENVIRONMENT, "PATH_INFO", PrimaryComparators.EQUALS, "/", True,
+             ConditionHandleMissingData.RAISE_ERROR.value)])
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertIn(b"Hello start page", res.data)
+
+        with self.app.test_request_context('/config', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("", res.json["result"]["value"]["login_text"])
+
+    def test_condition_on_request_data(self):
+        self._set_login_text_policy("Hello kiosk", [
+            (ConditionSection.REQUEST_DATA, "kiosk", PrimaryComparators.EQUALS, "1", True,
+             ConditionHandleMissingData.IS_FALSE.value)])
+        with self.app.test_request_context('/', method='GET', query_string={"kiosk": "1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertIn(b"Hello kiosk", res.data)
+
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertNotIn(b"Hello kiosk", res.data)
+
+        # The new WebUI sends the query of the page with its request to /config
+        with self.app.test_request_context('/config', method='GET', query_string={"kiosk": "1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("Hello kiosk", res.json["result"]["value"]["login_text"])
+
+    def test_start_page_ignores_request_body(self):
+        self._set_login_text_policy("Hello body")
+        for body in (b"", b"{broken"):
+            with self.subTest(body=body):
+                with self.app.test_request_context('/', method='GET', data=body,
+                                                   headers={"Content-Type": "application/json"}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                self.assertIn(b"Hello body", res.data)
+
+    def test_password_parameter_with_plugin_user_agent(self):
+        # The policy check removes the password from a copy of the request data. For the user agents of the plugins,
+        # the request data are not unquoted, which must not leave the query of the request as the request data.
+        self._set_login_text_policy("Hello plugin")
+        for path, key in (("/", "password"), ("/config", "pass")):
+            with self.subTest(path=path):
+                with self.app.test_request_context(path, method='GET', query_string={key: "x"},
+                                                   headers={"User-Agent": "privacyidea-cp/1.0"}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                self.assertIn(b"Hello plugin", res.data)
+
 
 class LanguageTestCase(MyApiTestCase):
 
@@ -285,6 +362,19 @@ class NewUIRoutingTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 302)
         self.assertIn("/app/v2/de/", res.location)
+
+    def test_root_redirect_keeps_query_string(self):
+        cases = (("de", "kiosk=1&next=%2Ftokens", "/app/v2/de/?kiosk=1&next=%2Ftokens"),
+                 ("en", "kiosk=1", "/app/v2/?kiosk=1"),
+                 ("en", "", "/app/v2/"))
+        for language, query_string, location in cases:
+            with self.subTest(language=language, query_string=query_string):
+                with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+                    with self.app.test_request_context("/", method="GET", query_string=query_string,
+                                                       headers={"Accept-Language": language}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(302, res.status_code)
+                self.assertEqual(location, res.location)
 
     def test_root_does_not_redirect_when_build_missing(self):
         """GET / with German Accept-Language falls back to old UI when no build."""

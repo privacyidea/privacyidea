@@ -175,7 +175,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                             realm: str = None, allowed_realms: list[str] = None, template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
-                            sortby: str = 'serial', sortdir: str = 'asc') -> Select:
+                            sortby: str = 'serial', sortdir: str = 'asc', has_template: bool = None) -> Select:
     """
     Generates a sql query to filter containers by the given parameters.
 
@@ -198,6 +198,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as
         wildcard), optional
+    :param has_template: Whether the container was created from a template, optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False if not, optional
     :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
@@ -311,6 +312,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                 TokenContainerTemplate.name == template
             ))
 
+    if has_template is True:
+        stmt = stmt.where(TokenContainer.template.has())
+    elif has_template is False:
+        stmt = stmt.where(~TokenContainer.template.has())
+
     if description and description.strip("*"):
         if "*" in description:
             stmt = stmt.where(TokenContainer.description.ilike(
@@ -395,7 +401,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
-                       pagesize: int = 0) -> dict[str, int | None | list[TokenContainerClass]]:
+                       pagesize: int = 0,
+                       has_template: bool = None) -> dict[str, int | None | list[TokenContainerClass]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -447,7 +454,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                                                 assigned=assigned, resolver=resolver, info=info,
                                                 last_auth_delta=last_auth_delta,
                                                 last_sync_delta=last_sync_delta, state=state, sortby=sortby,
-                                                sortdir=sortdir)
+                                                sortdir=sortdir, has_template=has_template)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:

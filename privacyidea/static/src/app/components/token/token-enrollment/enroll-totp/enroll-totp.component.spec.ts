@@ -35,6 +35,7 @@ import {
   pickOption,
   typeInto
 } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
@@ -472,5 +473,11 @@ describe("EnrollTotpComponent", () => {
       expect(component.otpKeyForm().valid()).toBe(true);
       expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

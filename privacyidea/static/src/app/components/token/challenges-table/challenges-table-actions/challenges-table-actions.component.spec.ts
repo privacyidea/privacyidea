@@ -28,6 +28,7 @@ import { ChallengesService } from "@services/token/challenges/challenges.service
 import { MockChallengesService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { of, throwError } from "rxjs";
 import { ChallengesTableActionsComponent } from "./challenges-table-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ChallengesTableActionsComponent", () => {
   let component: ChallengesTableActionsComponent;
@@ -122,5 +123,11 @@ describe("ChallengesTableActionsComponent", () => {
 
     expect(component.getFilterIconName("serial")).toBe("filter_alt_off");
     expect(component.getFilterIconName("transaction_id")).toBe("filter_alt");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

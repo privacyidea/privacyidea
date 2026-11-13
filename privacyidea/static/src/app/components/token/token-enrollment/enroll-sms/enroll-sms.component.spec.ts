@@ -34,6 +34,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollSmsComponent } from "./enroll-sms.component";
 import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
@@ -255,5 +256,11 @@ describe("EnrollSmsComponent", () => {
 
       expect(fixture.nativeElement.textContent).toContain("SMS Gateway is required");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

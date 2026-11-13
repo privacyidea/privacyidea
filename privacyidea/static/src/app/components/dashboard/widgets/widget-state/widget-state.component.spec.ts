@@ -20,6 +20,7 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { WidgetState } from "@models/dashboard";
 import { WidgetStateComponent } from "./widget-state.component";
+import { axe } from "@testing/axe";
 
 describe("WidgetStateComponent", () => {
   let fixture: ComponentFixture<WidgetStateComponent>;
@@ -73,5 +74,12 @@ describe("WidgetStateComponent", () => {
     render("ready");
     expect(fixture.nativeElement.querySelector("mat-progress-spinner")).toBeNull();
     expect(fixture.nativeElement.querySelector(".widget-state-status")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    render("loading");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

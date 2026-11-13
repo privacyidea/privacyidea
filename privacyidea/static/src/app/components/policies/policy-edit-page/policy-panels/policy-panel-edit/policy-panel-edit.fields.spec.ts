@@ -29,6 +29,7 @@ import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.com
 import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
 import { PolicyScopeEditComponent } from "./policy-scope-edit/policy-scope-edit.component";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-edit-action-tab", standalone: true, template: "" })
 class StubActionTab {
@@ -178,5 +179,11 @@ describe("PolicyPanelEditComponent with its fields", () => {
 
       expect(component.valid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

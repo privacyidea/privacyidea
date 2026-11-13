@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import copy
 import json
+import string
 from unittest import mock
 
 from flask import g, request
@@ -14,13 +15,14 @@ from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass, get_policies
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.serviceid import set_serviceid
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.token import (get_tokens_from_serial_or_user,
                                    get_tokeninfo)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
@@ -1094,3 +1096,43 @@ class APIContainerTemplate(APIContainerTest):
             g.logged_in_user = {"role": "user", "username": user.login, "realm": user.realm,
                                 "resolver": user.resolver}
             return create_container_tokens_from_template(container_serial, template_tokens, request, "user")
+
+    def test_32_create_container_with_template_applspec_password_follows_policies(self):
+        # The token parameters of a template can not define the generated password of an application specific
+        # password token: the length and contents are taken from the policies or the defaults of the token class.
+        set_serviceid("mail", "the service of the token below")
+        template_params = {"name": "applspec",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "applspec", "genkey": True,
+                                                            "service_id": "mail",
+                                                            "applspec.length": 4,
+                                                            "applspec.contents": "[0]"}]}}
+        containers = []
+
+        def get_password():
+            request_params = json.dumps({"type": "generic", "template": template_params})
+            result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            containers.append(container)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            return result["result"]["value"]["tokens"][tokens[0].get_serial()]["password"]
+
+        try:
+            # Without a policy the default length is used
+            password = get_password()
+            self.assertEqual(ApplicationSpecificPasswordTokenClass.default_length, len(password), password)
+            self.assertTrue(set(password) - {"0"}, password)
+
+            set_policy("applspec_password", scope=SCOPE.ENROLL, action="applspec.length=16, applspec.contents=-s")
+            password = get_password()
+            self.assertEqual(16, len(password), password)
+            self.assertTrue(set(password) <= set(string.ascii_letters + string.digits), password)
+        finally:
+            for container in containers:
+                for token in container.get_tokens():
+                    token.delete_token()
+                container.delete()
+            if get_policies(name="applspec_password"):
+                delete_policy("applspec_password")
+            delete_serviceid("mail")
