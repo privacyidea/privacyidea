@@ -21,7 +21,6 @@ import base64
 import binascii
 import os
 import pathlib
-import tempfile
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -67,24 +66,24 @@ def encrypt_enckey(ctx, encfile, outfile, password):
     if outfile == "-":
         click.echo(res)
         return
-    # The output is written to a new file next to the target, which then replaces the target. So the target, which
-    # can also be the key file itself, is never left half written. mkstemp creates the file only readable by its owner.
-    out_path = pathlib.Path(outfile).resolve()
-    tmp_name = None
+    out_path = pathlib.Path(outfile)
+    # Writing the encrypted key into the key file itself would destroy the key, if writing fails
+    if out_path.exists():
+        key_stat = os.fstat(encfile.fileno())
+        out_stat = out_path.stat()
+        if (key_stat.st_dev, key_stat.st_ino) == (out_stat.st_dev, out_stat.st_ino):
+            click.secho("Error: The encrypted key can not be written to the key file itself. Write it to another "
+                        "file and point PI_ENCFILE to it.", fg="red", err=True)
+            ctx.exit(1)
+    # A new file is only readable by its owner. An existing file keeps its owner and permissions, which the server
+    # may need to read it.
     try:
-        fd, tmp_name = tempfile.mkstemp(dir=out_path.parent, prefix=f".{out_path.name}.")
-        with os.fdopen(fd, "w") as f:
+        with os.fdopen(os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
             f.write(res)
             f.write('\n')
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_name, out_path)
     except OSError as e:
-        if tmp_name:
-            pathlib.Path(tmp_name).unlink(missing_ok=True)
         click.secho(f"Error: Could not write the encrypted key to {out_path}: {e}", fg="red", err=True)
         ctx.exit(1)
-    click.secho(f"The file permission of {out_path} was set to 600!", fg="yellow", err=True)
 
 
 @setup_cli.command("create_enckey")

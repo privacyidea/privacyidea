@@ -110,8 +110,10 @@ key to standard output or to the file given with ``-o``::
 
    pi-manage setup encrypt_enckey /etc/privacyidea/enckey -o /etc/privacyidea/enckey.enc
 
-The file given with ``-o`` gets the permissions ``0600``. Make sure it is owned
-by the user privacyIDEA runs as. Point ``PI_ENCFILE`` to the encrypted file. The server recognizes an encrypted
+A new file given with ``-o`` gets the permissions ``0600``. Make sure it is
+owned by the user privacyIDEA runs as. An existing file keeps its owner and
+permissions. ``-o`` can not be the key file itself. Point ``PI_ENCFILE`` to the
+encrypted file. The server recognizes an encrypted
 key and waits for the passphrase after every start. The passphrase unlocks the
 key only in the server process that receives it (``POST /system/hsm``), which
 then keeps the decrypted key in memory: with several server processes (WSGI
