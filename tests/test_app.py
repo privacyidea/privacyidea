@@ -547,3 +547,17 @@ class DockerAppFactoryTestCase(unittest.TestCase):
         self.assertEqual("SELECT 1 FROM DUAL", str(statement.compile(dialect=oracle.dialect())))
         for dialect in (mysql.dialect(), postgresql.dialect(), sqlite.dialect()):
             self.assertEqual("SELECT 1", str(statement.compile(dialect=dialect)), dialect.name)
+
+    def test_03_connection_check_logs_the_url_without_the_password(self) -> None:
+        database_uri = "mysql+pymysql://pi:TopSecret123@db.example.org/pi"
+        with (docker_app_environment({"PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": database_uri}),
+              mock.patch("privacyidea.app._setup_logging"),
+              mock.patch.object(db.session, "execute", side_effect=FactoryStopped),
+              self.assertLogs("privacyidea.app", level=logging.DEBUG) as logs):
+            with self.assertRaisesRegex(RuntimeError, "Could not connect to database") as error:
+                create_docker_app()
+        output = "\n".join(logs.output)
+        self.assertIn("Test Database using URL 'mysql+pymysql://pi:***@db.example.org/pi'", output)
+        self.assertNotIn("TopSecret123", output)
+        # The error of the database is the cause of the RuntimeError
+        self.assertIsInstance(error.exception.__cause__, FactoryStopped)
