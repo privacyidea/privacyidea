@@ -1483,6 +1483,23 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertIn("already exists", result.output, result.output)
             self.assertEqual("-- dump of the first backup\n", other_dump.read_text())
 
+    def test_18e_archive_in_the_config_directory_does_not_contain_itself(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            (config_dir / "pi.cfg").write_text("# config\n")
+            backup_dir = config_dir / "backup"
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+            self.assertEqual(0, result.exit_code, result.output)
+            archive = next(backup_dir.glob("*.tgz"))
+            with tarfile.open(archive) as tf:
+                names = tf.getnames()
+            self.assertFalse([name for name in names if name.endswith(".tgz")], names)
+            self.assertTrue([name for name in names if name.endswith("pi.cfg")], names)
+
     def test_18d_dump_is_only_readable_by_its_owner(self):
         # The dump holds the token seeds unencrypted, also inside the archive
         with tempfile.TemporaryDirectory() as tmp_dir:

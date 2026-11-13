@@ -171,7 +171,8 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
             else:
                 _dump_postgresql(url, sqlfile)
 
-            with tarfile.open(fileobj=archive, mode="w:gz") as tf:
+            # With the name, tarfile skips the archive itself, if it lies in a directory that is added
+            with tarfile.open(name=backup_file, fileobj=archive, mode="w:gz") as tf:
                 tf.add(sqlfile)
                 if radius_dir:
                     # Simply append the radius directory to the backup command
