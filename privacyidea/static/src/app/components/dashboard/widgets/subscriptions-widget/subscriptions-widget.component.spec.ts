@@ -30,6 +30,7 @@ import { MockSubscriptionService } from "@testing/mock-services/mock-subscriptio
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { SubscriptionsWidgetComponent } from "./subscriptions-widget.component";
+import { axe } from "@testing/axe";
 
 function status(overrides: Partial<SubscriptionStatus> & { application: string }): SubscriptionStatus {
   return {
@@ -543,5 +544,11 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(component["expiryNote"](status({ application: "freeradius", subscription: "none" }))).toBe(
       "no subscription"
     );
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { hasInfoContent, InfoCell } from "./info-cell";
+import { axe } from "@testing/axe";
 
 describe("InfoCell", () => {
   let component: InfoCell;
@@ -143,5 +144,11 @@ describe("InfoCell", () => {
       "challenge_response=hotp"
     ]);
     expect(fixture.nativeElement.querySelector(".info-group .info-key").textContent).toBe("Policies applied");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

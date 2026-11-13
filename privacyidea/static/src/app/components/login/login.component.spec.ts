@@ -45,6 +45,7 @@ import { MockUserSettingsService } from "@testing/mock-services/mock-user-settin
 import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
 import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
+import { axe } from "@testing/axe";
 
 const visibleText = (button: HTMLElement): string =>
   button.textContent?.replace(button.querySelector("mat-icon")?.textContent ?? "", "").trim() ?? "";
@@ -566,6 +567,10 @@ describe("LoginComponent", () => {
       jest.useFakeTimers();
     });
 
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it("should start polling when a push challenge is received", async () => {
       const pollSpy = jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
@@ -929,5 +934,11 @@ describe("LoginComponent password reset link", () => {
     fixture.componentInstance.showOtpField.set(true);
     fixture.detectChanges();
     expect(resetLink()).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { DetailFieldComponent } from "./detail-field.component";
 import { DetailsEditRegistry } from "../field-editing/details-edit-registry.service";
+import { axe } from "@testing/axe";
 
 interface DetailFieldInternals {
   field: EditableField;
@@ -100,5 +101,11 @@ describe("DetailFieldComponent", () => {
     fixture.destroy();
 
     expect(registry.anyEditing()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -27,6 +27,7 @@ import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-tim
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { AdministrationWidgetComponent } from "./administration-widget.component";
+import { axe } from "@testing/axe";
 
 const ADMIN_AREAS = ["system", "resolver", "realm", "policy", "event"];
 
@@ -214,5 +215,11 @@ describe("AdministrationWidgetComponent", () => {
 
     component.sort.toggle("administrator");
     expect(component.sortedEntries().map((entry) => entry.administrator)).toEqual(["amy", "bob"]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

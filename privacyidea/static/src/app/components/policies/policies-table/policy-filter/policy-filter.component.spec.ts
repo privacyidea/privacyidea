@@ -14,6 +14,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { PolicyFilterComponent } from "./policy-filter.component";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-clearable-input", standalone: true, template: "<ng-content></ng-content>" })
 class MockClearableInput {
@@ -51,5 +52,11 @@ describe("PolicyFilterComponent", () => {
     // Second call with same rawValue: ignored
     component.updateFilterManually(filter);
     expect(setSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

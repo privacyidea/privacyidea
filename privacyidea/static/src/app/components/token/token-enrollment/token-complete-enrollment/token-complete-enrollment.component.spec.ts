@@ -32,6 +32,7 @@ import { MockTokenService } from "@testing/mock-services/mock-token-service";
 
 import { of } from "rxjs";
 import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
+import { axe } from "@testing/axe";
 
 describe("TokenCompleteEnrollmentComponent", () => {
   let component: TokenCompleteEnrollmentComponent;
@@ -199,5 +200,11 @@ describe("TokenCompleteEnrollmentComponent", () => {
       expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
       expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

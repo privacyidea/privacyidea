@@ -27,6 +27,7 @@ import { touchAll } from "@utils/form-state.utils";
 import { of } from "rxjs";
 import { HttpConfigComponent } from "./http-config/http-config.component";
 import { HttpResolverComponent } from "./http-resolver.component";
+import { axe } from "@testing/axe";
 
 describe("HttpResolverComponent", () => {
   let component: HttpResolverComponent;
@@ -609,5 +610,11 @@ describe("HttpResolverComponent", () => {
       );
       expect(component.model().config_user_auth.endpoint).toBe("");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

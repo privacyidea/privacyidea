@@ -21,6 +21,7 @@ import { provideRouter } from "@angular/router";
 import { U2fConfigComponent } from "@components/configuration/token-type-config/token-types/u2f-config/u2f-config.component";
 import { U2F_APP_ID } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 describe("U2fConfigComponent", () => {
   let fixture: ComponentFixture<U2fConfigComponent>;
@@ -100,5 +101,12 @@ describe("U2fConfigComponent", () => {
     await type("https://pi.server.com/");
     expect(warnings()).toEqual(['The AppID must not end with a "/".']);
     expect(configForm.form().valid()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -24,6 +24,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { MockTokenService } from "../../../../../testing/mock-services";
 import { TokenService, TokenType } from "../../../../services/token/token.service";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector.component";
+import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentTypeSelectorComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentTypeSelectorComponent>;
@@ -198,5 +199,11 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       expect(emitSpy).toHaveBeenCalledTimes(1);
       sub.unsubscribe();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -46,6 +46,7 @@ import { provideRouter } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { LockedUserEntry } from "@services/conditional-access-state/conditional-access-state.service";
 import { grantRights, toolbarAction, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 // A local database admin: the login name is the whole identity, so it stands in uid with no resolver or realm
 // beside it, and the role is what tells that row apart from an ordinary user's.
@@ -540,5 +541,11 @@ describe("LockedUsersComponent", () => {
 
       expect(casService.purgeUserLocks).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

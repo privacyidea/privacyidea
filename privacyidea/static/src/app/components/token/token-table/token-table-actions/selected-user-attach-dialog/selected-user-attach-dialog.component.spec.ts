@@ -31,6 +31,7 @@ import { UserData, UserService } from "@services/user/user.service";
 import { MockAuthService, MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
 import { ERR } from "@utils/form-rules.utils";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
+import { axe } from "@testing/axe";
 
 const testUser = { username: "testuser" } as UserData;
 
@@ -349,5 +350,11 @@ describe("SelectedUserAssignDialogComponent", () => {
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector(".inline-warning")).not.toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

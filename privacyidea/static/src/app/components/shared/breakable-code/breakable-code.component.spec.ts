@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BreakableCodeComponent } from "./breakable-code.component";
+import { axe } from "@testing/axe";
 
 describe("BreakableCodeComponent", () => {
   let fixture: ComponentFixture<BreakableCodeComponent>;
@@ -58,5 +59,11 @@ describe("BreakableCodeComponent", () => {
 
   it("renders nothing for a missing value", () => {
     expect(render(null).textContent).toBe("");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

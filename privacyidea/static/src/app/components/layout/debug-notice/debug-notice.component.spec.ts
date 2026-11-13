@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService, LogLevel } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
 import { DebugNoticeComponent } from "./debug-notice.component";
+import { axe } from "@testing/axe";
 
 describe("DebugNoticeComponent", () => {
   let mockAuthService: MockAuthService;
@@ -128,5 +129,11 @@ describe("DebugNoticeComponent", () => {
     expect(component.dismissed()).toBe(true);
     expect(component.visible()).toBe(false);
     expect(fixture.nativeElement.querySelector(".debug-ribbon")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

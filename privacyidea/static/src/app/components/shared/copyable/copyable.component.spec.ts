@@ -20,6 +20,7 @@ import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { CopyableComponent } from "./copyable.component";
+import { axe } from "@testing/axe";
 
 @Component({
   standalone: true,
@@ -75,5 +76,11 @@ describe("CopyableComponent", () => {
     fixture.detectChanges();
 
     expect(actions().querySelector("app-copy-button")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

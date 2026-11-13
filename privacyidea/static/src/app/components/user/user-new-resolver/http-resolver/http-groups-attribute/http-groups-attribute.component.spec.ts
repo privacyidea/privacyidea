@@ -24,6 +24,7 @@ import { MatSelect } from "@angular/material/select";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { By } from "@angular/platform-browser";
 import { HttpGroupsAttributeComponent, UserGroupsModel, userGroupsRules } from "./http-groups-attribute.component";
+import { axe } from "@testing/axe";
 
 const initialModel: UserGroupsModel = {
   active: false,
@@ -152,5 +153,11 @@ describe("HttpGroupsAttributeComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain("{realm}");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
