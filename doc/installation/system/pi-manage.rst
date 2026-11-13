@@ -142,11 +142,15 @@ later upgrades know where to start. ``-n`` skips the stamp. Stamp such a
 database with ``pi-manage db stamp head`` before installing a newer version:
 ``privacyidea-schema-upgrade`` stops on a database without stamp.
 
-.. warning:: Run ``create_tables`` only on an empty database. On the database
-   of an older privacyIDEA version it only adds the missing tables, leaves the
-   existing ones unchanged and then stamps the newest revision, so the schema
-   migrations of the upgrade are skipped. Upgrade an existing database with
-   ``pi-manage db upgrade``, see :ref:`pimanage_db`.
+``create_tables`` stops on a database that holds privacyIDEA tables or a
+schema revision stamp. On such a database, the command only adds the missing
+tables, leaves the existing ones unchanged and then stamps the newest revision,
+so the schema upgrade skips the migrations that the database needs. Upgrade an
+existing database with ``pi-manage db upgrade``, see :ref:`pimanage_db`.
+
+.. warning:: ``-f``/``--force`` runs the command on such a database anyway.
+   Use it only if you know that the existing tables match the installed
+   version.
 
 PGP keys
 ~~~~~~~~
