@@ -1844,6 +1844,16 @@ class TestPIManageSetupClass:
             assert result.exit_code == 0, result.output
             assert enckey.read_bytes() == valid_key
 
+    def test_08c_create_enckey_creates_the_key_file_read_only(self, app, tmp_path):
+        # The key file is created with its final permissions, it is never readable for others in between
+        enckey = tmp_path / "enckey"
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}), \
+                mock.patch.object(pathlib.Path, "chmod"):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "create_enckey"])
+        assert result.exit_code == 0, result.output
+        assert enckey.stat().st_mode & 0o777 == 0o400
+        assert len(enckey.read_bytes()) == 96
+
     def test_08b_create_enckey_accepts_a_wrapped_base64_key(self, app, tmp_path):
         # The base64 command wraps its output after 76 characters
         enckey = tmp_path / "enckey"
@@ -1883,6 +1893,26 @@ class TestPIManageSetupClass:
         assert result.exit_code == 0, result.output
         assert DefaultSecurityModule.password_decrypt(enckey.read_text().strip(), "test1234") == key
         assert enckey.stat().st_mode & 0o777 == 0o600
+
+        # Also the read-only key file, which create_enckey writes, can be replaced by its owner
+        enckey.write_bytes(key)
+        enckey.chmod(0o400)
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(enckey),
+                                           "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(enckey.read_text().strip(), "test1234") == key
+
+    def test_09d_encrypt_enckey_keeps_the_key_file_if_writing_fails(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        with mock.patch("privacyidea.cli.pimanage.pi_setup.os.fsync", side_effect=OSError("No space left on device")):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                              "-o", str(enckey), "--password", "test1234"])
+        assert result.exit_code == 1, result.output
+        assert "No space left on device" in result.output
+        assert enckey.read_bytes() == key
+        assert [enckey] == list(tmp_path.iterdir())
 
     def test_09c_encrypt_enckey_writes_to_stdout(self, app, tmp_path):
         enckey = tmp_path / "enckey"
