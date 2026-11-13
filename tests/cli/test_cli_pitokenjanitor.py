@@ -40,6 +40,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import get_version_number
 from privacyidea.models import db, TokenContainerOwner
 from privacyidea.models.token import TokenOwner
 from ..base import _reset_database
@@ -216,6 +217,13 @@ def orphaned_token(app):
 
 
 class TestPiTokenJanitorFind:
+    def test_version(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["--version"])
+        assert result.exit_code == 0, result.output
+        assert f"privacyIDEA {get_version_number()}" in result.output
+        assert runner.invoke(cli, ["-h"]).output.count("--version") == 1
+
     def test_find_no_args(self, app, tokens):
         """
         Tests that `find list` with no arguments returns all tokens.
