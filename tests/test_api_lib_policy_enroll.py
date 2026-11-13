@@ -1134,6 +1134,11 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("registration.length"), "6")
         self.assertEqual(req.all_data.get("registration.contents"), "+n")
+        # The token type of the request is compared in lower case
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "REGISTRATION"}
+        init_token_length_contents(req)
+        self.assertEqual("6", req.all_data.get("registration.length"))
+        self.assertEqual("+n", req.all_data.get("registration.contents"))
         # delete policy
         delete_policy("reg_length")
         delete_policy("reg_contents")
@@ -1169,6 +1174,16 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Check, if the tokenlabel was added
         self.assertEqual(req.all_data.get("pw.length"), "6")
         self.assertEqual(req.all_data.get("pw.contents"), "+n")
+        # The token type of the request is compared in lower case
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "PW"}
+        init_token_length_contents(req)
+        self.assertEqual("6", req.all_data.get("pw.length"))
+        self.assertEqual("+n", req.all_data.get("pw.contents"))
+        # request without a token type, that creates an HOTP token
+        req.all_data = {"user": "cornelius", "realm": "home", "genkey": "1"}
+        init_token_length_contents(req)
+        self.assertNotIn("pw.length", req.all_data)
+        self.assertNotIn("pw.contents", req.all_data)
         # request, that creates a different token type
         req.all_data = {"user": "cornelius", "realm": "home", "type": "hotp", "genkey": "1"}
         init_token_length_contents(req)

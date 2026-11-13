@@ -882,7 +882,8 @@ def init_token_length_contents(request=None, action=None):
     no_content_policy = True
     no_length_policy = True
     params = request.all_data
-    tokentype = params.get("type")
+    # Token types are stored in lower case, so the type of the request is compared in lower case
+    tokentype = (params.get("type") or "hotp").lower()
 
     if tokentype == 'registration':
         from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS

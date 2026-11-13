@@ -1086,6 +1086,16 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
         delete_policy("pol_session_persistence")
 
+        # The WebUI gets the token types of the require_description policy in lower case, as the token types
+        # it compares them with
+        self.assertEqual([], new_response.json["result"]["value"]["require_description"])
+        set_policy(name="pol_require_description", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.REQUIRE_DESCRIPTION}=HOTP TOTP")
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(["hotp", "totp"], sorted(new_response.json["result"]["value"]["require_description"]))
+        delete_policy("pol_require_description")
+
     def test_08b_get_webui_settings_session_persistence_per_principal(self):
         # The whole point of the policy is that it can differ per principal
         self.setUp_user_realms()
