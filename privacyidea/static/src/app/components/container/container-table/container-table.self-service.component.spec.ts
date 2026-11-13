@@ -23,6 +23,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -40,6 +41,7 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
@@ -63,6 +65,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },

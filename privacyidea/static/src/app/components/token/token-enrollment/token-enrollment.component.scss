@@ -11,3 +11,7 @@
 .token-enrollment-fixed-width {
   width: calc(948px + 16px + 2 * 16px);
 }
+
+.create-container-option {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}

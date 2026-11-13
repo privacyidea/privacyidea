@@ -266,9 +266,10 @@ The list of the token modules you want to add, must be specified in ``pi.cfg``.
 See :ref:`picfg_3rd_party_tokens`.
 
 The current WebUI has enrollment forms only for the token types that come with
-privacyIDEA. A token type added with ``PI_TOKEN_MODULES`` can appear in its list of token
-types, but enrolling it there fails with "Enrollment action is not available for the
-selected token type.". Enroll such tokens through the API (``POST /token/init`` with
+privacyIDEA. A token type added with ``PI_TOKEN_MODULES`` is still listed in the
+token types, but it is greyed out and marked with an info icon. A tooltip explains
+that enrollment is not available for this token type, and the type can not be
+selected. Enroll such tokens through the API (``POST /token/init`` with
 ``type=<tokentype>``, see :ref:`rest_token`) or in the previous WebUI.
 
 Custom Web UI

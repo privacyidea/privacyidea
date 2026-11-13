@@ -371,6 +371,32 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it.each([
+      { name: "offers to create the first realm when the admin may, linking to the realm table", rights: ["tokenlist", "userlist", "resolverwrite"], offered: true },
+      { name: "does not offer realm creation without the resolverwrite right", rights: null, offered: false }
+    ])("$name", ({ rights, offered }) => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      if (rights) {
+        authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      }
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      const button = fixture2.nativeElement.querySelector("button.create-realm");
+      expect(fixture2.componentInstance.noRealm()).toBe(true);
+      if (offered) {
+        expect(button).not.toBeNull();
+        expect(button.textContent).toContain("Create realm");
+      } else {
+        expect(button).toBeNull();
+      }
+      fixture2.destroy();
+    });
+
     it("reads the realm from the widget instance settings", () => {
       const scoped: WidgetInstance = { ...instance, settings: { realm: "realm1" } };
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);

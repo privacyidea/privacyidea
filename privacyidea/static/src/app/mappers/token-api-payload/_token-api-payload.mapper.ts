@@ -116,6 +116,7 @@ export interface TokenEnrollmentPayload {
   validity_period_start?: string;
   validity_period_end?: string;
   user?: string | boolean;
+  change_pin_on_first_use?: boolean;
   realm?: string;
   pin?: string;
   rollover?: boolean;
