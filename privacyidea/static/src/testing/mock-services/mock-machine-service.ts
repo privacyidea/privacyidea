@@ -41,6 +41,8 @@ export class MockMachineService implements MachineServiceInterface {
   hiddenApiFilterKeys: string[] = [];
   apiFilterKeyMap: Record<string, string> = {};
   exactMatchKeys = new Set<string>();
+  keepEmptyKeys = new Set<string>();
+  presenceKeys = new Set<string>();
   isExactMatchKey = jest.fn().mockReturnValue(false);
   allFilterKeys: Signal<string[]> = signal([
     ...this.apiFilterKeys,

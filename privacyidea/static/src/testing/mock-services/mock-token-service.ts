@@ -117,6 +117,8 @@ export class MockTokenService implements TokenServiceInterface {
     ...this.hiddenApiFilterKeys
   ]);
   exactMatchKeys = new Set<string>();
+  keepEmptyKeys = new Set<string>(["container_serial"]);
+  presenceKeys = new Set<string>(["tokenrealm"]);
   booleanKeys = new Set<string>();
   caseNotes: Record<string, FilterCaseNote> = {};
   sort = signal<Sort>({ active: "serial", direction: "asc" });

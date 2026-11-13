@@ -353,6 +353,24 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it("writes no tokenrealm entry into the preset filter when there is no realm", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.realm()).toBe("");
+      fixture2.componentInstance.showUnassigned();
+      const filter = tokenMock.presetFilter();
+      expect(filter?.getValueOfKey("assigned")).toBe("False");
+      expect(filter?.hasKey("tokenrealm")).toBe(false);
+      expect(filter?.isExactKey("tokenrealm")).toBe(false);
+      fixture2.destroy();
+    });
+
     it("says so when there is no realm at all, instead of counting every realm", () => {
       TestBed.inject(DashboardDataStore).invalidate();
       realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));

@@ -31,6 +31,8 @@ export class MockAuditService implements AuditServiceInterface {
   advancedApiFilterKeys = ["machineid", "resolver"];
   hiddenApiFilterKeys: string[] = [];
   exactMatchKeys = new Set<string>();
+  keepEmptyKeys = new Set<string>();
+  presenceKeys = new Set<string>();
   allFilterKeys: Signal<string[]> = signal([
     ...this.apiFilterKeys,
     ...this.advancedApiFilterKeys,

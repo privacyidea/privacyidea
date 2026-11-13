@@ -494,6 +494,45 @@ describe("ContainerService", () => {
     expect(containerService.filterParams()).toEqual({ realm: "realm1", container_realm: "realm2" });
   });
 
+  it("filterParams sends container_realm=* for a typed wildcard and container_realm= for a quoted empty value", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm: *" }));
+    expect(containerService.filterParams()).toEqual({ container_realm: "*" });
+
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm: **" }));
+    expect(containerService.filterParams()).toEqual({ container_realm: "*" });
+
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm: \"\"" }));
+    expect(containerService.filterParams()).toEqual({ container_realm: "" });
+  });
+
+  it("filterParams sends no container_realm for a bare keyword the user is still typing", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm:" }));
+    expect(containerService.filterParams()).toEqual({});
+  });
+
+  it("filterParams lets a wildcard entry in a container_realm list dominate the named realms", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm: *,realm1" }));
+    expect(containerService.filterParams()).toEqual({ container_realm: "*" });
+
+    containerService.activeFilter.set(new FilterValue({ value: "container_realm: realm1,*" }));
+    expect(containerService.filterParams()).toEqual({ container_realm: "*" });
+  });
+
+  it("filterParams keeps the wildcard and the quoted empty value meaning no filter for every other key", () => {
+    containerService.activeFilter.set(
+      new FilterValue({ value: "container_realm: * container_serial: * description: \"\" realm: **" })
+    );
+    expect(containerService.filterParams()).toEqual({ container_realm: "*" });
+  });
+
+  it("filterParams sends no container_serial for an empty container_serial, bare or quoted", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "container_serial:" }));
+    expect(containerService.filterParams()).toEqual({});
+
+    containerService.activeFilter.set(new FilterValue({ value: "container_serial: \"\"" }));
+    expect(containerService.filterParams()).toEqual({});
+  });
+
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
     containerService.eventPageSize.set(-1);
     expect(containerService.pageSize()).toBe(10);
@@ -838,14 +877,9 @@ describe("ContainerService", () => {
   });
 
   it("should not include empty filter values in filterParams", () => {
-    containerService.activeFilter.set({
-      filterMap: new Map([
-        ["container_serial", ""],
-        ["type", "generic"],
-        ["user", "   "],
-        ["token_serial", "*"]
-      ])
-    } as unknown as FilterValue);
+    containerService.activeFilter.set(
+      new FilterValue({ value: "container_serial: type: generic user: \"   \" token_serial: *" })
+    );
 
     const params = containerService.filterParams();
     expect(params).not.toHaveProperty("container_serial");
