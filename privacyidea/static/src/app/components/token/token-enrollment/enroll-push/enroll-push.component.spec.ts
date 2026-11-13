@@ -37,6 +37,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPushComponent } from "./enroll-push.component";
+import { axe } from "@testing/axe";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {
@@ -363,5 +364,11 @@ describe("EnrollPushComponent", () => {
       expect(component.reopenDialog()).toBeUndefined();
       expect(tokenService.stopPolling).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

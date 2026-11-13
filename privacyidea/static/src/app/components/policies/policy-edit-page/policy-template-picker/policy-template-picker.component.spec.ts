@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PolicyTemplatesService } from "@services/policy-templates/policy-templates.service";
 import { MockPolicyTemplatesService } from "@testing/mock-services/mock-policy-templates-service";
 import { PolicyTemplatePickerComponent } from "./policy-template-picker.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyTemplatePickerComponent", () => {
   let fixture: ComponentFixture<PolicyTemplatePickerComponent>;
@@ -145,5 +146,11 @@ describe("PolicyTemplatePickerComponent", () => {
 
     expect(emitSpy).not.toHaveBeenCalled();
     expect(component.isExpanded()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

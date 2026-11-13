@@ -24,6 +24,7 @@ import { EnrollVascoComponent } from "./enroll-vasco.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollVascoComponent", () => {
   let component: EnrollVascoComponent;
@@ -58,5 +59,11 @@ describe("EnrollVascoComponent", () => {
     expect(component.useVascoSerialForm().dirty()).toBe(true);
     expect(component.vascoSerialForm().disabled()).toBe(false);
     expect(component.otpKeyForm().disabled()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

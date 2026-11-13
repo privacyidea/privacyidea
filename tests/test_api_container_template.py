@@ -4,6 +4,7 @@ import base64
 import binascii
 import copy
 import json
+import string
 from unittest import mock
 
 from flask import g, request
@@ -16,13 +17,14 @@ from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass, get_policies
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.serviceid import set_serviceid
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.token import (get_tokens, get_tokens_from_serial_or_user,
                                    get_tokeninfo)
 from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
@@ -1097,6 +1099,46 @@ class APIContainerTemplate(APIContainerTest):
                                 "resolver": user.resolver}
             return create_container_tokens_from_template(container_serial, template_tokens, request, "user")
 
+    def test_32_create_container_with_template_applspec_password_follows_policies(self):
+        # The token parameters of a template can not define the generated password of an application specific
+        # password token: the length and contents are taken from the policies or the defaults of the token class.
+        set_serviceid("mail", "the service of the token below")
+        template_params = {"name": "applspec",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "applspec", "genkey": True,
+                                                            "service_id": "mail",
+                                                            "applspec.length": 4,
+                                                            "applspec.contents": "[0]"}]}}
+        containers = []
+
+        def get_password():
+            request_params = json.dumps({"type": "generic", "template": template_params})
+            result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            containers.append(container)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            return result["result"]["value"]["tokens"][tokens[0].get_serial()]["password"]
+
+        try:
+            # Without a policy the default length is used
+            password = get_password()
+            self.assertEqual(ApplicationSpecificPasswordTokenClass.default_length, len(password), password)
+            self.assertTrue(set(password) - {"0"}, password)
+
+            set_policy("applspec_password", scope=SCOPE.ENROLL, action="applspec.length=16, applspec.contents=-s")
+            password = get_password()
+            self.assertEqual(16, len(password), password)
+            self.assertTrue(set(password) <= set(string.ascii_letters + string.digits), password)
+        finally:
+            for container in containers:
+                for token in container.get_tokens():
+                    token.delete_token()
+                container.delete()
+            if get_policies(name="applspec_password"):
+                delete_policy("applspec_password")
+            delete_serviceid("mail")
+
     def _init_generic_container_with_template(self, tokens: list) -> dict:
         template_params = {"name": "tmpl_postpolicies",
                            "container_type": "generic",
@@ -1113,7 +1155,7 @@ class APIContainerTemplate(APIContainerTest):
             for token in get_tokens(serial=serial):
                 token.delete_token()
 
-    def test_32_create_container_with_template_reports_token_failing_postpolicies(self):
+    def test_33_create_container_with_template_reports_token_failing_postpolicies(self):
         self.setUp_user_realms()
         hotp_serial = "TMPLREPORT26A"
         totp_serial = "TMPLREPORT26B"
@@ -1156,7 +1198,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("verify_hotp_report")
             self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
 
-    def test_33_create_container_with_template_reports_token_failing_prepolicies_or_init(self):
+    def test_34_create_container_with_template_reports_token_failing_prepolicies_or_init(self):
         self.setUp_user_realms()
         hotp_serial = "TMPLREPORT27A"
         tiqr_serial = "TMPLREPORT27B"
@@ -1184,7 +1226,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("require_desc_hotp")
             self._cleanup_container_and_tokens(container_serial, [hotp_serial, tiqr_serial, totp_serial])
 
-    def test_34_create_container_with_template_without_errors_omits_tokens_not_created(self):
+    def test_35_create_container_with_template_without_errors_omits_tokens_not_created(self):
         self.setUp_user_realms()
         hotp_serial = "TMPLREPORT28A"
         totp_serial = "TMPLREPORT28B"
@@ -1212,7 +1254,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("pin_first_use_ok")
             self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
 
-    def test_35_create_container_with_template_removes_token_failing_pin_change_policy(self):
+    def test_36_create_container_with_template_removes_token_failing_pin_change_policy(self):
         self.setUp_user_realms()
         hotp_serial = "TMPLREPORT29A"
         totp_serial = "TMPLREPORT29B"
@@ -1241,7 +1283,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("pin_first_use_failing")
             self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
 
-    def test_36_create_container_with_template_existing_serial_is_disabled_on_postpolicy_error(self):
+    def test_37_create_container_with_template_existing_serial_is_disabled_on_postpolicy_error(self):
         self.setUp_user_realms()
         existing_serial = "TMPLEXIST30A"
         totp_serial = "TMPLEXIST30B"
@@ -1269,7 +1311,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("verify_hotp_exist")
             self._cleanup_container_and_tokens(container_serial, [existing_serial, totp_serial])
 
-    def test_37_create_container_with_template_hides_internal_error_details(self):
+    def test_38_create_container_with_template_hides_internal_error_details(self):
         self.setUp_user_realms()
         hotp_serial = "TMPLINTERNAL31"
         container_serial = None

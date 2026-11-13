@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockSmsGateways = ["gateway1", "gateway2", "gateway3"];
 
@@ -203,5 +204,12 @@ describe("SmsConfigComponent", () => {
     fixture.componentRef.setInput("expanded", false);
     fixture.detectChanges();
     expect(component.expanded()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

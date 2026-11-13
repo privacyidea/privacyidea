@@ -47,6 +47,7 @@ import { of, Subject, throwError } from "rxjs";
 import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
 import { ConditionalAccessWidgetComponent, RESTRICTION_KINDS } from "./conditional-access-widget.component";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { axe } from "@testing/axe";
 
 const instance: WidgetInstance = {
   id: "conditional-access-1",
@@ -884,5 +885,12 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(component.refreshFailed()).toBe(false);
       expect(component.summary().highlights.map((entry) => entry.label)).toEqual(["10.0.0.7"]);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

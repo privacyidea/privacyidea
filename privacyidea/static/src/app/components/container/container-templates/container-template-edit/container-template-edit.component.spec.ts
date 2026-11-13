@@ -41,6 +41,7 @@ import {
   MockTokenService
 } from "../../../../../testing/mock-services";
 import { ContainerTemplateEditComponent } from "./container-template-edit.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateEditComponent", () => {
   let component: ContainerTemplateEditComponent;
@@ -394,6 +395,12 @@ describe("ContainerTemplateEditComponent", () => {
       fixture.detectChanges();
       expect(component.template().container_type).toBe("smartphone");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

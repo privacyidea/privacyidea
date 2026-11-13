@@ -33,6 +33,7 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService, MockDialogService, MockSmtpService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;
@@ -291,5 +292,11 @@ describe("SmtpServersComponent", () => {
       expect(state.querySelector("button")).toBeNull();
       expect(state.textContent).not.toContain("Create an SMTP server to send emails and one-time passwords.");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

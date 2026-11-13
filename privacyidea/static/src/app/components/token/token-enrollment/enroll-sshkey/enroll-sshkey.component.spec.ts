@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollSshkeyComponent } from "./enroll-sshkey.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("EnrollSshkeyComponent", () => {
   let component: EnrollSshkeyComponent;
@@ -45,5 +46,11 @@ describe("EnrollSshkeyComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

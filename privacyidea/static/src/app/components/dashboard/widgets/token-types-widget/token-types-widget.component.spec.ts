@@ -28,6 +28,7 @@ import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { tokenTypes } from "@utils/token.utils";
 import { of, Subject, throwError } from "rxjs";
 import { TokenTypesWidgetComponent } from "./token-types-widget.component";
+import { axe } from "@testing/axe";
 
 function makeCountResponse(count: number) {
   return {
@@ -513,5 +514,11 @@ describe("TokenTypesWidgetComponent", () => {
       { key: "totp", name: "TOTP", count: 12 }
     ]);
     fixture2.destroy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

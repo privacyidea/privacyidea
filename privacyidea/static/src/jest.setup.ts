@@ -17,11 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import "@angular/localize/init";
+import { toHaveNoViolations } from "jest-axe";
 import { setupZonelessTestEnv } from "jest-preset-angular/setup-env/zoneless";
 import { webcrypto } from "node:crypto";
 import { deserialize, serialize } from "node:v8";
 
 setupZonelessTestEnv();
+expect.extend(toHaveNoViolations);
 
 // jsdom provides no `crypto.subtle`, so tests fall back to Node's webcrypto. Node's
 // implementation rejects ArrayBuffers/views created in the jsdom realm with

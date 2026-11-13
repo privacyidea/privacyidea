@@ -30,6 +30,7 @@ import { MockContainerService, MockContentService } from "@testing/mock-services
 import { ContainerTokenNotCreated } from "@services/container/container.service";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
@@ -217,6 +218,12 @@ describe("ContainerCreatedDialogComponent", () => {
         expect(title()).toBe("Container Successfully Created");
       }
     );
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

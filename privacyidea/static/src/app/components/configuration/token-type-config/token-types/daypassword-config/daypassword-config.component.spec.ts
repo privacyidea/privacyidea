@@ -23,6 +23,7 @@ import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.con
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { touchAll } from "@utils/form-state.utils";
 import { DaypasswordConfigComponent } from "./daypassword-config.component";
+import { axe } from "@testing/axe";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
 
@@ -126,5 +127,12 @@ describe("DaypasswordConfigComponent", () => {
       expect(errors()).toEqual([]);
       expect(configForm.form().valid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

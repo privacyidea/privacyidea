@@ -34,6 +34,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockServiceIdService } from "@testing/mock-services/mock-service-id-service";
 import { of } from "rxjs";
 import { NewServiceIdComponent } from "./new-service-id.component";
+import { axe } from "@testing/axe";
 
 describe("NewServiceIdComponent", () => {
   let component: NewServiceIdComponent;
@@ -331,6 +332,12 @@ describe("NewServiceIdComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

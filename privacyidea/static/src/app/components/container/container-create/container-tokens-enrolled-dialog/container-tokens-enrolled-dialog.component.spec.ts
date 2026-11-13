@@ -32,6 +32,7 @@ import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { of } from "rxjs";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 const dialogClose = jest.fn();
 const dialogRefMock = { close: dialogClose };
@@ -369,5 +370,11 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
 
       expect(el.querySelector('[data-testid="tokens-not-created"]')).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SimpleConfirmationDialogComponent, SimpleConfirmationDialogData } from "./confirmation-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ConfirmationDialogComponent", () => {
   let component: SimpleConfirmationDialogComponent;
@@ -59,5 +60,11 @@ describe("ConfirmationDialogComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

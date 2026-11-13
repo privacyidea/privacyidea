@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ResyncOTPTokenDialog } from "./resync-otp-token-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ResyncOTPTokenDialog", () => {
   let component: ResyncOTPTokenDialog;
@@ -85,5 +86,12 @@ describe("ResyncOTPTokenDialog", () => {
       closeButton.click();
       expect(dialogRef.close).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup(false);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

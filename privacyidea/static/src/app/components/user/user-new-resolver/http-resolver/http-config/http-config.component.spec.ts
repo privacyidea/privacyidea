@@ -24,6 +24,7 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatSelect } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { HttpConfigComponent, HttpConfigModel } from "./http-config.component";
+import { axe } from "@testing/axe";
 
 const initialModel: HttpConfigModel = {
   method: "GET",
@@ -146,5 +147,11 @@ describe("HttpConfigComponent", () => {
     expect(fixture.nativeElement.querySelector(".auth-description").textContent).toContain("Describes the request.");
     expect(fixture.nativeElement.querySelectorAll("mat-hint").length).toBe(2);
     expect(fixture.nativeElement.querySelector("mat-hint").textContent).toContain("Possible tags: {userid}");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

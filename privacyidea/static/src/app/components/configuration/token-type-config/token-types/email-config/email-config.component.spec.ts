@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { EmailConfigComponent } from "@components/configuration/token-type-config/token-types/email-config/email-config.component";
 import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockSmtpServers = ["server1", "server2", "server3"];
 
@@ -203,5 +204,12 @@ describe("EmailConfigComponent", () => {
     fixture.componentRef.setInput("expanded", false);
     fixture.detectChanges();
     expect(component.expanded()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

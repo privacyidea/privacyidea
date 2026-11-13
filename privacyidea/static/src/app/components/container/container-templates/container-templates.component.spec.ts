@@ -32,6 +32,7 @@ import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { setRights } from "@testing/toolbar-actions";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -374,4 +375,14 @@ describe("ContainerTemplatesComponent", () => {
       );
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

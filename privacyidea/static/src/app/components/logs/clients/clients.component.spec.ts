@@ -29,6 +29,7 @@ import { MockAuditService, MockClientsService, MockContentService, MockPiRespons
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
+import { axe } from "@testing/axe";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;
@@ -167,5 +168,11 @@ describe("ClientsComponent", () => {
     expect(cellText).toBe(expectedLocalDateTimeFromInput("2024-06-01T12:00:00Z"));
     expect(cellText).not.toContain("UTC");
     expect(cellText).not.toContain("2024-06-01T12:00:00Z");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
