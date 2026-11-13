@@ -286,18 +286,6 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
         const tokensNotCreated = response.result?.value?.tokens_not_created ?? [];
         const allTokensFailed =
           tokensNotCreated.length > 0 && Object.keys(response.result?.value?.tokens ?? {}).length === 0;
-        if (tokensNotCreated.length > 0) {
-          const notCreated = tokensNotCreated.map((entry) => `${entry.type} (${entry.error})`).join(", ");
-          if (allTokensFailed) {
-            this.notificationService.error(
-              $localize`:@@container.noTokenCreated:The container was created, but none of the tokens of the template was created: ${notCreated}:notCreated:`
-            );
-          } else {
-            this.notificationService.warning(
-              $localize`:@@container.tokensNotCreated:The container was created, but these tokens of the template were not created: ${notCreated}:notCreated:`
-            );
-          }
-        }
         this.tokensNotCreated = tokensNotCreated;
         this.allTokensFailed = allTokensFailed;
         this.pendingChangesService.clearAllRegistrations();
@@ -347,6 +335,13 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   }
 
   protected onCreationSuccess(serial: string) {
+    if (this.allTokensFailed) {
+      // The create page navigates away without a dialog, so the toast is the only place the failure is shown.
+      const notCreated = this.tokensNotCreated.map((entry) => `${entry.type} (${entry.error})`).join(", ");
+      this.notificationService.error(
+        $localize`:@@container.noTokenCreated:The container was created, but none of the tokens of the template was created: ${notCreated}:notCreated:`
+      );
+    }
     this.router.navigate([ROUTE_PATHS.CONTAINERS_DETAILS, serial]);
   }
 
