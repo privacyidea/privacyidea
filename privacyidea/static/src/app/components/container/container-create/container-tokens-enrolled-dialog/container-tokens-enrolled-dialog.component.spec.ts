@@ -298,6 +298,80 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
     expect(contentService.navigateContainerDetails).toHaveBeenCalledWith("CONT-001");
   });
 
+  describe("tokens the template did not create", () => {
+    const notCreated = [
+      { type: "hotp", error: "Policy hotp_blocked forbids it", serial: "OATH0009" },
+      { type: "totp", error: "Maximum number of tokens reached" }
+    ];
+
+    afterEach(() => {
+      delete threeTokens.tokensNotCreated;
+    });
+
+    // The provider hands out the threeTokens object itself, so a new component reads the changed field.
+    const createWith = (data: ContainerTokensEnrolledDialogData) => {
+      threeTokens.tokensNotCreated = data.tokensNotCreated;
+      const f = TestBed.createComponent(ContainerTokensEnrolledDialogComponent);
+      f.detectChanges();
+      return f.nativeElement as HTMLElement;
+    };
+
+    it("lists every token that was not created as '<type> (<error>)'", () => {
+      const text = createWith({ ...threeTokens, tokensNotCreated: notCreated }).textContent ?? "";
+
+      expect(text).toContain("hotp (Policy hotp_blocked forbids it)");
+      expect(text).toContain("totp (Maximum number of tokens reached)");
+    });
+
+    it("uses the singular when one token was not created", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: [notCreated[0]] });
+
+      const n = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("This token of the template was not created:");
+      expect(n.textContent).not.toContain("These tokens");
+    });
+
+    it("uses the plural when several tokens were not created", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: notCreated });
+
+      const n = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("These tokens of the template were not created:");
+    });
+
+    it.each([[undefined], [[]]])("shows no notice when tokensNotCreated is %j", (value) => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: value });
+
+      expect(el.textContent).not.toContain("not created");
+      expect(el.textContent).not.toContain("Policy hotp_blocked");
+    });
+
+    it("shows the notice in a red callout box", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: notCreated });
+
+      const notice = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(notice).toBeTruthy();
+      expect(notice.classList).toContain("inline-callout");
+      expect(notice.classList).toContain("inline-callout-error");
+      expect(notice.classList).not.toContain("inline-callout-caution");
+      expect(notice.classList).not.toContain("inline-caution");
+    });
+
+    it("places the notice before the list of enrolled tokens", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: notCreated });
+
+      const notice = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      const enrolled = el.querySelector(".enrollment-data") as HTMLElement;
+      expect(notice).toBeTruthy();
+      expect(notice.compareDocumentPosition(enrolled) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("renders no notice container without tokensNotCreated", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: undefined });
+
+      expect(el.querySelector('[data-testid="tokens-not-created"]')).toBeNull();
+    });
+  });
+
   it("passes the axe accessibility checks", async () => {
     fixture.detectChanges();
 

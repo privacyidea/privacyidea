@@ -367,6 +367,134 @@ describe("ContainerCreateComponent", () => {
     expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
+  describe("tokens the template did not create", () => {
+    const notCreated = [
+      { type: "hotp", error: "Policy hotp_blocked forbids it", serial: "OATH0009" },
+      { type: "totp", error: "Maximum number of tokens reached" }
+    ];
+    // At least one token was created, so the template only partly failed.
+    const createdTokens = { OATH0001: { type: "daypassword", googleurl: { img: "", value: "", description: "" } } };
+
+    const respondWith = (value: Partial<ContainerCreateResult>) =>
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
+        of({
+          result: { value: { container_serial: "C-001", ...value } }
+        } as unknown as PiResponse<ContainerCreateResult>)
+      );
+
+    it("passes the tokens not created to the container created dialog on the QR path", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      respondWith({ tokens: createdTokens as never, tokens_not_created: notCreated });
+      fixture.detectChanges();
+
+      component.createContainer();
+
+      const data = dialogServiceMock.openDialog.mock.calls[0][0].data as () => { tokensNotCreated?: unknown };
+      expect(data().tokensNotCreated).toEqual(notCreated);
+    });
+
+    it("passes the tokens not created to the tokens enrolled dialog when some tokens were created", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      respondWith({ tokens: createdTokens as never, tokens_not_created: notCreated });
+      const openSpy = jest.spyOn(
+        component as unknown as { openTokensEnrolledDialog: (d: ContainerTokensEnrolledDialogData) => void },
+        "openTokensEnrolledDialog"
+      );
+
+      component.createContainer();
+
+      expect(openSpy).toHaveBeenCalledWith(expect.objectContaining({ tokensNotCreated: notCreated }));
+    });
+
+    it.each([[undefined], [{}]])(
+      "shows one error toast with every type and error and opens the container details when every token failed (tokens is %j)",
+      (tokens) => {
+        containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+        respondWith({ tokens: tokens as never, tokens_not_created: notCreated });
+
+        component.createContainer();
+
+        expect(notificationService.error).toHaveBeenCalledTimes(1);
+        expect(notificationService.warning).not.toHaveBeenCalled();
+        const text = (notificationService.error as jest.Mock).mock.calls[0][0] as string;
+        for (const entry of notCreated) {
+          expect(text).toContain(entry.type);
+          expect(text).toContain(entry.error);
+        }
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+        expect(routerMock.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_DETAILS, "C-001"]);
+      }
+    );
+
+    it("flags the QR dialog data when every token failed", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      respondWith({ tokens_not_created: notCreated });
+      fixture.detectChanges();
+
+      component.createContainer();
+
+      const data = dialogServiceMock.openDialog.mock.calls[0][0].data as () => {
+        tokensNotCreated?: unknown;
+        allTokensFailed?: boolean;
+      };
+      expect(data().tokensNotCreated).toEqual(notCreated);
+      expect(data().allTokensFailed).toBe(true);
+    });
+
+    it("lists the tokens not created only in the tokens enrolled dialog, without a toast, when some tokens were created", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      respondWith({ tokens: createdTokens as never, tokens_not_created: notCreated });
+
+      component.createContainer();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
+      const dialogData = dialogServiceMock.openDialog.mock.calls[0][0].data as ContainerTokensEnrolledDialogData;
+      expect(dialogData.tokensNotCreated).toEqual(notCreated);
+      expect(notificationService.warning).not.toHaveBeenCalled();
+      expect(notificationService.error).not.toHaveBeenCalled();
+      expect(routerMock.navigate).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["some tokens were created", createdTokens],
+      ["every token failed", undefined]
+    ])(
+      "registers the container and lists the tokens not created only in the container created dialog, without a toast, on the QR path (%s)",
+      (_case, tokens) => {
+        containerServiceMock.selectedContainerType.set({
+          containerType: "smartphone",
+          description: "",
+          token_types: []
+        });
+        respondWith({ tokens: tokens as never, tokens_not_created: notCreated });
+        fixture.detectChanges();
+        const regSpy = jest.spyOn(component as unknown as ComponentPrivates, "registerContainer");
+
+        component.createContainer();
+
+        expect(regSpy).toHaveBeenCalledWith("C-001");
+        const data = dialogServiceMock.openDialog.mock.calls[0][0].data as () => { tokensNotCreated?: unknown };
+        expect(data().tokensNotCreated).toEqual(notCreated);
+        expect(notificationService.warning).not.toHaveBeenCalled();
+        expect(notificationService.error).not.toHaveBeenCalled();
+      }
+    );
+
+    it.each([[undefined], [[]]])("does not warn when tokens_not_created is %j", (value) => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
+        of({
+          result: { value: { container_serial: "C-001", tokens_not_created: value } }
+        } as unknown as PiResponse<ContainerCreateResult>)
+      );
+
+      component.createContainer();
+
+      expect(notificationService.warning).not.toHaveBeenCalled();
+      expect(routerMock.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_DETAILS, "C-001"]);
+    });
+  });
+
   it("QR path (smartphone): calls registerContainer", async () => {
     containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
 
@@ -947,6 +1075,31 @@ describe("ContainerCreateComponent", () => {
       (wizardComponent as unknown as ComponentPrivates).registerContainer("W-SERIAL");
 
       expect(serialAtDialogOpen).toBe("W-SERIAL");
+    });
+
+    it("passes the tokens not created and the all-failed flag to the wizard registration dialog without a toast", () => {
+      const notCreated = [
+        { type: "hotp", error: "Policy hotp_blocked forbids it", serial: "OATH0009" },
+        { type: "totp", error: "Maximum number of tokens reached" }
+      ];
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
+        of({
+          result: { value: { container_serial: "C-001", tokens_not_created: notCreated } }
+        } as unknown as PiResponse<ContainerCreateResult>)
+      );
+      wizardFixture.detectChanges();
+
+      wizardComponent.createContainer();
+
+      const data = dialogServiceMock.openDialog.mock.calls[0][0].data as () => {
+        tokensNotCreated?: unknown;
+        allTokensFailed?: boolean;
+      };
+      expect(data().tokensNotCreated).toEqual(notCreated);
+      expect(data().allTokensFailed).toBe(true);
+      expect(notificationService.error).not.toHaveBeenCalled();
+      expect(notificationService.warning).not.toHaveBeenCalled();
     });
 
     it("container wizard creates generic container without template and without registration", () => {

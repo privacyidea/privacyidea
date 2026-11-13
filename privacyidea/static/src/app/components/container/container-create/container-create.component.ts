@@ -71,6 +71,7 @@ import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
+  ContainerTokenNotCreated,
   ContainerTemplate,
   ContainerType
 } from "@services/container/container.service";
@@ -168,6 +169,8 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   });
 
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
+  protected tokensNotCreated: ContainerTokenNotCreated[] = [];
+  protected allTokensFailed = false;
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
   constructor() {
@@ -280,6 +283,11 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
           );
           return;
         }
+        const tokensNotCreated = response.result?.value?.tokens_not_created ?? [];
+        const allTokensFailed =
+          tokensNotCreated.length > 0 && Object.keys(response.result?.value?.tokens ?? {}).length === 0;
+        this.tokensNotCreated = tokensNotCreated;
+        this.allTokensFailed = allTokensFailed;
         this.pendingChangesService.clearAllRegistrations();
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
@@ -294,7 +302,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
               }))
             : [];
           if (enrolledTokens.length > 0) {
-            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial });
+            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial, tokensNotCreated });
           } else {
             this.onCreationSuccess(containerSerial);
           }
@@ -327,6 +335,13 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   }
 
   protected onCreationSuccess(serial: string) {
+    if (this.allTokensFailed) {
+      // The create page navigates away without a dialog, so the toast is the only place the failure is shown.
+      const notCreated = this.tokensNotCreated.map((entry) => `${entry.type} (${entry.error})`).join(", ");
+      this.notificationService.error(
+        $localize`:@@container.noTokenCreated:The container was created, but none of the tokens of the template was created: ${notCreated}:notCreated:`
+      );
+    }
     this.router.navigate([ROUTE_PATHS.CONTAINERS_DETAILS, serial]);
   }
 
@@ -361,7 +376,9 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
-      registerContainer: this.registerContainer.bind(this)
+      registerContainer: this.registerContainer.bind(this),
+      tokensNotCreated: this.tokensNotCreated,
+      allTokensFailed: this.allTokensFailed
     });
 
     const dialogRef = this.dialogService.openDialog({

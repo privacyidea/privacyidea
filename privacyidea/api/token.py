@@ -62,7 +62,7 @@ from werkzeug.datastructures import FileStorage
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
-                                            postpolicy)
+                                            postpolicy, remove_new_token_on_error)
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_copy_token_action,
                                            check_token_init, check_token_upload,
@@ -191,9 +191,9 @@ overall policy concept.
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @prepolicy(force_server_generate_key, request)
-@postpolicy(save_pin_change, request)
+@postpolicy(remove_new_token_on_error(save_pin_change), request)
 @event("token_init", request, g)
-@postpolicy(check_verify_enrollment, request)
+@postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
 @CheckSubscription(request)
 @log_with(log, log_entry=False)
 def init():
@@ -360,7 +360,10 @@ def init():
     param["policies"] = g.get("policies", {})
 
     user = request.User
+    # The post-policies of /token/init clean up the token of this request if they fail
+    g.enrolled_token = None
     token = init_token(param, user)
+    g.enrolled_token = token
 
     if token:
         g.audit_object.log({"success": True})

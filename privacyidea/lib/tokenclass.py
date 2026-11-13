@@ -335,6 +335,8 @@ class TokenClass:
         # These are temporary details to store during authentication
         # like the "matched_otp_counter".
         self.auth_details = {}
+        # init_token sets this to True if it created the token, False if it updated an existing token
+        self.newly_created = False
 
     def set_type(self, tokentype):
         """
