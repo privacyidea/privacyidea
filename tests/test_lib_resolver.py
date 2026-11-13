@@ -14,9 +14,13 @@ import datetime
 import hashlib
 import json
 import logging
+import os
 import shutil
+import socket
 import ssl
 import tempfile
+import threading
+import unittest
 import uuid
 from contextlib import contextmanager
 
@@ -24,7 +28,12 @@ import ldap3
 import mock
 import responses
 import yaml
-from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
+from ldap3.core.exceptions import (LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError,
+                                   LDAPSocketOpenError)
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
@@ -2068,16 +2077,20 @@ class LDAPResolverTestCase(MyTestCase):
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+            # Without TLS_VERSION, the resolver allows only TLS v1.3
+            self.assertEqual(ssl.PROTOCOL_TLS_CLIENT, kwargs['tls'].version)
+            self.assertEqual({ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2},
+                             set(kwargs['tls'].ssl_options))
             ldap3_tls_config = kwargs['tls'].__str__()
-            self.assertIn("protocol: 2", ldap3_tls_config)
             self.assertIn("CA certificates file: present", ldap3_tls_config)
             self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
                             or "verify mode: 2" in ldap3_tls_config
                             or "verify mode: True" in ldap3_tls_config)
 
     def test_24b_tls_options(self):
+        # No type hints: ldap3mock.activate rebuilds the signature as text and cannot parse annotations
         @ldap3mock.activate
-        def check_tls_version_ldap3(tls_version_pi, tls_version_ldap3):
+        def check_tls_version_ldap3(tls_version_pi, expected_protocol, expected_options):
 
             # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
             ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -2106,15 +2119,25 @@ class LDAPResolverTestCase(MyTestCase):
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
                 self.assertFalse(kwargs['use_ssl'])
-                ldap3_tls_config = kwargs['tls'].__str__()
-                self.assertIn(tls_version_ldap3, ldap3_tls_config)
+                self.assertEqual(expected_protocol, kwargs['tls'].version)
+                self.assertEqual(expected_options, set(kwargs['tls'].ssl_options))
 
-        tls_versions = {"": "protocol: 2",
-                        "5": "protocol: 5",
-                        "1234": "protocol: 1234"}
-        for tls_version_pi, tls_version_ldap3 in tls_versions.items():
-            check_tls_version_ldap3(tls_version_pi, tls_version_ldap3)
-        self.assertRaises(ValueError, check_tls_version_ldap3, "version is nonsense", "nothing to check")
+        only_tls_1_3 = {ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2}
+        only_tls_1_2 = {ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_3}
+        # TLS v1.2 and TLS v1.3 use the generic client protocol and switch off all other versions.
+        # TLS v1.0 and TLS v1.1 keep their fixed-version protocol numbers.
+        tls_versions = {"": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "2": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "5": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
+                        5: (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
+                        "4": (4, set()),
+                        "3": (3, set())}
+        for tls_version_pi, (expected_protocol, expected_options) in tls_versions.items():
+            check_tls_version_ldap3(tls_version_pi, expected_protocol, expected_options)
+        for unsupported_version in ("1234", "16", "1", "version is nonsense"):
+            with self.assertRaises(ParameterError) as context:
+                check_tls_version_ldap3(unsupported_version, None, None)
+            self.assertIn(f"Unsupported TLS version '{unsupported_version}'", context.exception.message)
 
     @ldap3mock.activate
     def test_24c_no_tls_verify(self):
@@ -2146,7 +2169,8 @@ class LDAPResolverTestCase(MyTestCase):
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
-            self.assertEqual(2, kwargs['tls'].version, kwargs['tls'])
+            # Without TLS_VERSION, the resolver uses the generic client protocol for TLS v1.3
+            self.assertEqual(ssl.PROTOCOL_TLS_CLIENT, kwargs['tls'].version, kwargs['tls'])
             # the ca_certs_file should be None since we passed a non-existing path
             self.assertIsNone(kwargs['tls'].ca_certs_file, kwargs['tls'])
             self.assertEqual(ssl.CERT_NONE, kwargs['tls'].validate, kwargs['tls'])
@@ -3518,6 +3542,116 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("FIRST", first_pool.strategy)
         self.assertEqual("RANDOM", random_pool.strategy)
         self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
+
+
+def write_self_signed_certificate(directory: str, file_name: str, host_name: str) -> tuple[str, str]:
+    """
+    Write a self-signed certificate for the host name and its private key as PEM files.
+
+    :return: The paths of the certificate file and the key file
+    """
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, host_name)])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    certificate = (x509.CertificateBuilder()
+                   .subject_name(subject)
+                   .issuer_name(subject)
+                   .public_key(private_key.public_key())
+                   .serial_number(x509.random_serial_number())
+                   .not_valid_before(now - datetime.timedelta(minutes=5))
+                   .not_valid_after(now + datetime.timedelta(days=1))
+                   .add_extension(x509.SubjectAlternativeName([x509.DNSName(host_name)]), critical=False)
+                   .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+                   .sign(private_key, hashes.SHA256()))
+    certificate_file = os.path.join(directory, f"{file_name}.crt")
+    key_file = os.path.join(directory, f"{file_name}.key")
+    with open(certificate_file, "wb") as file:
+        file.write(certificate.public_bytes(serialization.Encoding.PEM))
+    with open(key_file, "wb") as file:
+        file.write(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                             serialization.NoEncryption()))
+    return certificate_file, key_file
+
+
+class LDAPTLSHandshakeTestCase(unittest.TestCase):
+    """
+    Connects ldap3 with the TLS object of the LDAP resolver to a local TLS server that accepts TLS v1.2
+    and TLS v1.3. The handshake uses the ssl module and the OpenSSL library of the test system.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.directory = tempfile.mkdtemp()
+        cls.server_certificate, cls.server_key = write_self_signed_certificate(cls.directory, "server",
+                                                                               "localhost")
+        cls.other_certificate, _ = write_self_signed_certificate(cls.directory, "other", "localhost")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.directory)
+
+    def connect(self, tls_version: str, host: str = "localhost", tls_verify: bool = True,
+                tls_ca_file: str | None = None) -> str:
+        """
+        Open an LDAPS connection to a local TLS server with the TLS object of the LDAP resolver.
+
+        :return: The negotiated TLS version, for example "TLSv1.2"
+        """
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(self.server_certificate, self.server_key)
+        server_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        server_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        listener = socket.create_server(("127.0.0.1", 0))
+        listener.settimeout(10)
+
+        def serve() -> None:
+            try:
+                server_connection, _ = listener.accept()
+                with server_context.wrap_socket(server_connection, server_side=True) as tls_connection:
+                    tls_connection.settimeout(10)
+                    tls_connection.recv(1)
+            except OSError:
+                # The client rejected the handshake or closed the connection
+                pass
+
+        server_thread = threading.Thread(target=serve, daemon=True)
+        server_thread.start()
+        tls_context = LDAPResolver.get_tls_context(ldap_uri="ldaps://localhost", tls_version=tls_version,
+                                                   tls_verify=tls_verify,
+                                                   tls_ca_file=tls_ca_file or self.server_certificate)
+        server = ldap3.Server(host, port=listener.getsockname()[1], use_ssl=True, tls=tls_context,
+                              mode=ldap3.IP_V4_ONLY, connect_timeout=5)
+        connection = ldap3.Connection(server, receive_timeout=5)
+        try:
+            connection.open(read_server_info=False)
+            return connection.socket.version()
+        finally:
+            if not connection.closed:
+                connection.unbind()
+            elif connection.socket:
+                # A failed handshake leaves the plain socket open, and the server waits for it
+                connection.socket.close()
+            server_thread.join(10)
+            listener.close()
+
+    def test_01_tls_v1_2_allows_only_tls_1_2(self):
+        self.assertEqual("TLSv1.2", self.connect("5"))
+        self.assertEqual("TLSv1.2", self.connect("5", tls_verify=False))
+
+    def test_02_tls_v1_3_allows_only_tls_1_3(self):
+        self.assertEqual("TLSv1.3", self.connect("2"))
+        # Without TLS_VERSION, the resolver uses TLS v1.3
+        self.assertEqual("TLSv1.3", self.connect(""))
+
+    def test_03_wrong_host_name_fails(self):
+        with self.assertRaises(LDAPSocketOpenError) as context:
+            self.connect("5", host="127.0.0.1")
+        self.assertIn("doesn't match", str(context.exception))
+
+    def test_04_unknown_certificate_authority_fails(self):
+        with self.assertRaises(LDAPSocketOpenError) as context:
+            self.connect("5", tls_ca_file=self.other_certificate)
+        self.assertIn("CERTIFICATE_VERIFY_FAILED", str(context.exception))
 
 
 class BaseResolverTestCase(MyTestCase):
