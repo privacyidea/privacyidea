@@ -37,7 +37,7 @@ import threading
 import traceback
 import uuid
 from operator import itemgetter
-from typing import Any
+from typing import Any, NamedTuple
 
 import ldap3
 import yaml
@@ -90,13 +90,56 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-# TODO: Switch to PROTOCOL_TLS_CLIENT since PROTOCOL_TLS is deprecated:
-#  https://docs.python.org/3.12/library/ssl.html#ssl.PROTOCOL_TLS
-TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
+# The values of the resolver setting TLS_VERSION. They are the numbers of ssl.PROTOCOL_TLSv1,
+# ssl.PROTOCOL_TLSv1_1, ssl.PROTOCOL_TLSv1_2 and ssl.PROTOCOL_TLS in Python builds with OpenSSL 3.
+TLS_VERSION_1_0 = 3
+TLS_VERSION_1_1 = 4
+TLS_VERSION_1_2 = 5
+TLS_VERSION_1_3 = 2
+DEFAULT_TLS_VERSION = TLS_VERSION_1_3
 
-DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
-TLS_OPTIONS_1_3 = (ssl.OP_NO_TLSv1_2, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1, ssl.OP_NO_SSLv3)
+class TlsVersionSettings(NamedTuple):
+    """The ldap3 protocol and SSL options for one value of the resolver setting TLS_VERSION."""
+    protocol: int
+    ssl_options: tuple[int, ...]
+
+
+# OpenSSL 4 has no fixed-version method for TLS v1.2, and Python builds with OpenSSL 4 reject the protocol
+# number 5. Thus TLS v1.2 and TLS v1.3 use the generic client protocol and switch off all other TLS versions.
+# TLS v1.0 and TLS v1.1 keep their fixed-version protocol numbers. They work only if the Python and OpenSSL
+# versions of the system still support them.
+TLS_VERSION_SETTINGS = {
+    TLS_VERSION_1_0: TlsVersionSettings(TLS_VERSION_1_0, ()),
+    TLS_VERSION_1_1: TlsVersionSettings(TLS_VERSION_1_1, ()),
+    TLS_VERSION_1_2: TlsVersionSettings(ssl.PROTOCOL_TLS_CLIENT,
+                                        (ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_3)),
+    TLS_VERSION_1_3: TlsVersionSettings(ssl.PROTOCOL_TLS_CLIENT,
+                                        (ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2)),
+}
+
+
+def get_tls_version_settings(tls_version: int | str | None) -> TlsVersionSettings:
+    """
+    Return the ldap3 protocol and SSL options for a value of the resolver setting TLS_VERSION.
+
+    :param tls_version: The value of TLS_VERSION. An empty value and 0 select DEFAULT_TLS_VERSION.
+    :return: The settings for the selected TLS version
+    :raises ParameterError: If the value is not 0 or one of the keys of TLS_VERSION_SETTINGS
+    """
+    try:
+        tls_version_number = int(tls_version) if tls_version else 0
+    except (TypeError, ValueError):
+        tls_version_number = None
+    # An empty value and 0 mean that TLS_VERSION is not set
+    if tls_version_number == 0:
+        return TLS_VERSION_SETTINGS[DEFAULT_TLS_VERSION]
+    tls_settings = TLS_VERSION_SETTINGS.get(tls_version_number)
+    if tls_settings is None:
+        raise ParameterError(f"Unsupported TLS version {tls_version!r}. Use {TLS_VERSION_1_3} (TLS v1.3), "
+                             f"{TLS_VERSION_1_0} (TLS v1.0), {TLS_VERSION_1_1} (TLS v1.1) "
+                             f"or {TLS_VERSION_1_2} (TLS v1.2).")
+    return tls_settings
 
 
 class LockingServerPool(ldap3.ServerPool):
@@ -681,20 +724,23 @@ class IdResolver(UserIdResolver):
                         tls_ca_file=None, tls_options=None):
         """
         This method creates the TLS object to be used with ldap3.
+
+        :param tls_version: The value of the resolver setting TLS_VERSION. An empty value and 0 select TLS v1.3.
+        :param tls_options: SSL options that replace the options of the TLS version. No caller in privacyIDEA
+            uses it. Without the options of the TLS version, the connection can allow other TLS versions.
+        :raises ParameterError: If the URI or START_TLS needs TLS and tls_version is not a supported value
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
-            if not tls_version:
-                tls_version = int(DEFAULT_TLS_PROTOCOL)
-            # If TLS_VERSION is 2, set tls_options to use TLS v1.3
+            tls_settings = get_tls_version_settings(tls_version)
             if not tls_options:
-                tls_options = TLS_OPTIONS_1_3 if int(tls_version) == int(TLS_NEGOTIATE_PROTOCOL) else None
+                tls_options = tls_settings.ssl_options
             if tls_verify:
                 tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
             else:
                 tls_verify = ssl.CERT_NONE
                 tls_ca_file = None
             tls_context = Tls(validate=tls_verify,
-                              version=int(tls_version),
+                              version=tls_settings.protocol,
                               ssl_options=tls_options,
                               ca_certs_file=tls_ca_file)
         else:
@@ -1216,13 +1262,17 @@ class IdResolver(UserIdResolver):
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.keytabfile = config.get('KEYTABFILE', None)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
-        self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
+        # get_tls_context checks the value. An empty value and 0 select DEFAULT_TLS_VERSION.
+        self.tls_version = config.get("TLS_VERSION")
         self.tls_ca_file = config.get("TLS_CA_FILE")
-        self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
-                                                tls_version=self.tls_version,
-                                                tls_verify=self.tls_verify,
-                                                tls_ca_file=self.tls_ca_file)
+        try:
+            self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
+                                                    tls_version=self.tls_version,
+                                                    tls_verify=self.tls_verify,
+                                                    tls_ca_file=self.tls_ca_file)
+        except ParameterError as error:
+            # A resolver that cannot load its configuration raises a ResolverError (see get_resolver_object)
+            raise ResolverError(error.message) from error
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
@@ -1369,6 +1419,8 @@ class IdResolver(UserIdResolver):
                             self.timeout,
                             get_info,
                             repr(self.tls_context),  # this is the string representation of the TLS context
+                            # The representation leaves out the SSL options, which select TLS v1.2 or TLS v1.3
+                            tuple(sorted(self.tls_context.ssl_options)) if self.tls_context else (),
                             self.serverpool_rounds,
                             self.serverpool_skip,
                             self.serverpool_strategy)
