@@ -1992,7 +1992,7 @@ class TestPIManageSetupClass:
         assert result.exit_code == 0, result.output
         assert enckey.read_bytes() == valid_key
 
-    def test_09_encrypt_enckey_restricts_the_permissions_of_the_output_file(self, app, tmp_path):
+    def test_09_encrypt_enckey_restricts_the_permissions_of_a_new_output_file(self, app, tmp_path):
         enckey = tmp_path / "enckey"
         enckey.write_bytes(os.urandom(96))
         outfile = tmp_path / "enckey.enc"
@@ -2009,37 +2009,44 @@ class TestPIManageSetupClass:
         assert result.exit_code == 0, result.output
         assert outfile.stat().st_mode & 0o777 == 0o600
 
-    def test_09b_encrypt_enckey_into_the_key_file_keeps_the_key(self, app, tmp_path):
-        # The key is read before the output file is opened, so -o can name the key file itself
+    def test_09b_encrypt_enckey_keeps_owner_and_permissions_of_an_existing_output_file(self, app, tmp_path):
+        # The server may read the file through its group, so the permissions of an existing file are kept
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        outfile = tmp_path / "enckey.enc"
+        outfile.write_text("old")
+        outfile.chmod(0o640)
+        inode = outfile.stat().st_ino
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "-o", str(outfile), "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(outfile.read_text().strip(), "test1234") == key
+        assert outfile.stat().st_mode & 0o777 == 0o640
+        assert outfile.stat().st_ino == inode
+
+    def test_09d_encrypt_enckey_refuses_to_write_into_the_key_file(self, app, tmp_path):
+        # The key would be lost if writing the encrypted key into the key file failed
         enckey = tmp_path / "enckey"
         key = os.urandom(96)
         enckey.write_bytes(key)
         runner = app.test_cli_runner()
-        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(enckey),
-                                           "--password", "test1234"])
-        assert result.exit_code == 0, result.output
-        assert DefaultSecurityModule.password_decrypt(enckey.read_text().strip(), "test1234") == key
-        assert enckey.stat().st_mode & 0o777 == 0o600
+        for target in [enckey, tmp_path / "." / "enckey"]:
+            result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(target),
+                                               "--password", "test1234"])
+            assert result.exit_code == 1, result.output
+            assert "key file itself" in result.output
+            assert enckey.read_bytes() == key
 
-        # Also the read-only key file, which create_enckey writes, can be replaced by its owner
-        enckey.write_bytes(key)
-        enckey.chmod(0o400)
-        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(enckey),
-                                           "--password", "test1234"])
-        assert result.exit_code == 0, result.output
-        assert DefaultSecurityModule.password_decrypt(enckey.read_text().strip(), "test1234") == key
-
-    def test_09d_encrypt_enckey_keeps_the_key_file_if_writing_fails(self, app, tmp_path):
+    def test_09e_encrypt_enckey_reports_an_output_file_it_can_not_write(self, app, tmp_path):
         enckey = tmp_path / "enckey"
-        key = os.urandom(96)
-        enckey.write_bytes(key)
-        with mock.patch("privacyidea.cli.pimanage.pi_setup.os.fsync", side_effect=OSError("No space left on device")):
-            result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
-                                                              "-o", str(enckey), "--password", "test1234"])
+        enckey.write_bytes(os.urandom(96))
+        outfile = tmp_path / "missing" / "enckey.enc"
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "-o", str(outfile), "--password", "test1234"])
         assert result.exit_code == 1, result.output
-        assert "No space left on device" in result.output
-        assert enckey.read_bytes() == key
-        assert [enckey] == list(tmp_path.iterdir())
+        assert "Could not write the encrypted key" in result.output
+        assert isinstance(result.exception, SystemExit), result.exception
 
     def test_09c_encrypt_enckey_writes_to_stdout(self, app, tmp_path):
         enckey = tmp_path / "enckey"
