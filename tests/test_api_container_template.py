@@ -21,7 +21,7 @@ from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.token import (get_tokens, get_tokens_from_serial_or_user,
                                    get_tokeninfo)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
@@ -1241,7 +1241,7 @@ class APIContainerTemplate(APIContainerTest):
             delete_policy("pin_first_use_failing")
             self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
 
-    def test_36_create_container_with_template_keeps_existing_token_on_postpolicy_error(self):
+    def test_36_create_container_with_template_existing_serial_is_disabled_on_postpolicy_error(self):
         self.setUp_user_realms()
         existing_serial = "TMPLEXIST30A"
         totp_serial = "TMPLEXIST30B"
@@ -1259,8 +1259,10 @@ class APIContainerTemplate(APIContainerTest):
             container_serial = value["container_serial"]
             container = find_container_by_serial(container_serial)
 
-            # The token existed before and must not be deleted, but it is not part of the new container
+            # The token existed before and must not be deleted, but it was rolled over (new key nobody has),
+            # so it is disabled and not part of the new container
             self.assertEqual(1, len(get_tokens(serial=existing_serial)))
+            self.assertFalse(get_one_token(serial=existing_serial).token.active)
             self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
             self.assertEqual([existing_serial], [entry.get("serial") for entry in value["tokens_not_created"]])
         finally:

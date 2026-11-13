@@ -42,7 +42,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, Enroll
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
-                                   convert_token_objects_to_dicts, init_token, token_exist)
+                                   convert_token_objects_to_dicts, init_token)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
@@ -856,8 +856,6 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
             init_params = request.all_data
             init_params["policies"] = g.policies
-            # A token with a fixed serial from the template may exist already. It must not be deleted on an error.
-            token_existed = token_exist(init_params.get("serial"))
             try:
                 token = init_token(init_params, user)
                 init_result[token.get_serial()] = {"type": token.get_type()}
@@ -879,8 +877,13 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                     if init_result.get(token.get_serial()):
                         del init_result[token.get_serial()]
                     container.remove_token(token.get_serial())
-                    if not token_existed:
+                    if token.newly_created:
                         token.delete_token()
+                    else:
+                        # The token existed before and init_token gave it a new key that nobody has, so it is
+                        # disabled instead of deleted.
+                        token.enable(False)
+                        token.save()
                 _report_token_not_created(tokens_not_created, token_info, token, ex)
                 continue
 
