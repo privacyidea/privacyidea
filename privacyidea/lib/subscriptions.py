@@ -868,14 +868,22 @@ def check_signature(subscription):
         key_directory = os.path.dirname(get_app_config_value(ConfigKey.ENCFILE, "/etc/privacyidea/enckey"))
     filename = os.path.join(key_directory, f"{vendor}.pem")
 
+    # A missing, unreadable, empty or invalid key file is a configuration error, so the log names the file.
+    try:
+        with open(filename, 'rb') as key_file:
+            sign_obj = Sign(private_key=None, public_key=key_file.read())
+        if sign_obj.public is None:
+            raise ValueError("The file is empty.")
+    except (OSError, ValueError) as error:
+        log.warning(f"Could not load the public key {filename} to verify the subscription: {error}")
+        raise SubscriptionError("Verifying the signature of your subscription failed.",
+                                application=subscription.get("application")) from error
+
     try:
         # remove the minutes 00:00:00
         subscription["date_from"] = subscription.get("date_from").strftime(SUBSCRIPTION_DATE_FORMAT)
         subscription["date_till"] = subscription.get("date_till").strftime(SUBSCRIPTION_DATE_FORMAT)
         sign_string = SIGN_FORMAT.format(**subscription)
-        with open(filename, 'rb') as key_file:
-            sign_obj = Sign(private_key=None, public_key=key_file.read())
-
         signature = subscription.get('signature', '100')
         r = sign_obj.verify(sign_string, signature, verify_old_sigs=True)
         subscription["date_from"] = datetime.datetime.strptime(
@@ -884,11 +892,6 @@ def check_signature(subscription):
         subscription["date_till"] = datetime.datetime.strptime(
             subscription.get("date_till"),
             SUBSCRIPTION_DATE_FORMAT)
-    except OSError as error:
-        log.warning(f"Could not read the public key {filename} to verify the subscription: {error}")
-        log.debug(traceback.format_exc())
-        raise SubscriptionError("Verifying the signature of your subscription failed.",
-                                application=subscription.get("application"))
     except Exception as _e:
         log.debug(traceback.format_exc())
         raise SubscriptionError("Verifying the signature of your subscription "

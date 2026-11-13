@@ -120,8 +120,8 @@ jobs:
       - name: Subscription signature
         # The image contains the public key for the subscriptions, and DockerConfig names the folder that
         # privacyIDEA reads it from. The signed test subscription must pass the signature check in the running pi
-        # container, with the app factory of the workers. The check reads the key and the configuration only. It
-        # writes nothing to the database.
+        # container, with the app factory of the workers. The step does not store the subscription. The app factory
+        # updates the node name in the database, as on each start of a worker.
         run: |
           check_script="$(cat <<'EOF'
           import datetime

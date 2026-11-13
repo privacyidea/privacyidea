@@ -375,7 +375,18 @@ class SubscriptionApplicationTestCase(MyTestCase):
                     with self.assertRaises(SubscriptionError) as cm:
                         check_signature(_subscription_with_dates(SUBSCRIPTION1))
                 self.assertIn("Verifying the signature of your subscription failed", f"{cm.exception}")
-                self.assertIn(os.path.join(key_directory, "NetKnights.pem"), captured_logs.output[0])
+                key_file_path = os.path.join(key_directory, "NetKnights.pem")
+                self.assertIn(key_file_path, captured_logs.output[0])
+
+                # An empty file and a file without a valid public key are also named in the log
+                for key_file_content in (b"", b"no public key"):
+                    with open(key_file_path, "wb") as key_file:
+                        key_file.write(key_file_content)
+                    with self.assertLogs("privacyidea.lib.subscriptions", level="WARNING") as captured_logs:
+                        with self.assertRaises(SubscriptionError) as cm:
+                            check_signature(_subscription_with_dates(SUBSCRIPTION1))
+                    self.assertIn("Verifying the signature of your subscription failed", f"{cm.exception}")
+                    self.assertIn(key_file_path, captured_logs.output[0])
 
                 shutil.copy(os.path.join(os.path.dirname(self.app.config[ConfigKey.ENCFILE]), "NetKnights.pem"),
                             key_directory)
