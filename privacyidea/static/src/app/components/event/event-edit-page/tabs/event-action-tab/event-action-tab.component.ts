@@ -18,13 +18,16 @@
  **/
 
 import { NgClass } from "@angular/common";
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, input, output, signal, untracked } from "@angular/core";
 import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
+import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ActionOptionDetails, EventService } from "@services/event/event.service";
+import { ActionOptionDetails, CONFIG_ADMIN_ERROR_CODE, EventService } from "@services/event/event.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { valueDisplayLabel } from "@utils/value-label.utils";
@@ -45,7 +48,20 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 @Component({
   selector: "app-event-action-tab",
   standalone: true,
-  imports: [MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatInput, MatCheckbox, MatError, NgClass, FormField],
+  imports: [
+    MatButton,
+    MatFormField,
+    MatHint,
+    MatIcon,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    MatInput,
+    MatCheckbox,
+    MatError,
+    NgClass,
+    FormField
+  ],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"
 })
@@ -72,6 +88,28 @@ export class EventActionTabComponent {
         this.isOptionRequired(ctx.key()) && this.isEmpty(ctx.value()) ? { kind: ERR.required } : undefined
       );
     });
+  });
+
+  /**
+   * The Script handler offers each file in its script directory as an action. If the directory is empty, or if the
+   * server answers that it cannot open the directory, the tab explains where the scripts go instead of showing an
+   * empty dropdown. The server reads the directory on each request, so new scripts show up after a reload of the
+   * actions. A reload keeps the hint visible. During the first load, after any other failed request and if the
+   * request does not run (for example without eventhandling_read), the tab shows the dropdown.
+   */
+  noScriptsFound = computed(() => {
+    if (this.eventService.selectedHandlerModule() !== "Script") {
+      return false;
+    }
+    const resource = this.eventService.moduleActionsResource;
+    const status = resource.status();
+    if (status === "error") {
+      const error = resource.error() as HttpErrorResponse | undefined;
+      return error?.error?.result?.error?.code === CONFIG_ADMIN_ERROR_CODE;
+    }
+    return (
+      (status === "resolved" || status === "reloading") && Object.keys(this.eventService.moduleActions()).length === 0
+    );
   });
 
   actionOptions = computed(() => {
@@ -148,6 +186,10 @@ export class EventActionTabComponent {
 
   onActionSelectionChange(value: string): void {
     this.newAction.emit(value);
+  }
+
+  reloadScripts(): void {
+    this.eventService.moduleActionsResource.reload();
   }
 
   checkOptionVisibility(optionName: string): boolean {
