@@ -28,11 +28,14 @@ import { ContainerDetailData, ContainerService } from "@services/container/conta
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { axe } from "@testing/axe";
 import {
   MockContainerService,
   MockContentService,
   MockDocumentationService,
+  MockNotificationService,
   MockPiResponse,
   MockTableUtilsService
 } from "@testing/mock-services";
@@ -57,7 +60,8 @@ describe("ContainerTableActionsComponent", () => {
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: DocumentationService, useClass: MockDocumentationService }
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ],
       imports: [ContainerTableActionsComponent]
     }).compileComponents();
@@ -320,5 +324,11 @@ describe("ContainerTableActionsComponent", () => {
         jest.runAllTimers();
       }).not.toThrow();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

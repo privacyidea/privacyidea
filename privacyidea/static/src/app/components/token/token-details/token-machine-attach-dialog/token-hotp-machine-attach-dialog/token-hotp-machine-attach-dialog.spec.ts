@@ -27,6 +27,7 @@ import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-atta
 import { PiResponse } from "@app/app.component";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { axe } from "@testing/axe";
 
 type PostAssignArgs = Parameters<MachineServiceInterface["postAssignMachineToToken"]>[0];
 
@@ -158,5 +159,11 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
   it("close: closes with given value", () => {
     (component as unknown as { close: (value?: unknown) => void }).close("test-value");
     expect(dialogRef.close).toHaveBeenCalledWith("test-value");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -27,6 +27,7 @@ import { ContainerService } from "@services/container/container.service";
 import { MockContainerService, MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-details-info.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsInfoComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;
@@ -330,5 +331,11 @@ describe("ContainerDetailsInfoComponent", () => {
 
       expect(component.canSave()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

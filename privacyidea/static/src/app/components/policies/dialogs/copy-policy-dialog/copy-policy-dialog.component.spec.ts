@@ -25,6 +25,7 @@ import { DialogAction } from "@models/dialog";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
+import { axe } from "@testing/axe";
 
 class MockMatDialogRef {
   close = jest.fn();
@@ -283,5 +284,11 @@ describe("CopyPolicyDialogComponent", () => {
 
       expect(wrapper.showCloseButton()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

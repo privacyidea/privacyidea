@@ -33,6 +33,7 @@ import { MockAuthService, MockDialogService, MockRadiusService, MockTableUtilsSe
 import { Subject } from "rxjs";
 import { RadiusServersComponent } from "./radius-servers.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
@@ -257,5 +258,11 @@ describe("RadiusServersComponent", () => {
       expect(state.querySelector("button")).toBeNull();
       expect(state.textContent).not.toContain("Create a RADIUS server to forward authentication requests to it.");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

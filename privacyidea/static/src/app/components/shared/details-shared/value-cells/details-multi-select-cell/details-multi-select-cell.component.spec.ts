@@ -20,6 +20,7 @@ import { OverlayContainer } from "@angular/cdk/overlay";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { DetailsMultiSelectCellComponent } from "./details-multi-select-cell.component";
+import { axe } from "@testing/axe";
 
 describe("DetailsMultiSelectCellComponent", () => {
   let fixture: ComponentFixture<DetailsMultiSelectCellComponent>;
@@ -61,5 +62,11 @@ describe("DetailsMultiSelectCellComponent", () => {
     matSelect.selectionChange.emit({ value: ["realm1", "realm2"] } as MatSelectChange);
 
     expect(emitted).toContainEqual(["realm1", "realm2"]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

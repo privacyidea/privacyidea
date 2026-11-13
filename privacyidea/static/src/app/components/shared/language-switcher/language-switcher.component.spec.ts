@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
 import { LanguageSwitcherComponent } from "./language-switcher.component";
+import { axe } from "@testing/axe";
 
 describe("LanguageSwitcherComponent", () => {
   let fixture: ComponentFixture<LanguageSwitcherComponent>;
@@ -65,5 +66,12 @@ describe("LanguageSwitcherComponent", () => {
     create("en").switchTo("de");
 
     expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("de");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    create("en");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

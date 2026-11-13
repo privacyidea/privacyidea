@@ -29,6 +29,7 @@ import { MockApiClientService, MockDialogService, MockUserService } from "@testi
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { Subject } from "rxjs";
 import { UserDetailsRememberedDevicesComponent } from "./user-details-remembered-devices.component";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsRememberedDevicesComponent", () => {
   let component: UserDetailsRememberedDevicesComponent;
@@ -244,5 +245,11 @@ describe("UserDetailsRememberedDevicesComponent", () => {
 
     expect(apiClientServiceMock.getUserRememberedDevices).not.toHaveBeenCalled();
     expect(component.tableState.status()).toBe("denied");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

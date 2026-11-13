@@ -43,6 +43,7 @@ import { Subject } from "rxjs";
 import { ConditionalAccessToggleAction } from "./conditional-access-toggle-dialog/conditional-access-toggle-dialog.component";
 import { ConditionalAccessComponent } from "./conditional-access.component";
 import { setRights, toolbarAction, toolbarButtonBySelector } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessComponent", () => {
   let component: ConditionalAccessComponent;
@@ -97,6 +98,12 @@ describe("ConditionalAccessComponent", () => {
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 
   it("should create", () => {

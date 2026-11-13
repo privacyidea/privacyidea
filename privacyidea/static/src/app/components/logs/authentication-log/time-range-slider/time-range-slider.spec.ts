@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { TimeRangeSlider } from "./time-range-slider";
+import { axe } from "@testing/axe";
 
 describe("TimeRangeSlider", () => {
   let fixture: ComponentFixture<TimeRangeSlider>;
@@ -76,5 +77,11 @@ describe("TimeRangeSlider", () => {
     fixture.componentInstance.commit.subscribe(commit);
     element.querySelector("input")!.dispatchEvent(new Event("change"));
     expect(commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

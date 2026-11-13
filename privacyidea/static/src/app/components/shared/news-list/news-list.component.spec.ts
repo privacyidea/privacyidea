@@ -21,6 +21,7 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NewsListItem } from "@services/info/info.service";
 import { NewsListComponent } from "./news-list.component";
+import { axe } from "@testing/axe";
 
 describe("NewsListComponent", () => {
   let fixture: ComponentFixture<NewsListComponent>;
@@ -128,5 +129,11 @@ describe("NewsListComponent", () => {
 
     const images: HTMLImageElement[] = Array.from(fixture.nativeElement.querySelectorAll(".news-summary img"));
     expect(images.map((img) => img.getAttribute("alt"))).toEqual(["", "Logo"]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

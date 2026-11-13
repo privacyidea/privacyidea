@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { OtpKeyComponent } from "./otp-key.component";
+import { axe } from "@testing/axe";
 
 describe("OtpKeyComponent", () => {
   let component: OtpKeyComponent;
@@ -35,5 +36,13 @@ describe("OtpKeyComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("otpKeyHex", "3132333435363738393031323334353637383930");
+    fixture.componentRef.setInput("otpKeyBase32", "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

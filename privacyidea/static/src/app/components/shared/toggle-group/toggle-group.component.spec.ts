@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ToggleGroupComponent } from "./toggle-group.component";
+import { axe } from "@testing/axe";
 
 @Component({
   imports: [ToggleGroupComponent],
@@ -280,5 +281,11 @@ describe("ToggleGroupComponent", () => {
 
       expect(() => host.group().focus()).not.toThrow();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

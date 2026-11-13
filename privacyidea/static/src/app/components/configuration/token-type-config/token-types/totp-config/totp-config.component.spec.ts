@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
 import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockTotpSteps = ["30", "60"];
 const mockHashLibs = ["sha1", "sha256", "sha512"];
@@ -167,5 +168,12 @@ describe("TotpConfigComponent", () => {
     expect(configForm.model().values[TOTP_HASHLIB]).toBe("");
     expect(configForm.form.values[TOTP_TIME_STEP]().dirty()).toBe(true);
     expect(configForm.form.values[TOTP_HASHLIB]().dirty()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

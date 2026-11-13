@@ -25,6 +25,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
 import { EditActionTabComponent } from "./edit-action-tab.component";
+import { axe } from "@testing/axe";
 
 @Component({
   selector: "app-added-actions-list",
@@ -200,5 +201,11 @@ describe("EditActionTabComponent", () => {
     fixture.detectChanges();
 
     expect(component.selectedAction()).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

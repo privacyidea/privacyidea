@@ -37,6 +37,7 @@ import { of } from "rxjs";
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
+import { axe } from "@testing/axe";
 
 // Mock token enroll strategy
 function installStrategy(component: TokenRolloverComponent, strategy: unknown): void {
@@ -319,5 +320,11 @@ describe("TokenRolloverComponent", () => {
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(finalizeSpy).toHaveBeenCalledWith(enrollResponse);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { YubikeyConfigComponent } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockYubikeyApiIds = ["yubikey.apiid.1", "yubikey.apiid.2", "yubikey.apiid.3"];
 const mockConfig = () => ({ "yubikey.apiid.1": "apiKey1", "yubikey.apiid.2": "apiKey2", "yubikey.apiid.3": "apiKey3" });
@@ -198,5 +199,12 @@ describe("YubikeyConfigComponent", () => {
 
       expect(component.yubikeyCreateNewKey.emit).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

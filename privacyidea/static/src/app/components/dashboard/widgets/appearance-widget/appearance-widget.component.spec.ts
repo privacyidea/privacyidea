@@ -29,6 +29,7 @@ import {
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { AppearanceWidgetComponent } from "./appearance-widget.component";
+import { axe } from "@testing/axe";
 
 describe("AppearanceWidgetComponent", () => {
   let fixture: ComponentFixture<AppearanceWidgetComponent>;
@@ -189,5 +190,11 @@ describe("AppearanceWidgetComponent", () => {
   it("should do nothing on reload(): there is no data to refresh", () => {
     expect(() => component.reload()).not.toThrow();
     expect(component.state()).toBe("ready");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

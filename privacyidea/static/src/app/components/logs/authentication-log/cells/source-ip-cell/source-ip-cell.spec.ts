@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { SourceIpCell } from "./source-ip-cell";
+import { axe } from "@testing/axe";
 
 describe("SourceIpCell", () => {
   let component: SourceIpCell;
@@ -98,5 +99,11 @@ describe("SourceIpCell", () => {
       { key: "source_ip", value: "203.0.113.5" },
       { key: "peer_ip", value: "10.0.0.17" }
     ]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

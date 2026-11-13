@@ -29,6 +29,7 @@ import { MockApiClientService, MockContentService, MockDialogService, MockRealmS
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { Subject } from "rxjs";
 import { ApiClientRememberedDevicesComponent } from "./api-client-remembered-devices.component";
+import { axe } from "@testing/axe";
 
 describe("ApiClientRememberedDevicesComponent", () => {
   let component: ApiClientRememberedDevicesComponent;
@@ -356,5 +357,11 @@ describe("ApiClientRememberedDevicesComponent", () => {
     apiClientServiceMock.reloadRememberedDevices();
     await fixture.whenStable();
     expect(apiClientServiceMock.getRememberedDevices.mock.calls.length).toBe(before + 1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -43,6 +43,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { of } from "rxjs";
 import { TokenDetailsAssignmentsComponent } from "./token-details-assignments.component";
+import { axe } from "@testing/axe";
 
 interface AssignmentsFieldInternals {
   realmsField: EditableField;
@@ -473,5 +474,13 @@ describe("TokenDetailsAssignmentsComponent", () => {
     dialogRef.close(undefined);
 
     expect(containerService.selectedContainerSerial()).toBe("CONT-OLD");
+  });
+
+  it("passes the axe accessibility checks with a linked container", async () => {
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    fixture.componentRef.setInput("tokenDetails", mockTokenDetails({ container_serial: "CONT-1" }));
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

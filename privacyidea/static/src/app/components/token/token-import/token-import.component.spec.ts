@@ -29,6 +29,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { of } from "rxjs";
 import { TokenImportComponent } from "./token-import.component";
+import { axe } from "@testing/axe";
 
 describe("TokenImportComponent", () => {
   let component: TokenImportComponent;
@@ -327,5 +328,11 @@ describe("TokenImportComponent", () => {
   it("ngOnDestroy clears all pending-changes registrations", () => {
     component.ngOnDestroy();
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

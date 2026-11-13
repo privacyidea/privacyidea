@@ -28,6 +28,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { of, Subject } from "rxjs";
 import { PoliciesWidgetComponent } from "./policies-widget.component";
+import { axe } from "@testing/axe";
 
 describe("PoliciesWidgetComponent", () => {
   let fixture: ComponentFixture<PoliciesWidgetComponent>;
@@ -154,5 +155,11 @@ describe("PoliciesWidgetComponent", () => {
     component.reload();
 
     expect(policyMock.getPolicies).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

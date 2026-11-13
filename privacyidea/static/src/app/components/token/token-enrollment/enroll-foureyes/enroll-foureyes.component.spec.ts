@@ -26,6 +26,7 @@ import { MockRealmService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 import { clearOverlays, flushFixture, matSelectAt } from "@testing/enroll-form-dom";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { axe } from "@testing/axe";
 
 describe("EnrollFoureyesComponent", () => {
   let component: EnrollFoureyesComponent;
@@ -133,5 +134,11 @@ describe("EnrollFoureyesComponent", () => {
         })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

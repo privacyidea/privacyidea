@@ -34,6 +34,7 @@ import { TokenApplicationsComponent } from "./token-applications.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { ContentService } from "@services/content/content.service";
+import { axe } from "@testing/axe";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
@@ -78,5 +79,11 @@ describe("TokenApplicationsComponent (Jest)", () => {
   it("should react when the machineService signal changes", () => {
     machineServiceMock.selectedApplicationType.set("offline");
     expect(component.selectedApplicationType()).toBe("offline");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

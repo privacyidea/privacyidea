@@ -25,6 +25,7 @@ import { MockRecoverService } from "@testing/mock-services";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import { throwError } from "rxjs";
 import { PasswordRecoveryRequestComponent } from "./password-recovery-request.component";
+import { axe } from "@testing/axe";
 
 describe("PasswordRecoveryRequestComponent", () => {
   let fixture: ComponentFixture<PasswordRecoveryRequestComponent>;
@@ -164,5 +165,11 @@ describe("PasswordRecoveryRequestComponent", () => {
 
     expect(fixture.nativeElement.textContent).not.toContain("Resetting the password is not enabled.");
     expect(component.isSubmitDisabled()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

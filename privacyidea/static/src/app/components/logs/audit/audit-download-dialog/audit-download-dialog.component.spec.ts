@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuditDownloadDialogComponent } from "@components/logs/audit/audit-download-dialog/audit-download-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { axe } from "@testing/axe";
 
 describe("AuditDownloadDialogComponent", () => {
   let component: AuditDownloadDialogComponent;
@@ -65,5 +66,11 @@ describe("AuditDownloadDialogComponent", () => {
     downloadButton.click();
     fixture.detectChanges();
     expect(mockDialogRef.close).toHaveBeenCalledWith(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

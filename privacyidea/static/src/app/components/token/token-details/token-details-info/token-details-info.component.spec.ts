@@ -29,6 +29,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockLocalService, MockNotificationService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsInfoComponent;
@@ -318,5 +319,11 @@ describe("TokenDetailsInfoComponent", () => {
       expect(component["newInfoForm"].key().touched()).toBe(true);
       expect(component["newInfoForm"].value().touched()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
