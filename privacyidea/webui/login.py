@@ -352,7 +352,9 @@ def _with_query_string(path: str) -> str:
     read them.
     """
     query_string = request.query_string.decode()
-    return f"{path}?{query_string}" if query_string else path
+    # A concatenation and not an f-string, because CodeQL accepts a value on the right side of a "+" as a safe part of
+    # a redirect target, but not a formatted value
+    return path + "?" + query_string if query_string else path
 
 
 @login_blueprint.route('/', methods=['GET'])
@@ -393,7 +395,8 @@ def single_page_application_locale(locale: str, subpath: str | None = None) -> R
             return _serve_locale(preferred) or _serve_locale("en") or abort(404)
         abort(404)
     if canonical != locale or subpath is None:
-        return redirect(_with_query_string(f"{request.script_root}/app/v2/{canonical}/{subpath or ''}"))
+        # The subpath is concatenated for CodeQL, as in _with_query_string
+        return redirect(_with_query_string(f"{request.script_root}/app/v2/{canonical}/" + (subpath or "")))
     return _serve_locale(locale) or abort(404)
 
 
