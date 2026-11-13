@@ -23,11 +23,13 @@ import { provideRouter, RouterOutlet } from "@angular/router";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-notice.component";
 import { SubscriptionExpiredNoticeComponent } from "@components/layout/subscription-expired-notice/subscription-expired-notice.component";
+import { NoRealmDialogService } from "@services/no-realm-dialog/no-realm-dialog.service";
 import { LayoutComponent } from "@components/layout/layout.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { LoadingService } from "@services/loading/loading-service";
 import { MockAuthService, MockContentService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-navigation", template: "", standalone: true })
 class NavigationStubComponent {}
@@ -73,7 +75,8 @@ describe("LayoutComponent", () => {
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: LoadingService, useClass: MockLoadingService }
+        { provide: LoadingService, useClass: MockLoadingService },
+        { provide: NoRealmDialogService, useValue: {} }
       ]
     })
       .overrideComponent(LayoutComponent, {
@@ -158,5 +161,11 @@ describe("LayoutComponent", () => {
 
       expect(fixture.nativeElement.querySelector(".subscription-expired-notice")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

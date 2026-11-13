@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
+import { axe } from "@testing/axe";
 
 describe("MachineResolverHostsTabComponent", () => {
   let component: MachineResolverHostsTabComponent;
@@ -142,5 +143,11 @@ describe("MachineResolverHostsTabComponent", () => {
       await type("/etc/hosts");
       expect(component.hostsForm.filename().dirty()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

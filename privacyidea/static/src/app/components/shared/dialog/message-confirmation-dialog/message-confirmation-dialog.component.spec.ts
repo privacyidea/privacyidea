@@ -23,6 +23,7 @@ import {
   MessageConfirmationDialogComponent,
   MessageConfirmationDialogData
 } from "./message-confirmation-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("MessageConfirmationDialogComponent", () => {
   let component: MessageConfirmationDialogComponent;
@@ -101,5 +102,12 @@ describe("MessageConfirmationDialogComponent", () => {
 
     expect(dialogRef.close).toHaveBeenCalled();
     expect(dialogRef.close.mock.calls[0][0]).toBeUndefined();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { SqlResolverComponent } from "./sql-resolver.component";
+import { axe } from "@testing/axe";
 
 describe("SqlResolverComponent", () => {
   let component: SqlResolverComponent;
@@ -66,6 +67,27 @@ describe("SqlResolverComponent", () => {
     expect(component.model().Table).toBe("users");
     expect(component.model().Limit).toBe("100");
     expect(component.model().Map).toBe("{}");
+  });
+
+  it("should offer every password hash type the server supports for editable users", () => {
+    componentRef.setInput("data", { Editable: true });
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector("mat-select .mat-mdc-select-trigger").click();
+    fixture.detectChanges();
+
+    const options = Array.from(document.querySelectorAll("mat-option")).map((option) => option.textContent?.trim());
+    expect(options).toEqual([
+      "PHPASS",
+      "SHA",
+      "SSHA",
+      "SSHA256",
+      "SSHA512",
+      "OTRS",
+      "SHA256CRYPT",
+      "SHA512CRYPT",
+      "MD5CRYPT"
+    ]);
   });
 
   it("should parse boolean and numeric strings from data input", () => {
@@ -276,5 +298,11 @@ describe("SqlResolverComponent", () => {
       expect(component.model().poolSize).toBe("");
       expect(component.isValid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

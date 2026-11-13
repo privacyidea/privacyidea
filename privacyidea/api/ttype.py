@@ -41,19 +41,17 @@ from flask import (Blueprint,
                    request)
 from flask import g, jsonify, current_app
 
-from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_to_code, send_error,
-                                       log_authentication)
-from privacyidea.lib.audit import getAudit
+from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
+                                       send_error, log_authentication)
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.conditional_access.request_context import join_attempt
-from privacyidea.lib.config import (get_token_class, get_from_config,
-                                    SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.config import get_token_class, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.event import EventConfiguration, event
-from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
+from privacyidea.lib.event import event
+from privacyidea.lib.policy import PolicyAction, SCOPE, Match
 from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_REASON, PUSH_AUTH_TRANSACTION_ID
 from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import get_client_ip_info, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from ..lib.tokens.push_types import PushAction
@@ -73,17 +71,7 @@ def before_request():
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
-    # Create a policy_object, that reads the database audit settings
-    # and contains the complete policy definition during the request.
-    # This audit_object can be used in the postpolicy and prepolicy and it
-    # can be passed to the inner policies.
-    g.policy_object = PolicyClass()
-    g.audit_object = getAudit(current_app.config)
-    g.event_config = EventConfiguration()
-    # access_route contains the ip addresses of all clients, hops and proxies.
-    g.client_ip_info = get_client_ip_info(request,
-                                          get_from_config(SYSCONF.OVERRIDECLIENT))
-    g.client_ip = g.client_ip_info.ip
+    get_before_request_config()
     g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name

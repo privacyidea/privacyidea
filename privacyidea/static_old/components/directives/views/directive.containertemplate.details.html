@@ -72,6 +72,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <input type="checkbox" ng-model="form.user" id="checkboxAssignUserFromContainer" ng-disabled="!edit">
                 <label for="checkboxAssignUserFromContainer" translate>
                     Assign the token to the container owner and/or realm.</label>
+                <div>
+                    <input type="checkbox" ng-model="form.change_pin_on_first_use"
+                           id="checkboxChangePinOnFirstUse{{ $index }}" ng-disabled="!edit">
+                    <label for="checkboxChangePinOnFirstUse{{ $index }}" translate>
+                        Change PIN on first use</label>
+                </div>
             </div>
         </td>
     </tr>

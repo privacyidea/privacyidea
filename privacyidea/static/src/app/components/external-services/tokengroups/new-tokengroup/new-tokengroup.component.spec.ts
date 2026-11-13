@@ -34,6 +34,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockTokengroupService } from "@testing/mock-services/mock-tokengroup-service";
 import { of } from "rxjs";
 import { NewTokengroupComponent } from "./new-tokengroup.component";
+import { axe } from "@testing/axe";
 
 describe("NewTokengroupComponent", () => {
   let component: NewTokengroupComponent;
@@ -321,5 +322,11 @@ describe("NewTokengroupComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

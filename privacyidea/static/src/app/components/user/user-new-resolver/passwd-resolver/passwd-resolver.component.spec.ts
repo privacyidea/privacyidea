@@ -19,6 +19,7 @@
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PasswdResolverComponent } from "./passwd-resolver.component";
+import { axe } from "@testing/axe";
 
 describe("PasswdResolverComponent", () => {
   let component: PasswdResolverComponent;
@@ -108,5 +109,11 @@ describe("PasswdResolverComponent", () => {
 
       expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

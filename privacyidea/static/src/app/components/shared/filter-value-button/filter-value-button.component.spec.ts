@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { FilterValueButtonComponent } from "./filter-value-button.component";
+import { axe } from "@testing/axe";
 
 describe("FilterValueButtonComponent", () => {
   let component: FilterValueButtonComponent;
@@ -80,5 +81,11 @@ describe("FilterValueButtonComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector("button").getAttribute("aria-label")).toBe("Filter by this value");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

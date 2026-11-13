@@ -42,6 +42,7 @@ import {
 import { of } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
@@ -242,5 +243,11 @@ describe("UserDetailsContainerTableComponent", () => {
     expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-1", ["active"]);
     expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-2", ["disabled"]);
     expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

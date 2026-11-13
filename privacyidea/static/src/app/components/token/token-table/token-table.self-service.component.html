@@ -112,22 +112,9 @@
                     }
                   }
                   @case ("active") {
-                    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                      <span
-                        (click)="toggleActive(element)"
-                        (keydown.enter)="toggleActive(element)"
-                        (keydown.space)="$event.preventDefault(); toggleActive(element)"
-                        [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        role="button"
-                        tabindex="0">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    } @else {
-                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    }
+                    <app-token-active-toggle
+                      (toggled)="tokenResource.reload()"
+                      [token]="element" />
                   }
                   @case ("failcount") {
                     @if (authService.actionAllowed("reset")) {

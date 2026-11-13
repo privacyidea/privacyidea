@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollSpassComponent } from "./enroll-spass.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("EnrollSpassComponent", () => {
   let component: EnrollSpassComponent;
@@ -44,5 +45,11 @@ describe("EnrollSpassComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

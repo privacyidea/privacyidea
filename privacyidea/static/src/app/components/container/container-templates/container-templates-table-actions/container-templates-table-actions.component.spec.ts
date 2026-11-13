@@ -23,11 +23,16 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
+import { AuthService } from "@services/auth/auth.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockContainerTemplateService, MockDialogService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { grantRights, setRights } from "@testing/toolbar-actions";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
   let component: ContainerTemplatesTableActionsComponent;
@@ -44,11 +49,13 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ContainerTemplatesTableActionsComponent],
       providers: [
+        { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
+    grantRights(["container_template_create", "container_template_delete"]);
 
     fixture = TestBed.createComponent(ContainerTemplatesTableActionsComponent);
     component = fixture.componentInstance;
@@ -62,6 +69,30 @@ describe("ContainerTemplatesTableActionsComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  const action = (id: string): TableAction => component["actions"]().find((candidate) => candidate.id === id)!;
+  const hasButton = (label: string): boolean =>
+    fixture.debugElement.queryAll(By.css("button")).some((button) => button.nativeElement.textContent.includes(label));
+
+  it("hides Create and Copy without container_template_create", () => {
+    setRights(fixture, ["container_template_delete"]);
+
+    expect(action("create").visible).toBe(false);
+    expect(action("copy").visible).toBe(false);
+    expect(action("delete").visible).toBe(true);
+    expect(hasButton("Create Template")).toBe(false);
+    expect(hasButton("Copy")).toBe(false);
+    expect(hasButton("Delete")).toBe(true);
+  });
+
+  it("hides Delete without container_template_delete", () => {
+    setRights(fixture, ["container_template_create"]);
+
+    expect(action("delete").visible).toBe(false);
+    expect(hasButton("Delete")).toBe(false);
+    expect(hasButton("Create Template")).toBe(true);
+    expect(hasButton("Copy")).toBe(true);
   });
 
   it("should disable Copy and Delete buttons when no templates are selected", () => {
@@ -167,5 +198,11 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     await component.openDeleteTemplateDialog();
 
     expect(serviceSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

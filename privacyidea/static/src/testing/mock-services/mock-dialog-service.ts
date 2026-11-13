@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Subject } from "rxjs";
 import { MatDialogRef } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -24,6 +25,8 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
   private lastDialogRef: MatDialogRef<AbstractDialogComponent> | null = null;
+
+  afterAllClosed = new Subject<void>();
 
   closeDialog = jest.fn().mockImplementation((dialogRef) => {
     if (this.lastDialogRef === dialogRef) {

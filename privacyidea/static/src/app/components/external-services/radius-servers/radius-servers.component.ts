@@ -95,12 +95,21 @@ export class RadiusServersComponent {
     allowed: () => this.authService.actionAllowed("radiusserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("radiusserver_write")
+      ? $localize`:@@radiusServer.createRADIUSServer:Create a RADIUS server to forward authentication requests to it.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("radiusserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["identifier", "server", "dictionary", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to;
   // the .scss include's table.table-width() call sums the same tiers in the same order so the
@@ -134,6 +143,7 @@ export class RadiusServersComponent {
       icon: "vpn_lock",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("radiusserver_write"),
       run: () => this.onCreateNewServer()
     },
     {
@@ -143,6 +153,7 @@ export class RadiusServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

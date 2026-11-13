@@ -36,6 +36,7 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, Subject, throwError } from "rxjs";
 import { ResolverTimingWidgetComponent } from "./resolver-timing-widget.component";
+import { axe } from "@testing/axe";
 
 function makeResponse<T>(value: T): PiResponse<T> {
   return {
@@ -67,6 +68,7 @@ describe("ResolverTimingWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ResolverTimingWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
         // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
@@ -502,5 +504,11 @@ describe("ResolverTimingWidgetComponent", () => {
 
     expect(component.selectedTimeWindow().id).toBe("24h");
     view.destroy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -38,6 +38,7 @@ export class ContainerTemplateEditBodyComponent {
 
   protected readonly tokens = computed(() => this.template().template_options?.tokens || []);
   protected readonly tokenRows = viewChildren(TemplateAddedTokenRowComponent);
+  readonly hasRowChanges = computed(() => this.tokenRows().some((row) => row.hasCheckboxChanges()));
 
   // Pull each row's current payload at save time.
   private _firstInvalidRow: TemplateAddedTokenRowComponent | null = null;

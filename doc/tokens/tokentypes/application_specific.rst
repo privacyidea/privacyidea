@@ -14,6 +14,11 @@ This ``service_id`` ensures, that the token is only used for this service (like 
 The ``service_id`` must first be defined in the :ref:`serviceids` configuration; enrolling a token with an undefined
 service ID fails.
 
+The server can also generate the password. The policy ``applspec_force_server_generate`` (:ref:`admin_policies`,
+:ref:`user_policies`) enforces this. The :ref:`enrollment_policies` ``applspec.length`` and ``applspec.contents``
+define the length and the characters of a generated password. By default, the password has 23 characters and can
+include special characters.
+
 The ``service_id`` is a parameter that is passed in the ``/validate/check`` request. The corresponding plugin can
 send the parameter itself. The privacyIDEA administrator can also define an event handler
 (:ref:`requestmanglerhandler`), to set the ``service_id`` e.g. based on the IP address or based on a realm.

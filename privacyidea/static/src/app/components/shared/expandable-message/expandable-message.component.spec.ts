@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ExpandableMessageComponent } from "./expandable-message.component";
+import { axe } from "@testing/axe";
 
 const LONG = "Your account is locked. Please try again in about {duration}.";
 const SHORT = "Locked.";
@@ -98,5 +99,12 @@ describe("ExpandableMessageComponent", () => {
 
     withText(LONG + " Contact your administrator.");
     expect(component.expanded()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    withText(null);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

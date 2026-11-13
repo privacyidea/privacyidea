@@ -91,6 +91,7 @@ export interface LDAPResolverData extends ResolverData {
   SERVERPOOL_ROUNDS?: number;
   SERVERPOOL_SKIP?: number;
   SERVERPOOL_PERSISTENT?: boolean;
+  SERVERPOOL_STRATEGY?: string;
   OBJECT_CLASSES?: string;
   DN_TEMPLATE?: string;
   MULTIVALUEATTRIBUTES?: string;
@@ -198,6 +199,8 @@ export interface SCIMResolverData extends ResolverData {
 
 export interface ResolverServiceInterface {
   resolversResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
+  /** Set to load the resolver list on routes outside the users area (e.g. for the no-realm dialog). */
+  loadRequested: WritableSignal<boolean>;
   selectedResolverName: WritableSignal<string>;
   selectedResolverResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   resolvers: Signal<Resolver[]>;
@@ -224,8 +227,10 @@ export class ResolverService implements ResolverServiceInterface {
   private readonly http = inject(HttpClient);
 
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
+  loadRequested = signal(false);
   resolversResource = httpResource<PiResponse<Resolvers>>(() => {
     if (
+      !this.loadRequested() &&
       !this.contentService.onAnyUsersRoute() &&
       !this.contentService.onLockedUsers() &&
       !this.contentService.onPolicies()

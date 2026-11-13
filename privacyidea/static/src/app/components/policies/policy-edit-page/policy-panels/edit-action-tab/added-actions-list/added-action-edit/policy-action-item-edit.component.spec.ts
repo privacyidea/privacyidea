@@ -35,6 +35,7 @@ import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-g
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
 import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionItemEditComponent", () => {
   let component: PolicyActionItemEditComponent;
@@ -79,6 +80,28 @@ describe("PolicyActionItemEditComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("comma hint", () => {
+    const commaHint = () => fixture.debugElement.query(By.css("mat-error"))?.nativeElement.textContent.trim();
+
+    beforeEach(() => {
+      fixture.componentRef.setInput("actionDetail", { type: "str", desc: "" });
+    });
+
+    it("should explain the escape in a message the server unescapes", () => {
+      fixture.componentRef.setInput("action", { name: "email_challenge_text", value: "Hello, World" });
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values. Write a comma as \\,");
+    });
+
+    it("should not mention the escape in an action the server does not unescape", () => {
+      fixture.componentRef.setInput("action", { name: "passkey_challenge_text", value: "Hello, World" });
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values.");
+    });
   });
 
   it("should identify boolean actions correctly", () => {
@@ -601,6 +624,12 @@ describe("PolicyActionItemEditComponent", () => {
     const deleteBtn = fixture.debugElement.query(By.css(".delete-icon-button"));
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

@@ -30,6 +30,14 @@
       that completes an enrollment via multichallenge. A passkey login at `/auth` without a username matches
       `last_auth` for the owner as well.
 
+* **Request header, environment and request data conditions work on the WebUI start page and the push poll** — Before,
+  these conditions had no data on the WebUI start page. Header and environment conditions also had no data on the
+  poll of the smartphone (`GET /ttype/push`). *Handle Missing Data* decided the result: a policy applied to every
+  request (*Condition is true*) or to none (*Condition is false*). With *Raise an error*, the start page and every
+  poll returned 403. Now these conditions read the data of the request. The WebUI reads its policies with a request
+  to `/config`. It adds the parameters of its start URL to this request. **Check WebUI policies and policies for the
+  push poll, like `push_allow_polling`, that have such a condition before the update.**
+
 * **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
   returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
   as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
@@ -352,6 +360,27 @@
   is only the response message if no token got a challenge; it is no longer listed in `detail.messages` next to the
   challenge texts. At `/validate/check` and `/auth` this now also holds for a token whose failcounter the trigger itself
   raised to the maximum.
+
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An
+  [*Override Authorization Client*](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client)
+  entry such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+  documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
+
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy path.** The entries
+  after it are recorded in the authentication log but never become the client IP. If your proxy writes such a value,
+  the client IP of these requests is the proxy's address, so configure the proxy to write the client address
+  instead. Entries with a port (`192.0.2.43:51234`) or in brackets (`[2001:db8::1]`) are now read as addresses. How
+  privacyIDEA determines the client IP and how to configure your proxies for it is described in
+  [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
+
+* **The client IP of an IPv4 client is now always its IPv4 address.** A dual-stack listener reports an IPv4 client
+  as `::ffff:10.0.0.5`. privacyIDEA now uses `10.0.0.5` as the client IP, with and without
+  *Override Authorization Client*. The authentication log keeps the reported address in `peer_ip` and `ip_chain`.
+  IPv4 networks in *Override Authorization Client* now also contain the mapped form of a proxy address. Policies and
+  event handler conditions with an IPv6 network such as `::/0` no longer contain these clients. If your audit log
+  shows client IPs that start with `::ffff:`, check these policies and event handlers. IP blocks of addresses that
+  start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
+  start again for these clients.
 
 ## Update from 3.13 to 3.14
 

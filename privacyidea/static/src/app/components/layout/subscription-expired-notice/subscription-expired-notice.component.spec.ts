@@ -22,6 +22,7 @@ import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
 import { SubscriptionExpiredNoticeComponent } from "./subscription-expired-notice.component";
+import { axe } from "@testing/axe";
 
 describe("SubscriptionExpiredNoticeComponent", () => {
   let mockAuthService: MockAuthService;
@@ -80,5 +81,11 @@ describe("SubscriptionExpiredNoticeComponent", () => {
 
     setStatus(3);
     expect(notice()).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

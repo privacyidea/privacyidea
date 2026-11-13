@@ -48,6 +48,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { touchAll } from "@utils/form-state.utils";
 import { of, Subject } from "rxjs";
 import { ApiClientEditComponent } from "./api-client-edit.component";
+import { axe } from "@testing/axe";
 
 describe("ApiClientEditComponent", () => {
   let component: ApiClientEditComponent;
@@ -527,5 +528,12 @@ describe("ApiClientEditComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

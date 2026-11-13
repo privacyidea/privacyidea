@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { QrCodeTextComponent } from "./qr-code-text.component";
+import { axe } from "@testing/axe";
 
 describe("QrCodeTextComponent", () => {
   let component: QrCodeTextComponent;
@@ -32,5 +33,13 @@ describe("QrCodeTextComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("url", "otpauth://hotp/OATH0001?secret=GEZDGNBVGY3TQOJQ&counter=0");
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

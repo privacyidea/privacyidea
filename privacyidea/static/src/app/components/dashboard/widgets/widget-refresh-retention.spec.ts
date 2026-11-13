@@ -38,6 +38,7 @@ import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, throwError } from "rxjs";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 
 function makeInstance(type: WidgetInstance["type"]): WidgetInstance {
   return { id: type + "-1", type, x: 0, y: 0, cols: 6, rows: 5 };
@@ -50,6 +51,7 @@ describe("widget data retention across a failed refresh", () => {
     await TestBed.configureTestingModule({
       imports: [TokensWidgetComponent, TokenTypesWidgetComponent, WidgetFrameComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },

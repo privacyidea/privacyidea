@@ -82,8 +82,11 @@ export class ConfigService implements ConfigServiceInterface {
     // header and correctly receives the hidden (blanked) version.
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     const headers = token ? new HttpHeaders({ "PI-Authorization": token }) : undefined;
+    // The query of the URL the WebUI was opened with goes along unchanged, so that the request data conditions of
+    // the WebUI policies see the parameters of the start page. This request is the only one, so navigation inside
+    // the app does not change the configuration.
     this.http
-      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config`, { headers })
+      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config${window.location.search}`, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to load config:", error);

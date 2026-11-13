@@ -38,6 +38,7 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
@@ -142,12 +143,38 @@ describe("ServiceIdsComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["serviceid_list"]);
+    it("shows both actions with serviceid_add and serviceid_delete", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create Service ID")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create without serviceid_add", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_delete"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create Service ID")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides delete without serviceid_delete", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create Service ID")).toBeTruthy();
+    });
+
+    it("offers row selection only with serviceid_delete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["serviceid_list", "serviceid_delete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+      expect(selectColumn()).toBeNull();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -158,7 +185,7 @@ describe("ServiceIdsComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["serviceid_list"]);
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -200,7 +227,7 @@ describe("ServiceIdsComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["serviceid_list"]);
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -210,7 +237,7 @@ describe("ServiceIdsComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["serviceid_list"]);
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
       component.selector.selectRow(serviceIdServiceMock.serviceIds()[0]);
       fixture.detectChanges();
 
@@ -220,5 +247,33 @@ describe("ServiceIdsComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      serviceIdServiceMock.serviceIds.set([]);
+    });
+
+    it("offers the create button and hint with serviceid_add", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Service ID");
+      expect(state.textContent).toContain("Create a service ID to attach SSH tokens to it.");
+    });
+
+    it("offers neither button nor hint without serviceid_add", () => {
+      setRights(fixture, ["serviceid_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create a service ID to attach SSH tokens to it.");
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

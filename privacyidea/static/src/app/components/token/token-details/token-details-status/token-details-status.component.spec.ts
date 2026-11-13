@@ -27,6 +27,7 @@ import { MockTableUtilsService, MockTokenService } from "@testing/mock-services"
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsStatusComponent } from "./token-details-status.component";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsStatusComponent", () => {
   let component: TokenDetailsStatusComponent;
@@ -85,6 +86,10 @@ describe("TokenDetailsStatusComponent", () => {
     it("is named by the state it shows", () => {
       expect(toggle().hasAttribute("aria-label")).toBe(false);
       expect(toggle().textContent?.trim()).toBe("Active");
+    });
+
+    it("passes the axe accessibility checks", async () => {
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
     });
 
     it("describes what pressing it does with the tooltip of the token tables", () => {
