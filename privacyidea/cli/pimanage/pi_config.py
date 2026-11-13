@@ -647,7 +647,9 @@ def config_import(ctx, infile, types, name, skip_invalid):
     for fmt in imp_fmt_dict:
         try:
             data = imp_fmt_dict[fmt](content)
-        except (SyntaxError, ValueError, TypeError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+        # The Python parser fails with RecursionError or MemoryError on deeply nested data, which YAML can read
+        except (SyntaxError, ValueError, TypeError, RecursionError, MemoryError, json.decoder.JSONDecodeError,
+                yaml.error.YAMLError) as _e:
             continue
         # e.g. plain text is valid YAML, but only a dictionary is a valid configuration
         if isinstance(data, dict):

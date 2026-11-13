@@ -2334,6 +2334,15 @@ class TestPIManageConfigImport:
         assert result.exit_code == 1, result.output
         assert "Could not determine input format" in result.output
 
+    def test_22_import_yaml_the_python_parser_can_not_handle(self, app, tmp_path):
+        # This is valid YAML, but too deeply nested for the Python parser, which is tried before YAML
+        infile = tmp_path / "nested.yaml"
+        infile.write_text("{'nothing': " + "-" * 100000 + "1}")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        assert result.exception is None, result.exception
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """
