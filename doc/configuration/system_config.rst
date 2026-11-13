@@ -107,11 +107,12 @@ provides a wrong OTP value. AutoResync works like this:
 * If it is, the token counter is set and the user is successfully authenticated.
 
 .. note:: AutoResync works for all HOTP and TOTP based tokens including SMS and
-   Email tokens. For TOTP tokens the **Auto resync timeout** is not used: the
-   second OTP value must belong to the time step directly after the remembered
-   one and lie within the sync window around the current time, which limits the
-   resync to about two time steps. Day password tokens are not resynchronized
-   automatically.
+   Email tokens. For TOTP tokens, the second OTP value must belong to the time
+   step directly after the remembered one. privacyIDEA uses at least three time
+   steps as **Auto resync timeout** for TOTP tokens. The token shows each value
+   for one time step, so the user needs up to two time steps to read both
+   values. The third time step leaves time for the requests. Day password
+   tokens are not resynchronized automatically.
 
 
 .. index:: usercache
