@@ -919,6 +919,18 @@ describe("TokenEnrollmentComponent", () => {
         expect(hasChanges()).toBe(true);
       });
 
+      it("keeps the container but does not report it as an unsaved change", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        component.selectedContainerForm().controlValue.set("CONT-7");
+        expect(component.selectedContainerForm().dirty()).toBe(true);
+
+        openLastStep(component);
+
+        expect(component.selectedContainer()).toBe("CONT-7");
+        expect(component.isDirty()).toBe(false);
+      });
+
       it("does not reset after a cancelled enrollment", () => {
         component["inputsResetPending"] = true;
         component.resetEnrollment();

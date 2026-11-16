@@ -604,6 +604,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.selectedStartTimeForm().reset(DEFAULT_START_TIME);
     this.selectedEndDateForm().reset(null);
     this.selectedEndTimeForm().reset(DEFAULT_END_TIME);
+    // The container stays selected, but it belongs to the enrolled token. A dirty container field
+    // makes the guard offer "Save and exit", which enrolls a second token.
+    this.selectedContainerForm().reset();
     if (recreateTypeInputs) {
       this.inputsGeneration.update((generation) => generation + 1);
     }
