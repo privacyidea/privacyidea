@@ -263,6 +263,46 @@ export async function resetFocusStart(page: Page): Promise<void> {
   });
 }
 
+export interface TabStop {
+  // The focused element and its two nearest ancestors, e.g. "button.mdc-icon-button<div.actions<mat-card".
+  id: string;
+  visible: boolean;
+}
+
+// Presses Tab `presses` times from the top of the document and returns each element that took focus. A press that
+// leaves focus on the body or in the browser's own UI (the end of the page, or a page that re-rendered) is skipped.
+export async function tabStops(page: Page, presses: number): Promise<TabStop[]> {
+  await resetFocusStart(page);
+  const stops: TabStop[] = [];
+  for (let i = 0; i < presses; i++) {
+    await page.keyboard.press("Tab");
+    const stop = await page.evaluate(() => {
+      const e = document.activeElement as HTMLElement | null;
+      if (!e || e === document.body) {
+        return null;
+      }
+      const r = e.getBoundingClientRect();
+      const style = getComputedStyle(e);
+      const path: string[] = [];
+      for (let n: HTMLElement | null = e; n && path.length < 3; n = n.parentElement) {
+        path.push(
+          n.tagName.toLowerCase() +
+            (n.id ? "#" + n.id : "") +
+            (n.className ? "." + String(n.className).split(" ")[0] : "")
+        );
+      }
+      return {
+        id: path.join("<"),
+        visible: r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none"
+      };
+    });
+    if (stop) {
+      stops.push(stop);
+    }
+  }
+  return stops;
+}
+
 const PAGED = { count: 0, current: 1, next: null, prev: null };
 
 // The GET request each table page loads its rows with (its API path, see apiEndpoint) and what a privacyIDEA

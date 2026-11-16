@@ -31,6 +31,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { NewCaConnectorComponent } from "./new-ca-connector.component";
+import { axe } from "@testing/axe";
 
 const flush = async (fixture: ComponentFixture<unknown>) => {
   fixture.detectChanges();
@@ -402,6 +403,12 @@ describe("NewCaConnectorComponent", () => {
       "openssl.cnf": "o"
     }));
     expect(component.canSave).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

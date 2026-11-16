@@ -107,6 +107,19 @@
   background: var(--mat-sys-surface-container-low);
 }
 
+// A type without an enroll component is a disabled option, Material dims it itself (opacity 0.38 on the primary
+// text). Material also sets pointer-events: none on it, which would silence the tooltip, so it is switched back on.
+// The selector has three classes to beat Material's two without !important. The disabled state still blocks selection.
+.mat-mdc-option.mdc-list-item--disabled.select-option-unsupported {
+  pointer-events: auto;
+
+  .mdc-list-item__primary-text {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+}
+
 // The idle rows of a tile select panel (.select-option) are raised tiles on the panel. The extra classes outrank
 // Material's transparent option background, and the states keep the layers above.
 .mat-mdc-option.mdc-list-item.select-option:not(:hover, :focus, .mat-mdc-option-active, .mdc-list-item--selected) {

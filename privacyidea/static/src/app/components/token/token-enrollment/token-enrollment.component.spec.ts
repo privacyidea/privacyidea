@@ -27,6 +27,7 @@ import {
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -71,6 +72,7 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -81,7 +83,9 @@ interface TokenEnrollmentComponentInternals {
 
 // Mock token enroll strategy
 function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
-  const withDefaults = strategy ? { enrollmentBlockedReason: signal(null), ...(strategy as object) } : strategy;
+  const withDefaults = strategy
+    ? { enrollmentBlockedReason: signal(null), reopenDialog: signal(undefined), ...(strategy as object) }
+    : strategy;
   Object.defineProperty(component, "enrollSwitch", {
     value: () => ({ currentStrategy: () => withDefaults }),
     configurable: true
@@ -259,19 +263,13 @@ describe("TokenEnrollmentComponent", () => {
       );
     });
 
-    it("snacks when clickEnroll is not provided", async () => {
-      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+    it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
+      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-      component.setPin.set("1234");
-      component.repeatPin.set("1234");
-
-      installStrategy(component, undefined);
-
-      await component.enrollToken();
-
-      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
-        "Enrollment action is not available for the selected token type."
-      );
+      expect(component.enrollmentBlockedReason()).not.toBeNull();
+      expect(component.isFormInvalid()).toBe(true);
     });
 
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {
@@ -848,6 +846,242 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.enrolledDialogData()?.response).toEqual(response);
     });
 
+    describe("input reset after enrollment", () => {
+      const lastStepData = () => ({
+        response: {} as unknown as EnrollmentResponse,
+        enrollParameters: {} as unknown as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+      const fillInputs = (c: TokenEnrollmentComponent) => {
+        c.descriptionForm().controlValue.set("my token");
+        c.setPin.set("1234");
+        c.repeatPin.set("1234");
+        c.selectedStartDate.set(new Date());
+        c.selectedEndTime.set("12:00");
+      };
+      // Finishes the enrollment, which opens the last step dialog.
+      const openLastStep = (c: TokenEnrollmentComponent) =>
+        (c as unknown as TokenEnrollmentComponentInternals)._handleEnrollmentResponse({
+          detail: {}
+        } as unknown as EnrollmentResponse);
+      const strategyArgs = (type: string) =>
+        jest.fn().mockReturnValue({
+          data: { type },
+          mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        });
+
+      it("resets the inputs when the last step dialog of a new enrollment opens", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        fillInputs(component);
+        const generation = component["inputsGeneration"]();
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("");
+        expect(component.setPin()).toBe("");
+        expect(component.repeatPin()).toBe("");
+        expect(component.selectedStartDate()).toBeNull();
+        expect(component.selectedEndTime()).toBe("23:59");
+        expect(component.isDirty()).toBe(false);
+        expect(component["inputsGeneration"]()).toBe(generation + 1);
+      });
+
+      it("keeps the inputs for the next token when the last step dialog is reopened", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        openLastStep(component);
+        fillInputs(component);
+        const generation = component["inputsGeneration"]();
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("my token");
+        expect(component.setPin()).toBe("1234");
+        expect(component["inputsGeneration"]()).toBe(generation);
+      });
+
+      it("registers the unsaved-changes guard again for the next token", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
+
+        openLastStep(component);
+
+        expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
+        const hasChanges = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+        expect(hasChanges()).toBe(false);
+        component.descriptionForm().controlValue.set("next token");
+        expect(hasChanges()).toBe(true);
+      });
+
+      it("keeps the container but does not report it as an unsaved change", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        component.selectedContainerForm().controlValue.set("CONT-7");
+        expect(component.selectedContainerForm().dirty()).toBe(true);
+
+        openLastStep(component);
+
+        expect(component.selectedContainer()).toBe("CONT-7");
+        expect(component.isDirty()).toBe(false);
+      });
+
+      it("does not reset after a cancelled enrollment", () => {
+        component["inputsResetPending"] = true;
+        component.resetEnrollment();
+        component.enrolledDialogData.set(lastStepData());
+        fillInputs(component);
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("my token");
+      });
+
+      it("resets the inputs in self service", () => {
+        const selfComponent = TestBed.createComponent(TokenEnrollmentSelfServiceComponent).componentInstance;
+        selfComponent.enrolledDialogData.set(lastStepData());
+        selfComponent["inputsResetPending"] = true;
+        fillInputs(selfComponent);
+
+        openLastStep(selfComponent);
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+        expect(selfComponent.description()).toBe("");
+        expect(selfComponent.setPin()).toBe("");
+      });
+
+      it("keeps the inputs in the wizard", () => {
+        const wizardComponent = TestBed.createComponent(TokenEnrollmentWizardComponent).componentInstance;
+        wizardComponent.enrolledDialogData.set(lastStepData());
+        wizardComponent["inputsResetPending"] = true;
+        fillInputs(wizardComponent);
+        const generation = wizardComponent["inputsGeneration"]();
+
+        openLastStep(wizardComponent);
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+        expect(wizardComponent.description()).toBe("my token");
+        expect(wizardComponent.setPin()).toBe("1234");
+        expect(wizardComponent["inputsGeneration"]()).toBe(generation);
+      });
+
+      it("resets the inputs at once when the push step stops in clientwait", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        const enrolledResponse = {
+          result: { status: true },
+          detail: { serial: "PIPU0002", rollout_state: "enrolled" }
+        } as unknown as EnrollmentResponse;
+        const reopenAction = jest.fn().mockResolvedValue(enrolledResponse);
+        installStrategy(component, {
+          buildEnrollmentArgs: strategyArgs("push"),
+          onEnrollmentResponse: jest.fn().mockResolvedValue(null),
+          reopenDialog: signal(reopenAction)
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPU0002", rollout_state: "clientwait" } })
+        );
+        component.descriptionForm().controlValue.set("first token");
+        const generation = component["inputsGeneration"]();
+        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
+
+        await component.enrollToken();
+
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+        expect(component.description()).toBe("");
+        // The type-specific component stays, because it holds the reopen action.
+        expect(component["inputsGeneration"]()).toBe(generation);
+        expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
+      });
+
+      it("keeps the inputs for the next token when a push enrollment finishes on reopen", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        const enrolledResponse = {
+          result: { status: true },
+          detail: { serial: "PIPU0003", rollout_state: "enrolled" }
+        } as unknown as EnrollmentResponse;
+        const reopenAction = jest.fn().mockResolvedValue(enrolledResponse);
+        const reopenDialog = signal<jest.Mock | undefined>(reopenAction);
+        installStrategy(component, {
+          buildEnrollmentArgs: strategyArgs("push"),
+          onEnrollmentResponse: jest.fn().mockResolvedValue(null),
+          reopenDialog
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPU0003", rollout_state: "clientwait" } })
+        );
+        await component.enrollToken();
+        component.descriptionForm().controlValue.set("next token");
+        component.setPin.set("5678");
+        component.repeatPin.set("5678");
+
+        await component.reopenEnrollmentDialog();
+
+        expect(reopenAction).toHaveBeenCalledTimes(1);
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({ component: TokenEnrollmentLastStepDialogComponent })
+        );
+        expect(component.description()).toBe("next token");
+        expect(component.setPin()).toBe("5678");
+
+        // The next reopen shows the last step dialog and does not poll again.
+        dialogServiceMock.openDialog.mockClear();
+        expect(reopenDialog()).toBeUndefined();
+        await component.reopenEnrollmentDialog();
+        expect(reopenAction).toHaveBeenCalledTimes(1);
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({ component: TokenEnrollmentLastStepDialogComponent })
+        );
+      });
+
+      it("resets the inputs when the verify dialog closes before the verification", async () => {
+        installStrategy(component, { buildEnrollmentArgs: strategyArgs("hotp") });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "OATH0003", verify: { message: "Enter OTP" } } })
+        );
+        const dialogRef = new MockMatDialogRef();
+        dialogRef.afterClosed.mockReturnValue(of(undefined));
+        dialogServiceMock.openDialog.mockReturnValue(dialogRef);
+        component.descriptionForm().controlValue.set("first token");
+        const generation = component["inputsGeneration"]();
+
+        await component.enrollToken();
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({ component: TokenVerifyEnrollmentComponent })
+        );
+        expect(component.description()).toBe("");
+        // No reopen action depends on the HOTP inputs, so they are created anew.
+        expect(component["inputsGeneration"]()).toBe(generation + 1);
+        expect(component.enrolledDialogData()).not.toBeNull();
+      });
+
+      it("drops the reopen action of the enrolled token with the recreated type-specific inputs", async () => {
+        const strategyBefore = component["enrollSwitch"]()?.currentStrategy();
+        expect(strategyBefore).toBeDefined();
+        const staleReopenAction = jest.fn();
+        strategyBefore!.reopenDialog.set(staleReopenAction);
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+
+        openLastStep(component);
+        fixture.detectChanges();
+
+        const strategyAfter = component["enrollSwitch"]()?.currentStrategy();
+        expect(strategyAfter).toBeDefined();
+        expect(strategyAfter).not.toBe(strategyBefore);
+        expect(strategyAfter!.reopenDialog()).toBeUndefined();
+
+        dialogServiceMock.openDialog.mockClear();
+        await component.reopenEnrollmentDialog();
+
+        expect(staleReopenAction).not.toHaveBeenCalled();
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({ component: TokenEnrollmentLastStepDialogComponent })
+        );
+      });
+    });
+
     it("reopenEnrollmentDialog: uses reopen function when provided", () => {
       const fn = jest.fn().mockReturnValue(of(null));
       installStrategy(component, { reopenDialog: () => fn });
@@ -863,8 +1097,7 @@ describe("TokenEnrollmentComponent", () => {
         buildEnrollmentArgs: jest.fn().mockReturnValue({
           data: { type: "totp" },
           mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
-        }),
-        reopenDialog: () => undefined
+        })
       });
       const enrollResponse = {
         result: { status: true },
@@ -910,6 +1143,44 @@ describe("TokenEnrollmentComponent", () => {
       expect(verifySpy).toHaveBeenCalledTimes(1);
       expect(successSpy).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("openContainerCreateDialog()", () => {
+    it("passes the selected user to the dialog and preselects the created container", () => {
+      userService.selectedUser.set({ username: "alice" } as unknown as UserData);
+      userService.selectedUserRealm.set("realm1");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: ContainerCreateDialogComponent,
+          data: { username: "alice", userRealm: "realm1", checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close("CONT-NEW");
+
+      expect(component.selectedContainer()).toBe("CONT-NEW");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("passes no user to the dialog when none is selected and keeps the selection on cancel", () => {
+      userService.selectedUser.set(null);
+      component.selectedContainer.set("CONT-OLD");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { username: undefined, userRealm: undefined, checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close(undefined);
+
+      expect(component.selectedContainer()).toBe("CONT-OLD");
     });
   });
 
@@ -1274,14 +1545,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.isFormInvalid()).toBe(false);
     });
 
-    it("falls back to the session user where the assignment component is not rendered", () => {
+    it("falls back to the session user where the assignment component is not rendered", async () => {
       const selfService = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       userService.selectedUser.set(null);
+      await flushFixture(selfService);
 
       expect(selfService.componentInstance.isFormInvalid()).toBe(true);
 
       userService.selectedUser.set({ username: "alice" } as UserData);
+      await flushFixture(selfService);
       expect(selfService.componentInstance.isFormInvalid()).toBe(false);
     });
 
@@ -1319,7 +1592,50 @@ describe("TokenEnrollmentComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
+
+    it("registers the guard again after a cancelled enrollment", async () => {
+      tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+      installStrategy(component, {
+        buildEnrollmentArgs: jest.fn().mockReturnValue({
+          data: { type: "push" },
+          mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        }),
+        onEnrollmentResponse: jest.fn().mockResolvedValue(ENROLLMENT_CANCELLED)
+      });
+      tokenService.enrollToken.mockReturnValueOnce(
+        of({ result: { status: true }, detail: { serial: "PIPU0004", rollout_state: "clientwait" } })
+      );
+      const registerHasChanges = pendingChangesService.registerHasChanges as jest.Mock;
+      registerHasChanges.mockClear();
+      pendingChangesService.clearAllRegistrations.mockClear();
+
+      await component.enrollToken();
+
+      expect(registerHasChanges).toHaveBeenCalledTimes(1);
+      const lastClear = Math.max(0, ...pendingChangesService.clearAllRegistrations.mock.invocationCallOrder);
+      expect(registerHasChanges.mock.invocationCallOrder[0]).toBeGreaterThan(lastClear);
+    });
+
+    it("does not register the guard of a destroyed component when a dialog closes late", () => {
+      fixture.destroy();
+      const registerHasChanges = pendingChangesService.registerHasChanges as jest.Mock;
+      registerHasChanges.mockClear();
+
+      component.resetEnrollment();
+
+      expect(registerHasChanges).not.toHaveBeenCalled();
+    });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });
 
 describe("token-enrollment constants", () => {

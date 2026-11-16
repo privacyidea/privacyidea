@@ -32,6 +32,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessActionItemComponent", () => {
   let component: ConditionalAccessActionItemComponent;
@@ -550,5 +551,11 @@ describe("ConditionalAccessActionItemComponent", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600, retrigger_above_threshold: true });
       expect(component.retriggerChecked()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -92,3 +92,7 @@ export const ALL_PAGES: PageRoute[] = [...TABLE_PAGES, ...OTHER_PAGES];
 // Browser zoom as Chrome applies it on a 1920x1080 screen: the CSS viewport shrinks by the zoom factor.
 export const ZOOMS = [1, 1.25, 1.5, 2] as const;
 export const SCREEN = { width: 1920, height: 1080 } as const;
+
+export function zoomedViewport(zoom: number): { width: number; height: number } {
+  return { width: Math.round(SCREEN.width / zoom), height: Math.round(SCREEN.height / zoom) };
+}

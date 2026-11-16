@@ -693,7 +693,7 @@ class WebAuthnTokenClass(TokenClass):
                     FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when authenticating with a WebAuthn "
-                                  "token. Default: preferred (verify the user if supported by the token)"),
+                                  "token or passkey. Default: preferred (verify the user if supported by the token)"),
                         'value': [
                             'required',
                             'preferred',
@@ -765,7 +765,7 @@ class WebAuthnTokenClass(TokenClass):
                     FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: {
                         'type': 'str',
                         'desc': _("Whether the user's identity should be verified when rolling out a new WebAuthn "
-                                  "token. Default: preferred (verify the user if supported by the token)"),
+                                  "token or passkey. Default: preferred (verify the user if supported by the token)"),
                         'group': WebAuthnGroup.WEBAUTHN,
                         'value': [
                             "required",

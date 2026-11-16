@@ -23,9 +23,11 @@ import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAd
 import { MAT_TOOLTIP_DEFAULT_OPTIONS } from "@angular/material/tooltip";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption } from "@angular/material/select";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ContainerCreateDialogData } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
@@ -61,6 +63,7 @@ import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-se
     MatAutocompleteTrigger,
     MatNativeDateModule,
     MatDatepickerModule,
+    MatIcon,
     ClearableInputComponent,
     ScrollToTopDirective,
     EnrollTokenTypeSwitchComponent,
@@ -88,6 +91,15 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
   constructor() {
     super();
+  }
+
+  protected override containerCreateDialogData(): ContainerCreateDialogData {
+    // In self-service, the new container can only be assigned to the logged-in user.
+    return {
+      username: this.authService.username() || undefined,
+      userRealm: this.authService.realm() || undefined,
+      checkUserAssignment: true
+    };
   }
 
   protected override openLastStepDialog(response: EnrollmentResponse | null): void {

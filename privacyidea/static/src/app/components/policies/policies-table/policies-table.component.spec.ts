@@ -43,6 +43,7 @@ import {
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -555,5 +556,11 @@ describe("PoliciesTableComponent", () => {
 
     expect(component.filter().getFilterOfKey("actions")).toBe("=rss_age");
     expect(filterComponent.updateFilterManually).toHaveBeenCalledWith(component.filter());
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

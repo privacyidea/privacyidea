@@ -34,6 +34,7 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { ContainerDetailsUserComponent, ContainerDetailsUserHost } from "./container-details-user.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsUserComponent", () => {
   let component: ContainerDetailsUserComponent;
@@ -89,5 +90,11 @@ describe("ContainerDetailsUserComponent", () => {
     fixture.detectChanges();
 
     expect(component.host().isEditingUser()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

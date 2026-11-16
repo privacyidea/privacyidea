@@ -24,8 +24,8 @@ import * as path from "path";
 
 // WCAG 2.2 A/AA through axe-core.
 //
-// The WebUI does not pass yet. accessibility-baseline.json lists, per page (or state) and theme, the rules known
-// to fail today, so a check fails on a rule that is new there and stays green on the known backlog. Fixing a rule
+// accessibility-baseline.json lists, per page (or state) and theme, the rules known to fail, so a check fails on a
+// rule that is new there and stays green on a known backlog; all lists are empty at the moment. Fixing a rule
 // makes its baseline entry stale (reported as an annotation); drop it with
 //   npm run test:e2e:baseline
 // which rewrites the file from the current results - review its diff before committing, since it also records
@@ -53,9 +53,15 @@ function writeBaseline(name: string, theme: string, rules: string[]): void {
       break;
     } catch {
       try {
-        if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) fs.rmdirSync(lock);
+        if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) {
+          // Renaming is atomic: of several workers that see the stale lock, one moves it away and the others fail
+          // here, so none of them removes the lock its neighbour has just taken.
+          const stale = `${lock}.stale-${process.pid}`;
+          fs.renameSync(lock, stale);
+          fs.rmdirSync(stale);
+        }
       } catch {
-        // The holder released it in the meantime.
+        // The holder released it, or another worker took the stale lock over, in the meantime.
       }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
     }

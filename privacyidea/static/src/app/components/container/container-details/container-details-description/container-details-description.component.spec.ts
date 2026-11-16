@@ -24,6 +24,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { MockAuthService, MockContainerService } from "@testing/mock-services";
 import { ContainerDetailsDescriptionComponent } from "./container-details-description.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsDescriptionComponent", () => {
   let component: ContainerDetailsDescriptionComponent;
@@ -140,5 +141,11 @@ describe("ContainerDetailsDescriptionComponent", () => {
 
     expect(containerService.setContainerDescription).toHaveBeenCalledWith("CONT-1", "via registry");
     expect(registry.anyEditing()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

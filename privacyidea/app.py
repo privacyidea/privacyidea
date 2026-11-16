@@ -95,6 +95,7 @@ from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.lib.utils import censor_connect_string
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
@@ -763,11 +764,13 @@ def create_docker_app():
     # Check database connection
     with app.app_context():
         try:
-            log.debug("Test Database using URL '%s'", app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
-            db.session.execute(sa.text('SELECT 1'))
+            database_uri = censor_connect_string(app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
+            log.debug("Test Database using URL '%s'", database_uri)
+            # Compiled per dialect: "SELECT 1" on most databases, "SELECT 1 FROM DUAL" on Oracle, which needs a FROM
+            db.session.execute(sa.select(sa.literal_column("1")))
             log.debug("Database Connection successful!")
         except Exception as e:
-            raise RuntimeError(f"Could not connect to database: {e}")
+            raise RuntimeError(f"Could not connect to database: {e}") from e
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)

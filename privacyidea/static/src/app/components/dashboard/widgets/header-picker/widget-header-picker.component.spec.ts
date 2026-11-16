@@ -19,6 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PickerChoice, WidgetHeaderPickerComponent } from "./widget-header-picker.component";
+import { axe } from "@testing/axe";
 
 const CHOICES: PickerChoice[] = [
   { id: "a", label: "Alpha" },
@@ -87,5 +88,11 @@ describe("WidgetHeaderPickerComponent", () => {
     items[1].click();
 
     expect(picked).toEqual(["b"]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
