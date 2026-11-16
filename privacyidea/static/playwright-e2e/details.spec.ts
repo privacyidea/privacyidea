@@ -19,9 +19,9 @@
 
 import { Browser, BrowserContext, Page } from "@playwright/test";
 import { attachPageOnFailure, expect, newAdminContext, test } from "./support/test";
-import { openPage, settle, settleContent, sideways } from "./support/helpers";
+import { openPage, settle, settleContent, sideways, tabStops } from "./support/helpers";
 import { expectNoNewViolations } from "./support/axe";
-import { SCREEN, ZOOMS } from "./support/routes";
+import { SCREEN, ZOOMS, zoomedViewport } from "./support/routes";
 
 // The detail and edit pages need an existing record: each is reached the way a user gets there, from the first row
 // of its list, through the control in the column that names the record. A list without rows skips its test.
@@ -119,11 +119,8 @@ for (const detail of DETAIL_PAGES) {
 
     test("the page itself never scrolls sideways at any zoom", async () => {
       test.skip(!!notOpened, notOpened);
-      for (const zoom of [...ZOOMS].reverse()) {
-        await page.setViewportSize({
-          width: Math.round(SCREEN.width / zoom),
-          height: Math.round(SCREEN.height / zoom)
-        });
+      for (const zoom of ZOOMS) {
+        await page.setViewportSize(zoomedViewport(zoom));
         await settle(page);
         expect.soft(await sideways(page), `${Math.round(zoom * 100)}% zoom`).toBeLessThanOrEqual(1);
       }
@@ -133,32 +130,12 @@ for (const detail of DETAIL_PAGES) {
 
     test("Tab reaches the controls and none of them is invisible", async () => {
       test.skip(!!notOpened, notOpened);
-      const seen: string[] = [];
-      const invisible: string[] = [];
-      for (let i = 0; i < 40; i++) {
-        await page.keyboard.press("Tab");
-        const info = await page.evaluate(() => {
-          const e = document.activeElement as HTMLElement | null;
-          if (!e || e === document.body) {
-            return null;
-          }
-          const r = e.getBoundingClientRect();
-          return {
-            id: e.tagName.toLowerCase() + "." + String(e.className).split(" ")[0],
-            visible: r.width > 0 && r.height > 0
-          };
-        });
-        if (!info) {
-          // A page that re-renders as its data arrives can drop focus to the body for a moment; Tab goes on.
-          continue;
-        }
-        seen.push(info.id);
-        if (!info.visible) {
-          invisible.push(info.id);
-        }
-      }
-      expect(invisible).toEqual([]);
-      expect(seen.length).toBeGreaterThan(3);
+      const stops = await tabStops(page, 40);
+      expect(
+        stops.filter((s) => !s.visible).map((s) => s.id),
+        "focus on an invisible element"
+      ).toEqual([]);
+      expect(stops.length, "Tab reaches interactive elements").toBeGreaterThan(3);
     });
   });
 }
