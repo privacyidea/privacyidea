@@ -119,13 +119,15 @@ from privacyidea.api.lib.conditional_access import (conditional_access_gate, con
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit, get_auth_token_from_request,
+                                       verify_auth_token)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (consume_remember_device_cookie, user_identity, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
                                                handle_device_theft, token_usability, MissReason)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
@@ -152,7 +154,8 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import (check_last_auth_policy, get_realm_for_authentication, get_request_identity,
-                               get_remember_device_duration, name_conflicting_action)
+                               get_remember_device_duration, name_conflicting_action, check_token_action_allowed,
+                               get_token_user_attributes, user_is_owner, UserAttributes)
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
                         log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
@@ -482,9 +485,12 @@ def check():
         is supplied.
     :jsonparam otponly: ``1`` to skip the PIN check and only verify
         the OTP value. Used by the management UI; only meaningful
-        with ``serial``. The token has to be usable (active, within its
-        validity period, below its fail counter), and a wrong value counts
-        as a failed authentication.
+        with ``serial``. The request needs the session token of a login in
+        the ``PI-Authorization`` header: of an administrator with the admin
+        right ``tokenlist`` for the token, or of the owner of the token.
+        Without such a session, the request is refused. The token has to be
+        usable (active, within its validity period, below its fail counter),
+        and a wrong value counts as a failed authentication.
     :jsonparam transaction_id: transaction id for the second leg of
         a challenge-response flow.
     :jsonparam state: alias of ``transaction_id`` for legacy callers.
@@ -982,6 +988,37 @@ def _check_time_limit(context: dict, user: User, serial: str) -> bool:
     return time_limit.allowed
 
 
+def _require_otponly_session(serial: str) -> None:
+    """
+    ``otponly`` skips the PIN check, so only a logged-in administrator or the owner of the token can use it. The
+    request carries the session token of the login in the ``PI-Authorization`` header. An administrator needs the
+    admin right ``tokenlist`` for the owner or for a realm of the token, matched as for the other actions on a token.
+
+    :param serial: The serial of the token that the request checks
+    :raises PolicyError: if the request has no session that may check the token without the PIN
+    """
+    refusal = PolicyError(_("The parameter otponly requires the session of an administrator who may list the token, "
+                            "or of the owner of the token."))
+    try:
+        session = verify_auth_token(get_auth_token_from_request(), required_role=[ROLE.ADMIN, ROLE.USER])
+    except AuthError as error:
+        log.warning(f"Refused otponly for the token {serial}, because the request has no valid session: {error!s}")
+        raise refusal
+    role = session.get("role")
+    username = session.get("username")
+    realm = session.get("realm")
+    if role == ROLE.ADMIN:
+        admin_attributes = UserAttributes(role=ROLE.ADMIN, adminuser=username, adminrealm=realm)
+        allowed = check_token_action_allowed(g, PolicyAction.TOKENLIST, serial, admin_attributes)
+    else:
+        token_owner = get_token_user_attributes(serial).user
+        allowed = user_is_owner(User(login=username, realm=realm), token_owner)
+    if not allowed:
+        log.warning(f"Refused otponly for the token {serial}, because the {role} {username} in the realm "
+                    f"'{realm}' may not check it.")
+        raise refusal
+
+
 def _handle_serial_auth(context: dict, serial: str):
     """
     Handles authentication with serial provided
@@ -989,6 +1026,8 @@ def _handle_serial_auth(context: dict, serial: str):
     user = context["user"]
     password = get_optional(request.all_data, "pass")
     otp_only = get_optional(request.all_data, "otponly")
+    if otp_only:
+        _require_otponly_session(serial)
 
     # Validate ownership if user is present
     if user:
