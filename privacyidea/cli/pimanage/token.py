@@ -22,7 +22,7 @@ from flask.cli import AppGroup
 from privacyidea.lib.error import TokenImportException
 from privacyidea.lib.token import import_token
 from privacyidea.lib.importotp import parseOATHcsv
-from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.realm import normalize_realm_name, realm_is_defined
 
 
 token_cli = AppGroup("token", short_help="Manage tokens in privacyIDEA",
@@ -39,7 +39,9 @@ def import_tokens(ctx, file, tokenrealm):
     """
     Import Tokens from CSV data in FILE
     """
-    unknown_realms = [realm for realm in tokenrealm if not realm_is_defined(realm)]
+    # Realm names are stored normalized, and the token gets a realm only if its name matches exactly
+    realms = [normalize_realm_name(realm) for realm in tokenrealm]
+    unknown_realms = [given for given, realm in zip(tokenrealm, realms) if not realm_is_defined(realm)]
     if unknown_realms:
         click.secho(f"Error: The realm(s) {', '.join(unknown_realms)} do not exist. No tokens were imported.",
                     fg="red", err=True)
@@ -55,5 +57,5 @@ def import_tokens(ctx, file, tokenrealm):
         i += 1
         print(f"{i!s}/{len(tokens)!s} Importing token {serial!s}")
 
-        # click passes a multiple option as a tuple, but init_token only assigns realms given as a list
-        import_token(serial, tokens[serial], tokenrealms=list(tokenrealm))
+        # init_token only assigns realms given as a list, click passes a multiple option as a tuple
+        import_token(serial, tokens[serial], tokenrealms=realms)

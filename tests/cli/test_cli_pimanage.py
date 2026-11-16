@@ -1830,6 +1830,21 @@ class PIManageTokenTestCase(CliTestCase):
         self.assertIn("Unknown token type 'unknowntype' of token token02.", result.output)
         self.assertRaises(ResourceNotFoundError, get_one_token, serial="token01")
 
+    def test_05_pimanage_token_import_into_realm_given_in_upper_case(self):
+        # Realm names are case-insensitive, the tokens get the realm also if the name is given in another case
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath", "-t", "Realm1"])
+        self.assertEqual(0, result.exit_code, result.output)
+        for serial in ["token01", "token02", "token03"]:
+            self.assertEqual(["realm1"], get_one_token(serial=serial).get_realms())
+            remove_token(serial)
+        delete_realm("realm1")
+        delete_resolver("resolver1")
+
 
 @pytest.fixture(scope="function")
 def create_user_resolver(app):
