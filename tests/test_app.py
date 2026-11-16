@@ -396,6 +396,14 @@ class DockerConfigEngineRegistryTestCase(unittest.TestCase):
         self.assertEqual("shared", config["docker"].PI_ENGINE_REGISTRY_CLASS)
 
 
+class DockerConfigSubscriptionKeyTestCase(unittest.TestCase):
+
+    def test_01_subscription_key_directory_of_the_image(self):
+        # The image ships the public keys for the subscriptions in /etc/privacyidea, while the enckey is a secret
+        # in /run/secrets. So the key folder is set and not derived from PI_ENCFILE.
+        self.assertEqual("/etc/privacyidea", config["docker"].PI_SUBSCRIPTION_KEY_DIRECTORY)
+
+
 class DbUpgradeCommandTestCase(unittest.TestCase):
     """
     "pi-manage db upgrade" stops on a database without schema revision stamp. Otherwise it passes its parameters on

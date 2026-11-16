@@ -48,12 +48,19 @@ what tokentype you wish to enroll for this user.
 Add tokens to container
 .......................
 
-.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as described in
-   :ref:`legacy_webui`. In the WebUI, tokens are added to a container on the container details page, see
-   :ref:`container_functionality`.
+You can also add tokens to a container from the user's details view. Select the checkboxes for the tokens you want to
+add and click *Add to Container*. The button is only shown if you have the right ``container_add_token`` and is
+disabled as long as no token is selected.
 
-You can also add tokens to a container from the user's details view. Select the checkboxes for the tokens you want to add.
-Either create a new container or select one from the drop-down list.
+A dialog opens in which you enter the serial of an existing container. While you type, matching containers are
+suggested. The containers of the user are shown as buttons above the field, a click on a button fills in its serial.
+A new container cannot be created in this dialog. Create it first as described in :ref:`container_functionality`.
+
+If the chosen container does not belong to the user yet and you have the right ``container_assign_user``, the checkbox
+*Assign Container to this user* is shown. If the container belongs to another user, the dialog names this user.
+When the checkbox is set, the container is moved to the user and the previous owner is replaced.
+
+.. note:: The previous WebUI, see :ref:`legacy_webui`, offers to create a new container in the same step.
 
 Assign tokens
 .............

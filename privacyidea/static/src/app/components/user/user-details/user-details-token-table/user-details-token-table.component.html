@@ -68,6 +68,16 @@
             <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
           </button>
         }
+        @if (authService.actionAllowed("container_add_token")) {
+          <button
+            (click)="addToContainerSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>add_box</mat-icon>
+            <span i18n="@@common.addToContainer">Add to Container</span>
+          </button>
+        }
       </div>
     }
     @if (tableState.showTable()) {

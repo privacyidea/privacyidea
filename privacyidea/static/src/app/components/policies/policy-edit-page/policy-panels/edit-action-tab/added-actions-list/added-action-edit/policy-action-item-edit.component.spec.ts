@@ -35,6 +35,7 @@ import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-g
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
 import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionItemEditComponent", () => {
   let component: PolicyActionItemEditComponent;
@@ -623,6 +624,12 @@ describe("PolicyActionItemEditComponent", () => {
     const deleteBtn = fixture.debugElement.query(By.css(".delete-icon-button"));
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

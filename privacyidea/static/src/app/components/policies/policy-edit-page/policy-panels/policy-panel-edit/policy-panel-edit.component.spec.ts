@@ -39,6 +39,7 @@ import { MockPolicyService } from "@testing/mock-services/mock-policies-service"
 import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
 import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
+import { axe } from "@testing/axe";
 
 /**
  * Concrete Mock class for DialogService.
@@ -508,5 +509,11 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
 
       expect(component.valid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

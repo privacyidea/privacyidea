@@ -33,6 +33,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { of, Subject, throwError } from "rxjs";
 import { TokensWidgetComponent } from "./tokens-widget.component";
+import { axe } from "@testing/axe";
 
 function makeCountResponse(count: number) {
   return {
@@ -371,6 +372,32 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it.each([
+      { name: "offers to create the first realm when the admin may, linking to the realm table", rights: ["tokenlist", "userlist", "resolverwrite"], offered: true },
+      { name: "does not offer realm creation without the resolverwrite right", rights: null, offered: false }
+    ])("$name", ({ rights, offered }) => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      if (rights) {
+        authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      }
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      const button = fixture2.nativeElement.querySelector("button.create-realm");
+      expect(fixture2.componentInstance.noRealm()).toBe(true);
+      if (offered) {
+        expect(button).not.toBeNull();
+        expect(button.textContent).toContain("Create realm");
+      } else {
+        expect(button).toBeNull();
+      }
+      fixture2.destroy();
+    });
+
     it("reads the realm from the widget instance settings", () => {
       const scoped: WidgetInstance = { ...instance, settings: { realm: "realm1" } };
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
@@ -566,5 +593,11 @@ describe("TokensWidgetComponent", () => {
       component.showUsers(false);
       expect(userMock.presetFilter()?.getValueOfKey("has_tokens")).toBe("False");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

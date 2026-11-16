@@ -43,13 +43,19 @@
     "@eslint/js": "^10.0.1",
     "@types/crypto-js": "^4.2.2",
     "@types/jest": "^30.0.0",
+    "@types/jest-axe": "^3.5.9",
     "angular-eslint": "21.4.0",
+    "axe-core": "4.12.1",
     "eslint": "^10.0.3",
     "jest": "^30.3.0",
+    "jest-axe": "^11.0.0",
     "jest-environment-jsdom": "^30.3.0",
     "ng-extract-i18n-merge": "3.4.0",
     "prettier": "3.9.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "8.70.0"
+  },
+  "overrides": {
+    "axe-core": "$axe-core"
   }
 }

@@ -16,11 +16,13 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config)
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_tokens, init_token, remove_token)
+from privacyidea.lib.token import (create_challenge, get_tokens, init_token, remove_token)
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.pushtoken import (PushAction,
                                               strip_pem_headers,
@@ -29,6 +31,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction,
                                               POLL_ONLY)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, to_bytes, to_unicode
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .base import MyApiTestCase
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
@@ -500,6 +503,67 @@ class TtypePushAPITestCase(MyApiTestCase):
                                            headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
             self.app.full_dispatch_request()
         self.assertEqual(0, len(get_clientapplication()))
+
+    def test_poll_policy_condition_on_request_header(self):
+        set_policy("deny_polling_header", scope=SCOPE.AUTH, action=f"{PushAction.ALLOW_POLLING}=deny",
+                   conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS,
+                                "blocked-app", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.addCleanup(delete_policy, "deny_polling_header")
+        query = {"serial": "PIPU-unknown", "timestamp": datetime.now(timezone.utc).isoformat(), "signature": "AA"}
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           headers={"User-Agent": "blocked-app/1.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("Polling not allowed!", res.json["result"]["error"]["message"])
+
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual("ERR10: Could not verify signature!", res.json["result"]["error"]["message"], res.json)
+
+    def test_poll_policy_condition_on_http_environment(self):
+        set_policy("deny_polling_environment", scope=SCOPE.AUTH, action=f"{PushAction.ALLOW_POLLING}=deny",
+                   conditions=[(ConditionSection.HTTP_ENVIRONMENT, "REMOTE_ADDR", PrimaryComparators.EQUALS,
+                                "10.0.0.1", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.addCleanup(delete_policy, "deny_polling_environment")
+        query = {"serial": "PIPU-unknown", "timestamp": datetime.now(timezone.utc).isoformat(), "signature": "AA"}
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           environ_overrides={"REMOTE_ADDR": "10.0.0.1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("Polling not allowed!", res.json["result"]["error"]["message"])
+
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           environ_overrides={"REMOTE_ADDR": "10.0.0.2"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual("ERR10: Could not verify signature!", res.json["result"]["error"]["message"], res.json)
+
+    def test_poll_challenge_without_stored_notification(self):
+        self.setUp_user_realms()
+        set_policy("push_poll_enroll", scope=SCOPE.ENROLL, action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policy, "push_poll_enroll")
+        set_policy("push_poll_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=login from {{client_ip}} via {{ua_browser}} at {{action}}")
+        self.addCleanup(delete_policy, "push_poll_text")
+        token = self._create_push_token()
+        serial = token.get_serial()
+        self.addCleanup(remove_token, serial)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.add_user(User("cornelius", self.realm1))
+        # A challenge created before the notification was stored with it
+        create_challenge(serial, challenge=b32encode_and_unicode(geturandom()))
+        self.assertEqual({}, get_challenges(serial=serial)[0].get_data())
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode(), padding.PKCS1v15(),
+                                                     hashes.SHA256())
+        with self.app.test_request_context('/ttype/push', method='GET',
+                                           query_string={"serial": serial, "timestamp": timestamp,
+                                                         "signature": b32encode(signature)},
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("login from  via  at ", res.json["result"]["value"][0]["question"])
 
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()

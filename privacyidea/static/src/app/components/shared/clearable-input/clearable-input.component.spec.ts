@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ClearableInputComponent } from "./clearable-input.component";
+import { axe } from "@testing/axe";
 
 describe("ClearableInputComponent", () => {
   let component: ClearableInputComponent;
@@ -50,5 +51,11 @@ describe("ClearableInputComponent", () => {
   it("should allow showClearButton to be set to false", () => {
     fixture.componentRef.setInput("showClearButton", false);
     expect(component.showClearButton()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

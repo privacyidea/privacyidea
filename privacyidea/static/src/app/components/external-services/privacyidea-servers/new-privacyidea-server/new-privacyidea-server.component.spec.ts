@@ -36,6 +36,7 @@ import {
 } from "@testing/mock-services";
 import { BehaviorSubject, of } from "rxjs";
 import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
+import { axe } from "@testing/axe";
 
 const flush = async (fixture: ComponentFixture<unknown>) => {
   fixture.detectChanges();
@@ -284,6 +285,12 @@ describe("NewPrivacyideaServerComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

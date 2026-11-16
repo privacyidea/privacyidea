@@ -32,6 +32,7 @@ import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { of } from "rxjs";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 const dialogClose = jest.fn();
 const dialogRefMock = { close: dialogClose };
@@ -295,5 +296,11 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
     component.finish();
     expect(dialogClose).toHaveBeenCalled();
     expect(contentService.navigateContainerDetails).toHaveBeenCalledWith("CONT-001");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

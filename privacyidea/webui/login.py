@@ -37,8 +37,8 @@ from markupsafe import escape
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.postpolicy import hide_version
-from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token,
-                                       get_auth_token_from_request, logged_in_user_from_token)
+from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token, check_unquote,
+                                       get_auth_token_from_request, logged_in_user_from_token, set_request_context)
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value
@@ -120,6 +120,9 @@ def before_request():
     g.policy_object = PolicyClass()
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    set_request_context()
+    # The pages are only requested with GET, so a body, even a broken one, must not fail them
+    g.request_data = check_unquote(request, request.args.to_dict())
     # The page names no token, but the check of the remote user matches the policies with g.serial
     g.serial = None
     # Populate the user agent so that policies restricted by user agent (e.g. a
@@ -342,6 +345,18 @@ def is_new_webui_served() -> bool:
     return os.path.isfile(os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, "en", "index.html"))
 
 
+def _with_query_string(path: str) -> str:
+    """
+    Appends the query string of the request to *path*, so that a redirect to the WebUI keeps the parameters of the
+    page. The WebUI sends them with its request to /config, where the request data conditions of the WebUI policies
+    read them.
+    """
+    query_string = request.query_string.decode()
+    # A concatenation and not an f-string, because CodeQL accepts a value on the right side of a "+" as a safe part of
+    # a redirect target, but not a formatted value
+    return path + "?" + query_string if query_string else path
+
+
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application() -> Response:
     if current_app.config.get("PI_UI_DEACTIVATED"):
@@ -354,9 +369,9 @@ def single_page_application() -> Response:
         url_locale = locale.replace("_", "-")
         dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
-            return redirect(f"{request.script_root}/app/v2/{url_locale}/")
+            return redirect(_with_query_string(f"{request.script_root}/app/v2/{url_locale}/"))
     if is_new_webui_served():
-        return redirect(f"{request.script_root}/app/v2/")
+        return redirect(_with_query_string(f"{request.script_root}/app/v2/"))
     # Fallback to the classic AngularJS UI: no new-UI build exists, so render the
     # legacy index template from the server.
     render_context = get_render_context()
@@ -380,11 +395,8 @@ def single_page_application_locale(locale: str, subpath: str | None = None) -> R
             return _serve_locale(preferred) or _serve_locale("en") or abort(404)
         abort(404)
     if canonical != locale or subpath is None:
-        path = f"{request.script_root}/app/v2/{canonical}/" + (subpath or "")
-        qs = request.query_string.decode()
-        if qs:
-            path += "?" + qs
-        return redirect(path)
+        # The subpath is concatenated for CodeQL, as in _with_query_string
+        return redirect(_with_query_string(f"{request.script_root}/app/v2/{canonical}/" + (subpath or "")))
     return _serve_locale(locale) or abort(404)
 
 

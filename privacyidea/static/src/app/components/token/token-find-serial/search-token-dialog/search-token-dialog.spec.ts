@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SearchTokenDialogComponent } from "./search-token-dialog";
+import { axe } from "@testing/axe";
 
 describe("SearchTokenDialogComponent", () => {
   let component: SearchTokenDialogComponent;
@@ -55,5 +56,11 @@ describe("SearchTokenDialogComponent", () => {
     button.click();
     fixture.detectChanges();
     expect(mockDialogRef.close).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
