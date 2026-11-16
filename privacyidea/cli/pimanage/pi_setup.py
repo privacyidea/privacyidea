@@ -21,8 +21,6 @@ import base64
 import pathlib
 import sys
 import click
-import sqlalchemy as sa
-from alembic.runtime.migration import MigrationContext
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
@@ -31,6 +29,7 @@ from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
 
+from privacyidea.app import TABLES_WITHOUT_STAMP_HINTS, SchemaState, get_schema_state
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
 
@@ -183,15 +182,26 @@ def create_audit_keys(ctx, keysize):
     click.secho("Please ensure, that it is owned by the right user.", fg="yellow")
 
 
-def _holds_privacyidea_schema() -> bool:
+def _existing_schema_refusal(schema_state: SchemaState, no_stamp: bool) -> click.ClickException:
     """
-    Whether the database holds a schema revision stamp or the tables of privacyIDEA. The schema upgrade uses the same
-    criteria, see privacyidea.app._check_revision_stamp.
+    The error for a database that already holds a schema revision stamp or the tables of privacyIDEA. It gives the
+    same advice for a database without stamp as the schema upgrade, see privacyidea.app._check_revision_stamp.
     """
-    with db.engine.connect() as connection:
-        if MigrationContext.configure(connection).get_current_heads():
-            return True
-        return sa.inspect(connection).has_table("token")
+    database = db.engine.url.render_as_string(hide_password=True)
+    if schema_state.stamped:
+        state = f"The database {database} already holds a schema revision stamp."
+        hints = ["To update the database, run 'pi-manage db upgrade'."]
+    else:
+        state = f"The database {database} already holds privacyIDEA tables, but no schema revision stamp."
+        hints = list(TABLES_WITHOUT_STAMP_HINTS)
+    if no_stamp:
+        reason = ("This command does not change existing tables. It adds the missing tables in the newest layout, but "
+                  "the schema upgrade later runs its migrations on them too and can fail.")
+    else:
+        reason = ("This command does not change existing tables, but it stamps the newest revision, so the schema "
+                  "upgrade skips the migrations that the database needs.")
+    return click.ClickException("\n  ".join(
+        [state, reason] + hints + ["To create the missing tables anyway, run the command again with '--force'."]))
 
 
 @setup_cli.command("create_tables")
@@ -206,23 +216,19 @@ def create_tables(no_stamp: bool, stamp: bool, force: bool) -> None:
     (an SQLite database will be created).
 
     The command stops on a database that holds privacyIDEA tables or a schema
-    revision stamp, unless --force is given: it does not change existing
-    tables, but stamps the newest revision, so the schema upgrade would skip
-    the migrations that such a database needs.
+    revision stamp, unless --force is given. It does not change existing
+    tables, so the schema upgrade of such a database skips migrations or
+    fails afterwards.
     """
     click.echo(f"Using connect string {db}")
     if stamp:
         click.secho("The parameter \"--stamp\" is deprecated, the database "
                     "will be stamped by default. Use parameter \"--no-stamp\" "
                     "to prevent this.", fg="yellow")
-    if not force and _holds_privacyidea_schema():
-        database = db.engine.url.render_as_string(hide_password=True)
-        raise click.ClickException("\n  ".join([
-            f"The database {database} already holds privacyIDEA tables or a schema revision stamp.",
-            "This command does not change existing tables, but it stamps the newest revision, so the schema upgrade "
-            "would skip the migrations that the database needs.",
-            "To update an existing database, run 'pi-manage db upgrade'.",
-            "To create the missing tables anyway, run the command again with '--force'."]))
+    if not force:
+        schema_state = get_schema_state()
+        if schema_state.stamped or schema_state.has_tables:
+            raise _existing_schema_refusal(schema_state, no_stamp)
     db.create_all()
     if not no_stamp:
         # The migration directory is already configured during the app creation
