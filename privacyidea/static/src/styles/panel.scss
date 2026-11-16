@@ -31,30 +31,25 @@
 }
 
 // The header ends in a Material divider line, so it reads as a title over its group. The hover
-// layer sits on that line, so it is rounded on top only and meets the divider square.
+// layer sits on that line, so it is rounded on top only and meets the divider square. Header and
+// body share one inset, so the title lines up with the content below it. Material sets both
+// paddings from a lone .mat-expansion-panel-header / -body and injects that at runtime, after this
+// sheet, so the panel is named too: equal specificity would leave the winner up to load order.
 .mat-expansion-panel .mat-expansion-panel-header {
   border-bottom: 1px solid var(--mat-divider-color, var(--mat-sys-outline-variant));
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   box-sizing: border-box;
+  padding: 0 16px;
+}
+
+.mat-expansion-panel .mat-expansion-panel-body {
+  padding: 16px;
 }
 
 // Material paints the hover layer on a closed header only; an open header takes the same layer, so
 // every header answers the pointer alike.
 .mat-expansion-panel .mat-expansion-panel-header:not([aria-disabled="true"]):hover {
   background: var(--mat-expansion-header-hover-state-layer-color, color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent));
-}
-
-// Header and body share one inset, so the title lines up with the content below it. Handed to
-// tokens so a panel whose content carries its own width can take the inset off without reaching
-// into the component's internals. Material sets both from a lone .mat-expansion-panel-header /
-// -body and injects that at runtime, after this sheet, so the panel is named too: equal
-// specificity would leave the winner up to load order.
-.mat-expansion-panel .mat-expansion-panel-header {
-  padding: var(--expansion-panel-header-padding, 0 16px);
-}
-
-.mat-expansion-panel .mat-expansion-panel-body {
-  padding: var(--expansion-panel-body-padding, 16px);
 }
 
 // The panel is a title for the group below it, not a card, so it has no border; its lift is
