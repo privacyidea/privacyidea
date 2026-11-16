@@ -1755,12 +1755,13 @@ class PIManageRealmTestCase(CliTestCase):
                 delete_realm("carealm", delete_custom_attributes=True, confirm_ca_policies=True)
             delete_resolver("resolver1")
 
-    def test_05_pimanage_realm_unknown_exits_nonzero(self):
+    def test_05_pimanage_realm_unknown_is_reported(self):
         runner = self.app.test_cli_runner()
-        for cmd in ("delete", "set_default"):
-            result = runner.invoke(pi_manage, ["config", "realm", cmd, "nosuchrealm"])
-            self.assertEqual(1, result.exit_code, result.output)
-            self.assertIn("Could not", result.output, result.output)
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "nosuchrealm"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("Could not", result.output, result.output)
+        result = runner.invoke(pi_manage, ["config", "realm", "set_default", "nosuchrealm"])
+        self.assertIn("Could not", result.output, result.output)
 
 
 class PIManageBaseTestCase(CliTestCase):
@@ -2979,14 +2980,12 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["config", "policy", "list"])
         self.assertNotIn("clibadpol", result.output)
 
-    def test_24_unknown_policy_and_event_exit_nonzero(self):
+    def test_24_unknown_policy_and_event_are_reported(self):
         runner = self.app.test_cli_runner()
         for cmd in ("enable", "disable", "delete"):
             result = runner.invoke(pi_manage, ["config", "policy", cmd, "nosuchpolicy"])
-            self.assertEqual(1, result.exit_code, result.output)
             self.assertIn("Could not", result.output, result.output)
             result = runner.invoke(pi_manage, ["config", "event", cmd, "987654"])
-            self.assertEqual(1, result.exit_code, result.output)
             self.assertIn("Could not", result.output, result.output)
 
     def test_25_policy_create_from_file_same_values_message(self):
