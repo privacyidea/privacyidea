@@ -40,6 +40,7 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
                                     DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE, LOGINMODE)
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
@@ -51,6 +52,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import (create_img, get_version)
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .base import (MyApiTestCase)
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -2238,6 +2240,55 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("enroll_via_multichallenge")
         delete_policy("enroll_via_multichallenge_template")
         delete_container_template("test")
+
+    def test_24a_enroll_via_multichallenge_template_removes_token_failing_postpolicies(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        template_name = "mc_postpolicy_template"
+        # The hotp token has no description, so the condition of the verify_enrollment policy raises an error for it
+        template_options = {"tokens": [{"type": "hotp", "genkey": True},
+                                       {"type": "totp", "genkey": True, "description": "kept"}]}
+        create_container_template(container_type="smartphone", template_name=template_name, options=template_options)
+        set_policy("mc_enroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone", PolicyAction.PASSTHRU: True})
+        set_policy("mc_registration", scope=SCOPE.CONTAINER,
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("mc_template", scope=SCOPE.AUTH,
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: template_name})
+        set_policy("mc_verify_hotp", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "x", True,
+                                "raise_error")])
+        hotp_count_before = get_tokens(tokentype="hotp", count=True)
+
+        # Mock request
+        builder = EnvironBuilder(method='POST', data={}, headers=Headers({"user_agent": "privacyidea-cp"}))
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        request = Request(env)
+        request.all_data = {}
+        request.User = hans
+        g.policy_object = PolicyClass()
+        g.policies = {}
+        response = jsonify({"jsonrpc": "2.0",
+                            "result": {"status": True, "value": True, "authentication": AUTH_RESPONSE.ACCEPT},
+                            "version": "privacyIDEA test"})
+
+        try:
+            response = multichallenge_enroll_via_validate(request, response)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, response.json["result"]["authentication"], response.json)
+            container = find_container_by_serial(response.json["detail"]["serial"])
+            # Only the token without a policy error is created, no hotp token stays active
+            self.assertEqual(["totp"], [token.get_tokentype() for token in container.get_tokens()])
+            self.assertEqual(hotp_count_before, get_tokens(tokentype="hotp", count=True))
+        finally:
+            for container in get_all_containers(user=hans)["containers"]:
+                for token in container.get_tokens():
+                    token.delete_token()
+                container.delete()
+            for policy_name in ["mc_enroll", "mc_registration", "mc_template", "mc_verify_hotp"]:
+                delete_policy(policy_name)
+            delete_container_template(template_name)
 
 
 class PolicyHelperTestCase(MyApiTestCase):

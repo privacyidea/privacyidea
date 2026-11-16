@@ -381,7 +381,13 @@ def init():
         to use.
     :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
         ``result.value``; ``tokens`` is only present when a template
-        was used.
+        was used and contains only the tokens that were created. If a
+        template token was not created because a policy or its
+        enrollment failed, ``result.value`` also contains
+        ``tokens_not_created``, a list of
+        ``{"type": ..., "error": ..., "serial": ...}`` with one entry
+        per such token. The ``serial`` is only present if it is known.
+        The key is missing if all tokens were created.
     :status 400: invalid type, serial collision, both ``template``
         and ``template_name`` supplied, or ``change_pin_on_first_use``
         of a token in a ``template`` of the container type is not a
@@ -403,7 +409,11 @@ def init():
     # Template handling
     template_tokens = init_res["template_tokens"]
     if template_tokens:
-        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role)
+        tokens_not_created = []
+        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role,
+                                                              tokens_not_created=tokens_not_created)
+        if tokens_not_created:
+            res["tokens_not_created"] = tokens_not_created
 
     # Audit log
     owners = container.get_users()
