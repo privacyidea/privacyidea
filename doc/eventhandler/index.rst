@@ -202,6 +202,9 @@ comparators are available:
 
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
 
+  .. versionchanged:: 3.14.1 ``date_within_last`` does not match a date in the future, and a negative duration is
+     an error.
+
 When two dates are compared, both must either contain a time zone offset or not. ``date_before`` and ``date_after``
 evaluate to false if only one of them has an offset; ``<`` and ``>`` make the event handler fail. ``{now}`` always
 contains the offset of the server.

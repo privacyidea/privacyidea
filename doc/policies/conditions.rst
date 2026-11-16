@@ -274,6 +274,9 @@ The following comparators can be used in definitions of policy conditions:
 
   .. versionadded:: 3.12
 
+  .. versionchanged:: 3.14.1 ``date_within_last`` does not match a date in the future, and a negative duration is
+     an error.
+
 * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
   ``!string_contains`` evaluates to true if this is not the case. The comparison ignores upper and lower case; the
   other string comparators are case-sensitive.

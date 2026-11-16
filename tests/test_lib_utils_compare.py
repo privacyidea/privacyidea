@@ -302,6 +302,11 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertRaises(CompareError, compare_values, "2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, PrimaryComparators.DATE_WITHIN_LAST, "1year")
+        # Negative durations are not allowed
+        self.assertRaises(CompareError, compare_values, now + datetime.timedelta(days=2),
+                          PrimaryComparators.DATE_WITHIN_LAST, "-1d")
+        self.assertRaises(CompareError, compare_values, now - datetime.timedelta(hours=1),
+                          PrimaryComparators.DATE_WITHIN_LAST, "-1d")
 
     def test_12_date_not_within_last(self):
         # Test with datetime object
@@ -365,6 +370,11 @@ class UtilsCompareTestCase(MyTestCase):
         # Invalid formats
         self.assertRaises(CompareError, compare_values, "1. July 2025", PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h")
         self.assertRaises(CompareError, compare_values, now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1year")
+        # Negative durations are not allowed
+        self.assertRaises(CompareError, compare_values, now + datetime.timedelta(days=2),
+                          PrimaryComparators.DATE_NOT_WITHIN_LAST, "-1d")
+        self.assertRaises(CompareError, compare_values, now - datetime.timedelta(hours=1),
+                          PrimaryComparators.DATE_NOT_WITHIN_LAST, "-1d")
 
     def test_13_string_contains(self):
         self.assertTrue(compare_values("hello world", PrimaryComparators.STRING_CONTAINS, "hello"))
