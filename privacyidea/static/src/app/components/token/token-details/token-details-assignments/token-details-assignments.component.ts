@@ -36,9 +36,11 @@ import { DetailsMultiSelectCellComponent } from "@components/shared/details-shar
 import { injectEditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
@@ -76,6 +78,7 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   readonly tokenDetails = input.required<TokenDetails>();
@@ -105,6 +108,7 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly tokengroupEditable = computed(() => this.authService.actionAllowed("tokengroups"));
   protected readonly containerEditable = computed(() => this.authService.actionAllowed("container_add_token"));
   protected readonly containerCanRemove = computed(() => this.authService.actionAllowed("container_remove_token"));
+  protected readonly containerCreatable = computed(() => this.authService.actionAllowed("container_create"));
 
   protected readonly realmsField = injectEditableField({
     onOpen: () => this.realmService.selectedRealms.set([...this.tokenDetails().realms]),
@@ -169,6 +173,23 @@ export class TokenDetailsAssignmentsComponent {
 
   protected str(value: unknown): string {
     return value === null || value === undefined ? "" : String(value);
+  }
+
+  protected openContainerCreateDialog(): void {
+    const username = this.tokenDetails().username;
+    this.dialogService
+      .openDialog({
+        component: ContainerCreateDialogComponent,
+        data: username ? { username: username, userRealm: this.tokenDetails().user_realm } : {}
+      })
+      .afterClosed()
+      .subscribe((serial) => {
+        if (serial) {
+          // The input drives the form and the commit, the service gets it as the current selection.
+          this.containerInput.set(serial);
+          this.containerService.selectedContainerSerial.set(serial);
+        }
+      });
   }
 
   protected removeContainer(): void {

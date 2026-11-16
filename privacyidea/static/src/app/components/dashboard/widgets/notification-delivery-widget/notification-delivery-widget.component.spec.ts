@@ -30,6 +30,7 @@ import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { of, Subject, throwError } from "rxjs";
 import { NotificationDeliveryWidgetComponent } from "./notification-delivery-widget.component";
+import { axe } from "@testing/axe";
 
 function makeResponse<T>(value: T): PiResponse<T> {
   return {
@@ -343,5 +344,11 @@ describe("NotificationDeliveryWidgetComponent", () => {
 
     expect(component.selectedTimeWindow().id).toBe("24h");
     view.destroy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

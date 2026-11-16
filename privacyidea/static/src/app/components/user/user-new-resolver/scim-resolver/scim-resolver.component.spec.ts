@@ -19,6 +19,7 @@
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ScimResolverComponent } from "./scim-resolver.component";
+import { axe } from "@testing/axe";
 
 describe("ScimResolverComponent", () => {
   let component: ScimResolverComponent;
@@ -114,5 +115,11 @@ describe("ScimResolverComponent", () => {
 
       expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

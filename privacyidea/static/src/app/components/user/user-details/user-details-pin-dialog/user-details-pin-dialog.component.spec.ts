@@ -22,6 +22,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { ERR } from "@utils/form-rules.utils";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsPinDialogComponent", () => {
   let component: UserDetailsPinDialogComponent;
@@ -171,5 +172,11 @@ describe("UserDetailsPinDialogComponent", () => {
     component.onAction("cancel");
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -40,6 +40,7 @@ import {
 } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserCreateComponent } from "./user-create.component";
+import { axe } from "@testing/axe";
 
 describe("UserCreateComponent", () => {
   let component: UserCreateComponent;
@@ -332,5 +333,11 @@ describe("UserCreateComponent", () => {
     fixture.detectChanges();
     const result = await component.onSave();
     expect(result).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

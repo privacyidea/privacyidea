@@ -21,6 +21,7 @@ import { provideRouter } from "@angular/router";
 import { RemoteConfigComponent } from "@components/configuration/token-type-config/token-types/remote-config/remote-config.component";
 import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 describe("RemoteConfigComponent", () => {
   let fixture: ComponentFixture<RemoteConfigComponent>;
@@ -117,5 +118,12 @@ describe("RemoteConfigComponent", () => {
   it("has no rule that blocks the form", async () => {
     await create();
     expect(configForm.form().valid()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

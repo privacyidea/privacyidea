@@ -19,10 +19,18 @@
 
 import { Browser, BrowserContext, Locator, Page } from "@playwright/test";
 import { attachPageOnFailure, expect, newAdminContext, test } from "./support/test";
-import { ALL_PAGES, SCREEN, TABLE_PAGES, ZOOMS } from "./support/routes";
+import { ALL_PAGES, SCREEN, TABLE_PAGES, ZOOMS, zoomedViewport } from "./support/routes";
 import { knownFailure } from "./support/known";
 import { focusIndicatorMisses } from "./support/focus";
-import { expectTableOrState, openPage, resetFocusStart, settle, showsTable, sideways } from "./support/helpers";
+import {
+  expectTableOrState,
+  openPage,
+  resetFocusStart,
+  settle,
+  showsTable,
+  sideways,
+  tabStops
+} from "./support/helpers";
 
 // Every page is loaded once and all of its checks run against that one load: structure, the accessibility tree,
 // motion, column widths, the keyboard, and last the layout at each browser zoom and at 320 CSS px (it resizes the
@@ -31,11 +39,6 @@ import { expectTableOrState, openPage, resetFocusStart, settle, showsTable, side
 //
 // Browser zoom is emulated the way Chrome applies it on a 1920x1080 screen: the CSS viewport shrinks. The pixel
 // ratio would only matter for screenshots, so the viewport is resized rather than the page reloaded at each size.
-
-const sized = (zoom: number) => ({
-  width: Math.round(SCREEN.width / zoom),
-  height: Math.round(SCREEN.height / zoom)
-});
 
 // Controls that must carry a name, and the heading levels, as the accessibility tree lists them.
 const NAMED_ROLES =
@@ -206,44 +209,13 @@ for (const route of ALL_PAGES) {
     }
 
     test("Tab moves through the page without losing or trapping focus", async () => {
-      await resetFocusStart(page);
-      const seen: string[] = [];
-      const problems: string[] = [];
+      const stops = await tabStops(page, 60);
+      const seen = stops.map((s) => s.id);
 
-      for (let i = 0; i < 60; i++) {
-        await page.keyboard.press("Tab");
-        const info = await page.evaluate(() => {
-          const e = document.activeElement as HTMLElement | null;
-          if (!e || e === document.body) {
-            return null;
-          }
-          const r = e.getBoundingClientRect();
-          const style = getComputedStyle(e);
-          const path: string[] = [];
-          for (let n: HTMLElement | null = e; n && path.length < 3; n = n.parentElement) {
-            path.push(
-              n.tagName.toLowerCase() +
-                (n.id ? "#" + n.id : "") +
-                (n.className ? "." + String(n.className).split(" ")[0] : "")
-            );
-          }
-          return {
-            id: path.join("<"),
-            visible: r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none"
-          };
-        });
-        if (!info) {
-          // Focus left the controls for the document or the browser's own UI: the end of the page, or a page that
-          // re-rendered; Tab goes on.
-          continue;
-        }
-        if (!info.visible) {
-          problems.push(`focus on an invisible element: ${info.id}`);
-        }
-        seen.push(info.id);
-      }
-
-      expect(problems).toEqual([]);
+      expect(
+        stops.filter((s) => !s.visible).map((s) => s.id),
+        "focus on an invisible element"
+      ).toEqual([]);
       expect(seen.length, "Tab reaches interactive elements").toBeGreaterThan(3);
       // A trap shows as the same few elements again and again.
       expect(new Set(seen).size, "Tab does not cycle inside a few elements").toBeGreaterThan(
@@ -270,7 +242,7 @@ for (const route of ALL_PAGES) {
 
       try {
         for (const zoom of ZOOMS) {
-          await page.setViewportSize(sized(zoom));
+          await page.setViewportSize(zoomedViewport(zoom));
           await settle(page);
           const at = `${Math.round(zoom * 100)}% zoom`;
           expect.soft(await sideways(page), `${at}: the page itself scrolls sideways by`).toBeLessThanOrEqual(1);

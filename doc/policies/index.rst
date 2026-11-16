@@ -119,15 +119,30 @@ Each policy can contain the following attributes:
 Conditions
 ----------
 
-The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, each take a list of
-values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is excluded, also
-from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field of nothing but exclusions
-matches no value at all.
+The conditions of a policy decide for which requests the policy applies. A policy
+applies to a request only if the request matches all conditions of the policy. A field
+that you leave blank matches every request.
 
-In *user* and *admin user* every value other than ``*`` is a regular expression that has to match
-the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed by any
-number of ``n``. A dot matches any character, so ``john.doe`` also matches *johnXdoe*. Realm and
-resolver values must name existing realms and resolvers.
+The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, each take a
+list of values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is
+excluded, also from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field
+of nothing but exclusions matches no value at all.
+
+In *user* and *admin user* every value other than ``*`` is a regular expression that has to
+match the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed
+by any number of ``n``. A dot matches any character, so ``john.doe`` also matches
+*johnXdoe*. Each value must be a valid regular expression. A comma separates two values,
+so an expression can not contain a comma. Realm and resolver values must name existing
+realms and resolvers.
+
+privacyIDEA can only check a condition if the request has the data for it. For example,
+the WebUI start page has no user. :ref:`policy_condition_checks` shows which data each
+kind of request has, and which actions have special rules.
+
+.. toctree::
+   :maxdepth: 1
+
+   condition_checks
 
 **realm**
 
@@ -169,6 +184,12 @@ resolver values must name existing realms and resolvers.
     *vpn-users*. Users of *ldap* that are not listed in *vpn-users* are not
     affected.
 
+  The option needs the login name and the realm of the user. If the request has an
+  empty user, for example an administrator acts on a token without an owner, a policy
+  with the option does not apply. If the request has no user at all, like the WebUI
+  start page, privacyIDEA does not check the resolver, and the policy applies. See
+  :ref:`policy_condition_checks`.
+
   The option only works together with a resolver. In the WebUI it is the
   checkbox below the resolvers of the policy. It can only be selected while a
   resolver is selected, and a policy with the option but without a resolver
@@ -187,6 +208,11 @@ resolver values must name existing realms and resolvers.
 
   If this field is left blank, this policy is valid for all users.
 
+  privacyIDEA compares the login name that the resolver returns for the user. A resolver
+  can have several login name attributes, for example the user name and the email address.
+  A user can then log in with each of them, but the policy must contain the first login
+  name.
+
   .. note:: Starting with version 3.10 you can choose if the username and the
     adminname have to match case-sensitively or not.
 
@@ -198,6 +224,16 @@ resolver values must name existing realms and resolvers.
   ``adminrealm`` and ``adminuser`` in the API. See :ref:`admin_policies`.
 
   If these fields are left blank, this policy is valid for all administrators.
+
+  privacyIDEA has two kinds of administrators, see :ref:`faq_admins`:
+
+  * An administrator of an admin realm is a user of a realm in ``SUPERUSER_REALM``. Their
+    admin realm is this realm.
+  * A local administrator, which you create with ``pi-manage admin add``, has no admin
+    realm. A policy with an admin realm does not apply to local administrators. A policy
+    without an admin realm, or with the admin realm ``*``, applies to them.
+
+  The admin user is the login name for both kinds.
 
 .. versionadded:: 2.4 *admin realm*
 
@@ -212,6 +248,7 @@ resolver values must name existing realms and resolvers.
   This can be useful if you e.g. only want certain administrative actions on
   dedicated nodes.
 
+  Enter the names of the nodes. The field does not support ``*`` or exclusions.
   The nodes are configured in pi.cfg. See :ref:`cfgfile`.
 
 .. versionadded:: 3.4
@@ -226,15 +263,20 @@ resolver values must name existing realms and resolvers.
      <dow>: <hh:mm>-<hh:mm>
      <dow>-<dow>: <hh:mm>-<hh:mm>
 
-  You may use any combination of these. Like::
+  You can combine these forms in a list separated by commas, like::
 
-     Mon-Fri: 8-18
+     Mon-Fri: 8-18, Sat: 10-12
 
   to define certain policies to be active throughout working hours.
 
+  The days are ``Mon``, ``Tue``, ``Wed``, ``Thu``, ``Fri``, ``Sat`` and ``Sun``. A day
+  range goes from the first day to the second day in this order. For a range over the
+  end of the week, use two ranges, like ``Sat-Sun: 8-18, Mon: 8-18``.
+
   Times are the local time of the privacyIDEA server, compared at minute precision with
-  both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
-  cross midnight (``22-6`` is rejected).
+  both ends included: ``8-18`` means from 08:00 up to and including 18:00, and ``0-23``
+  ends at 23:00. For a whole day, use ``0:00-23:59``. A range can not cross midnight
+  (``22-6`` is rejected).
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before
@@ -251,8 +293,22 @@ resolver values must name existing realms and resolvers.
   their tokens depending on their IP addresses (like the internal network or
   remotely via the firewall).
 
-  You can enter several IP addresses or subnets divided by comma. Exclude an item
-  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
+  You can enter several IP addresses or subnets, IPv4 and IPv6, divided by comma.
+  Exclude an item with a leading exclamation mark (like
+  ``10.2.0.0/16, !10.2.0.1, 192.168.0.1``). Host names are not supported.
+
+  A field with only exclusions matches no client. To match every client except one, add
+  the networks of all clients, like ``0.0.0.0/0, ::/0, !10.2.0.1``.
+
+  A web server that accepts IPv4 and IPv6 on one socket reports an IPv4 client as
+  ``::ffff:a.b.c.d``. privacyIDEA uses the IPv4 address ``a.b.c.d`` as the client IP, so
+  the IPv4 entries apply. An IPv4 network does not match a client with a native IPv6
+  address, and ``::/0`` does not match an IPv4 client.
+
+  The client is the IP address from which privacyIDEA receives the request. Behind a
+  reverse proxy, this is the proxy. For an authentication through a RADIUS server or
+  another plugin, this is the server of the plugin, not the device of the user. To use
+  the address of the original client, configure :ref:`override_client`.
 
 .. versionadded:: 2.0
 
@@ -261,6 +317,15 @@ resolver values must name existing realms and resolvers.
   This is the user agent of the requesting client for which this action is valid. You can use this to define policies
   depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
   user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
+
+  The name is the first part of the ``User-Agent`` header of the request. It contains only
+  letters, digits, ``_`` and ``-``. It ends at the first other character, like ``/``, a
+  space or a dot. Thus ``PAM.module/1.0`` has the name ``PAM``. The privacyIDEA
+  plugins send their own name, for example ``privacyIDEA-Keycloak``. Browsers send
+  ``Mozilla``. For an authentication through a plugin, the user agent is the plugin, not
+  the browser of the user. The field does not support ``*`` or exclusions. A request
+  without a user agent only matches policies without a user agent. A header that starts
+  with another character counts as no user agent.
 
 .. versionadded:: 3.12
 

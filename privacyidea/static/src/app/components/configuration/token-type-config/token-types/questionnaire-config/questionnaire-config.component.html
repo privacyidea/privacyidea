@@ -33,7 +33,8 @@
     <div class="flex-row gap-16 ali-center">
       <mat-form-field
         appearance="fill"
-        class="input-width-m">
+        class="input-width-m"
+        subscriptSizing="dynamic">
         <mat-label i18n="@@tokenTypeConfig.numberAnswers">Number of Answers</mat-label>
         <input
           [formField]="config().values[QUESTION_NUMBER_OF_ANSWERS]"
@@ -43,9 +44,7 @@
           <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
         }
         @if (hasError(config().values[QUESTION_NUMBER_OF_ANSWERS], ERR.pattern)) {
-          <mat-error i18n="@@common.enterWholeNumber"
-            >Enter a whole number.</mat-error
-          >
+          <mat-error i18n="@@common.enterWholeNumber">Enter a whole number.</mat-error>
         }
         <mat-hint i18n="@@tokenTypeConfig.answersRequired">Answers required to enroll a token.</mat-hint>
       </mat-form-field>
@@ -70,7 +69,7 @@
         <div class="flex-row flex-nowrap gap-16 ali-start">
           <mat-form-field
             appearance="fill"
-            class="input-width-l"
+            class="input-width-xl"
             subscriptSizing="dynamic">
             <mat-label i18n="@@tokenTypeConfig.question">Question</mat-label>
             <input

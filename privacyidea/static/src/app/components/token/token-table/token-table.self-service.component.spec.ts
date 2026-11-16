@@ -46,6 +46,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("TokenTableSelfServiceComponent", () => {
   let fixture: ComponentFixture<TokenTableSelfServiceComponent>;
@@ -119,7 +120,7 @@ describe("TokenTableSelfServiceComponent", () => {
     expectsTableStateGating({ state: component.tableState });
   });
 
-  it("links the serial and the container serial to their details pages", () => {
+  const showToken = () => {
     authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [], role: "user" });
     (TestBed.inject(ContainerService) as unknown as MockContainerService).containerBelongsToUser.mockReturnValue(true);
     const response = MockPiResponse.fromValue<Tokens>({
@@ -130,6 +131,16 @@ describe("TokenTableSelfServiceComponent", () => {
     tokenServiceMock.tokenResource.set(response);
     tokenServiceMock.tokenResourceValue.set(response.result!.value!);
     fixture.detectChanges();
+  };
+
+  it("passes the axe accessibility checks with a token row", async () => {
+    showToken();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
+  it("links the serial and the container serial to their details pages", () => {
+    showToken();
 
     const hrefOf = (text: string) =>
       Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))

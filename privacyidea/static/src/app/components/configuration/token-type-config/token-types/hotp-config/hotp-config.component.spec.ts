@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { HOTP_HASHLIB } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { HotpConfigComponent } from "./hotp-config.component";
+import { axe } from "@testing/axe";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
 
@@ -103,5 +104,12 @@ describe("HotpConfigComponent", () => {
 
     expect(configForm.model().values[HOTP_HASHLIB]).toBe("");
     expect(configForm.form.values[HOTP_HASHLIB]().dirty()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

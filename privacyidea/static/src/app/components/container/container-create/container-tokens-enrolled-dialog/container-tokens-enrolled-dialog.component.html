@@ -37,6 +37,7 @@
     [value]="progress()"
     mode="determinate"
     class="progress-bar" />
+  <app-tokens-not-created-callout [tokensNotCreated]="tokensNotCreated" />
   <div class="enrollment-data">
     <p i18n="@@container.tokenSuccessfully"
       >Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p

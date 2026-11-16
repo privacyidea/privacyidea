@@ -25,10 +25,11 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import { GridSelectNavDirective } from "@components/shared/directives/grid-select-nav.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
-import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "@services/token/token.service";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { tokenTypeDisplayDescription, tokenTypeDisplayLabel, tokenTypes } from "@utils/token.utils";
+import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 
 @Component({
   selector: "app-token-enrollment-type-selector",
@@ -64,4 +65,20 @@ export class TokenEnrollmentTypeSelectorComponent {
   enrollBlockedReason = input<string | null>(null);
   canReopenDialog = input<boolean>(false);
   reopenDialog = output<void>();
+
+  protected readonly unsupportedTypeHint = $localize`:@@token.enrollmentUnsupportedType:Enrollment is not available for this token type.`;
+
+  // A type the backend offers but this UI has no enroll component for, which is what a token
+  // class added through PI_TOKEN_MODULES looks like from here.
+  protected unsupported(type: TokenType): boolean {
+    return !tokenTypes.some((known) => known.key === type.key);
+  }
+
+  protected label(type: TokenType): string {
+    return tokenTypeDisplayLabel(type.info, type.name);
+  }
+
+  protected description(type: TokenType): string {
+    return tokenTypeDisplayDescription(type.info);
+  }
 }

@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyPriorityEditComponent", () => {
   let component: PolicyPriorityEditComponent;
@@ -153,5 +154,11 @@ describe("PolicyPriorityEditComponent", () => {
 
       expect(errorTexts()).toContain("Enter a valid number.");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

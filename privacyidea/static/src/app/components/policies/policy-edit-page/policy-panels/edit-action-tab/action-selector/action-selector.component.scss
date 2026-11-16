@@ -32,10 +32,21 @@
   );
   --expansion-panel-body-padding: 0 16px 16px;
   border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
+}
 
-  + .action-group-panel {
-    margin-top: 8px;
-  }
+.action-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scope-hint {
+  margin-left: 8px;
+  opacity: 0.7;
+}
+
+.action-group-panel {
+  margin: 0;
 }
 
 .add-action-details {

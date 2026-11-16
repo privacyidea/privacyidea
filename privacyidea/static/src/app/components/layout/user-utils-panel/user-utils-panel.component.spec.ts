@@ -103,6 +103,7 @@ import { MockSubscriptionService } from "@testing/mock-services/mock-subscriptio
 import { of } from "rxjs";
 import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 import { UserUtilsPanelSelfServiceComponent } from "./user-utils-panel.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("UserUtilsPanelComponent", () => {
   let component: UserUtilsPanelComponent;
@@ -416,5 +417,11 @@ describe("UserUtilsPanelComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(authService.logout).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

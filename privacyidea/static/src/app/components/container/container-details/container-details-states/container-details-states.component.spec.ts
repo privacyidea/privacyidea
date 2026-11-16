@@ -32,6 +32,7 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { ContainerDetailsStatesComponent } from "./container-details-states.component";
+import { axe } from "@testing/axe";
 
 interface ContainerStatesFieldInternals {
   field: EditableField;
@@ -132,5 +133,11 @@ describe("ContainerDetailsStatesComponent", () => {
     fixture.destroy();
 
     expect(unregisterSpy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

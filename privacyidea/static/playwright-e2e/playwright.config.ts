@@ -22,8 +22,8 @@ import * as path from "path";
 import { BASE_URL } from "./support/env";
 import { ADMIN_STATE_FILE } from "./support/session";
 
-// Runs against an already running WebUI and its backend: the local `ng serve` by default, the seeded instance in the
-// k3s cluster on CI (BASE_URL is required there).
+// Runs against an already running WebUI and its backend: the local `ng serve` by default, or the instance BASE_URL
+// names (required when CI is set). No CI pipeline runs the suite yet.
 // The suite only reads: it logs in, visits pages, types into filters and opens menus, never saves.
 //
 //   BASE_URL   default https://localhost:4200/app/v2/
@@ -41,7 +41,8 @@ export default defineConfig({
   globalSetup: path.join(__dirname, "support", "global-setup.ts"),
   fullyParallel: true,
   // The pages are independent, so they run side by side; E2E_WORKERS tunes it to the machine.
-  workers: Number(process.env["E2E_WORKERS"] ?? 8),
+  // An empty or non-numeric value falls back to the default.
+  workers: Number(process.env["E2E_WORKERS"]) || 8,
   forbidOnly: !!process.env["CI"],
   // One retry: a page measured while the dev server is still settling can fail once; a test that needs it is reported as flaky.
   retries: 1,
