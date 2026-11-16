@@ -656,11 +656,14 @@ def config_import(ctx, infile, types, name, skip_invalid):
         if isinstance(data, dict):
             break
         data = None
-    if not data:
+    if data is None:
         click.secho("Could not determine input format! ", fg="red")
         click.secho(f"Accepted formats are: {', '.join(imp_fmt_dict.keys())}.",
                     fg="yellow")
         ctx.exit(1)
+    if not data:
+        click.secho("The input is an empty dictionary. There is nothing to import.", fg="yellow")
+        return
 
     def minver(s: str) -> str:
         """Get major.minor version number from string."""

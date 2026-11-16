@@ -2447,6 +2447,18 @@ class TestPIManageConfigImport:
         assert result.exit_code == 0, result.output
         assert result.exception is None, result.exception
 
+    @pytest.mark.parametrize("content", ["{}", "--- {}\n"])
+    def test_23_import_empty_dict_has_nothing_to_import(self, app, tmp_path, content):
+        # An empty dictionary is a valid input in every format, it only contains nothing to import
+        infile = tmp_path / "empty.txt"
+        infile.write_text(content)
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        assert result.exception is None, result.exception
+        assert "The input is an empty dictionary. There is nothing to import." in result.output
+        assert "Could not determine input format" not in result.output
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """
