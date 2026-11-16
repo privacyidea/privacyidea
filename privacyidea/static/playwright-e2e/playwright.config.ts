@@ -22,8 +22,8 @@ import * as path from "path";
 import { BASE_URL } from "./support/env";
 import { ADMIN_STATE_FILE } from "./support/session";
 
-// Runs against an already running WebUI and its backend: the local `ng serve` by default, the seeded instance in the
-// k3s cluster on CI (BASE_URL is required there).
+// Runs against an already running WebUI and its backend: the local `ng serve` by default, or the instance BASE_URL
+// names (required when CI is set). No CI pipeline runs the suite yet.
 // The suite only reads: it logs in, visits pages, types into filters and opens menus, never saves.
 //
 //   BASE_URL   default https://localhost:4200/app/v2/

@@ -28,10 +28,11 @@ login session (`playwright-e2e/.auth/`) are ignored by git.
 The browser is Chromium (`npx playwright install chromium`). The instance should hold some data: tests on empty
 tables skip their row-dependent checks rather than fail.
 
-The suite runs in the team's k3s cluster, not on GitHub Actions. The cluster job sets `CI` and points `BASE_URL` at
-the WebUI of the seeded instance there (`https://<instance>/app/v2/`); with `CI` set and no `BASE_URL`, the run stops
-instead of testing localhost. The tests that force loading, error and empty states intercept the API both behind the
-`/proxy/` prefix of `ng serve` and at the root of an instance that serves the WebUI and the API from one origin.
+The suite is for local use for now: no CI pipeline runs it automatically, neither GitHub Actions nor any other
+server. To run it against an instance other than the local `ng serve`, point `BASE_URL` at its WebUI
+(`https://<instance>/app/v2/`). With `CI` set and no `BASE_URL`, the run stops instead of testing localhost. The
+tests that force loading, error and empty states intercept the API both behind the `/proxy/` prefix of `ng serve` and
+at the root of an instance that serves the WebUI and the API from one origin.
 
 ## Specs
 
