@@ -7,7 +7,7 @@ from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import get_one_token, init_token, remove_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
@@ -788,3 +788,112 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
 
         delete_policy("force_2step")
         delete_policy("2step_params")
+
+    def test_02_rollover_without_rollover_parameter(self):
+        self.setUp_user_realms()
+        set_policy(name="force_2step",
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1"],
+                   scope=SCOPE.USER)
+        with self.app.test_request_context('/auth', data={"username": "cornelius",
+                                                          "password": "test"},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            auth_token = res.json["result"]["value"]["token"]
+        token = init_token({"type": "hotp", "otpkey": self.otpkey},
+                           user=User("cornelius", realm=self.realm1, resolver=self.resolvername1))
+        serial = token.get_serial()
+
+        try:
+            # A request for a token that is already enrolled rolls it over, so the policy forces the two-step
+            # enrollment also when the request does not contain the rollover parameter
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"serial": serial, "type": "hotp", "genkey": 1},
+                                               headers={'Authorization': auth_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                detail = res.json["detail"]
+                self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"))
+                self.assertIn("2step_salt", detail)
+        finally:
+            delete_policy("force_2step")
+            remove_token(serial)
+
+    def test_03_repeated_verification(self):
+        self.setUp_user_realms()
+        set_policy(name="force_2step",
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1"],
+                   scope=SCOPE.USER)
+        set_policy(name="verify_enrollment",
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp",
+                   scope=SCOPE.ENROLL)
+        with self.app.test_request_context('/auth', data={"username": "cornelius",
+                                                          "password": "test"},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            auth_token = res.json["result"]["value"]["token"]
+        token = init_token({"type": "hotp", "otpkey": self.otpkey},
+                           user=User("cornelius", realm=self.realm1, resolver=self.resolvername1))
+        serial = token.get_serial()
+        token.token.rollout_state = RolloutState.VERIFY_PENDING
+        token.token.save()
+
+        try:
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"serial": serial, "verify": self.valid_otp_values[0]},
+                                               headers={'Authorization': auth_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(RolloutState.ENROLLED, res.json["detail"].get("rollout_state"))
+
+            # The token is enrolled now, so the same request again is refused and leaves the token as it is
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"serial": serial, "verify": self.valid_otp_values[0]},
+                                               headers={'Authorization': auth_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn("is not waiting for the verification of its enrollment",
+                              res.json["result"]["error"]["message"])
+            token = get_one_token(serial=serial)
+            self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+            self.assertTrue(token.token.active)
+        finally:
+            delete_policy("force_2step")
+            delete_policy("verify_enrollment")
+            remove_token(serial)
+
+    def test_04_admin_rollover_with_policy_for_realm_of_owner(self):
+        self.setUp_user_realms()
+        set_policy(name="force_2step_realm1",
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1"],
+                   scope=SCOPE.ADMIN, realm=self.realm1)
+        set_policy(name="2step_params_realm1",
+                   action=["hotp_2step_difficulty=12345", "hotp_2step_clientsize=11"],
+                   scope=SCOPE.ENROLL, realm=self.realm1)
+        token = init_token({"type": "hotp", "otpkey": self.otpkey},
+                           user=User("cornelius", realm=self.realm1, resolver=self.resolvername1))
+        serial = token.get_serial()
+
+        try:
+            # The rollover from the token details of the WebUI names only the serial of the token. The policies are
+            # matched for the owner of the token, so the policy for the realm of the owner forces the two-step
+            # enrollment.
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "hotp", "serial": serial, "genkey": 1, "rollover": 1},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                detail = res.json["detail"]
+                self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"))
+                self.assertEqual(12345, detail.get("2step_difficulty"))
+                self.assertEqual(11, detail.get("2step_salt"))
+            self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+        finally:
+            delete_policy("force_2step_realm1")
+            delete_policy("2step_params_realm1")
+            remove_token(serial)
