@@ -8,6 +8,8 @@
 #   2. Build + smoke  — build the image, "compose up", then assert readiness,
 #                       admin authentication, and that pi-cron is running; with
 #                       the bundled MariaDB and with an external PostgreSQL.
+#                       Also check the signature of a test subscription with
+#                       the public key in the image.
 #
 # Everything runs on pull requests that touch deploy/docker itself — those are
 # the changes most likely to break the deployment, and the feedback belongs in
@@ -114,6 +116,36 @@ jobs:
         env:
           PI_SMOKE_PASSWORD: smoke-test-admin-pw
         run: ./deploy/docker/scripts/smoke-test.sh
+
+      - name: Subscription signature
+        # The image contains the public key for the subscriptions, and DockerConfig names the folder that
+        # privacyIDEA reads it from. The signed test subscription must pass the signature check in the running pi
+        # container, with the app factory of the workers. The step does not store the subscription. The app factory
+        # updates the node name in the database, as on each start of a worker.
+        run: |
+          check_script="$(cat <<'EOF'
+          import datetime
+          import sys
+
+          import yaml
+
+          from privacyidea.app import create_docker_app
+          from privacyidea.lib.subscriptions import SUBSCRIPTION_DATE_FORMAT, check_signature
+
+          # The same parser as the upload endpoint
+          subscription = yaml.safe_load(sys.stdin.read())
+          for date_key in ("date_from", "date_till"):
+              if isinstance(subscription[date_key], str):
+                  subscription[date_key] = datetime.datetime.strptime(subscription[date_key],
+                                                                      SUBSCRIPTION_DATE_FORMAT)
+          app = create_docker_app()
+          with app.app_context():
+              print(f"Subscription key folder: {app.config.get('PI_SUBSCRIPTION_KEY_DIRECTORY')}")
+              check_signature(subscription)
+          print("The signature of the test subscription is valid.")
+          EOF
+          )"
+          docker compose -f deploy/docker/compose.yaml exec -T pi python3 -c "${check_script}" < tests/testdata/test.sub
 
       - name: Restart idempotency (existing DB → migrate, not re-create)
         # Second boot must detect the populated DB, run "db upgrade" (a no-op on a

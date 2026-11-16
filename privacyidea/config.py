@@ -59,6 +59,8 @@ class ConfigKey:
     SECRET_KEY = "SECRET_KEY"
     PEPPER = "PI_PEPPER"
     ENCFILE = "PI_ENCFILE"
+    # The folder with the public keys that verify the signature of an uploaded subscription
+    SUBSCRIPTION_KEY_DIRECTORY = "PI_SUBSCRIPTION_KEY_DIRECTORY"
     HASH_ALGO_LIST = "PI_HASH_ALGO_LIST"
     HASH_ALGO_PARAMS = "PI_HASH_ALGO_PARAMS"
 
@@ -348,6 +350,9 @@ class DockerConfig:
 
     if enc_key := _get_secrets_paths_from_environment("enckey", ConfigKey.ENCFILE):
         PI_ENCFILE = enc_key
+    # The image ships the public keys for the subscriptions in /etc/privacyidea. The enckey is a mounted secret
+    # in another folder, so the key folder cannot be derived from PI_ENCFILE as in a normal installation.
+    PI_SUBSCRIPTION_KEY_DIRECTORY = "/etc/privacyidea"
     if audit_key_public := _get_secrets_paths_from_environment("audit_key_public",
                                                                ConfigKey.AUDIT_KEY_PUBLIC):
         PI_AUDIT_KEY_PUBLIC = audit_key_public
