@@ -227,6 +227,11 @@
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
   it exited with status 0.
 
+* **`pi-manage setup encrypt_enckey -o` creates the file readable only by its owner.** A new output file gets the
+  permissions `0600`. Before, it got the default permissions of the system, for example `0644`. If you run the command
+  as root, change the owner of the new file to the user that privacyIDEA runs as. `-o` can not name the key file itself
+  anymore.
+
 * **Token janitor `update` writes only the secrets of an export entry.** `privacyidea-token-janitor update` and
   `pi-tokenjanitor update` store the OTP key, the OTP length, the description and the encrypted token info of
   each entry, encrypted with the current key, and keep everything else of the token. Other values in the file,
