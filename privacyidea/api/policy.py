@@ -184,11 +184,18 @@ def set_policy_api(name=None):
     :jsonparam time: time-of-day window during which the policy is
         active (see the policy reference for the format).
     :jsonparam pinode: privacyIDEA node or list of nodes the policy
-        applies to. Validated against the configured nodes.
+        applies to. Validated against the configured nodes. The node
+        names are compared exactly: wildcards (``*``) and negations
+        (``!node``, ``-node``) are rejected. Leave it empty to apply the
+        policy on every node.
     :jsonparam client: client IP, optionally with a subnet
         (e.g. ``172.16.0.0/16``).
-    :jsonparam user_agents: list of user-agent identifiers the policy
-        applies to.
+    :jsonparam user_agents: list of user-agent names the policy
+        applies to, e.g. ``privacyidea-cp``. Each name may only contain
+        letters, digits, ``_`` and ``-``; a version
+        (``privacyidea-cp/1.0``), spaces, wildcards and negations are
+        rejected. Compared case-insensitively with the name from the
+        user agent of the request.
     :jsonparam active: boolean, whether the policy starts out active.
         Default ``True``.
     :jsonparam check_all_resolvers: if ``True``, the policy is checked
@@ -200,8 +207,10 @@ def set_policy_api(name=None):
         The order of conditions is not guaranteed to be preserved.
     :status 200: ``{"setPolicy <name>": <db-id>}`` in ``result.value``.
     :status 400: invalid scope, invalid policy name, priority below
-        1, invalid time format, or unknown realm / resolver / pinode /
-        admin realm.
+        1, invalid time format, unknown realm / resolver / pinode /
+        admin realm, a pinode with a wildcard or negation, an invalid
+        user agent, or a pinode or user_agents list with values that
+        are not strings.
 
     **Example request**:
 

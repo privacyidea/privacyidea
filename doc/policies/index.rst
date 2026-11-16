@@ -249,7 +249,9 @@ kind of request has, and which actions have special rules.
   dedicated nodes.
 
   Enter the names of the nodes. The field does not support ``*`` or exclusions.
-  The nodes are configured in pi.cfg. See :ref:`cfgfile`.
+  The nodes are configured in pi.cfg. See :ref:`cfgfile`. The node names are compared exactly.
+  Wildcards (``*``) and negations (``!node`` or ``-node``) are not supported and are rejected
+  when you save the policy. To apply a policy on every node, leave the field empty.
 
 .. versionadded:: 3.4
 
@@ -326,6 +328,10 @@ kind of request has, and which actions have special rules.
   the browser of the user. The field does not support ``*`` or exclusions. A request
   without a user agent only matches policies without a user agent. A header that starts
   with another character counts as no user agent.
+
+  A user agent in a policy must be such a name, like ``privacyidea-cp``. A version
+  (``privacyidea-cp/1.0``), a space, ``*`` or a leading ``!`` or ``-`` would never match and
+  is rejected when you save the policy.
 
 .. versionadded:: 3.12
 

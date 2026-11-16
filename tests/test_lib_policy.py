@@ -310,6 +310,24 @@ class PolicyTestCase(MyTestCase):
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, time="Monday: 12-18")
         self.assertEqual("Invalid time format 'Monday: 12-18'!", exception.exception.message)
 
+        # The node match compares the node names exactly, wildcards and negations would apply on no node
+        for pinode in ["*", "!invalid_node", "-invalid_node"]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode=pinode)
+            self.assertIn("Wildcards and negations are not supported for privacyIDEA Nodes",
+                          exception.exception.message)
+
+        # The user agent match compares the plain name of the user agent
+        for user_agents in ["*", "!PAM", "-PAM", "privacyidea-cp/1.0", "privacyIDEA CP", ["PAM", "PA*"]]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, user_agents=user_agents)
+            self.assertIn("Invalid User-Agents", exception.exception.message)
+        # Values that are not strings are rejected instead of failing with an internal error
+        for kwargs in [{"pinode": [1]}, {"user_agents": ["PAM", 123]}]:
+            with self.assertRaises(ParameterError):
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, **kwargs)
+        self.assertEqual([], get_policies(name="invalid"))
+
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
         self.assertEqual(len(d1), 1)
@@ -2806,14 +2824,25 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=node_name1)
 
         # Valid list
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "", "*", node_name2])
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "", node_name2])
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"{node_name1}, {node_name2}")
 
         # node is None
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=None)
 
-        # Use wildcard and negations
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -{node_name1}, !{node_name2}")
+        # The node match compares the node names exactly, so set_policy rejects wildcards and negations
+        for pinode in ["*", [node_name1, "*"], f"{node_name1}*", f"-{node_name1}", f"*, !{node_name2}"]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="test", scope=SCOPE.ADMIN, pinode=pinode)
+            self.assertIn("Wildcards and negations are not supported for privacyIDEA Nodes",
+                          exception.exception.message)
+
+        # Empty values and None in a list are dropped, values that are not strings are rejected
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, None, " ", node_name2])
+        self.assertEqual(f"{node_name1}, {node_name2}", Policy.query.filter_by(name="test").first().pinode)
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[None])
+        self.assertEqual("", Policy.query.filter_by(name="test").first().pinode)
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, pinode=[node_name1, 1])
 
         # Invalid data type
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={node_name1, node_name2})
@@ -2826,7 +2855,7 @@ class PolicyTestCase(MyTestCase):
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
         self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[" undefined_node ", node_name1, "invalid "])
         self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
 
         db.session.delete(node1)
@@ -2882,6 +2911,12 @@ class PolicyTestCase(MyTestCase):
         pol = P.list_policies(name="policy-empty-ua")
         self.assertEqual(1, len(pol))
         self.assertFalse(pol[0].get("user_agents"))
+
+        # set_policy stores the cleaned user agents, without empty entries, None and surrounding spaces
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents=[" PAM ", None, "", "privacyidea-cp"])
+        self.assertEqual("PAM, privacyidea-cp", Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents="PAM, , privacyidea-cp ,")
+        self.assertEqual("PAM, privacyidea-cp", Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
 
         delete_policy("policy-empty-ua")
         delete_policy("policy-cp")

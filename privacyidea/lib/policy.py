@@ -255,6 +255,9 @@ def check_policy_name(name):
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll']
+# The name of a user agent as get_plugin_info_from_useragent extracts it from the request. A leading "-" is
+# rejected, as it reads like a negation.
+USER_AGENT_NAME_RE = re.compile(r"[a-zA-Z0-9_][a-zA-Z0-9_-]*")
 
 comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
                                  "need to escape it with a backslash.")
@@ -585,7 +588,8 @@ class PolicyClass:
         if pinode is not None:
             new_policies = []
             for policy in reduced_policies:
-                # The policy either matches if it has no pinode defined or if the pinode is contained in the list
+                # The policy either matches if it has no pinode defined or if the pinode is contained in the list.
+                # The node names are compared exactly, set_policy rejects wildcards and negations.
                 if not policy.get("pinode") or pinode in policy.get("pinode"):
                     new_policies.append(policy)
 
@@ -1411,6 +1415,42 @@ def validate_values(values: str | list | None, allowed_values: list, name: str) 
     return True
 
 
+def _split_values(values: str | list | None, name: str) -> list[str]:
+    """
+    Splits the values into a list of stripped, non-empty strings.
+
+    :param values: Either a list of strings or a comma separated list as single string
+    :param name: The name of the parameter used for an error message
+    :return: A list of the values
+    """
+    if values is None:
+        return []
+    if isinstance(values, str):
+        values = values.split(",")
+    elif not isinstance(values, list):
+        raise ParameterError(f"Invalid {name} type '{type(values)}'!")
+    if any(value is not None and not isinstance(value, str) for value in values):
+        raise ParameterError(f"Invalid {name}: all values must be strings!")
+    return [value.strip() for value in values if value and value.strip()]
+
+
+def validate_user_agents(user_agents: str | list | None) -> list[str]:
+    """
+    Checks that each user agent is a plain user agent name like "privacyidea-cp". The policy match compares the
+    name from the user agent of the request (see :func:`privacyidea.lib.utils.get_useragent_name`), so a version,
+    a comment, wildcards or negations would let the policy apply on no request.
+
+    :param user_agents: Either a list of strings or a comma separated list as single string
+    :return: The user agents without empty entries, raise a ParameterError if one is invalid
+    """
+    agents = _split_values(user_agents, "User-Agents")
+    invalid_agents = sorted(agent for agent in agents if not USER_AGENT_NAME_RE.fullmatch(agent))
+    if invalid_agents:
+        raise ParameterError(f"Invalid User-Agents: {invalid_agents}! A user agent must be a plain name that only "
+                             f"contains letters, digits, '_' and '-', without a version, wildcards or negations.")
+    return agents
+
+
 @log_with(log)
 def rename_policy(name: str, new_name: str) -> int:
     """
@@ -1570,8 +1610,22 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     validate_values(resolver, valid_resolvers, "Resolvers")
 
     # check for valid nodes
-    valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
-    validate_values(pinode, valid_nodes, "privacyIDEA Nodes")
+    if pinode is not None:
+        nodes = _split_values(pinode, "privacyIDEA Nodes")
+        valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
+        # The node match compares the node names exactly, so a wildcard or a negation would apply on no node
+        unsupported_nodes = [node for node in nodes if "*" in node or node[0] in ("!", "-")]
+        if unsupported_nodes:
+            raise ParameterError(f"Wildcards and negations are not supported for privacyIDEA Nodes: "
+                                 f"{unsupported_nodes}! Select the nodes on which the policy applies.")
+        validate_values(nodes, valid_nodes, "privacyIDEA Nodes")
+        # Store the cleaned values, which also drops empty entries and None from a list
+        pinode = ", ".join(nodes)
+
+    # check for valid user agents. The user agent match compares the name of the user agent of the request.
+    if user_agents is not None:
+        # Store the cleaned values, which also drops empty entries and None from a list
+        user_agents = ", ".join(validate_user_agents(user_agents))
 
     # check for valid time
     if time is not None and len(time) > 0:
@@ -1606,15 +1660,6 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
             check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
         except AddrFormatError:
             raise PrivacyIDEAError(_("Invalid client definition!"), id=302)
-    if isinstance(pinode, list):
-        pinode = ", ".join(pinode)
-    if isinstance(user_agents, list):
-        # Remove None or empty values
-        user_agents = [user_agent for user_agent in user_agents if user_agent]
-        user_agents = ", ".join(user_agents)
-    if isinstance(user_agents, str):
-        # Remove empty or whitespace-only entries from a comma-separated string
-        user_agents = ", ".join([ua.strip() for ua in user_agents.split(",") if ua.strip()])
     # Evaluate condition parameter and convert tuple into PolicyConditionClass object
     conditions_data = []
     if conditions is not None:
