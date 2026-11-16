@@ -28,6 +28,8 @@ type: ``integer``
 
 This is the maximum allowed number of tokens in the specified realm.
 
+privacyIDEA checks only the realm of this policy, not the user and the resolver.
+
 .. note:: If you have several realms with realm admins and you
    imported a pool of hardware tokens, you can thus limit the
    consumed hardware tokens per realm.
@@ -763,7 +765,7 @@ This action configures whether the user's identity should be checked when
 rolling out a new WebAuthn token. If this is set to required, any user rolling
 out a new WebAuthn token will have to provide some form of verification. This
 might be biometric identification, or knowledge-based, depending on the
-authenticator used.
+authenticator used. The action also applies to the enrollment of a passkey.
 
 This defaults to ``preferred``, meaning user verification will be performed if
 supported by the token.
