@@ -91,12 +91,12 @@ class RegistrationTokenClass(PasswordTokenClass):
     """
 
     password_detail_key = "registrationcode"  # nosec B105 # key name
+    default_length = DEFAULT_LENGTH
+    default_contents = DEFAULT_CONTENTS
 
     def __init__(self, aToken):
         PasswordTokenClass.__init__(self, aToken)
         self.hKeyRequired = False
-        self.otp_len = DEFAULT_LENGTH
-        self.otp_contents = DEFAULT_CONTENTS
         self.set_type("registration")
 
     @staticmethod
@@ -132,6 +132,13 @@ class RegistrationTokenClass(PasswordTokenClass):
                'ui_enroll': ["admin"],
                'policy': {
                    SCOPE.ENROLL: {
+                       **RegistrationTokenClass.get_password_policy_definitions(
+                           _("Set the length of registration codes."),
+                           _("Specify the required "
+                             "contents of the registration code. "
+                             "(c)haracters, (n)umeric, "
+                             "(s)pecial. Use modifiers +/- or a list "
+                             "of allowed characters [1234567890]")),
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of registration tokens assigned."),

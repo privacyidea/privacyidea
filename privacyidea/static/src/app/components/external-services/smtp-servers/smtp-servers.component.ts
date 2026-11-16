@@ -88,12 +88,21 @@ export class SmtpServersComponent {
     allowed: () => this.authService.actionAllowed("smtpserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("smtpserver_write")
+      ? $localize`:@@smtpServer.createSMTPServer:Create an SMTP server to send emails and one-time passwords.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "identifier", "server", "sender", "tls", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("smtpserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["identifier", "server", "sender", "tls", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   smtpDataSource = computed(() => {
     const servers = this.smtpService.smtpServers();
@@ -117,6 +126,7 @@ export class SmtpServersComponent {
       icon: "email",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("smtpserver_write"),
       run: () => this.onCreateNewServer()
     },
     {
@@ -126,6 +136,7 @@ export class SmtpServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

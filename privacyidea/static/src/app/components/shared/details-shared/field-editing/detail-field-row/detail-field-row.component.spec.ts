@@ -19,6 +19,7 @@
 import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailFieldRowComponent } from "./detail-field-row.component";
+import { axe } from "@testing/axe";
 
 @Component({
   standalone: true,
@@ -65,5 +66,11 @@ describe("DetailFieldRowComponent", () => {
     host.editing.set(false);
     fixture.detectChanges();
     expect(rowEl.classList.contains("detail-field--editing")).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

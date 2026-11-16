@@ -446,3 +446,23 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("public", stored.Type)
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
+
+    def test_15_default_otp_length_is_public(self):
+        set_privacyidea_config("DefaultOtpLen", "8")
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+
+    def test_16_default_otp_length_stored_without_type_is_public(self):
+        # An entry saved before the setting became public has no type and is still readable by users.
+        Config("DefaultOtpLen", "8", "", "").save()
+        Config("UntypedAdminSetting", "secret", "", "").save()
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assert_empty_string(stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        self.assertIsNone(get_from_config("UntypedAdminSetting", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+        delete_privacyidea_config("UntypedAdminSetting")

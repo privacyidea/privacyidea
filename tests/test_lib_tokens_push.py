@@ -26,6 +26,7 @@ from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.crypto import encryptPassword, geturandom
 from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
@@ -407,6 +408,21 @@ class PushTokenTestCase(MyTestCase):
         with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
             token.create_challenge(options={"g": g, "exception": True})
 
+    def test_02da_challenge_without_gateway_is_not_created(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        success, message, _transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertFalse(success)
+        self.assertEqual("The PIN was correct, but the push notification was not sent.", message)
+        self.assertListEqual([], get_challenges(serial=token.get_serial()))
+        self.assertEqual(AuthEventReason.CHALLENGE_NOT_DELIVERED, token.auth_details[AUTH_EVENT_REASON_KEY])
+
     def test_02e_gateway_exception_uses_polling_fallback_and_records_metrics(self):
         token = self._create_push_token()
         self.addCleanup(remove_token, token.get_serial())
@@ -530,7 +546,10 @@ class PushTokenTestCase(MyTestCase):
                     result = res.json.get("result")
                     self.assertTrue(result.get("status"))
                     self.assertFalse(result.get("value"))
-                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    self.assertEqual("REJECT", result.get("authentication"))
+                    self.assertListEqual([], res.json["detail"]["multi_challenge"])
+                    self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                                     res.json["detail"]["message"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
@@ -549,7 +568,10 @@ class PushTokenTestCase(MyTestCase):
                     result = res.json.get("result")
                     self.assertTrue(result.get("status"))
                     self.assertFalse(result.get("value"))
-                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    self.assertEqual("REJECT", result.get("authentication"))
+                    self.assertListEqual([], res.json["detail"]["multi_challenge"])
+                    self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                                     res.json["detail"]["message"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
@@ -2222,8 +2244,8 @@ class PushTokenTestCase(MyTestCase):
         self._teardown_notification_token(token, "16f")
 
     def test_16g_code_to_phone_retrigger_without_earlier_challenge(self):
-        # A code_to_phone re-trigger whose transaction has no earlier challenge leaves the
-        # challenge data at None, which the notification must not stumble over.
+        # A code_to_phone challenge after an earlier push challenge of the request builds its
+        # own data, and the notification is stored with it.
         token = self._setup_notification_token("16g")
         serial = token.get_serial()
         set_policy("push_16g_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
@@ -2390,6 +2412,65 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(1, token.check_challenge_response(passw="424242", options=options))
 
         self._teardown_notification_token(token, "16m")
+
+    def test_16n_code_to_phone_challenge_takes_no_data_from_another_transaction(self):
+        # The first push token creates no challenge, so the request has no transaction yet when the second one is
+        # challenged. A confirmed code_to_phone challenge of another token must not lend it its display code.
+        set_policy("push_16n_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        self.addCleanup(delete_policy, "push_16n_code")
+        without_gateway = self._create_push_token()
+        self.addCleanup(remove_token, without_gateway.get_serial())
+        without_gateway.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        without_gateway.set_pin("pushpin")
+        without_gateway.add_user(User("cornelius", self.realm1))
+        token = self._setup_notification_token("16n")
+        self.addCleanup(delete_policy, "push_16n_text")
+        self.addCleanup(delete_policy, "push_16n_enroll")
+        self.addCleanup(remove_token, token.get_serial())
+        other = init_token({"type": "spass", "serial": "OTHER16N"})
+        self.addCleanup(remove_token, other.get_serial())
+        Challenge(other.get_serial(), transaction_id="99998888777766665555",
+                  data={"type": "push", "mode": PushMode.CODE_TO_PHONE, "smartphone_confirmed": True,
+                        "display_code": "424242"}).save()
+
+        transaction_id = self._trigger_challenge()
+
+        stored = get_challenges(serial=token.get_serial(), transaction_id=transaction_id)[0].get_data()
+        self.assertFalse(stored["smartphone_confirmed"])
+        self.assertNotIn("display_code", stored)
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "424242",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+
+    def test_16o_existing_challenge_data_is_read_from_valid_challenges_of_the_transaction(self):
+        token = self._setup_notification_token("16o")
+        serial = token.get_serial()
+        presence_data = {"type": "push", "mode": PushMode.REQUIRE_PRESENCE, "options": ["A", "B"],
+                         "correct_answer": "A"}
+        Challenge(serial, transaction_id="11110000111100001111", data=presence_data).save()
+        Challenge(serial, transaction_id="22220000222200002222", data=presence_data,
+                  expiration=datetime.now() - timedelta(days=1)).save()
+
+        self.assertIsNone(token._get_existing_challenge_data(None, PushMode.REQUIRE_PRESENCE))
+        self.assertIsNone(token._get_existing_challenge_data("22220000222200002222", PushMode.REQUIRE_PRESENCE))
+        self.assertIsNone(token._get_existing_challenge_data("11110000111100001111", PushMode.CODE_TO_PHONE))
+        self.assertDictEqual(presence_data,
+                             token._get_existing_challenge_data("11110000111100001111", PushMode.REQUIRE_PRESENCE))
+
+        self._teardown_notification_token(token, "16o")
+
+    def test_16p_challenge_scan_without_transaction_finds_no_answer(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        answered = Challenge(token.get_serial(), transaction_id="33330000333300003333", data={"type": "push"})
+        answered.set_otp_status(True)
+        answered.save()
+
+        self.assertEqual(-1, token._scan_challenge_response(None).otp_counter)
+        self.assertEqual(1, token._scan_challenge_response("33330000333300003333").otp_counter)
 
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):

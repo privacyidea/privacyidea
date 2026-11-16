@@ -73,6 +73,7 @@ import { TruncationTooltipDirective } from "@components/shared/directives/trunca
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -95,6 +96,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    TokenActiveToggleComponent,
     TableActionsTriggerComponent,
     ScrollFocusableDirective,
     TooltipAriaLabelDirective,
@@ -255,21 +257,6 @@ export class TokenTableComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.tokenSelection.deselectAllRows();
-  }
-
-  toggleActive(tokenDetails: TokenDetails): void {
-    if (
-      !tokenDetails.revoked &&
-      !tokenDetails.locked &&
-      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
-        (!tokenDetails.active && this.authService.actionAllowed("enable")))
-    ) {
-      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
-        next: () => {
-          this.tokenResource.reload();
-        }
-      });
-    }
   }
 
   resetFailCount(tokenDetails: TokenDetails): void {

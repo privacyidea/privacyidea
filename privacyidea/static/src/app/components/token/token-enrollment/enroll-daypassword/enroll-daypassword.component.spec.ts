@@ -20,13 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import {
-  DAYPASSWORD_HASHLIB,
-  DAYPASSWORD_OTP_LENGTH,
-  DAYPASSWORD_TIME_STEP,
-  TOTP_HASHLIB,
-  TOTP_TIME_STEP
-} from "@constants/token.constants";
+import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -42,6 +36,7 @@ import {
   pickOption,
   typeInto
 } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
@@ -131,9 +126,9 @@ describe("EnrollDaypasswordComponent", () => {
     };
     systemService.systemConfig.set(mockConfig);
     authService.rightsWithValues.set({
-      [DAYPASSWORD_HASHLIB]: "sha256",
-      [DAYPASSWORD_OTP_LENGTH]: "8",
-      [DAYPASSWORD_TIME_STEP]: "48h"
+      daypassword_hashlib: "sha256",
+      daypassword_otplen: "8",
+      daypassword_timestep: "48h"
     });
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
@@ -247,5 +242,11 @@ describe("EnrollDaypasswordComponent", () => {
       expect(component.otpKeyForm().valid()).toBe(true);
       expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

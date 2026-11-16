@@ -29,7 +29,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -102,7 +102,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   editedOptions: Record<number, Record<string, string>> = {};
 
   constructor() {
-    this.routeMachineId = this.route.snapshot.paramMap.get("id");
+    this.routeMachineId = this.route.snapshot.paramMap.get(ROUTE_PARAMS.ID);
     this.routeResolver = this.route.snapshot.queryParamMap.get("resolver");
 
     effect(() => {

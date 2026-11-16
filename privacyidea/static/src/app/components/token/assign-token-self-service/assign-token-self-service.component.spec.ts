@@ -23,6 +23,7 @@ import { TokenService } from "@services/token/token.service";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
+import { axe } from "@testing/axe";
 
 describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
@@ -148,5 +149,11 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     component.serialModel.set({ serial: "TKN-2" });
     component.assignUserToToken();
     expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ tokenSerial: "TKN-2", pin: "" }));
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

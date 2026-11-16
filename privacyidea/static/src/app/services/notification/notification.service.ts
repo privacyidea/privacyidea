@@ -163,7 +163,7 @@ export class NotificationService implements NotificationServiceInterface {
 
   private _open(message: string, panelClass: string, duration?: number): void {
     const totalDuration = duration ?? this._totalDuration;
-    const snackBarRef = this.snackBar.open(message, "🗙", {
+    const snackBarRef = this.snackBar.open(message, $localize`:@@common.close:Close`, {
       horizontalPosition: "center",
       verticalPosition: "bottom",
       duration: undefined,

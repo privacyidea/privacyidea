@@ -649,6 +649,16 @@ class PasskeyTokenClass(TokenClass):
         else:
             return False, "", transactionid, {}
 
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        A passkey challenge is only triggered with the passkey_trigger_by_pin policy. Otherwise the passkey uses the
+        open challenge of /validate/initialize.
+
+        :param options: The request options
+        :return: True if passkey_trigger_by_pin is set
+        """
+        return bool(options.get(PasskeyAction.EnableTriggerByPIN))
+
     @log_with(log)
     def use_for_authentication(self, options):
         return self.is_active()

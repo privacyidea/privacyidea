@@ -17,18 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
+  @if (!defaultRadiusServerIsSet() && authService.actionAllowed("configread")) {
     <span
       class="inline-hint"
       i18n="@@token.easeEnrollmentRadius"
       >To ease the enrollment of RADIUS tokens you can set default values in the
       <a
-        role="button"
-        tabindex="0"
-        aria-label="Go to RADIUS token configuration"
-        i18n-aria-label="@@token.goRadiusToken"
-        (click)="goToRadiusConfig()"
-        (keydown)="onRadiusConfigKeydown($event)">
+        [routerLink]="ROUTE_PATHS.CONFIGURATION_TOKENTYPES"
+        fragment="radius">
         RADIUS Token Configuration </a
       >!</span
     >
@@ -43,10 +39,18 @@
     @if (!wizard() || !defaultRadiusServerIsSet()) {
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n="@@token.radiusServerConfiguration">RADIUS Server Configuration</mat-label>
-        <mat-hint i18n="@@token.selectPredefined"
-          >Select a predefined <a href="#"><strong>RADIUS server configuration.</strong></a> The RADIUS request will be
-          forwarded to this RADIUS server.</mat-hint
-        >
+        @if (authService.actionAllowed("radiusserver_read")) {
+          <mat-hint i18n="@@token.selectPredefined"
+            >Select a predefined
+            <a [routerLink]="ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS"><strong>RADIUS server configuration.</strong></a> The
+            RADIUS request will be forwarded to this RADIUS server.</mat-hint
+          >
+        } @else {
+          <mat-hint i18n="@@token.selectPredefinedServer"
+            >Select a predefined <strong>RADIUS server configuration.</strong> The RADIUS request will be forwarded to
+            this RADIUS server.</mat-hint
+          >
+        }
         <mat-select [formField]="radiusServerConfigurationForm">
           @for (option of radiusServerConfigurationOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>

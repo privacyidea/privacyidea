@@ -99,7 +99,7 @@ import {
   AuthenticationLogService,
   AuthenticationLogServiceInterface
 } from "@services/authentication-log/authentication-log.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -388,7 +388,7 @@ export class AuthenticationLog {
   }));
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   protected readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);

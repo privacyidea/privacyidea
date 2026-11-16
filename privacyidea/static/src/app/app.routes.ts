@@ -19,6 +19,7 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { PAGE_NAMES } from "@core/route-titles";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
 import { PasswordRecoveryRequestComponent } from "./components/password-recovery/request/password-recovery-request.component";
@@ -47,6 +48,7 @@ import { PeriodicTaskService } from "@services/periodic-task/periodic-task.servi
 import { PolicyService } from "@services/policies/policies.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { NoRealmDialogService } from "@services/no-realm-dialog/no-realm-dialog.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
@@ -90,12 +92,14 @@ export const routes: Routes = [
       ContainerService,
       ContainerTemplateService,
       ContentService,
+      DashboardLayoutService,
       DialogService,
       DocumentationService,
       EventService,
       IntegrationsService,
       MachineResolverService,
       MachineService,
+      NoRealmDialogService,
       PendingChangesService,
       PeriodicTaskService,
       PolicyService,

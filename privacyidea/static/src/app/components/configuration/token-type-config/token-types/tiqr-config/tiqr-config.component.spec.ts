@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatExpansionPanel } from "@angular/material/expansion";
+import { By } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
 import {
@@ -30,6 +32,7 @@ import {
 } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { touchAll } from "@utils/form-state.utils";
+import { axe } from "@testing/axe";
 
 const REG_SERVER_PLACEHOLDER = "http://pi.server/ttype/tiqr";
 const LOGO_URL_PLACEHOLDER = "https://pi.server/static/css/privacyIDEA1.png";
@@ -120,6 +123,18 @@ describe("TiqrConfigComponent", () => {
     expect(configForm.form.values[TIQR_OCRASUITE]().dirty()).toBe(true);
   });
 
+  it("opens its panel when it is the referenced one", async () => {
+    await create();
+    const panel = fixture.debugElement.query(By.directive(MatExpansionPanel)).componentInstance as MatExpansionPanel;
+    expect(fixture.nativeElement.querySelector("mat-expansion-panel").id).toBe("tiqr");
+    expect(panel.expanded).toBe(false);
+
+    fixture.componentRef.setInput("expanded", true);
+    await flush();
+
+    expect(panel.expanded).toBe(true);
+  });
+
   describe("required entries", () => {
     it("shows no error while the panel is empty", async () => {
       await create();
@@ -188,5 +203,12 @@ describe("TiqrConfigComponent", () => {
 
       expect(indicator()).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

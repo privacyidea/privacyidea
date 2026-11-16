@@ -270,8 +270,12 @@ class AuthEventReason(str, Enum):
     # A policy disabled this token's whole type for the request (PolicyAction.DISABLED_TOKEN_TYPES).
     TOKEN_TYPE_DISABLED = "TOKEN_TYPE_DISABLED"
     # The token type excluded itself from *this* request (TokenClass.use_for_authentication) - e.g. an
-    # application-specific password whose service_id does not match the one the request names.
+    # application-specific password whose service_id does not match the one the request names - or can not be
+    # triggered at /validate/triggerchallenge (TokenClass.can_trigger_challenge), e.g. a passkey without
+    # passkey_trigger_by_pin.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
+    # The token type has no challenge mode, so no challenge can be triggered for it (e.g. spass, sshkey).
+    TOKEN_NO_CHALLENGE_MODE = "TOKEN_NO_CHALLENGE_MODE"
 
     # --- authorization, i.e. a policy or the server configuration refusing the request ---------------------------
     # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The others below are
@@ -302,6 +306,9 @@ class AuthEventReason(str, Enum):
     WRONG_OTP = "WRONG_OTP"
 
     # --- challenge-response --------------------------------------------------------------------------------------
+    # The challenge could not be sent to the user: the SMS or email gateway failed, or a push token has no push
+    # gateway or its push gateway failed while polling is not allowed.
+    CHALLENGE_NOT_DELIVERED = "CHALLENGE_NOT_DELIVERED"
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
@@ -588,7 +595,7 @@ class RestrictionCause(str, Enum):
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
-# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
+# handful - INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
 # DEVICE_TOKEN_REUSED, SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
 # reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
 # CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
@@ -610,6 +617,8 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_DECLINED,
     # Lowest of the three declines: the user abandoning their own attempt says least about the request.
     AuthEventType.CHALLENGE_CANCELLED,
+    # A token whose challenge could not be created still matched the first factor, so the request was meant for it.
+    AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.ENROLLMENT_FAIL,
     AuthEventType.MFA_FAIL,
@@ -625,11 +634,10 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.LOGIN_NAME_NOT_UNIQUE,
     # Refused before any token flow ran as well, and is the only event of its request.
     AuthEventType.USER_STORE_UNAVAILABLE,
-    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
+    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: it describes the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
-    # is the better classification. In practice neither reduces against anything - the endpoints that emit them
-    # classify a request with a single event - and they are listed here because every non-enforcement type must be.
-    AuthEventType.CHALLENGE_TRIGGER_FAIL,
+    # is the better classification. In practice it reduces against nothing - the endpoint that emits it classifies a
+    # request with a single event - and it is listed here because every non-enforcement type must be.
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
     # Never reduced against anything either: it is assigned on the way out of the request, by reclassifying the event

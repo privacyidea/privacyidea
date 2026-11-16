@@ -30,6 +30,7 @@ import { MockContentService, MockSystemService, MockTokenService } from "@testin
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollQuestionComponent } from "./enroll-question.component";
+import { axe } from "@testing/axe";
 
 describe("EnrollQuestionnaireComponent", () => {
   let component: EnrollQuestionComponent;
@@ -171,5 +172,11 @@ describe("EnrollQuestionnaireComponent", () => {
 
   it("defaults to five required answers without a configured number", () => {
     expect(component.configMinNumberOfAnswers()).toBe(5);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

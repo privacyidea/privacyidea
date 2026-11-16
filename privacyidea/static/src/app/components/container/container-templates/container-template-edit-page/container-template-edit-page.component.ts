@@ -38,7 +38,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -104,7 +104,7 @@ export class ContainerTemplateEditPageComponent {
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const name = params.get("name");
+      const name = params.get(ROUTE_PARAMS.NAME);
       if (!name) this.initTemplate.set(null);
       this.templateName.set(name);
     });
@@ -132,7 +132,8 @@ export class ContainerTemplateEditPageComponent {
   // The edit component holds the rules of the template, so the page can save only once it is mounted.
   readonly canSave = computed(() => this.editComponent()?.canSave() ?? false);
   readonly isDirty = computed(() => {
-    return JSON.stringify(this.template()) !== JSON.stringify(this.baseTemplate());
+    const templateChanged = JSON.stringify(this.template()) !== JSON.stringify(this.baseTemplate());
+    return templateChanged || (this.editComponent()?.hasRowChanges() ?? false);
   });
 
   async onSave(): Promise<boolean> {

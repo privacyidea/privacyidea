@@ -1,0 +1,51 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<ng-content select="[panelTitle]"></ng-content>
+<button
+  (click)="testPasskey()"
+  class="action-button-secondary button-width-l"
+  mat-stroked-button>
+  <mat-icon>key</mat-icon>
+  <span i18n="@@token.testPasskey">Test Passkey</span>
+</button>
+@if (result(); as result) {
+  <p
+    class="passkey-test-result"
+    [class.passkey-test-result--success]="result.kind === 'success'"
+    [class.passkey-test-result--warning]="result.kind === 'warning'">
+    {{ result.message }}
+    @if (result.mismatch; as mismatch) {
+      <br />
+      <span i18n="@@token.matchedToken">Matched token:</span>
+      <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, mismatch.serial]">{{ mismatch.serial }}</a>
+      @if (mismatch.username) {
+        <span i18n="@@token.user">, user:</span>
+        @if (mismatch.realm) {
+          <a
+            [routerLink]="[ROUTE_PATHS.USERS_DETAILS, mismatch.username]"
+            [queryParams]="{ realm: mismatch.realm }">
+            {{ mismatch.username }}&#64;{{ mismatch.realm }}
+          </a>
+        } @else {
+          <span>{{ mismatch.username }}</span>
+        }
+      }
+    }
+  </p>
+}

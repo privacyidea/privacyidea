@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { RouterLink } from "@angular/router";
 import { NgClass } from "@angular/common";
 import {
   AfterViewInit,
@@ -59,7 +60,7 @@ import {
   ContainerService,
   ContainerServiceInterface
 } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -67,6 +68,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -79,6 +81,8 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    TokenActiveToggleComponent,
+    RouterLink,
     ScrollFocusableDirective,
     SortByLabelPipe,
     TooltipAriaLabelDirective,
@@ -110,7 +114,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
@@ -312,20 +316,6 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
           }
         }
       });
-  }
-
-  handleColumnClick(columnKey: string, token: ContainerDetailToken) {
-    if (columnKey === "active") {
-      this.toggleActive(token);
-    }
-  }
-
-  toggleActive(token: ContainerDetailToken): void {
-    this.tokenService.toggleActive(token.serial, token.active).subscribe({
-      next: () => {
-        this.containerService.containerDetailsResource.reload();
-      }
-    });
   }
 
   deleteAllTokens() {

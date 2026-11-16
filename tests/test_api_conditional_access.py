@@ -151,6 +151,14 @@ class _GateContract(_ContractHost):
 
     #: The request path the authentication-log row must name.
     endpoint_path: str
+    #: The route the audit log names in the action of the request, if it differs from the request path, like
+    #: ``/ttype/<ttype>`` for ``/ttype/push``.
+    audit_route: str | None = None
+
+    @property
+    def audit_action_filter(self) -> str:
+        """The filter for the audit entry of a request to this endpoint."""
+        return f"*{self.audit_route or self.endpoint_path}*"
 
     @property
     def log_user(self) -> User | None:
@@ -235,7 +243,7 @@ class _GateContract(_ContractHost):
     def test_a_refusal_is_audited_as_the_failed_authentication_it_is(self):
         self._block_ip_for(BLOCKED_IP)
         self._authenticate(remote_addr=BLOCKED_IP)
-        entry = self.find_most_recent_audit_entry(action=f"*{self.endpoint_path}*")
+        entry = self.find_most_recent_audit_entry(action=self.audit_action_filter)
         self.assertEqual(0, entry["success"], entry)
         self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
         # Unlike the response, which says only what an admin configured, the entry names the reason - this is
@@ -343,7 +351,7 @@ class _UserGateContract(_ContractHost):
     def test_a_refused_user_is_audited_with_the_reason(self):
         self._lock_user_for()
         self._authenticate()
-        entry = self.find_most_recent_audit_entry(action=f"*{self.endpoint_path}*")
+        entry = self.find_most_recent_audit_entry(action=self.audit_action_filter)
         self.assertEqual(0, entry["success"], entry)
         self.assertTrue(entry["info"].startswith("Rejected: account is temporarily locked"), entry)
 

@@ -30,6 +30,7 @@ import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-g
 import { MockPolicyService } from "@testing/mock-services";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;
@@ -83,6 +84,34 @@ describe("PolicyActionItemComponent", () => {
     fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "int", desc: "new" } });
     fixture.detectChanges();
     expect(component.currentAction().name).toBe("testAction");
+  });
+
+  describe("comma hint", () => {
+    const commaHint = () => fixture.debugElement.query(By.css(".detail-error"))?.nativeElement.textContent.trim();
+
+    it("should explain the escape in a message the server unescapes", () => {
+      fixture.componentRef.setInput("selectableAction", {
+        ...defaultAction,
+        actionName: "smstext",
+        detail: { type: "str", desc: "" }
+      });
+      component.updateSelectedActionValue("Hello, World");
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values. Write a comma as \\,");
+    });
+
+    it("should not mention the escape in an action the server does not unescape", () => {
+      fixture.componentRef.setInput("selectableAction", {
+        ...defaultAction,
+        actionName: "challenge_text_header",
+        detail: { type: "str", desc: "" }
+      });
+      component.updateSelectedActionValue("Hello, World");
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values.");
+    });
   });
 
   it("should default currentAction value to 'true' for bool actions", () => {
@@ -677,5 +706,11 @@ describe("PolicyActionItemComponent", () => {
 
       expect(mockButton.focus).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

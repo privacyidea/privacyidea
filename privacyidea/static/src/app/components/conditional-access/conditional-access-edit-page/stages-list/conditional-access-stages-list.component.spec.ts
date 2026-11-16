@@ -34,6 +34,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessStagesListComponent } from "./conditional-access-stages-list.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessStagesListComponent", () => {
   let component: ConditionalAccessStagesListComponent;
@@ -164,5 +165,11 @@ describe("ConditionalAccessStagesListComponent", () => {
       expect(component.stageNumber(stageFields[0])).toBe(1);
       expect(component.stageNumber(stageFields[1])).toBe(1);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

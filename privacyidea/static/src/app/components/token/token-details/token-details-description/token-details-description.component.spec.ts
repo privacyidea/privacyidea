@@ -25,6 +25,7 @@ import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.co
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { TokenDetailsDescriptionComponent } from "./token-details-description.component";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsDescriptionComponent", () => {
   let component: TokenDetailsDescriptionComponent;
@@ -201,5 +202,12 @@ describe("TokenDetailsDescriptionComponent", () => {
 
     expect(tokenService.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "via registry");
     expect(registry.anyEditing()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    create(false);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

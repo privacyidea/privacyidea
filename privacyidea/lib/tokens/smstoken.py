@@ -52,6 +52,7 @@ from json import loads
 
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _
+from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
@@ -359,6 +360,8 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
                         message=message_template, options=options, otp=otp)
+                    if not success:
+                        self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_NOT_DELIVERED
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
@@ -373,6 +376,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
                 log.warning(info + f" ({e!r})")
+                self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_NOT_DELIVERED
                 log.debug(f"{traceback.format_exc()!s}")
                 return_message = info
                 if is_true(options.get("exception")):

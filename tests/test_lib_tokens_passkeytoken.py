@@ -908,3 +908,11 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_request.token.update(registration_request.registration_response)
         self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
         remove_token(serial=registration_request.token.get_serial())
+
+    def test_27_challenge_is_triggered_only_with_trigger_by_pin(self):
+        token = self._create_token()
+        self.addCleanup(remove_token, serial=token.get_serial())
+
+        self.assertFalse(token.can_trigger_challenge({}))
+        self.assertFalse(token.can_trigger_challenge({PasskeyAction.EnableTriggerByPIN: False}))
+        self.assertTrue(token.can_trigger_challenge({PasskeyAction.EnableTriggerByPIN: True}))
