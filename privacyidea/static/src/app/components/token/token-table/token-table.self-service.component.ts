@@ -42,11 +42,13 @@ import { TruncationTooltipDirective } from "@components/shared/directives/trunca
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 @Component({
   selector: "app-token-table-self-service",
   standalone: true,
   imports: [
+    TokenActiveToggleComponent,
     ScrollFocusableDirective,
     TooltipAriaLabelDirective,
     SortByLabelPipe,

@@ -20,6 +20,7 @@ import { provideZonelessChangeDetection, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ThemeService } from "@services/theme/theme.service";
 import { ThemeToggleComponent } from "./theme-toggle.component";
+import { axe } from "@testing/axe";
 
 describe("ThemeToggleComponent", () => {
   let fixture: ComponentFixture<ThemeToggleComponent>;
@@ -83,5 +84,11 @@ describe("ThemeToggleComponent", () => {
     fixture.detectChanges();
 
     expect(input().getAttribute("aria-label")).toBe("Switch to light mode");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

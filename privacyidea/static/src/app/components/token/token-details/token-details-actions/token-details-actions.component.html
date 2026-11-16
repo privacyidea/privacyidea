@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (hasAnyAction) {
-  @if (token()?.rollout_state === "verify") {
+  @if (token().rollout_state === "verify") {
     <div class="actions-verify-row">
       <app-verify-enrollment></app-verify-enrollment>
       <mat-divider class="margin-top-8 margin-bottom-8" />
@@ -53,45 +53,14 @@
 
     @if (tokenType() === "passkey") {
       <section class="actions-section actions-section--test">
-        <div class="passkey-test-panel">
+        <app-test-passkey-action [token]="token()">
           <h4
+            panelTitle
             class="details-card-title"
             i18n="@@token.test"
             >Test</h4
           >
-          <button
-            (click)="testPasskey.emit()"
-            class="action-button-secondary button-width-l"
-            mat-stroked-button>
-            <mat-icon>key</mat-icon>
-            <span i18n="@@token.testPasskey">Test Passkey</span>
-          </button>
-          @if (passkeyTestResult(); as result) {
-            <p
-              class="passkey-test-result"
-              [class.passkey-test-result--success]="result.kind === 'success'"
-              [class.passkey-test-result--warning]="result.kind === 'warning'">
-              {{ result.message }}
-              @if (result.mismatch; as mismatch) {
-                <br />
-                <span i18n="@@token.matchedToken">Matched token:</span>
-                <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, mismatch.serial]">{{ mismatch.serial }}</a>
-                @if (mismatch.username) {
-                  <span i18n="@@token.user">, user:</span>
-                  @if (mismatch.realm) {
-                    <a
-                      [routerLink]="[ROUTE_PATHS.USERS_DETAILS, mismatch.username]"
-                      [queryParams]="{ realm: mismatch.realm }">
-                      {{ mismatch.username }}@{{ mismatch.realm }}
-                    </a>
-                  } @else {
-                    <span>{{ mismatch.username }}</span>
-                  }
-                }
-              }
-            </p>
-          }
-        </div>
+        </app-test-passkey-action>
       </section>
     }
 

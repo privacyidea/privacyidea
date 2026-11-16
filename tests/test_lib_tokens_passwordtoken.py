@@ -6,6 +6,8 @@ import logging
 
 from testfixtures import log_capture
 
+from privacyidea.lib.config import get_token_class
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.tokens.passwordtoken import log as pwt_log
@@ -68,6 +70,15 @@ class PasswordTokenTestCase(MyTestCase):
         info = token.get_class_info("title")
         self.assertTrue(info == "Password Token", info)
 
+    def test_03a_not_enrollable_in_webui(self):
+        # The WebUI has no enrollment form for type "pw", so it must not be offered
+        self.assertEqual([], PasswordTokenClass.get_class_info("ui_enroll"))
+
+        from privacyidea.lib.policy import PolicyClass
+        tt = PolicyClass().ui_get_enroll_tokentypes(
+            "127.0.0.1", {"username": "admin", "role": "admin", "realm": "realm1"})
+        self.assertNotIn("pw", tt)
+
     def test_04_password_token_export(self):
         # Set up the PasswordTokenClass for testing
         passwordtoken = init_token(param={'serial': "PASS12345678", 'type': 'pw', 'otpkey': '12345'})
@@ -126,3 +137,25 @@ class PasswordTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(passwordtoken.token.serial)
+
+    def test_06_length_and_contents_not_in_tokeninfo(self):
+        # The prepolicy passes the length and the contents of a generated password with every enrollment. They only
+        # define a generated password and are not written to the token info, also when the client sets the password.
+        set_serviceid("mail", "the service of the application specific password token")
+        serials = []
+        try:
+            for token_type, extra_params in (("pw", {}), ("applspec", {"service_id": "mail"})):
+                length_param, contents_param = get_token_class(token_type).get_password_policy_actions()
+                enroll_params = {"type": token_type, length_param: "4", contents_param: "[0]", **extra_params}
+                for password_params, expected_password in (({"otpkey": self.password}, self.password),
+                                                           ({"genkey": 1}, "0000")):
+                    token = init_token({**enroll_params, **password_params})
+                    serials.append(token.get_serial())
+                    self.assertEqual(expected_password, token.token.get_otpkey().getKey().decode("utf-8"))
+                    tokeninfo = token.get_tokeninfo()
+                    self.assertNotIn(length_param, tokeninfo)
+                    self.assertNotIn(contents_param, tokeninfo)
+        finally:
+            for serial in serials:
+                remove_token(serial)
+            delete_serviceid("mail")

@@ -845,6 +845,10 @@ msgstr "Challenge-Response-Anmeldung. Ihre Antwort war ungültig!"
 msgid "Change PIN"
 msgstr "PIN ändern"
 
+#: privacyidea/static_old/components/directives/views/directive.containertemplate.details.html:78
+msgid "Change PIN on first use"
+msgstr "PIN bei der ersten Verwendung ändern"
+
 #: privacyidea/static/components/token/views/token.details.html:511
 msgid "Check OTP only."
 msgstr "Nur den OTP-Wert prüfen."

@@ -40,6 +40,7 @@ import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { BlocklistEntry } from "@services/conditional-access-state/conditional-access-state.service";
 import { grantRights, toolbarAction, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 const activeEntry: BlocklistEntry = {
   identifier: "192.168.1.100",
@@ -541,5 +542,11 @@ describe("BlocklistComponent", () => {
 
       expect(casService.purgeBlocklist).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

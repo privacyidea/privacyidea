@@ -135,6 +135,18 @@ describe("ConfigService", () => {
     localService.removeData(BEARER_TOKEN_STORAGE_KEY);
   });
 
+  it("should send the query of the URL the WebUI was opened with", () => {
+    const openedUrl = window.location.href;
+    window.history.replaceState({}, "", "/app/v2/en/?kiosk=1&lang=de%20AT");
+    try {
+      service.loadConfig();
+      const req = httpMock.expectOne(environment.proxyUrl + "/config?kiosk=1&lang=de%20AT");
+      req.flush({ result: { status: true, value: mockConfig } });
+    } finally {
+      window.history.replaceState({}, "", openedUrl);
+    }
+  });
+
   it("should handle error and keep default config", () => {
     service.loadConfig();
     const req = httpMock.expectOne(environment.proxyUrl + "/config");

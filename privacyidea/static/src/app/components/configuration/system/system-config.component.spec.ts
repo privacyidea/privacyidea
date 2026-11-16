@@ -39,6 +39,7 @@ import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, throwError } from "rxjs";
 import { SystemConfigComponent } from "./system-config.component";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("SystemConfigComponent", () => {
   let component: SystemConfigComponent;
@@ -674,5 +675,11 @@ describe("SystemConfigComponent", () => {
       expect(systemService.saveSystemConfig).not.toHaveBeenCalled();
       expect(component.systemConfigForm.DefaultSyncWindow().touched()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

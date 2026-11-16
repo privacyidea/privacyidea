@@ -24,6 +24,7 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { ContainerTemplate } from "@services/container/container.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ContainerTemplateDeleteDialogComponent } from "./container-template-delete-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateDeleteDialogComponent", () => {
   let component: ContainerTemplateDeleteDialogComponent;
@@ -146,5 +147,12 @@ describe("ContainerTemplateDeleteDialogComponent", () => {
       const listItems = fixture.debugElement.queryAll(By.css("li"));
       expect(listItems.length).toBe(0);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await createComponent();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
