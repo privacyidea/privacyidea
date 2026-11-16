@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { FreeTierDialogComponent } from "./free-tier-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("FreeTierDialogComponent", () => {
   let fixture: ComponentFixture<FreeTierDialogComponent>;
@@ -53,5 +54,11 @@ describe("FreeTierDialogComponent", () => {
 
     buttons()[0].click();
     expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

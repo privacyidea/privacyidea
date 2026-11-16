@@ -37,6 +37,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { axe } from "@testing/axe";
 
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;
@@ -81,5 +82,11 @@ describe("ChallengesTableComponent", () => {
 
       expect(challengesService.activeFilter().getValueOfKey("serial")).toBe("=HOTP1");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

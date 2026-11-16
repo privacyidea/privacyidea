@@ -29,6 +29,7 @@ import {
 import { MockIntegrationsService } from "@testing/mock-services";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionsTabComponent", () => {
   let component: ViewConditionsColumnComponent;
@@ -156,5 +157,11 @@ describe("ConditionsTabComponent", () => {
     expect(component.getMissingDataLabel("nonExistentKey" as unknown as HandleMissingDataOptionKey)).toBe(
       "nonExistentKey"
     );
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

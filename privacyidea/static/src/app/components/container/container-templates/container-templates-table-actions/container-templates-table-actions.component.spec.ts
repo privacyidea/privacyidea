@@ -32,6 +32,7 @@ import { MockContainerTemplateService, MockDialogService } from "@testing/mock-s
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { grantRights, setRights } from "@testing/toolbar-actions";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
   let component: ContainerTemplatesTableActionsComponent;
@@ -197,5 +198,11 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     await component.openDeleteTemplateDialog();
 
     expect(serviceSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

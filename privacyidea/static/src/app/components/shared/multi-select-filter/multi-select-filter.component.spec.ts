@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { MultiSelectFilterComponent } from "./multi-select-filter.component";
+import { axe } from "@testing/axe";
 
 describe("MultiSelectFilterComponent", () => {
   let component: MultiSelectFilterComponent;
@@ -37,5 +38,11 @@ describe("MultiSelectFilterComponent", () => {
   it("creates and renders a trigger button", () => {
     expect(component).toBeTruthy();
     expect(fixture.nativeElement.querySelector("button[mat-icon-button]")).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

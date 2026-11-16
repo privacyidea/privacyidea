@@ -35,6 +35,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { of, throwError } from "rxjs";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
+import { axe } from "@testing/axe";
 
 interface MockResolverResourceShape {
   value: WritableSignal<unknown>;
@@ -1049,5 +1050,11 @@ describe("UserNewResolverComponent", () => {
         expect(component.hasChanges).toBe(true);
       });
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

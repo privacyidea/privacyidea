@@ -22,6 +22,7 @@ import { By } from "@angular/platform-browser";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplatesFilterComponent", () => {
   let component: ContainerTemplatesFilterComponent;
@@ -116,5 +117,11 @@ describe("ContainerTemplatesFilterComponent", () => {
 
     component.updateFilterManually(createFilterWithText("valid"));
     expect(component.isEmpty()).toBeFalsy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

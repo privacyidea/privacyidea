@@ -35,6 +35,7 @@ import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { DashboardComponent } from "./dashboard.component";
+import { axe } from "@testing/axe";
 
 // No shipped widget is pinned, so the tests for the pinned behaviour stand one in. It
 // takes over an existing type id in the registry, which keeps it renderable like any
@@ -456,5 +457,11 @@ describe("DashboardComponent", () => {
       expect(cancelSpy).toHaveBeenCalled();
       expect(layoutService.editMode()).toBe(false);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

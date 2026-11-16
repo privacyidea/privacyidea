@@ -40,6 +40,7 @@ import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ERR } from "@utils/form-rules.utils";
 import { ConditionalAccessStageItemComponent } from "./conditional-access-stage-item.component";
+import { axe } from "@testing/axe";
 
 // jsdom has no validity.badInput; a number input that holds text the browser cannot parse is simulated.
 const rejectInputAsNumber = (input: HTMLInputElement): void => {
@@ -660,5 +661,11 @@ describe("ConditionalAccessStageItemComponent", () => {
       withStage({ error_message: null });
       expect(component.errorMessageLength()).toBe(0);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

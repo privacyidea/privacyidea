@@ -35,6 +35,7 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { EventComponent } from "./event.component";
 import { setRights, toolbarAction } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -951,5 +952,11 @@ describe("EventComponent", () => {
       expect(root.querySelector("app-table-actions")).toBeTruthy();
       expect(root.querySelector("app-table-actions button.action-button-primary")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

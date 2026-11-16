@@ -691,7 +691,8 @@ def get_before_request_config():
     global flask variable.
 
     Every blueprint's before_request has to call this, so no request handler relies on request-local data that
-    another request left behind.
+    another request left behind. A before_request that creates no audit object, like the one of the WebUI login
+    blueprint, calls :func:`set_request_context` instead.
     """
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
@@ -701,7 +702,16 @@ def get_before_request_config():
     # it was determined to be.
     g.client_ip_info = get_client_ip_info(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     g.client_ip = g.client_ip_info.ip
-    # Save the HTTP header in the localproxy object
+    set_request_context()
+
+
+def set_request_context() -> None:
+    """
+    Writes the request-local data the policy checks read to the global flask variable: the HTTP headers, the
+    policies collected for the response and the cache of the token owners.
+
+    A before_request that does not call :func:`get_before_request_config` has to call this.
+    """
     g.request_headers = request.headers
     g.policies = {}
     # The owners of the tokens of this request and the errors their lookup failed with, see resolve_token_owner()
