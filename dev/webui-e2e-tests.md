@@ -55,7 +55,7 @@ instead of testing localhost. The tests that force loading, error and empty stat
 - `playwright-e2e/overlays.spec.ts` - menus (opened from the keyboard, first item focused, Escape returns focus, items
   named, axe on the overlay) and the delete confirmations (named, focus trapped, Escape closes; nothing is confirmed),
   in both themes.
-- `playwright-e2e/motion.spec.ts` - focus stays marked in forced colors.
+- `playwright-e2e/forced-colors.spec.ts` - focus stays marked in forced colors.
 - `playwright-e2e/layout.spec.ts` - table and card width unchanged by filtering or the sticky header, and the sticky
   header position.
 - `playwright-e2e/self-service.spec.ts` - the self-service pages, with `E2E_SELF_USER` / `E2E_SELF_PASS`; skipped
@@ -76,10 +76,11 @@ Not covered: the localized builds (the dev server serves English only) and the r
 
 ## The accessibility baseline
 
-The WebUI does not pass axe yet. `playwright-e2e/accessibility-baseline.json` lists, per page and theme, the rules
-known to fail, so the suite fails on a rule that is new to a page and stays green on the existing backlog. After fixing
-a rule, regenerate the file (`npm run test:e2e:baseline`; it records every axe check of the suite) and review the diff:
-it removes what you fixed, and also records anything that regressed.
+`playwright-e2e/accessibility-baseline.json` lists, per page and theme, the axe rules known to fail, so the suite
+fails on a rule that is new to a page and stays green on a known backlog. All lists are empty at the moment: every
+axe check has to pass. To record a backlog, or to drop a rule after fixing it, regenerate the file
+(`npm run test:e2e:baseline`) and review the diff: it also records anything that regressed. The command rewrites the
+entries of the axe checks that run; those of skipped checks (no rows, no self-service user) stay as they are.
 
 A test marked `test.fail()` is a known failure that should start passing; when it does, Playwright reports it,
 and the marker goes.

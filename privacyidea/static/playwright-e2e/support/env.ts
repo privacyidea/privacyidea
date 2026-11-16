@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-// Where the suite points: the WebUI under test, its login, and the workers it uses.
+// The WebUI under test.
 // On CI (the k3s cluster job) the instance must be named: a missing BASE_URL fails instead of testing localhost.
 if (process.env["CI"] && !process.env["BASE_URL"]) {
   throw new Error("BASE_URL must point at the WebUI under test, for example https://<instance>/app/v2/");

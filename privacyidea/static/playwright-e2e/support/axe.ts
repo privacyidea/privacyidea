@@ -24,8 +24,8 @@ import * as path from "path";
 
 // WCAG 2.2 A/AA through axe-core.
 //
-// The WebUI does not pass yet. accessibility-baseline.json lists, per page (or state) and theme, the rules known
-// to fail today, so a check fails on a rule that is new there and stays green on the known backlog. Fixing a rule
+// accessibility-baseline.json lists, per page (or state) and theme, the rules known to fail, so a check fails on a
+// rule that is new there and stays green on a known backlog; all lists are empty at the moment. Fixing a rule
 // makes its baseline entry stale (reported as an annotation); drop it with
 //   npm run test:e2e:baseline
 // which rewrites the file from the current results - review its diff before committing, since it also records
