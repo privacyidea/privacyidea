@@ -51,6 +51,7 @@ from privacyidea.lib.fido2.util import (hash_credential_id, save_credential_id_h
                                         credential_id_is_registered_to_other_token)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import create_challenge
@@ -283,6 +284,15 @@ class PasskeyTokenClass(TokenClass):
                                   "so this does not keep out an authenticator that reports a wrong device type. By "
                                   "default both types are accepted."),
                         'group': 'WebAuthn'
+                    },
+                    PasskeyAction.DisablePrf: {
+                        'type': 'bool',
+                        'desc': _("Do not request the WebAuthn extension 'prf' (pseudo-random function) during the "
+                                  "passkey registration. By default, privacyIDEA requests it, so that a client "
+                                  "application can derive a secret from the passkey at login. Some authenticators "
+                                  "only create this secret if the registration requests it. The client can still "
+                                  "request the extension itself."),
+                        'group': 'WebAuthn'
                     }
                 }
             }
@@ -307,7 +317,7 @@ class PasskeyTokenClass(TokenClass):
         The user verification requirement is stored in the data of the challenge. The second step checks the
         registration against this stored requirement.
 
-        The registration options always request the prf extension.
+        The registration options request the prf extension, unless PasskeyAction.DisablePrf is set in params.
         """
         if self.token.rollout_state == RolloutState.CLIENTWAIT:
             token_user = self.user or user
@@ -390,7 +400,8 @@ class PasskeyTokenClass(TokenClass):
             # Request the prf extension, so that the client can derive secrets from the passkey at login. A CTAP2
             # authenticator only has to create the secret of a credential if the registration requests it. The
             # WebAuthn library does not support extensions in the registration options.
-            passkey_registration["extensions"] = {"prf": {}}
+            if not is_true(get_optional(params, PasskeyAction.DisablePrf)):
+                passkey_registration["extensions"] = {"prf": {}}
             response_detail["passkey_registration"] = passkey_registration
             response_detail["transaction_id"] = challenge.transaction_id
 

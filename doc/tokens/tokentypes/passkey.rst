@@ -153,13 +153,15 @@ the user after revocation. Tokens that are merely **disabled** are still include
 and the underlying credential is still bound to the user. Tokens whose enrollment never finished
 (rollout state ``clientwait``) are also excluded.
 
+.. _passkey_prf:
+
 PRF extension
 ~~~~~~~~~~~~~
 
 During passkey enrollment, privacyIDEA requests the WebAuthn extension ``prf`` (pseudo-random function). With this
 extension, a client application can derive a secret from the passkey at login, for example a key to encrypt local
 data. For an authenticator that uses CTAP2, for example a FIDO2 security key, the browser requests the CTAP2
-extension ``hmac-secret``.
+extension ``hmac-secret``. To turn off the request, set the enrollment policy :ref:`policy_passkey_disable_prf`.
 
 The extension has an effect only if the browser and the authenticator support it. Otherwise, they ignore it and the
 enrollment continues without it. The secret stays with the client. privacyIDEA does not receive it and does not use

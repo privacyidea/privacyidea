@@ -1133,3 +1133,20 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
         for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS):
             self.assertIsNone(token.get_tokeninfo(key), key)
+
+    def test_33_registration_options_without_prf_request(self):
+        """
+        With PasskeyAction.DisablePrf, the registration options do not request the prf extension, and the
+        registration completes without it. A false value keeps the request.
+        """
+        for disable_prf, expected_extensions in ((True, None), ("True", None), (False, {"prf": {}}),
+                                                 ("0", {"prf": {}})):
+            with self.subTest(disable_prf=disable_prf):
+                registration_request = self._initialize_registration({PasskeyAction.DisablePrf: disable_prf})
+                try:
+                    self.assertEqual(expected_extensions,
+                                     registration_request.init_detail["passkey_registration"].get("extensions"))
+                    registration_request.token.update(registration_request.registration_response)
+                    self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
+                finally:
+                    remove_token(serial=registration_request.token.get_serial())

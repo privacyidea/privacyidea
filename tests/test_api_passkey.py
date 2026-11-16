@@ -2949,6 +2949,50 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
 
 
+    def _passkey_registration_of_token_init(self, data: dict) -> dict:
+        """
+        Starts a passkey enrollment with /token/init and returns the registration options. The token is removed at
+        the end of the test.
+        """
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "passkey", "user": self.user.login,
+                                                 "realm": self.user.realm, **data},
+                                           headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.addCleanup(remove_token, res.json["detail"]["serial"])
+        return res.json["detail"]["passkey_registration"]
+
+    def test_52_token_init_policy_disables_prf_request(self):
+        """
+        The enrollment policy passkey_disable_prf removes the prf extension from the registration options. Only the
+        policy decides: a request parameter of the same name has no effect.
+        """
+        passkey_registration = self._passkey_registration_of_token_init({PasskeyAction.DisablePrf: "1"})
+        self.assertEqual({"prf": {}}, passkey_registration["extensions"])
+
+        self.set_policy_with_cleanup("passkey_no_prf", scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf)
+        passkey_registration = self._passkey_registration_of_token_init({PasskeyAction.DisablePrf: "0"})
+        self.assertNotIn("extensions", passkey_registration)
+
+    def test_53_enroll_via_multichallenge_policy_disables_prf_request(self):
+        """
+        The enrollment policy passkey_disable_prf also applies to the passkey enrollment via multichallenge.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.addCleanup(remove_token, spass_token.get_serial())
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=PASSKEY")
+        self.set_policy_with_cleanup("passkey_no_prf", scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.user.login, "pass": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        detail = res.json["detail"]
+        self.addCleanup(remove_token, detail["serial"])
+        self.assertEqual("passkey", detail["type"], res.json)
+        self.assertNotIn("extensions", detail["multi_challenge"][0]["passkey_registration"])
+
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
     Test if the feature switch for passkey usage with /auth works.
