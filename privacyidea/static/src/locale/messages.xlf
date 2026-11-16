@@ -36,7 +36,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="audit.filterAuditLog" datatype="html">
-        <source>Filter Audit Log...</source>
+        <source>Filter Audit Log</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
           <context context-type="linenumber">28</context>
@@ -617,7 +617,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="audit.filterClients" datatype="html">
-        <source>Filter Clients ...</source>
+        <source>Filter Clients</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/clients/clients.component.html</context>
           <context context-type="linenumber">32</context>
@@ -895,7 +895,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.filterMachines" datatype="html">
-        <source>Filter Machines...</source>
+        <source>Filter Machines</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machines.component.html</context>
           <context context-type="linenumber">29</context>
@@ -1319,7 +1319,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.filterPeriodic" datatype="html">
-        <source>Filter Periodic Tasks ...</source>
+        <source>Filter Periodic Tasks</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
           <context context-type="linenumber">30</context>
@@ -3686,7 +3686,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.filterToken" datatype="html">
-        <source>Filter Token...</source>
+        <source>Filter Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">43</context>
@@ -4149,7 +4149,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.filterContainers" datatype="html">
-        <source>Filter Containers...</source>
+        <source>Filter Containers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
           <context context-type="linenumber">28</context>
@@ -4327,7 +4327,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.filterTemplates" datatype="html">
-        <source>Filter Templates...</source>
+        <source>Filter Templates</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.html</context>
           <context context-type="linenumber">22</context>
@@ -4912,7 +4912,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="event.filterEventHandlers" datatype="html">
-        <source>Filter Event Handlers ...</source>
+        <source>Filter Event Handlers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
           <context context-type="linenumber">28</context>
@@ -4971,7 +4971,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.filterCaConnectors" datatype="html">
-        <source>Filter CA Connectors...</source>
+        <source>Filter CA Connectors</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
           <context context-type="linenumber">29</context>
@@ -5592,7 +5592,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.filterPrivacyidea" datatype="html">
-        <source>Filter privacyIDEA Servers...</source>
+        <source>Filter privacyIDEA Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -5936,7 +5936,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.filterRadiusServers" datatype="html">
-        <source>Filter RADIUS Servers...</source>
+        <source>Filter RADIUS Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6020,7 +6020,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.filterService" datatype="html">
-        <source>Filter Service IDs...</source>
+        <source>Filter Service IDs</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6142,7 +6142,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.filterSmsGateways" datatype="html">
-        <source>Filter SMS Gateways...</source>
+        <source>Filter SMS Gateways</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6304,7 +6304,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.filterSmtpServers" datatype="html">
-        <source>Filter SMTP Servers...</source>
+        <source>Filter SMTP Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6376,7 +6376,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.filterTokengroups" datatype="html">
-        <source>Filter Tokengroups...</source>
+        <source>Filter Tokengroups</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
           <context context-type="linenumber">29</context>
@@ -7455,7 +7455,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.filterPolicies" datatype="html">
-        <source>Filter Policies...</source>
+        <source>Filter Policies</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policy-filter/policy-filter.component.html</context>
           <context context-type="linenumber">24</context>
@@ -8337,7 +8337,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterChallenges" datatype="html">
-        <source>Filter Challenges...</source>
+        <source>Filter Challenges</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
           <context context-type="linenumber">29</context>
@@ -8415,7 +8415,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterOffline" datatype="html">
-        <source>Filter Offline Applications...</source>
+        <source>Filter Offline Applications</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">35</context>
@@ -8454,7 +8454,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterSshApplications" datatype="html">
-        <source>Filter SSH Applications...</source>
+        <source>Filter SSH Applications</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">42</context>
@@ -11260,7 +11260,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.filterTokens" datatype="html">
-        <source>Filter Tokens...</source>
+        <source>Filter Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
           <context context-type="linenumber">29</context>
@@ -11364,7 +11364,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.filterRealms" datatype="html">
-        <source>Filter Realms...</source>
+        <source>Filter Realms</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
           <context context-type="linenumber">13</context>
@@ -13111,7 +13111,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.filterResolvers" datatype="html">
-        <source>Filter Resolvers...</source>
+        <source>Filter Resolvers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.html</context>
           <context context-type="linenumber">30</context>
@@ -13199,7 +13199,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.filterUsers" datatype="html">
-        <source>Filter Users...</source>
+        <source>Filter Users</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.html</context>
           <context context-type="linenumber">53</context>
@@ -14721,7 +14721,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.filterMachine" datatype="html">
-        <source>Filter Machine Resolvers...</source>
+        <source>Filter Machine Resolvers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver.component.html</context>
           <context context-type="linenumber">29</context>
@@ -17307,7 +17307,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.filterApiClients" datatype="html">
-        <source>Filter API Clients...</source>
+        <source>Filter API Clients</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
           <context context-type="linenumber">31</context>
@@ -19050,7 +19050,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.filterConditionalAccessPolicies" datatype="html">
-        <source>Filter Conditional Access Policies...</source>
+        <source>Filter Conditional Access Policies</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
           <context context-type="linenumber">30</context>
@@ -20026,7 +20026,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="lockedUsers.filterLockedUsers" datatype="html">
-        <source>Filter Locked Users ...</source>
+        <source>Filter Locked Users</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.html</context>
           <context context-type="linenumber">28</context>
@@ -20655,7 +20655,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.filterAuthenticationLog" datatype="html">
-        <source>Filter Authentication Log ...</source>
+        <source>Filter Authentication Log</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
           <context context-type="linenumber">28</context>
@@ -21059,7 +21059,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.filterBlocklist" datatype="html">
-        <source>Filter Blocklist ...</source>
+        <source>Filter Blocklist</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist.component.html</context>
           <context context-type="linenumber">28</context>
