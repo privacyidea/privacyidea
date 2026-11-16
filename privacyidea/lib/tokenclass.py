@@ -96,7 +96,7 @@ from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
-                                   parse_legacy_time, split_pin_pass)
+                                   parse_legacy_time, split_pin_pass, convert_column_to_unicode)
 from .challenge import get_challenges, consume_challenge
 from .challenge_types import ChallengeSession
 # Re-exported for backwards compatibility: these live in challenge_types so that
@@ -627,8 +627,9 @@ class TokenClass:
             token_info = TokenInfo(token_id=self.token.id, Key=key, Value=value, Type=value_type)
             db.session.add(token_info)
         else:
-            # Update existing info
-            token_info.Value = value
+            # Update existing info. The value is converted to a string like in the constructor of a new entry, so
+            # that for example True is saved as "True" and not as an engine specific value like 1.
+            token_info.Value = convert_column_to_unicode(value)
             token_info.Type = value_type
         if commit_db_session:
             db.session.commit()
