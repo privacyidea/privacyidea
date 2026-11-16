@@ -62,8 +62,10 @@
   margin-bottom: 0.25rem;
 }
 
-// While editing, the cell hands its padding to the fields, so the node name keeps the fields' text inset itself.
-.node-resolvers-group .resolver-node-label {
+// While editing, the cell hands its padding to the fields, so the node name and, in the new-realm row, the priority list
+// beside the field keep the fields' text inset themselves. In the edit row the list sits inside the field.
+.node-resolvers-group .resolver-node-label,
+.node-resolvers-group > .resolver-priority-list {
   padding-inline: 16px;
 }
 
