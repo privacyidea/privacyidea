@@ -80,7 +80,8 @@ can only log in with the REMOTE_USER from the browser.
 
 .. note:: The policy is matched against the account that REMOTE_USER names:
    the login name and the realm from REMOTE_USER (``user@realm``), or the
-   default realm if REMOTE_USER contains no realm. Realm, resolver and user of
+   default realm if REMOTE_USER contains no realm. This also applies to a local
+   administrator, who is in no realm (see :ref:`faq_admins`). Realm, resolver and user of
    the policy and its conditions apply to that account, so a policy can be
    restricted to a realm or a resolver. The login with REMOTE_USER is only made
    for that account: if the request names another realm in the ``realm``

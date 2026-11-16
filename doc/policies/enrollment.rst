@@ -28,6 +28,8 @@ type: ``integer``
 
 This is the maximum allowed number of tokens in the specified realm.
 
+privacyIDEA checks only the realm of this policy, not the user and the resolver.
+
 .. note:: If you have several realms with realm admins and you
    imported a pool of hardware tokens, you can thus limit the
    consumed hardware tokens per realm.
