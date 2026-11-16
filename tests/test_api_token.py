@@ -5852,6 +5852,44 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(value, get_one_token(serial=serial).get_tokeninfo(key))
             remove_token(serial)
 
+    def test_02e4_an_entry_the_token_needs_can_not_be_emptied(self):
+        # The enrollment requires the RADIUS user, so POST /token/set refuses an empty one. The request changes
+        # nothing, also not the other fields it carries.
+        serial = "TINFO002E4"
+        init_token({"serial": serial, "type": "radius", "radius.server": "1.2.3.4",
+                    "radius.secret": "testing123", "radius.user": "olduser", "description": "old description"})
+
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "radius.user": "",
+                                                 "description": "new description"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+        token = get_one_token(serial=serial)
+        self.assertEqual("olduser", token.get_tokeninfo("radius.user"))
+        self.assertEqual("old description", token.token.description)
+
+        # A RADIUS user that is not empty is written
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "radius.user": "newuser"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(1, res.json["result"]["value"])
+        self.assertEqual("newuser", get_one_token(serial=serial).get_tokeninfo("radius.user"))
+
+        # Other entries of the RADIUS token can still be emptied
+        with self.app.test_request_context('/token/set',
+                                           method="POST",
+                                           data={"serial": serial, "radius.local_checkpin": ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        remove_token(serial)
+
     def test_02f_a_type_entry_is_only_set_while_the_token_is_enrolled(self):
         serial = "TINFO002F"
         init_token({"serial": serial, "type": "remote", "remote.server": "https://first"})

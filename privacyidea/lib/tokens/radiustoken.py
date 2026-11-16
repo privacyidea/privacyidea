@@ -78,6 +78,9 @@ class RadiusTokenClass(RemoteTokenClass):
     # "radius.secret" is not listed, it is the shared secret and is stored as the secret of the token.
     settable_tokeninfo_keys = frozenset({"radius.identifier", "radius.server", "radius.user",
                                          "radius.local_checkpin", "radius.system_settings"})
+    # The request to the RADIUS server is always sent for the RADIUS user, so the enrollment requires it and it
+    # can not be emptied later
+    required_tokeninfo_keys = frozenset({"radius.user"})
 
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
