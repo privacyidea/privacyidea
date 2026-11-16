@@ -68,7 +68,8 @@ def ca_list(verbose):
     """
     List the Certificate Authorities.
     """
-    lst = get_caconnector_list(censor=True)
+    # The configuration is only printed with --verbose, and only then it has to be censored
+    lst = get_caconnector_list(censor=verbose)
     for ca in lst:
         click.echo(f"{ca.get('connectorname')} (type {ca.get('type')})")
         if verbose:
