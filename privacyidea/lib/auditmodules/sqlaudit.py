@@ -49,6 +49,7 @@ import logging
 import re
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 
 from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text
 from sqlalchemy import inspect as sqlalchemy_inspect
@@ -109,6 +110,16 @@ def _csv_cell(value: object) -> str:
         if not _NUMBER.fullmatch(text.strip()):
             return f"'{text}"
     return text
+
+
+def get_audit_engine_options(config: Mapping) -> dict:
+    """
+    Get the SQLAlchemy engine options for the audit database.
+
+    :param config: The privacyIDEA configuration
+    :return: The options of PI_AUDIT_SQL_OPTIONS, or of SQLALCHEMY_ENGINE_OPTIONS if no audit options are given
+    """
+    return config.get(ConfigKey.AUDIT_SQL_OPTIONS, config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
 
 
 def _pool_accepts_pool_size(connect_string, engine_kwargs):
@@ -301,10 +312,7 @@ class Audit(AuditBase):
         connect_string = self.config.get(ConfigKey.AUDIT_SQL_URI, self.config.get(
             ConfigKey.SQLALCHEMY_DATABASE_URI))
         log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
-        # if no specific audit engine options are given, use the default from
-        # SQLALCHEMY_ENGINE_OPTIONS or none
-        sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
-                                      self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
+        sqa_options = get_audit_engine_options(self.config)
         log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
         # The engine options are merged over the pool defaults instead of being passed
         # alongside them, because a key present in both would raise a TypeError about

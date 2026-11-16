@@ -29,7 +29,7 @@ from sqlalchemy.orm import sessionmaker
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auditmodules.sqlaudit import LogEntry
+from privacyidea.lib.auditmodules.sqlaudit import LogEntry, get_audit_engine_options
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.utils import parse_timedelta
 
@@ -92,9 +92,7 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
         click.echo(f"Cleaning up with high: {highwatermark}, low: {lowwatermark}.")
 
     # Use the same engine options as the SQL audit module, e.g. connect_args for SSL
-    sqa_options = current_app.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
-                                         current_app.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
-    engine = create_engine(audit_db_uri, **sqa_options)
+    engine = create_engine(audit_db_uri, **get_audit_engine_options(current_app.config))
     # create a configured "Session" class
     session = sessionmaker(bind=engine)()
     # create a Session
