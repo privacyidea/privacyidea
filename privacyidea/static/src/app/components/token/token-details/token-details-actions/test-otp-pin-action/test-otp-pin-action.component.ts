@@ -58,6 +58,10 @@ let nextChallengeMessageId = 0;
  * them. A Simple Pass token has no OTP value and accepts every value. Push, questionnaire, indexed secret, 4 eyes,
  * certificate and SSH key tokens have no OTP check of their own. OCRA and TiQR tokens need the challenge. U2F tokens
  * are deprecated and refuse every authentication. Challenge-response tokens are tested with "Trigger Challenge".
+ *
+ * The list names the exceptions, so every other token type shows the button, also a type from `PI_TOKEN_MODULES` in
+ * pi.cfg. A token class without an OTP check of its own rejects every value. When you add a token type that the server
+ * can not check by the OTP value alone, add it to this list.
  */
 export const TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK: ReadonlySet<string> = new Set([
   "spass",
