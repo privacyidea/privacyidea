@@ -19,8 +19,7 @@
 <app-dialog-wrapper
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
-  i18n-title="@@container.containerSuccessfully"
-  title="Container Successfully Created"
+  [title]="dialogTitle()"
   width="l">
   <span i18n="@@container.containerWasSuccessfullyCreated"
     >The container was successfully created with serial number
@@ -32,6 +31,9 @@
       {{ data()?.containerSerial() }} </a
     >.</span
   >
+  <app-tokens-not-created-callout
+    [allFailed]="data()?.allTokensFailed ?? false"
+    [tokensNotCreated]="data()?.tokensNotCreated" />
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {
       <img
