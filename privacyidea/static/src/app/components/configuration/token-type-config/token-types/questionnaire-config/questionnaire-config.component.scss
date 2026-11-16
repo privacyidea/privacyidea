@@ -19,7 +19,9 @@
   display: grid;
   grid-template-columns: repeat(2, max-content);
   gap: 16px;
+  // Scrolling sideways clips the top edge too, so the outlined labels of the first row get room inside it.
   overflow-x: auto;
+  padding-top: 8px;
 
   mat-form-field {
     width: var(--input-max-width, 100%);
