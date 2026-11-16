@@ -1501,6 +1501,34 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertFalse([name for name in names if name.endswith(".tgz")], names)
             self.assertTrue([name for name in names if name.endswith("pi.cfg")], names)
 
+    def test_18f_archive_in_the_config_directory_leaves_out_earlier_backups(self):
+        # The archive contains the dump once and no earlier archive or dump from the backup directory,
+        # also if the backup directory is the config directory itself
+        for backup_subdirectory in ["backup", ""]:
+            with self.subTest(backup_subdirectory=backup_subdirectory), tempfile.TemporaryDirectory() as tmp_dir:
+                tmp = pathlib.Path(tmp_dir)
+                config_dir = tmp / "config"
+                config_dir.mkdir()
+                (config_dir / "pi.cfg").write_text("# config\n")
+                (config_dir / "notes-backup.tgz").write_text("not written by backup create\n")
+                backup_dir = config_dir / backup_subdirectory
+                backup_dir.mkdir(exist_ok=True)
+                (backup_dir / "privacyidea-backup-20200101-0000.tgz").write_bytes(b"earlier archive")
+                (backup_dir / "dbdump-20200101-0000.sql").write_text("-- earlier dump\n")
+                enc_file = tmp / "enckey"
+                enc_file.write_bytes(b"x" * 96)
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                self.assertEqual(0, result.exit_code, result.output)
+                archive = next(path for path in backup_dir.glob("privacyidea-backup-*.tgz")
+                               if "20200101" not in path.name)
+                with tarfile.open(archive) as tf:
+                    file_names = [pathlib.PurePosixPath(name).name for name in tf.getnames()]
+                self.assertEqual(1, len([name for name in file_names if name.startswith("dbdump-")]), file_names)
+                self.assertNotIn("dbdump-20200101-0000.sql", file_names)
+                self.assertNotIn("privacyidea-backup-20200101-0000.tgz", file_names)
+                self.assertIn("pi.cfg", file_names)
+                self.assertIn("notes-backup.tgz", file_names)
+
     def test_18d_dump_is_only_readable_by_its_owner(self):
         # The dump holds the token seeds unencrypted, also inside the archive
         with tempfile.TemporaryDirectory() as tmp_dir:

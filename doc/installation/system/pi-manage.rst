@@ -262,7 +262,9 @@ only by its owner. The options are:
   inside the configuration directory. Without ``-e``, or if ``PI_ENCFILE``
   points to a file outside of it, the key is not in the backup, and you have to
   keep a copy of it elsewhere.
-* ``-d <directory>`` writes the archive to another directory.
+* ``-d <directory>`` writes the archive to another directory. If this directory
+  is the configuration directory or lies inside it, the archive does not
+  contain the earlier archives and database dumps from it.
 * ``-c <directory>`` backs up another configuration directory.
 * ``-r <directory>`` also adds a FreeRADIUS configuration directory.
 
