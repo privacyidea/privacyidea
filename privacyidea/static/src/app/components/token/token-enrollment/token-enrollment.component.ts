@@ -20,6 +20,7 @@
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   Injectable,
@@ -94,6 +95,10 @@ import {
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
 } from "./token-enrollment.constants";
+
+const DEFAULT_TIMEZONE_OFFSET = "+00:00";
+const DEFAULT_START_TIME = "00:00";
+const DEFAULT_END_TIME = "23:59";
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -187,6 +192,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
@@ -223,11 +229,21 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   setPin = signal<string>("");
   repeatPin = signal<string>("");
   selectedContainer = signal<string>(this.containerService.selectedContainerSerial() ?? "");
-  selectedTimezoneOffset = signal<string>("+00:00");
+  selectedTimezoneOffset = signal<string>(DEFAULT_TIMEZONE_OFFSET);
   selectedStartDate = signal<Date | null>(null);
-  selectedStartTime = signal<string>("00:00");
+  selectedStartTime = signal<string>(DEFAULT_START_TIME);
   selectedEndDate = signal<Date | null>(null);
-  selectedEndTime = signal<string>("23:59");
+  selectedEndTime = signal<string>(DEFAULT_END_TIME);
+
+  // Bumped by the input reset after an enrollment, so the type-specific inputs are created anew with
+  // their defaults.
+  protected readonly inputsGeneration = signal(0);
+  // Set by each new enrollment and consumed by the first input reset for it. That reset runs when the
+  // last step dialog first opens, or when the flow stops before that dialog. A later reopen then keeps
+  // the inputs that the user entered for the next token.
+  private inputsResetPending = false;
+  // False keeps the inputs of the enrolled token, see the wizard.
+  protected readonly resetsInputsAfterEnrollment: boolean = true;
 
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -312,6 +328,10 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.registerPendingChanges();
+  }
+
+  private registerPendingChanges(): void {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(
       () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
@@ -447,6 +467,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       showEnrollData: strategy.showEnrollDataInLastStep,
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
+    this.inputsResetPending = true;
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
@@ -454,14 +475,21 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
       if (stepResult === ENROLLMENT_CANCELLED) {
         this.resetEnrollment();
-        this.pendingChangesService.clearAllRegistrations();
         return true;
       }
       enrollmentResponse = stepResult;
     }
+    // The inputs of the enrolled token are not unsaved changes any more. The input reset registers
+    // the guard again for the next token.
+    this.pendingChangesService.clearAllRegistrations();
+    if (!enrollmentResponse) {
+      // The step stopped before the enrollment finished, for example because the user closed the push
+      // QR dialog in clientwait. The token exists, and the reopen button finishes its enrollment later.
+      this.resetInputsBeforeLastStep();
+      return true;
+    }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
-    this.pendingChangesService.clearAllRegistrations();
     return true;
   }
 
@@ -493,14 +521,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         this.resetEnrollment();
         return;
       }
-      if (result) {
-        this.enrollResponse.set(result);
-        this.enrolledDialogData.set({
-          ...this.enrolledDialogData()!,
-          showEnrollData: false
-        });
-        this.handleVerifyEnrollment(result);
+      if (!result) {
+        // Closed before the second step. The reopen button opens this dialog again.
+        this.resetInputsBeforeLastStep();
+        return;
       }
+      this.enrollResponse.set(result);
+      this.enrolledDialogData.set({
+        ...this.enrolledDialogData()!,
+        showEnrollData: false
+      });
+      this.handleVerifyEnrollment(result);
     });
   }
 
@@ -529,17 +560,25 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         this.resetEnrollment();
         return;
       }
-      if (result) {
-        this.enrollResponse.set(result);
-        this._handleEnrollmentResponse(result);
+      if (!result) {
+        // Closed before the verification. The reopen button opens this dialog again.
+        this.resetInputsBeforeLastStep();
+        return;
       }
+      this.enrollResponse.set(result);
+      this._handleEnrollmentResponse(result);
     });
   }
 
   resetEnrollment(): void {
+    this.inputsResetPending = false;
     this.enrollResponse.set(null);
     this.enrolledDialogData.set(null);
     this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
+    // The enrollment was cancelled and its token deleted, so the inputs are unsaved changes again.
+    if (!this.destroyRef.destroyed) {
+      this.registerPendingChanges();
+    }
   }
 
   protected clearContainer(): void {
@@ -556,6 +595,44 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       void touchAll(assignment.realmForm);
       void touchAll(assignment.userFilterForm);
     }
+  }
+
+  // Clears the inputs of the enrolled token once per enrollment, so the next enrollment starts from
+  // the defaults, and registers the guard again for the next token. User, realm and container stay
+  // selected, so several tokens can be enrolled for them in a row. With recreateTypeInputs, the
+  // type-specific inputs are also created anew.
+  private resetInputsAfterEnrollment(recreateTypeInputs: boolean): void {
+    // A dialog can close after the user left the page. A guard registered then would outlive it.
+    if (!this.inputsResetPending || this.destroyRef.destroyed) {
+      return;
+    }
+    this.inputsResetPending = false;
+    if (!this.resetsInputsAfterEnrollment) {
+      return;
+    }
+    this.descriptionForm().reset("");
+    this.setPinForm().reset("");
+    this.repeatPinForm().reset("");
+    this.selectedTimezoneOffsetForm().reset(DEFAULT_TIMEZONE_OFFSET);
+    this.selectedStartDateForm().reset(null);
+    this.selectedStartTimeForm().reset(DEFAULT_START_TIME);
+    this.selectedEndDateForm().reset(null);
+    this.selectedEndTimeForm().reset(DEFAULT_END_TIME);
+    // The container stays selected, but it belongs to the enrolled token. A dirty container field
+    // makes the guard offer "Save and exit", which enrolls a second token.
+    this.selectedContainerForm().reset();
+    if (recreateTypeInputs) {
+      this.inputsGeneration.update((generation) => generation + 1);
+    }
+    this.registerPendingChanges();
+  }
+
+  // For a flow that stops after the token was created, but before the last step dialog. The
+  // type-specific inputs stay while their component holds the reopen action that finishes the
+  // enrollment (push, WebAuthn, passkey).
+  private resetInputsBeforeLastStep(): void {
+    const strategyHoldsReopenAction = !!this.enrollSwitch()?.currentStrategy()?.reopenDialog();
+    this.resetInputsAfterEnrollment(!strategyHoldsReopenAction);
   }
 
   protected containerCreateDialogData(): ContainerCreateDialogData {
@@ -623,6 +700,10 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     this.openLastStepDialog(response);
+    // The enrollment is complete. From now on, the reopen button opens the last step dialog from
+    // enrolledDialogData, not the first step of push, WebAuthn or passkey again.
+    this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
+    this.resetInputsAfterEnrollment(true);
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
