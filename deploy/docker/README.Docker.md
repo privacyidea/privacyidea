@@ -230,6 +230,22 @@ worker keeps one connection pool for the audit log and one for each SQL resolver
 instead of connecting to the database anew for every request.
 `PI_AUDIT_POOL_SIZE` (default 20) limits the audit pool of a worker.
 
+`DockerConfig` also sets `PI_SUBSCRIPTION_KEY_DIRECTORY = "/etc/privacyidea"`.
+privacyIDEA verifies the signature of a subscription file with a public key from
+this folder. The image contains the key `/etc/privacyidea/NetKnights.pem`. To use
+another key, mount it over this file in `compose.override.yaml`:
+
+```yaml
+services:
+  pi:
+    volumes:
+      - ./NetKnights.pem:/etc/privacyidea/NetKnights.pem:ro
+```
+
+To use a folder with the keys instead, mount the folder and set
+`PRIVACYIDEA_PI_SUBSCRIPTION_KEY_DIRECTORY` in `privacyidea.env` to its path in
+the container.
+
 **Maintenance** (`cron-runner.py`, on the `pi-cron` service). All default enabled;
 set to `false`/`0`/`no` to disable:
 
