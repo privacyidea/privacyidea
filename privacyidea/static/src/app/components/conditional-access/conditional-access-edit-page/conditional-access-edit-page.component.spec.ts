@@ -55,6 +55,7 @@ import { hasError } from "@utils/form-state.utils";
 import { AuthEventType } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessEditPageComponent } from "./conditional-access-edit-page.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 globalThis.IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
@@ -1486,6 +1487,16 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.countFloorStillBites()).toBe(true);
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });
 
 describe("ConditionalAccessEditPageComponent — new mode", () => {

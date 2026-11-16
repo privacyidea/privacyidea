@@ -38,11 +38,12 @@ from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContain
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge)
+                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge, PrivacyIDEAError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
@@ -175,7 +176,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                             realm: str = None, allowed_realms: list[str] = None, template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
-                            sortby: str = 'serial', sortdir: str = 'asc') -> Select:
+                            sortby: str = 'serial', sortdir: str = 'asc', has_template: bool = None) -> Select:
     """
     Generates a sql query to filter containers by the given parameters.
 
@@ -198,6 +199,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as
         wildcard), optional
+    :param has_template: Whether the container was created from a template, optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False if not, optional
     :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
@@ -311,6 +313,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                 TokenContainerTemplate.name == template
             ))
 
+    if has_template is True:
+        stmt = stmt.where(TokenContainer.template.has())
+    elif has_template is False:
+        stmt = stmt.where(~TokenContainer.template.has())
+
     if description and description.strip("*"):
         if "*" in description:
             stmt = stmt.where(TokenContainer.description.ilike(
@@ -395,7 +402,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
-                       pagesize: int = 0) -> dict[str, int | None | list[TokenContainerClass]]:
+                       pagesize: int = 0,
+                       has_template: bool = None) -> dict[str, int | None | list[TokenContainerClass]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -447,7 +455,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                                                 assigned=assigned, resolver=resolver, info=info,
                                                 last_auth_delta=last_auth_delta,
                                                 last_sync_delta=last_sync_delta, state=state, sortby=sortby,
-                                                sortdir=sortdir)
+                                                sortdir=sortdir, has_template=has_template)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -695,13 +703,39 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     return res
 
 
+def _report_token_not_created(tokens_not_created: list[dict] | None, token_info: dict, token: TokenClass | None,
+                              exception: Exception):
+    """
+    Append an entry for a template token that was not created to the given list. The message of a privacyIDEA error is
+    returned to the client. Any other error is only logged, as its message may contain internal details.
+
+    :param tokens_not_created: The list to append the entry to. Nothing is done if it is None.
+    :param token_info: The enroll information of the token from the template
+    :param token: The token object if the token was already created, otherwise None
+    :param exception: The error that prevented the creation of the token
+    """
+    if tokens_not_created is None:
+        return
+    if isinstance(exception, PrivacyIDEAError):
+        error = str(exception)
+    else:
+        error = "Unexpected error while creating the token. Check the server log for details."
+    entry = {"type": token.get_type() if token else token_info.get("type"), "error": error}
+    serial = token.get_serial() if token else token_info.get("serial")
+    if serial:
+        entry["serial"] = serial
+    tokens_not_created.append(entry)
+
+
 def create_container_tokens_from_template(container_serial: str, template_tokens: list, request: Request,
-                                          user_role: str) -> dict[str, dict]:
+                                          user_role: str,
+                                          tokens_not_created: list[dict] | None = None) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
-    tokens.
+    tokens. A token that fails the pre-policies, the creation or the post-policies is not created: a token the
+    function created is deleted again, and a token that existed before is only removed from the container.
 
     The post-policies apply as for a single token enrollment, for example change_pin_on_first_use for an admin. In
     addition, the PIN of a token is marked to be changed on first use if its template entry sets
@@ -713,6 +747,9 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         contains the details for a token to be enrolled
     :param request: The request object
     :param user_role: The role of the user ('admin' or 'user')
+    :param tokens_not_created: Optional list to which an entry is appended for each template token that was not
+        created, in the format ``{"type": <token_type>, "error": <error message>, "serial": <token_serial>}``. The
+        serial is only contained if it is known. The entry contains no enrollment data of the token.
     :return: A dictionary containing the enroll details for each created token in the format:
 
     ::
@@ -814,6 +851,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 force_server_generate_key(request, None)
             except Exception as ex:
                 log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
+                _report_token_not_created(tokens_not_created, token_info, None, ex)
                 continue
 
             init_params = request.all_data
@@ -823,16 +861,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 init_result[token.get_serial()] = {"type": token.get_type()}
                 init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
                 container.add_token(token)
-            except Exception as ex:
-                log.warning(f"Error creating token {token_info} from template: {ex}")
-                if token:
-                    if init_result.get(token.get_serial()):
-                        del init_result[token.get_serial()]
-                    token.delete_token()
-                continue
 
-            # Post-policy checks
-            try:
+                # Post-policy checks
                 # Post-policy decorators require a response object containing the result of the token creation.
                 response = send_result(True, details=init_result[token.get_serial()])
                 check_verify_enrollment(request, response)
@@ -842,7 +872,19 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 if change_pin_on_first_use is True:
                     token.set_next_pin_change(diff="0d")
             except Exception as ex:
-                log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
+                log.warning(f"Error creating token {token_info} from template or checking its post-policies: {ex}")
+                if token:
+                    if init_result.get(token.get_serial()):
+                        del init_result[token.get_serial()]
+                    container.remove_token(token.get_serial())
+                    if token.newly_created:
+                        token.delete_token()
+                    else:
+                        # The token existed before and init_token gave it a new key that nobody has, so it is
+                        # disabled instead of deleted.
+                        token.enable(False)
+                        token.save()
+                _report_token_not_created(tokens_not_created, token_info, token, ex)
                 continue
 
             init_result[token.get_serial()].update(response.json["detail"])

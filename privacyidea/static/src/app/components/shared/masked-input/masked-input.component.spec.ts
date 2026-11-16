@@ -22,6 +22,7 @@ import { form, required } from "@angular/forms/signals";
 import { By } from "@angular/platform-browser";
 
 import { MaskedInputComponent } from "./masked-input.component";
+import { axe } from "@testing/axe";
 
 @Component({
   standalone: true,
@@ -166,5 +167,11 @@ describe("MaskedInputComponent", () => {
     fixture.detectChanges();
 
     expect(host.pin()).toBe("1234");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

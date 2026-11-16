@@ -31,6 +31,7 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { UserTableActionsComponent } from "./user-table-actions.component";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
+import { axe } from "@testing/axe";
 
 describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;
@@ -111,5 +112,11 @@ describe("UserTableActionsComponent", () => {
       // The realm selector is the reason the panel projects the actions at all, so it has to stay.
       expect(fixture.nativeElement.textContent).toContain("Select Realm");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

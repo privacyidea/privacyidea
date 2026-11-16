@@ -166,6 +166,8 @@ def list_containers():
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
         container was created from (case-sensitive, ``*`` wildcard).
+    :query has_template: ``true`` or ``false`` to limit the result to
+        containers created with or without a template.
     :query realm: filter by the realm of the assigned user (exact,
         case-insensitive). May be given without ``user`` to list the
         containers of all users of that realm; a realm that does not exist
@@ -218,6 +220,9 @@ def list_containers():
         ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
+    has_template = get_optional(param, "has_template")
+    if has_template is not None:
+        has_template = is_true(has_template)
     realm = get_optional(param, "container_realm")
     description = get_optional(param, "description")
     resolver = get_optional(param, "resolver")
@@ -248,6 +253,7 @@ def list_containers():
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, ctype_exact=ctype_exact,
                                 token_serial=token_serial,
                                 realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                has_template=has_template,
                                 description=description, resolver=resolver, assigned=assigned, info=info,
                                 last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
                                 sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
@@ -375,7 +381,13 @@ def init():
         to use.
     :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
         ``result.value``; ``tokens`` is only present when a template
-        was used.
+        was used and contains only the tokens that were created. If a
+        template token was not created because a policy or its
+        enrollment failed, ``result.value`` also contains
+        ``tokens_not_created``, a list of
+        ``{"type": ..., "error": ..., "serial": ...}`` with one entry
+        per such token. The ``serial`` is only present if it is known.
+        The key is missing if all tokens were created.
     :status 400: invalid type, serial collision, both ``template``
         and ``template_name`` supplied, or ``change_pin_on_first_use``
         of a token in a ``template`` of the container type is not a
@@ -397,7 +409,11 @@ def init():
     # Template handling
     template_tokens = init_res["template_tokens"]
     if template_tokens:
-        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role)
+        tokens_not_created = []
+        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role,
+                                                              tokens_not_created=tokens_not_created)
+        if tokens_not_created:
+            res["tokens_not_created"] = tokens_not_created
 
     # Audit log
     owners = container.get_users()

@@ -32,6 +32,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
+import { axe } from "@testing/axe";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
@@ -357,5 +358,11 @@ describe("EnrollPasskeyComponent", () => {
       expect(await pending).toBe(ENROLLMENT_CANCELLED);
       expect(component.reopenDialog()).toBeUndefined();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

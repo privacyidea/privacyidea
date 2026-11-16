@@ -21,6 +21,7 @@ import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext } from "@angular/core";
 import { DomSanitizer } from "@angular/platform-browser";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { TokensNotCreatedCalloutComponent } from "@components/container/container-create/tokens-not-created-callout/tokens-not-created-callout.component";
 import { DialogAction } from "@models/dialog";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -31,7 +32,7 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 
 @Component({
   selector: "app-container-created-wizard-dialog",
-  imports: [AsyncPipe, DialogWrapperComponent],
+  imports: [AsyncPipe, DialogWrapperComponent, TokensNotCreatedCalloutComponent],
   templateUrl: "./container-created-dialog.wizard.component.html"
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {

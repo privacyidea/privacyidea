@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PolicyNameEditComponent } from "./policy-name-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyNameEditComponent", () => {
   let component: PolicyNameEditComponent;
@@ -135,5 +136,11 @@ describe("PolicyNameEditComponent", () => {
 
       expect(errorKinds()).toEqual(expect.arrayContaining(["pattern", "nameTaken"]));
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
