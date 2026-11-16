@@ -75,7 +75,7 @@ describe("TestPasskeyActionComponent", () => {
       );
 
     fixture.nativeElement.querySelector("button").click();
-    await flushAsync();
+    await waitForResult(component);
     fixture.detectChanges();
 
     expect(validateSvc.authenticatePasskey).toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe("TestPasskeyActionComponent", () => {
     });
 
     component.testPasskey();
-    await flushAsync();
+    await waitForResult(component);
 
     const result = component.result();
     expect(result?.kind).toBe("success");
@@ -117,7 +117,7 @@ describe("TestPasskeyActionComponent", () => {
     );
 
     component.testPasskey();
-    await flushAsync();
+    await waitForResult(component);
 
     const result = component.result();
     expect(result?.kind).toBe("warning");
@@ -141,7 +141,7 @@ describe("TestPasskeyActionComponent", () => {
     });
 
     component.testPasskey();
-    await flushAsync();
+    await waitForResult(component);
 
     const result = component.result();
     expect(result?.kind).toBe("success");
@@ -155,7 +155,7 @@ describe("TestPasskeyActionComponent", () => {
       .mockReturnValue(of({ result: { value: false, status: true }, detail: {} } as unknown as AuthResponse));
 
     component.testPasskey();
-    await flushAsync();
+    await waitForResult(component);
 
     const result = component.result();
     expect(result?.kind).toBe("warning");
@@ -163,13 +163,15 @@ describe("TestPasskeyActionComponent", () => {
   });
 });
 
-// Drains microtasks and a macrotask: crypto.subtle.digest may settle on the next tick.
-async function flushAsync(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
+// crypto.subtle.digest settles on Node's threadpool, so no fixed number of ticks is enough under load.
+async function waitForResult(component: TestPasskeyActionComponent, timeoutMs = 2000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (component.result() === null) {
+    if (Date.now() > deadline) {
+      throw new Error(`No passkey test result within ${timeoutMs} ms`);
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 // Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
