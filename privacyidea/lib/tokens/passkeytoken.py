@@ -19,6 +19,7 @@
 import json
 import logging
 import re
+from typing import Any
 
 import cryptography.x509
 from cryptography.hazmat._oid import NameOID
@@ -28,11 +29,12 @@ from flask_babel import lazy_gettext
 from webauthn import (generate_registration_options,
                       options_to_json, verify_registration_response, verify_authentication_response)
 from webauthn.authentication.verify_authentication_response import VerifiedAuthentication
-from webauthn.helpers import bytes_to_base64url, base64url_to_bytes, parse_attestation_object
+from webauthn.helpers import bytes_to_base64url, base64url_to_bytes, parse_attestation_object, parse_cbor
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse, InvalidJSONStructure
-from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorSelectionCriteria,
-                                      ResidentKeyRequirement,
+from webauthn.helpers.structs import (AttestationConveyancePreference, AttestationFormat,
+                                      AuthenticatorSelectionCriteria, AuthenticatorAttachment,
+                                      AuthenticatorTransport, ResidentKeyRequirement,
                                       PublicKeyCredentialDescriptor, UserVerificationRequirement, AttestationObject,
                                       PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
@@ -70,6 +72,85 @@ USER_LABEL_MAX_BYTES = 64
 # A user label tag has the form {tagname}, where tagname consists of word characters.
 USER_LABEL_TAG_PATTERN = re.compile(r"\{(\w+)\}")
 
+# Without attestation, the client can change the extension outputs in the authenticator data. A larger map of
+# extension outputs is not saved in the token info.
+EXTENSION_OUTPUTS_MAX_LENGTH = 1024
+
+# The token info that a registration writes only if the authenticator or the client reports the value. A new
+# registration of the token removes these entries first, so that no value of the previous credential stays.
+OPTIONAL_REGISTRATION_TOKENINFO_KEYS = (FIDO2TokenInfo.ATTESTATION_CERTIFICATE, FIDO2TokenInfo.HMAC_SECRET,
+                                        FIDO2TokenInfo.EXTENSION_OUTPUTS, FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT,
+                                        FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED)
+
+
+def _extension_outputs_to_json_value(value: Any) -> Any:
+    """
+    Convert a value of the CBOR map of extension outputs to a value that JSON can encode. Byte strings are encoded
+    as base64url.
+    """
+    if isinstance(value, bytes):
+        return bytes_to_base64url(value)
+    if isinstance(value, dict):
+        return {str(key): _extension_outputs_to_json_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_extension_outputs_to_json_value(item) for item in value]
+    return value
+
+
+def get_extension_outputs_token_info(extension_outputs: bytes | None, serial: str) -> dict:
+    """
+    Get the token info for the extension outputs in the authenticator data of a registration. The complete map is
+    saved as JSON. The output of hmac-secret, which a CTAP2 authenticator returns if the registration requests the
+    prf extension, is also saved separately: it tells whether the authenticator created the secret for the prf
+    extension.
+
+    :param extension_outputs: The CBOR encoded extension outputs of the authenticator data, if there are any
+    :param serial: The serial of the token for the log
+    :return: The token info entries
+    """
+    if not extension_outputs:
+        return {}
+    outputs = parse_cbor(extension_outputs)
+    if not isinstance(outputs, dict):
+        log.warning(f"The extension outputs of the passkey {serial} are not a map and are not saved.")
+        return {}
+    token_info = {}
+    if isinstance(outputs.get("hmac-secret"), bool):
+        token_info[FIDO2TokenInfo.HMAC_SECRET] = outputs["hmac-secret"]
+    outputs_json = json.dumps(_extension_outputs_to_json_value(outputs), sort_keys=True, default=str)
+    if len(outputs_json) <= EXTENSION_OUTPUTS_MAX_LENGTH:
+        token_info[FIDO2TokenInfo.EXTENSION_OUTPUTS] = outputs_json
+    else:
+        log.warning(f"The extension outputs of the passkey {serial} have {len(outputs_json)} characters and are "
+                    f"not saved, the maximum is {EXTENSION_OUTPUTS_MAX_LENGTH}.")
+    return token_info
+
+
+def get_client_registration_token_info(param: dict) -> dict:
+    """
+    Get the token info for the values that only the client reports about a registration: the authenticator
+    attachment, the transports of the authenticator and whether the prf extension is enabled. Nothing signs these
+    values, so only values that the WebAuthn library knows are saved.
+
+    :param param: The parameters of the registration request
+    :return: The token info entries
+    """
+    token_info = {}
+    authenticator_attachment = get_optional(param, "authenticatorAttachment")
+    if authenticator_attachment in {attachment.value for attachment in AuthenticatorAttachment}:
+        token_info[FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+    transports = get_optional(param, "transports")
+    if isinstance(transports, list):
+        known_transports = {transport.value for transport in AuthenticatorTransport}
+        reported_transports = sorted({transport for transport in transports
+                                      if isinstance(transport, str) and transport in known_transports})
+        if reported_transports:
+            token_info[FIDO2TokenInfo.TRANSPORTS] = ",".join(reported_transports)
+    prf = get_optional(param, "prf")
+    if isinstance(prf, dict) and isinstance(prf.get("enabled"), bool):
+        token_info[FIDO2TokenInfo.PRF_ENABLED] = prf["enabled"]
+    return token_info
+
 
 class PasskeyTokenClass(TokenClass):
     """
@@ -90,7 +171,11 @@ class PasskeyTokenClass(TokenClass):
                                       FIDO2TokenInfo.BACKED_UP, FIDO2TokenInfo.CREDENTIAL_ID_HASH,
                                       FIDO2TokenInfo.DEVICE_TYPE, FIDO2TokenInfo.PUBLIC_KEY,
                                       FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME,
-                                      FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID})
+                                      FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID,
+                                      FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS,
+                                      FIDO2TokenInfo.ATTESTATION_FORMAT, FIDO2TokenInfo.USER_VERIFIED,
+                                      FIDO2TokenInfo.ORIGIN, FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT,
+                                      FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED})
     # A passkey is one of the token types the offline machine application supports. It can be offline on
     # several machines, so the token that authorizes a refill is stored per machine name. Removing one only
     # revokes the refill for that machine, so an administrator may do it.
@@ -221,6 +306,8 @@ class PasskeyTokenClass(TokenClass):
 
         The user verification requirement is stored in the data of the challenge. The second step checks the
         registration against this stored requirement.
+
+        The registration options always request the prf extension.
         """
         if self.token.rollout_state == RolloutState.CLIENTWAIT:
             token_user = self.user or user
@@ -299,7 +386,12 @@ class PasskeyTokenClass(TokenClass):
                 token_user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(fido2_user_id))
 
             options_json: str = options_to_json(registration_options)
-            response_detail["passkey_registration"] = json.loads(options_json)
+            passkey_registration: dict = json.loads(options_json)
+            # Request the prf extension, so that the client can derive secrets from the passkey at login. A CTAP2
+            # authenticator only has to create the secret of a credential if the registration requests it. The
+            # WebAuthn library does not support extensions in the registration options.
+            passkey_registration["extensions"] = {"prf": {}}
+            response_detail["passkey_registration"] = passkey_registration
             response_detail["transaction_id"] = challenge.transaction_id
 
             # Add RP ID, Name and user_id to the token info
@@ -492,8 +584,14 @@ class PasskeyTokenClass(TokenClass):
                 FIDO2TokenInfo.PUBLIC_KEY: bytes_to_base64url(registration_verification.credential_public_key),
                 FIDO2TokenInfo.AAGUID: registration_verification.aaguid,
                 FIDO2TokenInfo.SIGN_COUNT: registration_verification.sign_count,
-                FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash
+                FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash,
+                # The library declares the format as AttestationFormat, but returns the string of the attestation
+                FIDO2TokenInfo.ATTESTATION_FORMAT: AttestationFormat(registration_verification.fmt).value,
+                FIDO2TokenInfo.USER_VERIFIED: registration_verification.user_verified,
+                # The library verified that the origin in the client data is this one
+                FIDO2TokenInfo.ORIGIN: expected_origin
             }
+            token_info.update(get_client_registration_token_info(param))
             # Save the credential_id hash to an extra table to be able to find the token faster
             save_credential_id_hash(credential_id_hash, self.token.id)
 
@@ -502,6 +600,7 @@ class PasskeyTokenClass(TokenClass):
             if registration_verification.attestation_object:
                 attestation_object: AttestationObject = parse_attestation_object(
                     registration_verification.attestation_object)
+                token_info.update(get_extension_outputs_token_info(attestation_object.auth_data.extensions, serial))
                 if attestation_object.att_stmt and attestation_object.att_stmt.x5c:
                     attestation_certificate: Certificate = cryptography.x509.load_der_x509_certificate(
                         attestation_object.att_stmt.x5c[0])
@@ -513,6 +612,9 @@ class PasskeyTokenClass(TokenClass):
                             NameOID.COMMON_NAME)
                         if attributes:
                             self.set_description(attributes[0].value)
+            for key in OPTIONAL_REGISTRATION_TOKENINFO_KEYS:
+                if key not in token_info:
+                    self.remove_tokeninfo(key)
             self.add_tokeninfo_dict(token_info)
             self.token.active = True
             self.token.save()

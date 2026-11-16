@@ -183,3 +183,5 @@ class PasskeyTestBase(unittest.TestCase):
         self.assertEqual(user_verification, passkey_registration["authenticatorSelection"]["userVerification"])
         # Attestation is none by default
         self.assertEqual(passkey_registration["attestation"], "none")
+        # The prf extension is requested by default
+        self.assertEqual({"prf": {}}, passkey_registration["extensions"])

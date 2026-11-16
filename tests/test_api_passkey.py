@@ -36,6 +36,7 @@ from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError, ResolverError
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
@@ -2911,6 +2912,41 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
         assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.ENROLLMENT_FAIL],
                                   transaction_id=transaction_id)
+
+    def test_51_token_init_saves_client_registration_values(self):
+        """
+        The WebUI sends the transports of the authenticator and whether the prf extension is enabled as JSON in the
+        second enrollment request. The token info contains them together with the registration details.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        self.addCleanup(remove_token, serial)
+        data = {
+            "attestationObject": self.registration_attestation,
+            "clientDataJSON": self.registration_client_data,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
+            "authenticatorAttachment": self.authenticator_attachment,
+            "transports": ["usb", "nfc"],
+            "prf": {"enabled": True},
+            "transaction_id": detail["transaction_id"],
+            "type": "passkey",
+            "user": self.user.login,
+            "realm": self.user.realm,
+            "serial": serial
+        }
+        with self.app.test_request_context('/token/init', method='POST', json=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self._assert_result_value_true(res.json)
+
+        token = get_one_token(serial=serial)
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertEqual("nfc,usb", token.get_tokeninfo(FIDO2TokenInfo.TRANSPORTS))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_ENABLED))
+        self.assertEqual("cross-platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual("packed", token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
+        self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from unittest.mock import patch
 
 from webauthn import base64url_to_bytes
-from webauthn.helpers import bytes_to_base64url
+from webauthn.helpers import bytes_to_base64url, encode_cbor, parse_cbor
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.structs import AttestationConveyancePreference
 
@@ -964,3 +964,172 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
         self.assertTrue(token.is_active())
         remove_token(serial=token.get_serial())
+
+    def _multi_device_registration_response(self, transaction_id: str, extension_outputs: dict | list | None = None
+                                            ) -> dict:
+        """
+        The registration response of the multi device credential. The attestation format "none" has no signature,
+        so the test can add extension outputs to the authenticator data.
+        """
+        attestation = self.registration_attestation_multi_device
+        if extension_outputs is not None:
+            attestation_object = parse_cbor(base64url_to_bytes(attestation))
+            authenticator_data = bytearray(attestation_object["authData"])
+            self.assertFalse(authenticator_data[32] & 0x80)
+            # Set the flag "extension data included" and append the extension outputs
+            authenticator_data[32] |= 0x80
+            attestation_object["authData"] = bytes(authenticator_data) + encode_cbor(extension_outputs)
+            attestation = bytes_to_base64url(encode_cbor(attestation_object))
+        return {
+            "attestationObject": attestation,
+            "clientDataJSON": self.registration_client_data_multi_device,
+            "credential_id": self.credential_id_multi_device,
+            "rawId": self.credential_id_multi_device,
+            "authenticatorAttachment": self.authenticator_attachment_multi_device,
+            "HTTP_ORIGIN": self.expected_origin,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            "transaction_id": transaction_id
+        }
+
+    def _init_multi_device_registration(self, token: TokenClass) -> dict:
+        param = {
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            FIDO2PolicyAction.RELYING_PARTY_NAME: self.rp_id
+        }
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge_multi_device
+            return token.get_init_detail(param)
+
+    def test_29_registration_with_extension_outputs(self):
+        """
+        The registration options request the prf extension. A registration whose authenticator data contains
+        extension outputs completes the enrollment. The complete map of extension outputs is saved as JSON, and the
+        hmac-secret output of a CTAP2 authenticator is also saved separately if it is a boolean. A map that is too
+        long or extension data that is not a map is not saved.
+        """
+        extension_cases = [
+            ({"hmac-secret": True}, "True", '{"hmac-secret": true}'),
+            ({"hmac-secret": False}, "False", '{"hmac-secret": false}'),
+            ({"credProtect": 2}, None, '{"credProtect": 2}'),
+            ({"hmac-secret": "yes"}, None, '{"hmac-secret": "yes"}'),
+            ({"hmac-secret": True, "hmac-secret-mc": b"\x01\x02"}, "True",
+             '{"hmac-secret": true, "hmac-secret-mc": "AQI"}'),
+            ({"hmac-secret": True, "credBlob": b"\x00" * 1000}, "True", None),
+            ([1, 2], None, None),
+        ]
+        for extension_outputs, expected_hmac_secret, expected_extension_outputs in extension_cases:
+            with self.subTest(extension_outputs=extension_outputs):
+                token = init_token({"type": "passkey"}, user=self.user)
+                try:
+                    init_detail = self._init_multi_device_registration(token)
+                    self.assertEqual({"prf": {}}, init_detail["passkey_registration"]["extensions"])
+                    token.update(self._multi_device_registration_response(init_detail["transaction_id"],
+                                                                          extension_outputs))
+                    self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+                    self.assertEqual(token.get_serial(),
+                                     get_fido2_token_by_credential_id(self.credential_id_multi_device).get_serial())
+                    self.assertEqual(expected_hmac_secret, token.get_tokeninfo(FIDO2TokenInfo.HMAC_SECRET))
+                    self.assertEqual(expected_extension_outputs,
+                                     token.get_tokeninfo(FIDO2TokenInfo.EXTENSION_OUTPUTS))
+                finally:
+                    remove_token(serial=token.get_serial())
+
+    def test_30_registration_saves_registration_details(self):
+        """
+        A registration saves the attestation format, whether the authenticator verified the user, the origin and the
+        authenticator attachment. Without extension outputs and without client values, no entry for them is saved.
+        """
+        token = self._create_token()
+        self.addCleanup(remove_token, serial=token.get_serial())
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertEqual("packed", token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.USER_VERIFIED))
+        self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
+        self.assertEqual("cross-platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS, FIDO2TokenInfo.TRANSPORTS,
+                    FIDO2TokenInfo.PRF_ENABLED):
+            self.assertIsNone(token.get_tokeninfo(key), key)
+
+        multi_device_token = self._create_token_multi_device()
+        self.addCleanup(remove_token, serial=multi_device_token.get_serial())
+        self.assertEqual("none", multi_device_token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
+        self.assertEqual("False", multi_device_token.get_tokeninfo(FIDO2TokenInfo.USER_VERIFIED))
+        self.assertEqual("platform", multi_device_token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+
+    def test_31_registration_saves_known_client_values(self):
+        """
+        The client reports the transports of the authenticator, whether the prf extension is enabled and the
+        authenticator attachment. Nothing signs these values, so only values that the WebAuthn library knows are
+        saved. The transports are saved sorted and without duplicates.
+        """
+        client_cases = [
+            ({"transports": ["usb", "nfc", "usb"], "prf": {"enabled": True}},
+             {FIDO2TokenInfo.TRANSPORTS: "nfc,usb", FIDO2TokenInfo.PRF_ENABLED: "True",
+              FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: "cross-platform"}),
+            ({"transports": ["hybrid", "internal", "carrier-pigeon", 7, None], "prf": {"enabled": False}},
+             {FIDO2TokenInfo.TRANSPORTS: "hybrid,internal", FIDO2TokenInfo.PRF_ENABLED: "False",
+              FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: "cross-platform"}),
+            ({"transports": "usb", "prf": {"enabled": "yes", "results": {"first": "c2VjcmV0"}}},
+             {FIDO2TokenInfo.TRANSPORTS: None, FIDO2TokenInfo.PRF_ENABLED: None,
+              FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: "cross-platform"}),
+            ({"transports": ["carrier-pigeon"], "prf": True},
+             {FIDO2TokenInfo.TRANSPORTS: None, FIDO2TokenInfo.PRF_ENABLED: None,
+              FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: "cross-platform"}),
+        ]
+        for client_values, expected_token_info in client_cases:
+            with self.subTest(client_values=client_values):
+                registration_request = self._initialize_registration()
+                try:
+                    registration_response = dict(registration_request.registration_response)
+                    registration_response.update(client_values)
+                    registration_request.token.update(registration_response)
+                    self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
+                    for key, expected_value in expected_token_info.items():
+                        self.assertEqual(expected_value, registration_request.token.get_tokeninfo(key), key)
+                finally:
+                    remove_token(serial=registration_request.token.get_serial())
+
+        # The WebAuthn library refuses an unknown authenticator attachment
+        registration_request = self._initialize_registration()
+        self.addCleanup(remove_token, serial=registration_request.token.get_serial())
+        registration_response = dict(registration_request.registration_response)
+        registration_response["authenticatorAttachment"] = "somewhere"
+        with self.assertRaises(EnrollmentError):
+            registration_request.token.update(registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.token.rollout_state)
+
+    def test_32_new_registration_removes_values_of_previous_credential(self):
+        """
+        A new registration of an enrolled token removes the values of the previous credential that the new
+        registration does not report: the attestation certificate, the extension outputs and the client values.
+        """
+        registration_request = self._initialize_registration()
+        token = registration_request.token
+        self.addCleanup(remove_token, serial=token.get_serial())
+        registration_response = dict(registration_request.registration_response)
+        registration_response.update({"transports": ["usb"], "prf": {"enabled": True}})
+        token.update(registration_response)
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertIsNotNone(token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_CERTIFICATE))
+        self.assertEqual("usb", token.get_tokeninfo(FIDO2TokenInfo.TRANSPORTS))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_ENABLED))
+
+        # New enrollment of the token with the multi device credential and the hmac-secret output
+        token.update({})
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        init_detail = self._init_multi_device_registration(token)
+        token.update(self._multi_device_registration_response(init_detail["transaction_id"], {"hmac-secret": True}))
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertEqual("none", token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
+        self.assertEqual("platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.HMAC_SECRET))
+        for key in (FIDO2TokenInfo.ATTESTATION_CERTIFICATE, FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED):
+            self.assertIsNone(token.get_tokeninfo(key), key)
+
+        # New enrollment of the token without extension outputs
+        token.update({})
+        init_detail = self._init_multi_device_registration(token)
+        token.update(self._multi_device_registration_response(init_detail["transaction_id"]))
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS):
+            self.assertIsNone(token.get_tokeninfo(key), key)
