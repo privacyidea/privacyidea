@@ -52,6 +52,14 @@
   without the parameter all tokens as before. The same applies to `container_realm` on `GET /container/`. Scripts that
   send `tokenrealm=*` to mean "all tokens" must omit the parameter.
 
+* **Policy time ranges over the end of the week or over midnight now apply.** A day range such as `Sat-Mon: 8-18`
+  now applies on Saturday, Sunday and Monday. A time range such as `Fri: 22-6` now applies from Friday 22:00 to
+  Saturday 06:00: the hours after midnight belong to the day on which the range starts. Before, a day range over the
+  end of the week never matched, and a policy whose time contained a range over midnight applied at no time at all.
+  Check your policies for such times before the update, especially in the `admin` and `authz` scopes, as they take
+  effect after it. A reversed time range is no longer rejected when you save a policy: `Mon-Fri: 18-8` is the night
+  from 18:00 to 08:00, not the day from 08:00 to 18:00.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

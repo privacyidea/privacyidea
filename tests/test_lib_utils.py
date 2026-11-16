@@ -121,6 +121,35 @@ class UtilsTestCase(MyTestCase):
         # Nonsense will not match
         self.assertRaises(ParameterError, check_time_in_range, "Mon-Wrong: asd-17:30", t)
 
+    def test_03b_check_time_in_range_wrap_around(self):
+        # Week of April 4th, 2016: Mon 4th, Fri 8th, Sat 9th, Sun 10th, Mon 11th
+        def at(day, hour, minute=0):
+            return datetime(2016, 4, day, hour=hour, minute=minute)
+
+        # A day range over the end of the week
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(9, 12)))
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(10, 12)))
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(11, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(5, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(8, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(11, 19)))
+        # The other ranges of a policy still match
+        self.assertTrue(check_time_in_range("Sun-Tue: 0-6, Wed-Fri: 9-17", at(8, 10)))
+
+        # A time range over midnight belongs to the day on which it starts
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(8, 22)))
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(8, 23, 59)))
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(9, 0)))
+        self.assertTrue(check_time_in_range("Fri: 22-06:00", at(9, 6)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(9, 6, 1)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(8, 5)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(8, 21, 59)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(9, 22)))
+        # Both at once: the night from Sunday to Monday follows the week wrap
+        self.assertTrue(check_time_in_range("Sat-Sun: 22-6", at(11, 3)))
+        self.assertFalse(check_time_in_range("Sat-Sun: 22-6", at(9, 3)))
+        self.assertTrue(check_time_in_range("Sun-Sat: 22-6", at(4, 3)))
+
     def test_04a_parse_proxy(self):
         self.assertEqual(parse_proxy(""), set())
         # 127.0.0.1 may rewrite to any IP of either family

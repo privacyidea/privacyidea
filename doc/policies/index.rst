@@ -187,10 +187,14 @@ resolver values must name existing realms and resolvers.
   to define certain policies to be active throughout working hours.
 
   Times are the local time of the privacyIDEA server, compared at minute precision with
-  both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
-  cross midnight (``22-6`` is rejected). The current WebUI
+  both ends included: ``8-18`` means from 08:00 up to and including 18:00. The current WebUI
   only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes can only be set
   through the API.
+
+  A day range can wrap around the end of the week: ``Sat-Mon: 8-18`` is valid on Saturday,
+  Sunday and Monday. A time range can cross midnight. The hours after midnight belong to the
+  day on which the range starts: ``Fri: 22-6`` is valid from Friday 22:00 to Saturday 06:00,
+  and ``Mon-Fri: 22-6`` covers the nights from Monday evening to Saturday morning.
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before
