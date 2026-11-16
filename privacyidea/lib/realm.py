@@ -433,8 +433,12 @@ def import_realms(data, name=None):
         if name and name != realm:
             continue
         added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
-        if is_true(r_config['default']):
+        if is_true(r_config.get('default')):
             set_default_realm(realm)
+        elif get_default_realm() == realm:
+            # The imported realm is not the default realm, so it loses its default, which set_realm() may also
+            # have given it as the first realm. A repeated import of the same data thus gives the same result.
+            set_default_realm(None)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
 
