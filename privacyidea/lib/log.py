@@ -176,6 +176,9 @@ INSENSITIVE_KEY_NAMES = frozenset({
     "force_app_pin",
     "forward_authorization_token",
     "group_attribute_mapping_key",
+    # The passkey token info that tells whether the authenticator created the secret of the CTAP2 extension
+    # hmac-secret. The value is a flag, but the token info stores it as a string.
+    "hmac_secret",
     "mapping",
     "otp_pin_contents",
     "otp_pin_maxlength",

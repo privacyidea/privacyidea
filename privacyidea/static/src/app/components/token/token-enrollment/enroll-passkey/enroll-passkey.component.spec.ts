@@ -150,9 +150,10 @@ describe("EnrollPasskeyComponent", () => {
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
 
     // The finalize request contains the transports and only the PRF flag, the PRF results stay in the client
-    const finalizeData = tokenService.enrollToken.mock.calls[1][0].data;
-    expect(finalizeData.transports).toEqual(["nfc", "usb"]);
-    expect(finalizeData.prf).toStrictEqual({ enabled: true });
+    const finalizeArgs = tokenService.enrollToken.mock.calls[1][0];
+    const finalizePayload = finalizeArgs.mapper.toApiPayload(finalizeArgs.data);
+    expect(finalizePayload.transports).toEqual(["nfc", "usb"]);
+    expect(finalizePayload.prf).toStrictEqual({ enabled: true });
 
     expect(b64.base64URLToBytes).toHaveBeenCalled();
     expect(b64.bytesToBase64).toHaveBeenCalled();

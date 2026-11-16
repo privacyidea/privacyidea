@@ -29,3 +29,4 @@ class FIDO2TokenInfo:
     AUTHENTICATOR_ATTACHMENT = "authenticator_attachment"
     TRANSPORTS = "transports"
     PRF_ENABLED = "prf_enabled"
+    PRF_REQUESTED = "prf_requested"

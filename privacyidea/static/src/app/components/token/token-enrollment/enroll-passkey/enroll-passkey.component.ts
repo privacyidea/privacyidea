@@ -235,14 +235,9 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     if (extResults?.credProps) {
       passkeyFinalizeData.credProps = extResults.credProps;
     }
-    const transports = attestationResponse.getTransports?.();
-    if (transports?.length) {
-      passkeyFinalizeData.transports = transports;
-    }
-    // Only the flag goes to the server: PRF results are secrets of the client
-    if (typeof extResults?.prf?.enabled === "boolean") {
-      passkeyFinalizeData.prf = { enabled: extResults.prf.enabled };
-    }
+    // The finalize mapper filters these values
+    passkeyFinalizeData.transports = attestationResponse.getTransports?.();
+    passkeyFinalizeData.prf = extResults?.prf;
     return lastValueFrom(
       this.tokenService.enrollToken({
         data: passkeyFinalizeData,

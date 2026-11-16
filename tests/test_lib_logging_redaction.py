@@ -289,6 +289,7 @@ class TestNoOverHiding:
         "remote.local_checkpin",
         "credential_id",         # a public identifier
         "registered_credential_ids",
+        "hmac_secret",           # a passkey token info flag, stored as the string "True" or "False"
         "pinode",                # the node name
         "otplen",
         "serial",

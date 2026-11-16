@@ -2947,7 +2947,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.assertEqual("cross-platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
         self.assertEqual("packed", token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
         self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
-
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
 
     def _passkey_registration_of_token_init(self, data: dict) -> dict:
         """
@@ -2992,6 +2992,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.addCleanup(remove_token, detail["serial"])
         self.assertEqual("passkey", detail["type"], res.json)
         self.assertNotIn("extensions", detail["multi_challenge"][0]["passkey_registration"])
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

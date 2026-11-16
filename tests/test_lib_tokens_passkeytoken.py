@@ -1004,8 +1004,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         """
         The registration options request the prf extension. A registration whose authenticator data contains
         extension outputs completes the enrollment. The complete map of extension outputs is saved as JSON, and the
-        hmac-secret output of a CTAP2 authenticator is also saved separately if it is a boolean. A map that is too
-        long or extension data that is not a map is not saved.
+        hmac-secret output of a CTAP2 authenticator is also saved separately if it is a boolean. Byte strings are
+        saved as base64url, also as keys. A map that is too long, a map with NaN or Infinity, which are not valid
+        JSON, or extension data that is not a map is not saved.
         """
         extension_cases = [
             ({"hmac-secret": True}, "True", '{"hmac-secret": true}'),
@@ -1015,6 +1016,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             ({"hmac-secret": True, "hmac-secret-mc": b"\x01\x02"}, "True",
              '{"hmac-secret": true, "hmac-secret-mc": "AQI"}'),
             ({"hmac-secret": True, "credBlob": b"\x00" * 1000}, "True", None),
+            ({"hmac-secret": True, b"\x01": {2: b"\x03"}}, "True", '{"AQ": {"2": "Aw"}, "hmac-secret": true}'),
+            ({"hmac-secret": True, "largeBlob": float("nan")}, "True", None),
+            ({"largeBlob": [float("inf")]}, None, None),
             ([1, 2], None, None),
         ]
         for extension_outputs, expected_hmac_secret, expected_extension_outputs in extension_cases:
@@ -1036,8 +1040,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
     def test_30_registration_saves_registration_details(self):
         """
-        A registration saves the attestation format, whether the authenticator verified the user, the origin and the
-        authenticator attachment. Without extension outputs and without client values, no entry for them is saved.
+        A registration saves the attestation format, whether the authenticator verified the user, the origin, the
+        authenticator attachment and whether the registration requested prf. Without extension outputs and without
+        client values, no entry for them is saved.
         """
         token = self._create_token()
         self.addCleanup(remove_token, serial=token.get_serial())
@@ -1046,6 +1051,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.USER_VERIFIED))
         self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
         self.assertEqual("cross-platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
         for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS, FIDO2TokenInfo.TRANSPORTS,
                     FIDO2TokenInfo.PRF_ENABLED):
             self.assertIsNone(token.get_tokeninfo(key), key)
@@ -1055,12 +1061,14 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual("none", multi_device_token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
         self.assertEqual("False", multi_device_token.get_tokeninfo(FIDO2TokenInfo.USER_VERIFIED))
         self.assertEqual("platform", multi_device_token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual("True", multi_device_token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
 
     def test_31_registration_saves_known_client_values(self):
         """
         The client reports the transports of the authenticator, whether the prf extension is enabled and the
         authenticator attachment. Nothing signs these values, so only values that the WebAuthn library knows are
-        saved. The transports are saved sorted and without duplicates.
+        saved. The transports are saved sorted and without duplicates. The WebAuthn library ignores an authenticator
+        attachment that is not a string, and the registration completes without it.
         """
         client_cases = [
             ({"transports": ["usb", "nfc", "usb"], "prf": {"enabled": True}},
@@ -1075,6 +1083,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             ({"transports": ["carrier-pigeon"], "prf": True},
              {FIDO2TokenInfo.TRANSPORTS: None, FIDO2TokenInfo.PRF_ENABLED: None,
               FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: "cross-platform"}),
+            ({"authenticatorAttachment": ["cross-platform"]}, {FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: None}),
+            ({"authenticatorAttachment": {"cross-platform": True}}, {FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: None}),
+            ({"authenticatorAttachment": 1}, {FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT: None}),
         ]
         for client_values, expected_token_info in client_cases:
             with self.subTest(client_values=client_values):
@@ -1101,7 +1112,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
     def test_32_new_registration_removes_values_of_previous_credential(self):
         """
         A new registration of an enrolled token removes the values of the previous credential that the new
-        registration does not report: the attestation certificate, the extension outputs and the client values.
+        registration does not report: the attestation certificate, the extension outputs, the client values and,
+        for a challenge that does not store it, whether the registration requested prf.
         """
         registration_request = self._initialize_registration()
         token = registration_request.token
@@ -1126,21 +1138,32 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         for key in (FIDO2TokenInfo.ATTESTATION_CERTIFICATE, FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED):
             self.assertIsNone(token.get_tokeninfo(key), key)
 
-        # New enrollment of the token without extension outputs
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
+
+        # New enrollment of the token without extension outputs and with a challenge that does not store whether the
+        # registration requested prf
         token.update({})
         init_detail = self._init_multi_device_registration(token)
+        challenge = get_challenges(serial=token.get_serial(), transaction_id=init_detail["transaction_id"])[0]
+        challenge_data = challenge.get_data()
+        del challenge_data[FIDO2TokenInfo.PRF_REQUESTED]
+        challenge.set_data(challenge_data)
+        challenge.save()
         token.update(self._multi_device_registration_response(init_detail["transaction_id"]))
         self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
-        for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS):
+        for key in (FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS, FIDO2TokenInfo.PRF_REQUESTED):
             self.assertIsNone(token.get_tokeninfo(key), key)
 
     def test_33_registration_options_without_prf_request(self):
         """
         With PasskeyAction.DisablePrf, the registration options do not request the prf extension, and the
-        registration completes without it. A false value keeps the request.
+        registration completes without it. A false value keeps the request. The token info shows whether the
+        registration requested prf.
         """
-        for disable_prf, expected_extensions in ((True, None), ("True", None), (False, {"prf": {}}),
-                                                 ("0", {"prf": {}})):
+        for disable_prf, expected_extensions, expected_prf_requested in ((True, None, "False"),
+                                                                         ("True", None, "False"),
+                                                                         (False, {"prf": {}}, "True"),
+                                                                         ("0", {"prf": {}}, "True")):
             with self.subTest(disable_prf=disable_prf):
                 registration_request = self._initialize_registration({PasskeyAction.DisablePrf: disable_prf})
                 try:
@@ -1148,5 +1171,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
                                      registration_request.init_detail["passkey_registration"].get("extensions"))
                     registration_request.token.update(registration_request.registration_response)
                     self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
+                    self.assertEqual(expected_prf_requested,
+                                     registration_request.token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
                 finally:
                     remove_token(serial=registration_request.token.get_serial())

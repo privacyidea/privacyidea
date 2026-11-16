@@ -575,6 +575,30 @@ class TokenBaseTestCase(MyTestCase):
                 self.assertEqual(expected_value, token.get_tokeninfo("converted_key"))
         token.remove_tokeninfo("converted_key")
 
+    def test_11_remove_tokeninfo_keys(self):
+        """
+        remove_tokeninfo_keys deletes only the given keys of the token. Without commit, a rollback keeps the entries.
+        An empty list deletes nothing.
+        """
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.add_tokeninfo_dict({"remove_key_1": "1", "remove_key_2": "2", "keep_key": "3"})
+
+        token.remove_tokeninfo_keys(["remove_key_1", "remove_key_2", "missing_key"], commit_db_session=False)
+        db.session.rollback()
+        self.assertEqual("1", token.get_tokeninfo("remove_key_1"))
+        self.assertEqual("2", token.get_tokeninfo("remove_key_2"))
+
+        token.remove_tokeninfo_keys([])
+        self.assertEqual("1", token.get_tokeninfo("remove_key_1"))
+
+        token.remove_tokeninfo_keys(["remove_key_1", "remove_key_2", "missing_key"])
+        db.session.rollback()
+        self.assertIsNone(token.get_tokeninfo("remove_key_1"))
+        self.assertIsNone(token.get_tokeninfo("remove_key_2"))
+        self.assertEqual("3", token.get_tokeninfo("keep_key"))
+        token.remove_tokeninfo("keep_key")
+
     def test_11_tokeninfo_type_suffix_is_reserved(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)

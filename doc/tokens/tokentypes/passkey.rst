@@ -180,7 +180,10 @@ saves this value in the token info as ``hmac_secret``. ``True`` means that the p
 means that the authenticator did not create it. If the token info has no ``hmac_secret``, the authenticator did
 not report the extension output. This is the case for passkeys that were enrolled without the request, and for
 authenticators that implement the PRF without CTAP2. For these authenticators, the browser can report the PRF state
-in ``prf_enabled``. See :ref:`passkey_registration_token_info`.
+in ``prf_enabled``.
+
+The token info entry ``prf_requested`` shows whether the registration requested the extension. ``False`` means that
+the policy :ref:`policy_passkey_disable_prf` turned off the request. See :ref:`passkey_registration_token_info`.
 
 .. _passkey_registration_token_info:
 
@@ -202,6 +205,11 @@ The authenticator reports these values in the authenticator data and the attesta
   has more than 1024 characters, privacyIDEA does not save it.
 * ``hmac_secret``: the extension output ``hmac-secret``, see the PRF extension above.
 
+privacyIDEA saves this value from the enrollment request:
+
+* ``prf_requested``: ``True`` if the registration options requested the PRF extension. The token info has no such
+  entry for a registration that started before the update to this version.
+
 The client reports these values:
 
 * ``origin``: the origin of the page that did the registration. privacyIDEA makes sure that it is the origin of
@@ -212,9 +220,9 @@ The client reports these values:
   ``hybrid,internal``. privacyIDEA saves only the transports that the WebAuthn library knows.
 * ``prf_enabled``: ``True`` if the browser reports that the PRF extension is enabled for the credential.
 
-The WebUI sends ``transports`` and ``prf_enabled``. Other client applications can send them in the second enrollment
-request as the parameters ``transports``, a list of strings, and ``prf``, an object with the boolean ``enabled``.
-Without these parameters, the token info has no such entries.
+The WebUI sends the parameters ``transports`` and ``prf`` in the second enrollment request. ``transports`` is a list
+of strings, and ``prf`` is an object with the boolean ``enabled``. Other client applications can send the same
+parameters. Without these parameters, the token info has no ``transports`` and no ``prf_enabled``.
 
 With the default :ref:`policy_passkey_attestation_conveyance_preference` ``none``, nothing in the registration is
 signed. The client that relays the registration can change all of these values, so they are for information only.

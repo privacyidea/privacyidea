@@ -48,7 +48,8 @@ export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
   serial: string;
   credProps?: CredentialPropertiesOutput;
   transports?: string[];
-  prf?: PasskeyPrfRegistrationOutput;
+  // The PRF output of the browser. The mapper sends only the flag "enabled" to the server.
+  prf?: AuthenticationExtensionsPRFOutputs;
 }
 
 export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
@@ -107,7 +108,8 @@ export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<Pa
 
     if (data.credProps) payload.credProps = data.credProps;
     if (data.transports?.length) payload.transports = data.transports;
-    if (data.prf) payload.prf = { enabled: data.prf.enabled };
+    // Only the flag goes to the server: PRF results are secrets of the client
+    if (typeof data.prf?.enabled === "boolean") payload.prf = { enabled: data.prf.enabled };
 
     return payload;
   }

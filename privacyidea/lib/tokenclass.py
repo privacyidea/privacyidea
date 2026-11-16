@@ -1425,6 +1425,20 @@ class TokenClass:
         db.session.execute(statement)
         db.session.commit()
 
+    def remove_tokeninfo_keys(self, keys: list[str], commit_db_session: bool = True) -> None:
+        """
+        Deletes the token info for the given keys in one statement, without checking whether the token class owns
+        the keys. Like remove_tokeninfo(), this is for server side code that maintains the token info of a token.
+
+        :param keys: The keys to delete. If the list is empty, nothing is deleted.
+        :param commit_db_session: Whether to commit the database session after the delete
+        """
+        if not keys:
+            return
+        db.session.execute(delete(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key.in_(keys)))
+        if commit_db_session:
+            db.session.commit()
+
     def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None) -> bool:
         """
         Removes a token group from a token.
