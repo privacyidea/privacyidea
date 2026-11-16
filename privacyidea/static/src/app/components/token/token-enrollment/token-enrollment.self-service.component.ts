@@ -106,6 +106,5 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
       data: this.enrolledDialogData(),
       configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
     });
-    this.resetInputsAfterEnrollment();
   }
 }
