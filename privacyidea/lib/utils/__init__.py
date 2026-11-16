@@ -90,6 +90,10 @@ def check_time_in_range(time_range, check_time=None):
     hh: 00-23
     mm: 00-59
 
+    A day range can wrap around the end of the week: "Sat-Mon" means Saturday, Sunday and Monday.
+    A time range can cross midnight: "Fri: 22-6" means Friday 22:00 to Saturday 06:00. The hours after
+    midnight belong to the day on which the range starts.
+
     If time is omitted the current time is used: time.localtime()
 
     :param time_range: The timerange
@@ -140,15 +144,25 @@ def check_time_in_range(time_range, check_time=None):
         else:
             time_end = dt_time(te[0])
 
-        if time_start > time_end:
-            log.error(f"Invalid time range. Start time is greater than end time: {t}")
-            raise ParameterError("Invalid time format!")
+        start_day = dow_index[dow_start]
+        end_day = dow_index[dow_end]
 
-        # check the day and the time
-        if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
-                and
-                time_start <= check_hour <= time_end):
-            time_match = True
+        def day_in_range(day: int) -> bool:
+            # A day range like Sat-Mon wraps around the end of the week
+            if start_day <= end_day:
+                return start_day <= day <= end_day
+            return day >= start_day or day <= end_day
+
+        if time_start <= time_end:
+            if day_in_range(check_day) and time_start <= check_hour <= time_end:
+                time_match = True
+        else:
+            # A time range like 22-6 crosses midnight. The hours after midnight belong to the day on which the
+            # range starts, so "Fri: 22-6" is the night from Friday 22:00 to Saturday 06:00.
+            previous_day = 7 if check_day == 1 else check_day - 1
+            if ((day_in_range(check_day) and check_hour >= time_start)
+                    or (day_in_range(previous_day) and check_hour <= time_end)):
+                time_match = True
 
     return time_match
 
