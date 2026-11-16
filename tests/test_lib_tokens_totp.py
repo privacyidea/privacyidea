@@ -623,11 +623,15 @@ class TOTPTokenTestCase(MyTestCase):
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 47251648 => otp = 032819, is out of sync
+        time_before = int(time.time())
         r = token.check_otp("032819", window=30,
                             options={"initTime": 47251645 * 30})
+        time_after = int(time.time())
         self.assertTrue(r == -1, r)
         # The invalid AutoResyncTimeout falls back to 300 seconds
-        self.assertAlmostEqual(int(time.time()) + 300, int(token.get_tokeninfo("dueDate")), delta=2)
+        due_date = int(token.get_tokeninfo("dueDate"))
+        self.assertLessEqual(time_before + 300, due_date)
+        self.assertGreaterEqual(time_after + 300, due_date)
         # counter = 47251650 => otp = 589836, will NOT _autosync
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
@@ -693,10 +697,14 @@ class TOTPTokenTestCase(MyTestCase):
         set_privacyidea_config("AutoResyncTimeout", 0)
         self.assertEqual(90, token.get_autoresync_timeout())
         # counter = 47251649 => otp = 705493, is out of sync
+        time_before = int(time.time())
         r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
+        time_after = int(time.time())
         self.assertEqual(-1, r)
-        self.assertAlmostEqual(int(time.time()) + 90, int(token.get_tokeninfo("dueDate")), delta=2)
+        due_date = int(token.get_tokeninfo("dueDate"))
+        self.assertLessEqual(time_before + 90, due_date)
+        self.assertGreaterEqual(time_after + 90, due_date)
         # counter = 47251650 => otp = 589836, will be autosynced
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
@@ -704,6 +712,12 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
         set_privacyidea_config("AutoResyncTimeout", 120)
         self.assertEqual(120, token.get_autoresync_timeout())
+        # With a time step of 60 seconds, the minimum is three time steps of 60 seconds
+        token.write_tokeninfo("timeStep", 60)
+        self.assertEqual(180, token.get_autoresync_timeout())
+        set_privacyidea_config("AutoResyncTimeout", 0)
+        self.assertEqual(180, token.get_autoresync_timeout())
+        token.write_tokeninfo("timeStep", 30)
         delete_privacyidea_config("AutoResyncTimeout")
 
         # No _autosync
