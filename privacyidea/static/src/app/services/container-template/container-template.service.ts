@@ -100,13 +100,22 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onContainersCreate() && !this.contentService.onAnyContainerTemplatesRoute()) {
+    if (
+      !this.contentService.onContainers() &&
+      !this.contentService.onContainersCreate() &&
+      !this.contentService.onAnyContainerTemplatesRoute()
+    ) {
       return undefined;
     }
 
     let params: Record<string, string> = {};
     // The template pages need every template, since a template name is unique across the container types.
-    if (!this.contentService.onAnyContainerTemplatesRoute() && this.containerService.selectedContainerType()) {
+    // The container list compares containers of every type, so it needs every template too.
+    if (
+      !this.contentService.onAnyContainerTemplatesRoute() &&
+      !this.contentService.onContainers() &&
+      this.containerService.selectedContainerType()
+    ) {
       params = { container_type: this.containerService.selectedContainerType()!.containerType };
     }
 

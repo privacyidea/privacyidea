@@ -37,6 +37,7 @@ import { MockMachineResolverService } from "@testing/mock-services/mock-machine-
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { BehaviorSubject, Observable, of } from "rxjs";
 import { MachineResolverDetailsComponent } from "./machine-resolver-details.component";
+import { axe } from "@testing/axe";
 
 class LocalMockMatDialog {
   result$: Observable<string | boolean> = of("save-exit");
@@ -643,5 +644,12 @@ describe("MachineResolverDetailsComponent", () => {
       expect(notificationService.error).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup(null);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

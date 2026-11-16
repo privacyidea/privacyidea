@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { DatePipe, NgClass } from "@angular/common";
 import { Component, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
+import { SessionTimerComponent } from "@components/layout/user-utils-panel/session-timer/session-timer.component";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
 import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
@@ -36,8 +36,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     MatTooltip,
     LanguageSwitcherComponent,
     ThemeSwitcherComponent,
-    NgClass,
-    DatePipe
+    SessionTimerComponent
   ],
   templateUrl: "./user-utils-panel.self-service.component.html",
   styleUrl: "./user-utils-panel.component.scss"

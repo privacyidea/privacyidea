@@ -218,7 +218,12 @@ Add to Container
 ----------------
 
 A token can be added to a container in the token details view and during the enrollment by selecting an existing
-container. Creating a new container at this point is only possible in the previous WebUI.
+container. The *Create new container* entry at the top of the container selection opens a dialog for a basic container
+creation: It allows defining the container type, setting a description, and optionally assigning the token owner to the
+new container. After the creation, the new container is preselected. The *Create new container* entry requires the right
+``container_create`` (:ref:`admin <policy_container_create>` or user policy). Assigning the new container to the token
+owner additionally requires the right ``container_assign_user`` (:ref:`admin <policy_container_assign_user>` or user
+policy) and a token owner.
 
 Remove from Container
 ---------------------

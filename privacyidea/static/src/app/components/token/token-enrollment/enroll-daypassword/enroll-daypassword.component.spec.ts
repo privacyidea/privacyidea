@@ -36,6 +36,7 @@ import {
   pickOption,
   typeInto
 } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
@@ -241,5 +242,11 @@ describe("EnrollDaypasswordComponent", () => {
       expect(component.otpKeyForm().valid()).toBe(true);
       expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

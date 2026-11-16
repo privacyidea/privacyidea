@@ -709,15 +709,24 @@ describe("TokenService", () => {
       expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
     });
 
-    it("uses the full info string as the label when it contains no colon", async () => {
+    it("falls back to the display name of a known type when the info string carries no colon", async () => {
       await flushRights({
         hotp: "Beta",
         totp: "Alpha"
       });
 
       const options = tokenService.tokenTypeOptions();
-      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
-      expect(options[0].info).toBe("Alpha");
+      expect(options.map((o) => o.key)).toEqual(["hotp", "totp"]);
+      expect(options[0].info).toBe("Beta");
+    });
+
+    it("falls back to the key of a type this UI does not know", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        aaa_custom: "A token class of its own, without a name in front"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["aaa_custom", "hotp"]);
     });
   });
 

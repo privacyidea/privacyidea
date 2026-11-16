@@ -7,6 +7,10 @@ Python dependencies are managed as **pip-compile generated lock files with hashe
 - `requirements.txt` — main application (generated from `pyproject.toml`)
 - `tests/requirements.txt` — main app + test extras (superset of `requirements.txt`)
 - `doc/requirements.txt` — main app + doc extras (superset of `requirements.txt`)
+- `deploy/docker/requirements-image.txt` — the packages that only the Docker image installs
+  (gunicorn and the drivers for PostgreSQL and Oracle). It is generated from
+  `deploy/docker/requirements-image.in` with `requirements.txt` as a constraint, so compile it
+  after `requirements.txt`.
 
 ### Why pip-compile with hashes?
 
@@ -70,9 +74,16 @@ pip-compile --upgrade-package <package-name> \
     pyproject.toml
 ```
 
+```bash
+pip-compile --upgrade-package <package-name> \
+    --allow-unsafe --generate-hashes --constraint=requirements.txt \
+    --output-file=deploy/docker/requirements-image.txt \
+    deploy/docker/requirements-image.in
+```
+
 Replace `<package-name>` with the vulnerable package (e.g. `cryptography`).
 
-Commit all three files together in a single PR so the lockfiles stay in sync.
+Commit all four files together in a single PR so the lockfiles stay in sync.
 
 ## Updating All Dependencies (routine maintenance, e.g. on start of new development cycle)
 
@@ -86,6 +97,9 @@ pip-compile --upgrade --allow-unsafe --generate-hashes --extra=test --output-fil
 ```
 ```bash
 pip-compile --upgrade --allow-unsafe --generate-hashes --extra=doc --output-file=doc/requirements.txt pyproject.toml
+```
+```bash
+pip-compile --upgrade --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=deploy/docker/requirements-image.txt deploy/docker/requirements-image.in
 ```
 
 ## Python Version Compatibility

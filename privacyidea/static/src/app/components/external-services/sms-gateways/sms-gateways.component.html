@@ -159,10 +159,10 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="displayedColumns; sticky: true"
+          *matHeaderRowDef="displayedColumns(); sticky: true"
           mat-header-row></tr>
         <tr
-          *matRowDef="let row; columns: displayedColumns"
+          *matRowDef="let row; columns: displayedColumns()"
           mat-row></tr>
 
         <tr *matNoDataRow>
@@ -178,20 +178,21 @@
     <app-table-state
       [table]="tableState"
       heading="No SMS gateways yet"
-      hint="Create an SMS gateway to send one-time passwords by text message."
+      [hint]="emptyHint()"
       i18n-heading="@@smsGateway.noSMSGateways"
-      i18n-hint="@@smsGateway.createSMSGateway"
       icon="sms">
-      <button
-        (click)="onCreateNewGateway()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="icon-badge-pad-3">sms</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
-      </button>
+      @if (authService.actionAllowed("smsgateway_write")) {
+        <button
+          (click)="onCreateNewGateway()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="icon-badge-pad-3">sms</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

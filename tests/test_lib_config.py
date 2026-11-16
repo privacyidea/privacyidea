@@ -461,7 +461,7 @@ class ConfigTestCase(MyTestCase):
         Config("UntypedAdminSetting", "secret", "", "").save()
 
         stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
-        self.assertEqual("", stored.Type)
+        self.assert_empty_string(stored.Type)
         self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
         self.assertIsNone(get_from_config("UntypedAdminSetting", role="user"))
         delete_privacyidea_config("DefaultOtpLen")

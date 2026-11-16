@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { TableAction, TableActionsComponent } from "./table-actions.component";
 import { TableActionsHost } from "./table-actions-host";
 import { TableActionsTriggerComponent } from "./table-actions-trigger.component";
+import { axe } from "@testing/axe";
 
 @Component({
   imports: [TableActionsComponent, TableActionsTriggerComponent, MatMenuModule],
@@ -241,5 +242,17 @@ describe("TableActionsComponent", () => {
     inline.detectChanges();
     await inline.whenStable();
     expect(inline.nativeElement.querySelector(".table-actions-trigger")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    render([
+      action({ id: "a" }),
+      action({ id: "b", visible: false }),
+      action({ id: "c", tone: "delete-secondary", width: "l" })
+    ]);
+
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

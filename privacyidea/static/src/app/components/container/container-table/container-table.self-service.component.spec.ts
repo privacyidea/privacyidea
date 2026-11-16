@@ -23,6 +23,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -40,11 +41,13 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { Subject } from "rxjs";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTableSelfServiceComponent", () => {
   let component: ContainerTableSelfServiceComponent;
@@ -63,6 +66,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
@@ -138,6 +142,21 @@ describe("ContainerTableSelfServiceComponent", () => {
     expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
   });
 
+  it("passes the axe accessibility checks with an expanded container row", async () => {
+    (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).getDisplayTextForState.mockReturnValue(
+      "Active"
+    );
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    showContainer({
+      states: ["active"],
+      tokens: [{ serial: "T-1", tokentype: "hotp", container_serial: "C-1" }]
+    } as unknown as Partial<ContainerDetailData>);
+    fixture.nativeElement.querySelector("tr[mat-row]").click();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
   describe("state toggle", () => {
     let handleStateClick: jest.SpyInstance;
 
@@ -173,8 +192,32 @@ describe("ContainerTableSelfServiceComponent", () => {
     });
   });
 
-  it("exposes the expected self-service columns", () => {
-    expect(component.columnKeysSelfService).toEqual(["serial", "type", "states", "description", "delete"]);
+  describe("delete column", () => {
+    const deleteButton = (): HTMLElement | null =>
+      fixture.nativeElement.querySelector('button[aria-label="Delete Container"]');
+    const grant = (rights: string[]) => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights
+      });
+      fixture.detectChanges();
+    };
+
+    it("is shown with the right to delete containers", () => {
+      showContainer({});
+      grant(["container_list", "container_delete"]);
+
+      expect(component.columnKeysSelfService()).toEqual(["serial", "type", "states", "description", "delete"]);
+      expect(deleteButton()).not.toBeNull();
+    });
+
+    it("is hidden without the right to delete containers", () => {
+      showContainer({});
+
+      expect(component.columnKeysSelfService()).toEqual(["serial", "type", "states", "description"]);
+      expect(fixture.nativeElement.querySelector("td")).not.toBeNull();
+      expect(deleteButton()).toBeNull();
+    });
   });
 
   it("deleteContainer opens confirmation dialog, deletes and reloads when confirmed", () => {
