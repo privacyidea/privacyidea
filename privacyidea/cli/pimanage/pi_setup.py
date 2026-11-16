@@ -100,6 +100,8 @@ def create_enckey(ctx, enckey_b64):
     Warning: passing the encryption key as a parameter is considered harmful!
     """
     enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
+    # An existing key file is reported before the given key is checked. The exclusive open below also refuses a
+    # file that another process creates in the meantime.
     if enc_file.is_file():
         click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
                     fg="yellow")

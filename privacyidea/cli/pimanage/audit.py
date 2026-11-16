@@ -74,8 +74,6 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     See the documentation for the format of the config file
     """
     metadata = MetaData()
-    if chunksize is not None:
-        chunksize = int(chunksize)
 
     default_module = "privacyidea.lib.auditmodules.sqlaudit"
     token_db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
