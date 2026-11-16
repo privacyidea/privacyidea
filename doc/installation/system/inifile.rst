@@ -1099,6 +1099,37 @@ subscription overview makes.
 
 .. versionadded:: 3.14
 
+.. _ini_subscription_key_directory:
+
+Subscription key folder
+-----------------------
+
+.. index:: subscription, public key
+
+privacyIDEA verifies the signature of a subscription file with the public key of
+the vendor. This key is the file ``<vendor>.pem``, for example ``NetKnights.pem``.
+``<vendor>`` is the first word of the vendor name in the subscription file.
+
+``PI_SUBSCRIPTION_KEY_DIRECTORY`` sets the folder with these files::
+
+    PI_SUBSCRIPTION_KEY_DIRECTORY = '/etc/privacyidea'
+
+If ``PI_SUBSCRIPTION_KEY_DIRECTORY`` is not set, privacyIDEA uses the folder of
+``PI_ENCFILE``. In a standard installation, this is ``/etc/privacyidea``. The
+Docker image sets ``PI_SUBSCRIPTION_KEY_DIRECTORY`` to ``/etc/privacyidea``. The
+image contains the public key in this folder, but the encryption key is a secret
+in another folder.
+
+If privacyIDEA cannot load the file, it writes the path of the file to the log.
+This also applies to an empty file and to a file without a valid public key. In
+this case, privacyIDEA refuses the upload of a subscription file. It also refuses
+the requests of a client with a valid subscription to the endpoints that check
+the subscription, for example ``/validate/check``. This applies even if the number
+of users is inside the free tier. Clients without a subscription and clients with
+an expired subscription do not change.
+
+.. versionadded:: 3.14.1
+
 .. _ini_conditional_access_never_block:
 
 Conditional access never-block list
