@@ -113,6 +113,15 @@ describe("SetPinActionComponent", () => {
     expect(component.repeatPinForm().touched()).toBe(true);
   });
 
+  it("masks the PIN fields without password fields, so password managers do not offer to save the PIN", () => {
+    expect(fixture.nativeElement.querySelector("input[type='password']")).toBeNull();
+    for (const input of pinInputs()) {
+      expect(input.type).toBe("text");
+      expect(input.classList).toContain("masked-input");
+      expect(input.getAttribute("autocomplete")).toBe("off");
+    }
+  });
+
   it("typing into the PIN fields updates the models", () => {
     const [pin, repeat] = pinInputs();
     typeInto(pin, "9876");
