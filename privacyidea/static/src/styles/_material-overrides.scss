@@ -588,6 +588,15 @@ mat-chip.mat-mdc-chip {
   margin-bottom: 16px;
 }
 
+// .mat-divider resets its margin the same way.
+.mat-divider.margin-top-16 {
+  margin-top: 16px;
+}
+
+.mat-divider.margin-bottom-16 {
+  margin-bottom: 16px;
+}
+
 // A list item carries .pad-0 to drop every side of its padding, but the one-line rule above sets padding-bottom at two
 // classes of specificity, which outranks the lone utility class; naming both Material classes beside it wins.
 .mdc-list-item.mdc-list-item--with-one-line.pad-0 {
