@@ -72,6 +72,7 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -1355,6 +1356,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });
 
 describe("token-enrollment constants", () => {

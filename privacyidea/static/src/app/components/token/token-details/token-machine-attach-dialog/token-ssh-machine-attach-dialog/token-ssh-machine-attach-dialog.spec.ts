@@ -31,6 +31,7 @@ import { UserData, UserService } from "@services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "@testing/mock-services";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { clearOverlays, flushFixture, matSelectAt, pickOption, typeInto } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;
@@ -266,5 +267,11 @@ describe("TokenSshMachineAssignDialogComponent", () => {
       expect(component.selectedServiceIdValue()).toBe("svc-2");
       expect(component.selectedServiceIdForm().dirty()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -28,6 +28,7 @@ import { EventActions, EventService } from "@services/event/event.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventActionOptionValues, EventActionTabComponent } from "./event-action-tab.component";
+import { axe } from "@testing/axe";
 
 describe("EventActionTabComponent", () => {
   let component: EventActionTabComponent;
@@ -424,5 +425,11 @@ describe("EventActionTabComponent", () => {
       expect(component.selectedOptions()["flag"]).toBe(false);
       expect(component.newOptions.emit).toHaveBeenLastCalledWith(expect.objectContaining({ flag: false }));
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

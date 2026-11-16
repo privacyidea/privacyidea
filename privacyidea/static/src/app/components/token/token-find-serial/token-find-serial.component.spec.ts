@@ -41,6 +41,7 @@ import {
 import { of, Subject, Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 import { TokenFindSerialComponent } from "./token-find-serial.component";
+import { axe } from "@testing/axe";
 
 interface SerialPayload {
   count: number;
@@ -376,5 +377,11 @@ describe("TokenGetSerialComponent", () => {
     expect(component.countIsLarge()).toBe(true);
     component.tokenCount.set("150");
     expect(component.countIsLarge()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

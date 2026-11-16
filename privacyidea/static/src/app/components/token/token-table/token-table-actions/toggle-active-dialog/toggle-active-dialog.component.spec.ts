@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ToggleActiveDialogComponent, ToggleActiveDialogData } from "./toggle-active-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ToggleActiveDialogComponent", () => {
   let component: ToggleActiveDialogComponent;
@@ -100,5 +101,11 @@ describe("ToggleActiveDialogComponent", () => {
     expect(listItems[1].textContent).toContain("inactive → active");
     expect(listItems[2].textContent).toContain("TOK003");
     expect(listItems[2].textContent).toContain("active → inactive");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

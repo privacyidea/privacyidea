@@ -56,6 +56,7 @@ import {
 } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
+import { axe } from "@testing/axe";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -597,6 +598,12 @@ describe("ContainerDetailsComponent", () => {
       expect(infoSaveSpy).not.toHaveBeenCalled();
       expect(component.isEditingInfo()).toBe(false);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

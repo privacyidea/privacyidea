@@ -31,6 +31,7 @@ import { MockAuthService, MockContainerService, MockTokenService } from "@testin
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { By } from "@angular/platform-browser";
 import { ContainerAddTokenComponent } from "./container-add-token.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerAddTokenComponent", () => {
   let fixture: ComponentFixture<ContainerAddTokenComponent>;
@@ -204,5 +205,11 @@ describe("ContainerAddTokenComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.debugElement.query(By.directive(MatCheckbox))).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
