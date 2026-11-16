@@ -224,6 +224,18 @@ describe("TokenEnrolledTextComponent", () => {
       expect(icon()).toBe("pending");
       expect(summary().classList).toContain("enrolled__summary--pending");
     });
+
+    it("does not report a successful enrollment while the enrollment still has to be verified", () => {
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.componentRef.setInput("rollover", true);
+      fixture.componentRef.setInput("verificationPending", true);
+      fixture.detectChanges();
+      const summary = (fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement).textContent;
+      expect(summary?.trim()).toContain("The token was enrolled.");
+      expect(summary).not.toContain("successfully");
+      expect(labels()).toEqual(["Token", "User", "Realm"]);
+    });
   });
 
   describe("user and realm link rendering", () => {

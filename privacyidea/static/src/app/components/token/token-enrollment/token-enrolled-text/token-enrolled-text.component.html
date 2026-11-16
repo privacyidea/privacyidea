@@ -28,7 +28,9 @@
       >{{ verificationPending() ? "pending" : "check_circle" }}</mat-icon
     >
     <span>
-      @if (rollover()) {
+      @if (verificationPending()) {
+        <ng-container i18n="@@token.enrolledSummaryVerificationPending">The token was enrolled.</ng-container>
+      } @else if (rollover()) {
         <ng-container i18n="@@token.enrolledSummaryRollover">The token has been successfully rolled over.</ng-container>
       } @else if (showUser()) {
         <ng-container i18n="@@token.enrolledSummaryUser"
@@ -46,8 +48,16 @@
 
   <div class="enrolled__cards">
     <div class="enrolled__card">
-      <mat-icon class="enrolled__card-icon" aria-hidden="true">shield</mat-icon>
-      <span class="enrolled__card-label" i18n="@@common.token">Token</span>
+      <mat-icon
+        class="enrolled__card-icon"
+        aria-hidden="true"
+        >shield</mat-icon
+      >
+      <span
+        class="enrolled__card-label"
+        i18n="@@common.token"
+        >Token</span
+      >
       <a
         class="enrolled__card-value"
         role="button"
@@ -63,8 +73,16 @@
 
     @if (containerSerial()) {
       <div class="enrolled__card">
-        <mat-icon class="enrolled__card-icon" aria-hidden="true">inventory_2</mat-icon>
-        <span class="enrolled__card-label" i18n="@@common.container">Container</span>
+        <mat-icon
+          class="enrolled__card-icon"
+          aria-hidden="true"
+          >inventory_2</mat-icon
+        >
+        <span
+          class="enrolled__card-label"
+          i18n="@@common.container"
+          >Container</span
+        >
         <a
           class="enrolled__card-value"
           role="button"
@@ -81,8 +99,16 @@
 
     @if (showUser()) {
       <div class="enrolled__card">
-        <mat-icon class="enrolled__card-icon" aria-hidden="true">person</mat-icon>
-        <span class="enrolled__card-label" i18n="@@common.user">User</span>
+        <mat-icon
+          class="enrolled__card-icon"
+          aria-hidden="true"
+          >person</mat-icon
+        >
+        <span
+          class="enrolled__card-label"
+          i18n="@@common.user"
+          >User</span
+        >
         @if (authService.actionAllowed("userlist")) {
           <a
             class="enrolled__card-value"
@@ -103,8 +129,16 @@
 
     @if (showUser() || showRealmOnly()) {
       <div class="enrolled__card">
-        <mat-icon class="enrolled__card-icon" aria-hidden="true">public</mat-icon>
-        <span class="enrolled__card-label" i18n="@@common.realm">Realm</span>
+        <mat-icon
+          class="enrolled__card-icon"
+          aria-hidden="true"
+          >public</mat-icon
+        >
+        <span
+          class="enrolled__card-label"
+          i18n="@@common.realm"
+          >Realm</span
+        >
         @if (authService.role() === "admin") {
           <a
             class="enrolled__card-value"
