@@ -20,6 +20,7 @@ import base64
 import contextlib
 import csv
 import datetime as dt
+import errno
 import io
 import json
 import os
@@ -2023,6 +2024,42 @@ class TestPIManageSetupClass:
             result = app.test_cli_runner().invoke(pi_manage, ["setup", "create_enckey", "--enckey_b64", wrapped])
         assert result.exit_code == 0, result.output
         assert enckey.read_bytes() == valid_key
+
+    def test_08d_create_enckey_removes_the_key_file_if_the_write_fails(self, app, tmp_path):
+        # A key file that could not be written is removed, so that a second run can create the key
+        enckey = tmp_path / "enckey"
+        real_fdopen = os.fdopen
+
+        class FullDiskFile:
+            def __init__(self, fd: int) -> None:
+                self.fd = fd
+
+            def __enter__(self) -> "FullDiskFile":
+                return self
+
+            def __exit__(self, *exc_info: object) -> None:
+                os.close(self.fd)
+
+            def write(self, data: bytes) -> int:
+                raise OSError(errno.ENOSPC, "No space left on device")
+
+        def fdopen_on_full_disk(fd: int, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+            if mode == "wb":
+                return FullDiskFile(fd)
+            return real_fdopen(fd, mode, *args, **kwargs)
+
+        runner = app.test_cli_runner()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            with mock.patch("privacyidea.cli.pimanage.pi_setup.os.fdopen", side_effect=fdopen_on_full_disk):
+                result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+            assert result.exit_code == 1, result.output
+            assert isinstance(result.exception, SystemExit), result.exception
+            assert "Could not write the encryption key" in result.output
+            assert not enckey.exists()
+
+            result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+            assert result.exit_code == 0, result.output
+            assert len(enckey.read_bytes()) == 96
 
     def test_09_encrypt_enckey_restricts_the_permissions_of_a_new_output_file(self, app, tmp_path):
         enckey = tmp_path / "enckey"

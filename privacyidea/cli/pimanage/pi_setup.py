@@ -125,8 +125,14 @@ def create_enckey(ctx, enckey_b64):
     except FileExistsError:
         click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!", fg="yellow")
         ctx.exit(1)
-    with os.fdopen(fd, "wb") as f:
-        f.write(bin_enckey)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(bin_enckey)
+    except OSError as e:
+        # An empty or partial key file is not usable, and every later run would refuse to overwrite it
+        enc_file.unlink(missing_ok=True)
+        click.secho(f"Error: Could not write the encryption key to {enc_file}: {e}", fg="red", err=True)
+        ctx.exit(1)
     click.secho(f"Encryption key written to {enc_file}", fg="green")
     enc_file.chmod(0o400)
     click.secho(f"The file permission of {enc_file} was set to 400!", fg="yellow")
