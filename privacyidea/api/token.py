@@ -1320,7 +1320,10 @@ def set_api(serial=None):
         written to tokens of that type, so a parameter cannot
         reach the namespace of another token type. These entries
         are maintained by the token, so the generic token-info
-        endpoints refuse them.
+        endpoints refuse them. An entry the token needs, for
+        example ``radius.user`` on a RADIUS token, cannot be set
+        to an empty value. Then the request fails with ERR905 and
+        changes nothing.
     :status 200: number of attribute updates applied in
         ``result.value``.
     """
@@ -1340,6 +1343,21 @@ def set_api(serial=None):
     validity_period_end = get_optional(request.all_data, "validity_period_end")
 
     res = 0
+
+    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
+    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
+    # fixed fields below and any framework parameter are unaffected. These entries are written first: an empty
+    # value for an entry the token needs is refused, and then none of the other fields is changed either.
+    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
+    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
+    if settable_info:
+        # A key one token type declares settable is not written to a token of another type, so the audit
+        # follows the write and names the entries that were actually written
+        written_keys = set_token_type_info(serial, settable_info, user=user)
+        for key in sorted(set(written_keys)):
+            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
+            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
+        res += len(written_keys)
 
     if description is not None:
         g.audit_object.add_to_log({'action_detail': f"description={description!r}, "})
@@ -1380,20 +1398,6 @@ def set_api(serial=None):
         g.audit_object.add_to_log({'action_detail':
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
-
-    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
-    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
-    # fixed fields above and any framework parameter are unaffected.
-    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
-    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
-    if settable_info:
-        # A key one token type declares settable is not written to a token of another type, so the audit
-        # follows the write and names the entries that were actually written
-        written_keys = set_token_type_info(serial, settable_info, user=user)
-        for key in sorted(set(written_keys)):
-            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
-            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
-        res += len(written_keys)
 
     g.audit_object.log({"success": True})
     return send_result(res)
