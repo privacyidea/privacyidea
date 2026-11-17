@@ -32,8 +32,12 @@ import logging
 import re
 
 import pytest
+import responses
+from requests.exceptions import ConnectionError
 
+from privacyidea.lib.event import delete_event, set_event
 from privacyidea.lib.serviceid import set_serviceid
+from privacyidea.lib.token import get_tokens, remove_token
 from .base import MyApiTestCase
 
 # A value shaped like a JWT is a session credential of whoever sent the request.
@@ -312,3 +316,57 @@ class SecretsNotLoggedTestCase(MyApiTestCase):
                             "nodes": "localnode", "taskmodule": "EventCounter", "ordering": 0,
                             "options": '{"password": "logtest-serialized-secret"}'})
         self.assertNotIn("logtest-serialized-secret", output)
+
+    @responses.activate
+    def test_04_event_handler_options_are_not_written_to_the_log(self):
+        # The URL of a WebHook is the credential of the receiving service, and its data can hold the details of a
+        # user. Neither is logged when the event handler runs, nor when the WebHook can not be called.
+        webhook_url = "https://hooks.example.com/services/logtest-hook-secret"
+        responses.add(responses.POST, webhook_url, status=200)
+        event_id = set_event("logtest-webhook", event=["token_init"], handlermodule="WebHook",
+                             action="post_webhook",
+                             options={"URL": webhook_url, "content_type": "application/json", "replace": "False",
+                                      "data": '{"text": "logtest-data-secret"}'})
+        try:
+            output = self.send("POST", "/token/init", "form", {"type": "spass", "serial": "LOGTEST04"})
+            self.assertEqual(1, len(responses.calls))
+            self.assertIn("logtest-webhook", output)
+            self.assertIn("A webhook is called at https://hooks.example.com", output)
+            self.assertNotIn("logtest-hook-secret", output)
+            self.assertNotIn("logtest-data-secret", output)
+            # The audit entry of the handler lists the names of its options
+            with self.app.test_request_context("/audit/", method="GET",
+                                               query_string={"action": "*WebHook*", "sortorder": "desc"},
+                                               headers={"Authorization": self.at}):
+                entry = self.app.full_dispatch_request().json["result"]["value"]["auditdata"][0]
+            self.assertEqual("POST-EVENT token_init>>WebHook:post_webhook", entry.get("action"), entry)
+            self.assertEqual("URL, content_type, data, replace", entry.get("action_detail"), entry)
+
+            responses.replace(responses.POST, webhook_url, body=ConnectionError("unreachable"))
+            output = self.send("POST", "/token/init", "form", {"type": "spass", "serial": "LOGTEST05"})
+            self.assertIn("could not be called: ConnectionError", output)
+            self.assertNotIn("logtest-hook-secret", output)
+        finally:
+            delete_event(event_id)
+            for serial in ("LOGTEST04", "LOGTEST05"):
+                if get_tokens(serial=serial):
+                    remove_token(serial)
+
+    def test_05_token_file_is_not_written_to_the_log(self):
+        # A token file holds the OTP keys of its tokens, encrypted with the pre-shared key the request sends
+        pre_shared_key = "12345678901234567890123456789012"
+        self.log_stream.truncate(0)
+        self.log_stream.seek(0)
+        try:
+            with self.app.test_request_context("/token/load/pskc-aes.xml", method="POST",
+                                               data={"type": "pskc", "psk": pre_shared_key,
+                                                     "file": ("tests/testdata/pskc-aes.xml", "pskc-aes.xml")},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, res.json["result"]["value"]["n_imported"], res.json)
+            output = self.log_stream.getvalue()
+            self.assertNotIn(pre_shared_key, output)
+            self.assertNotIn("AAECAwQFBgcICQoLDA0OD", output)
+        finally:
+            remove_token("987654321")

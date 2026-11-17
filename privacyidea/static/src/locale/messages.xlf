@@ -36,7 +36,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="audit.filterAuditLog" datatype="html">
-        <source>Filter Audit Log...</source>
+        <source>Filter Audit Log</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
           <context context-type="linenumber">28</context>
@@ -617,7 +617,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="audit.filterClients" datatype="html">
-        <source>Filter Clients ...</source>
+        <source>Filter Clients</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/clients/clients.component.html</context>
           <context context-type="linenumber">32</context>
@@ -895,7 +895,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.filterMachines" datatype="html">
-        <source>Filter Machines...</source>
+        <source>Filter Machines</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machines.component.html</context>
           <context context-type="linenumber">29</context>
@@ -1319,7 +1319,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.filterPeriodic" datatype="html">
-        <source>Filter Periodic Tasks ...</source>
+        <source>Filter Periodic Tasks</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
           <context context-type="linenumber">30</context>
@@ -2246,32 +2246,25 @@
         <source>System Documentation</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">24</context>
+          <context context-type="linenumber">26</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">34</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationContains" datatype="html">
         <source>This documentation contains the current configuration of your system in restructured text. You can use this to document your installed system.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">27</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="systemConfig.copySystemDocumentation" datatype="html">
-        <source>Copy System Documentation:</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">45</context>
+          <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.close" datatype="html">
         <source>Close</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">22</context>
+          <context context-type="linenumber">24</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
@@ -3686,7 +3679,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.filterToken" datatype="html">
-        <source>Filter Token...</source>
+        <source>Filter Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">43</context>
@@ -4149,7 +4142,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.filterContainers" datatype="html">
-        <source>Filter Containers...</source>
+        <source>Filter Containers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
           <context context-type="linenumber">28</context>
@@ -4327,7 +4320,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.filterTemplates" datatype="html">
-        <source>Filter Templates...</source>
+        <source>Filter Templates</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.html</context>
           <context context-type="linenumber">22</context>
@@ -4364,6 +4357,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">74</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-table-actions/container-templates-table-actions.component.ts</context>
@@ -4912,7 +4909,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="event.filterEventHandlers" datatype="html">
-        <source>Filter Event Handlers ...</source>
+        <source>Filter Event Handlers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
           <context context-type="linenumber">28</context>
@@ -4971,7 +4968,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.filterCaConnectors" datatype="html">
-        <source>Filter CA Connectors...</source>
+        <source>Filter CA Connectors</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
           <context context-type="linenumber">29</context>
@@ -5592,7 +5589,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.filterPrivacyidea" datatype="html">
-        <source>Filter privacyIDEA Servers...</source>
+        <source>Filter privacyIDEA Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -5936,7 +5933,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.filterRadiusServers" datatype="html">
-        <source>Filter RADIUS Servers...</source>
+        <source>Filter RADIUS Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6020,7 +6017,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.filterService" datatype="html">
-        <source>Filter Service IDs...</source>
+        <source>Filter Service IDs</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6142,7 +6139,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.filterSmsGateways" datatype="html">
-        <source>Filter SMS Gateways...</source>
+        <source>Filter SMS Gateways</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6304,7 +6301,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.filterSmtpServers" datatype="html">
-        <source>Filter SMTP Servers...</source>
+        <source>Filter SMTP Servers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
           <context context-type="linenumber">29</context>
@@ -6376,7 +6373,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.filterTokengroups" datatype="html">
-        <source>Filter Tokengroups...</source>
+        <source>Filter Tokengroups</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
           <context context-type="linenumber">29</context>
@@ -7455,7 +7452,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.filterPolicies" datatype="html">
-        <source>Filter Policies...</source>
+        <source>Filter Policies</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policy-filter/policy-filter.component.html</context>
           <context context-type="linenumber">24</context>
@@ -8337,7 +8334,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterChallenges" datatype="html">
-        <source>Filter Challenges...</source>
+        <source>Filter Challenges</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
           <context context-type="linenumber">29</context>
@@ -8415,7 +8412,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterOffline" datatype="html">
-        <source>Filter Offline Applications...</source>
+        <source>Filter Offline Applications</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">35</context>
@@ -8454,7 +8451,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.filterSshApplications" datatype="html">
-        <source>Filter SSH Applications...</source>
+        <source>Filter SSH Applications</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">42</context>
@@ -11260,7 +11257,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.filterTokens" datatype="html">
-        <source>Filter Tokens...</source>
+        <source>Filter Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
           <context context-type="linenumber">29</context>
@@ -11364,7 +11361,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.filterRealms" datatype="html">
-        <source>Filter Realms...</source>
+        <source>Filter Realms</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
           <context context-type="linenumber">13</context>
@@ -13111,7 +13108,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.filterResolvers" datatype="html">
-        <source>Filter Resolvers...</source>
+        <source>Filter Resolvers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.html</context>
           <context context-type="linenumber">30</context>
@@ -13199,7 +13196,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.filterUsers" datatype="html">
-        <source>Filter Users...</source>
+        <source>Filter Users</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.html</context>
           <context context-type="linenumber">53</context>
@@ -13411,7 +13408,7 @@
         <source>Failed to download audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/audit/audit.service.ts</context>
-          <context context-type="linenumber">234</context>
+          <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.successfullySaved" datatype="html">
@@ -14721,7 +14718,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.filterMachine" datatype="html">
-        <source>Filter Machine Resolvers...</source>
+        <source>Filter Machine Resolvers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver.component.html</context>
           <context context-type="linenumber">29</context>
@@ -17307,7 +17304,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.filterApiClients" datatype="html">
-        <source>Filter API Clients...</source>
+        <source>Filter API Clients</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
           <context context-type="linenumber">31</context>
@@ -19050,7 +19047,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.filterConditionalAccessPolicies" datatype="html">
-        <source>Filter Conditional Access Policies...</source>
+        <source>Filter Conditional Access Policies</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
           <context context-type="linenumber">30</context>
@@ -20026,7 +20023,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="lockedUsers.filterLockedUsers" datatype="html">
-        <source>Filter Locked Users ...</source>
+        <source>Filter Locked Users</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.html</context>
           <context context-type="linenumber">28</context>
@@ -20655,7 +20652,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.filterAuthenticationLog" datatype="html">
-        <source>Filter Authentication Log ...</source>
+        <source>Filter Authentication Log</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
           <context context-type="linenumber">28</context>
@@ -21059,7 +21056,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.filterBlocklist" datatype="html">
-        <source>Filter Blocklist ...</source>
+        <source>Filter Blocklist</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist.component.html</context>
           <context context-type="linenumber">28</context>
@@ -21252,35 +21249,35 @@
         <source>The PKCS#12 container of this token is damaged and cannot be downloaded.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.hidePassphrase" datatype="html">
         <source>Hide passphrase</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingCertificateDownload" datatype="html">
         <source>Download the certificate.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">95</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPassphrase" datatype="html">
         <source>Show or copy the passphrase.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPkcs12Download" datatype="html">
         <source>Download the PKCS#12 file.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">97</context>
+          <context context-type="linenumber">98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pkcs12Contains" datatype="html">
@@ -21315,7 +21312,7 @@
         <source>Show passphrase</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.landingPage" datatype="html">
@@ -22522,6 +22519,83 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditions/conditional-access-conditions.component.html</context>
           <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymore" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please check, if you need to renew your <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;subscriptionPath&quot;&gt;"/>subscription<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymoreNoRight" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please contact an administrator who can manage the subscription.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationCopied" datatype="html">
+        <source>The system documentation was copied to the clipboard.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">155</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailAttach" datatype="html">
+        <source>The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">201</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailBody" datatype="html">
+        <source>The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="fileName"/>.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">206</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailSubject" datatype="html">
+        <source>privacyIDEA system documentation of <x id="server" equiv-text="this.server"/> from <x id="date" equiv-text="this.date"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotCopied" datatype="html">
+        <source>The system documentation could not be copied to the clipboard.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">159</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.downloadDocumentation" datatype="html">
+        <source>Download</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">103</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.sendDocumentationByEmail" datatype="html">
+        <source>Send by email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">96</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotShared" datatype="html">
+        <source>The system documentation could not be shared.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">177</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.shareDocumentation" datatype="html">
+        <source>Share</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.ipAddressRequired" datatype="html">
