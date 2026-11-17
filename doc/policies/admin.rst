@@ -55,7 +55,9 @@ do not name the administrator, but the users the administrator may act on.
    sets a value such as ``hide_tokeninfo``, or one for another admin realm - every
    administrator may only do what a matching policy grants.
 
-.. note:: Admin policies are also checked for all local administrators.
+.. note:: Admin policies are also checked for all local administrators. A local
+   administrator has no admin realm: only the policies without an admin realm, or with
+   the admin realm ``*``, apply to them. See :ref:`faq_admins`.
 
 The following actions are available in the scope
 *admin*:

@@ -22,6 +22,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;
@@ -97,6 +98,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
 
     it("should allow the user store passphrase for a container with an owner", () => {
       expect(component.form.store().disabled()).toBe(false);
+    });
+
+    it("passes the axe accessibility checks", async () => {
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
     });
   });
 

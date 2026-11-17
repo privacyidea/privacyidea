@@ -20,20 +20,16 @@
   <ng-content select="[panelTitle]"></ng-content>
   @if (authService.actionAllowed("setpin")) {
     <div class="set-pin-fields">
-      <input
-        class="hidden-input"
-        type="text" />
-      <input
-        class="hidden-input"
-        type="password" />
       <mat-form-field
         class="input-width-m"
         subscriptSizing="dynamic">
         <mat-label i18n="@@common.pin">PIN</mat-label>
         <input
           [formField]="setPinForm"
-          type="password"
-          matInput />
+          autocomplete="off"
+          class="masked-input"
+          matInput
+          type="text" />
       </mat-form-field>
       <mat-form-field
         class="input-width-m"
@@ -41,8 +37,10 @@
         <mat-label i18n="@@common.repeatPin">Repeat PIN</mat-label>
         <input
           [formField]="repeatPinForm"
-          type="password"
-          matInput />
+          autocomplete="off"
+          class="masked-input"
+          matInput
+          type="text" />
         @if (hasError(repeatPinForm, ERR.pinMismatch)) {
           <mat-error i18n="@@common.pinsDoNotMatch">PINs do not match.</mat-error>
         }

@@ -22,6 +22,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { axe } from "@testing/axe";
 import { MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import {
@@ -236,6 +237,13 @@ describe("SystemDocumentationDialogComponent", () => {
     component.onAction("mail");
 
     expect(clickedAnchors[1].href.startsWith("mailto:?subject=")).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    jest.useRealTimers();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

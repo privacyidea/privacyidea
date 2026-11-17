@@ -230,6 +230,22 @@ worker keeps one connection pool for the audit log and one for each SQL resolver
 instead of connecting to the database anew for every request.
 `PI_AUDIT_POOL_SIZE` (default 20) limits the audit pool of a worker.
 
+`DockerConfig` also sets `PI_SUBSCRIPTION_KEY_DIRECTORY = "/etc/privacyidea"`.
+privacyIDEA verifies the signature of a subscription file with a public key from
+this folder. The image contains the key `/etc/privacyidea/NetKnights.pem`. To use
+another key, mount it over this file in `compose.override.yaml`:
+
+```yaml
+services:
+  pi:
+    volumes:
+      - ./NetKnights.pem:/etc/privacyidea/NetKnights.pem:ro
+```
+
+To use a folder with the keys instead, mount the folder and set
+`PRIVACYIDEA_PI_SUBSCRIPTION_KEY_DIRECTORY` in `privacyidea.env` to its path in
+the container.
+
 **Maintenance** (`cron-runner.py`, on the `pi-cron` service). All default enabled;
 set to `false`/`0`/`no` to disable:
 
@@ -292,8 +308,8 @@ External database
 -----------------
 
 The bundled MariaDB suits a single node. To use a database you already run —
-MariaDB, MySQL or PostgreSQL, managed or not — add `compose.external-db.yaml`
-in `.env`:
+MariaDB, MySQL, PostgreSQL or Oracle, managed or not — add
+`compose.external-db.yaml` in `.env`:
 
 ```
 COMPOSE_FILE=compose.yaml:compose.external-db.yaml
@@ -306,13 +322,21 @@ printf '%s\n' 'postgresql+psycopg2://pi:<password>@db.example.org:5432/pi' > sec
 chmod 644 secrets/database_uri
 ```
 
-- The image has the drivers `mysql+pymysql` (MariaDB, MySQL) and
-  `postgresql+psycopg2` (PostgreSQL). It has none for Oracle.
+- The image has the drivers `mysql+pymysql` (MariaDB, MySQL),
+  `postgresql+psycopg2` (PostgreSQL) and `oracle+oracledb` (Oracle). For
+  Oracle, give the service name of the database in the URI:
+  `oracle+oracledb://pi:<password>@db.example.org:1521/?service_name=<service>`.
+- On Oracle, the image uses `oracledb` in thin mode. Thin mode needs Oracle
+  Database 12.1 or newer. It does not support Oracle Native Network
+  Encryption, and encrypts the connection with TLS only. See the
+  [feature comparison of python-oracledb](https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_a.html).
 - Percent-encode the characters `@ : / ? # %` in the user name and password
   (`@` becomes `%40`).
 - Create the database and its user first; the user needs the rights to create
-  and change tables. `pi-init` creates the tables on an empty database and runs
-  the migrations on an existing one, as with the bundled MariaDB.
+  and change tables. On Oracle, the user also needs the right to create
+  sequences and a quota on its tablespace. `pi-init` creates the tables on an
+  empty database and runs the migrations on an existing one, as with the
+  bundled MariaDB.
 - The database has to be up before `make up`: `pi-init` does not wait for it,
   and stops with `could not determine database state` when it cannot reach it.
 - The database is yours to back up, with its own tools. `make backup` still

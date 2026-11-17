@@ -23,6 +23,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { MockNotificationService } from "@testing/mock-services";
 import { OBJECT_URL_LIFETIME_MS } from "@utils/download.utils";
 import { CertificateDataComponent } from "./certificate-data.component";
+import { axe } from "@testing/axe";
 
 const CERTIFICATE = "-----BEGIN CERTIFICATE-----\nMIIBdummy\n-----END CERTIFICATE-----";
 const PKCS12 = "AAECAw==";
@@ -304,5 +305,11 @@ describe("CertificateDataComponent", () => {
       expect(fixture.nativeElement.textContent).toContain("The PKCS#12 container holds the private key.");
       expect(fixture.nativeElement.textContent).not.toContain("private key and the certificate");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

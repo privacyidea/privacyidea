@@ -22,6 +22,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 import { ReasonDetail, ReasonDetailDialogData } from "../reason-detail";
 import { ReasonDetailDialog } from "./reason-detail-dialog";
+import { axe } from "@testing/axe";
 
 describe("ReasonDetailDialog", () => {
   let fixture: ComponentFixture<ReasonDetailDialog>;
@@ -159,5 +160,20 @@ describe("ReasonDetailDialog", () => {
       ["WAN003", "\u2014"],
       ["TOTP002", "TOKEN_DISABLED"]
     ]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await render({
+      used: [
+        { serial: "OATH0001", reason: "WRONG_OTP" },
+        { serial: "TOTP002", reason: "TOKEN_DISABLED" }
+      ],
+      other: [],
+      namesTokens: false,
+      policies: []
+    });
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

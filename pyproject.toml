@@ -198,3 +198,8 @@ filterwarnings = [
     "once::DeprecationWarning",
 ]
 
+[tool.coverage.run]
+# Also measure the Python processes that the tests start, for example pi-manage. Without this, code that only these
+# processes run counts as not covered. The option takes effect only in test runs with --cov.
+patch = ["subprocess"]
+

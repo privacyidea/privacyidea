@@ -33,6 +33,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockContainerService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerCreateFormComponent } from "./container-create-form.component";
+import { axe } from "@testing/axe";
 
 const template = (name: string): ContainerTemplate => ({
   container_type: "smartphone",
@@ -270,5 +271,11 @@ describe("ContainerCreateFormComponent", () => {
       await flush();
       expect((el().querySelector("mat-expansion-panel textarea") as HTMLTextAreaElement).value).toBe("Prompt?");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -96,16 +96,18 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_CREATE);
   }
 
-  readonly columnKeysMapSelfService = [
-    { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
-    { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
-    { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
-    { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
-    { key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" }
-  ];
-  readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
-    (column: { key: string; label: string }) => column.key
-  );
+  readonly columnKeysMapSelfService = computed(() => {
+    const columnKeys = [
+      { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+      { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+      { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+      { key: "description", label: $localize`:@@common.description:Description`, width: "xl" }
+    ];
+    if (this.authService.actionAllowed("container_delete"))
+      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" });
+    return columnKeys;
+  });
+  readonly columnKeysSelfService = computed(() => this.columnKeysMapSelfService().map((column) => column.key));
 
   constructor() {
     super();

@@ -22,6 +22,7 @@ import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { typeInto } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
@@ -52,5 +53,11 @@ describe("EnrollYubikeyComponent", () => {
     expect(component.testYubiKey()).toBe("x".repeat(40));
     expect(component.testYubiKeyForm().dirty()).toBe(true);
     expect(component.otpLength()).toBe(40);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

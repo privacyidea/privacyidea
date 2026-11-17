@@ -39,6 +39,7 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { setRights, toolbarAction } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("ApiClientsComponent", () => {
   let component: ApiClientsComponent;
@@ -292,5 +293,11 @@ describe("ApiClientsComponent", () => {
       expect(fixture.nativeElement.querySelector("app-table-actions")).toBeTruthy();
       expect((fixture.nativeElement as HTMLElement).querySelectorAll("app-table-actions button").length).toBe(0);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

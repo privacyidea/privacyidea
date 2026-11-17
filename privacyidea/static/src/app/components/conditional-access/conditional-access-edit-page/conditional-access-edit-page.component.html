@@ -121,7 +121,6 @@
       <div class="edit-policy-fields">
         @if (isNewPolicy() && policyService.templates().length > 0) {
           <mat-form-field
-            appearance="fill"
             class="input-width-xl"
             subscriptSizing="dynamic">
             <mat-label i18n="@@conditionalAccess.startTemplate">Start from Template</mat-label>
@@ -150,7 +149,6 @@
         }
 
         <mat-form-field
-          appearance="fill"
           class="input-width-xl">
           <mat-label i18n="@@common.name">Name</mat-label>
           <input
@@ -171,7 +169,6 @@
 
       <div class="edit-policy-fields">
         <mat-form-field
-          appearance="fill"
           class="input-width-l"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.target">Target</mat-label>
@@ -186,7 +183,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-l"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.countMode">Count Mode</mat-label>
@@ -222,7 +218,6 @@
         </div>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@conditionalAccess.timeWindow">Time Window</mat-label>
           <input
@@ -241,7 +236,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@common.unit">Unit</mat-label>
           <mat-select [formField]="policyForm.time_window_unit">
@@ -264,7 +258,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-xl margin-bottom-32"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.trackedEventTypes2">Tracked Event Types</mat-label>
@@ -283,7 +276,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-s ca-priority-field"
           subscriptSizing="dynamic">
           <mat-label i18n="@@policy.priority">Priority</mat-label>

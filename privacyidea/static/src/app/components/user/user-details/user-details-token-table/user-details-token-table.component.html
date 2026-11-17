@@ -48,7 +48,7 @@
             <span i18n="@@common.unassign">Unassign</span>
           </button>
         }
-        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+        @if (authService.actionAllowed("enable") || authService.actionAllowed("disable")) {
           <button
             (click)="toggleActiveSelected()"
             [disabled]="!selector.hasSelection()"
@@ -66,6 +66,16 @@
             mat-stroked-button>
             <mat-icon>restart_alt</mat-icon>
             <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
+          </button>
+        }
+        @if (authService.actionAllowed("container_add_token")) {
+          <button
+            (click)="addToContainerSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>add_box</mat-icon>
+            <span i18n="@@common.addToContainer">Add to Container</span>
           </button>
         }
       </div>
@@ -147,18 +157,9 @@
                         }
                       }
                       @case ("active") {
-                        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                          <span
-                            (click)="toggleActive(element)"
-                            (keydown.enter)="toggleActive(element)"
-                            (keydown.space)="$event.preventDefault(); toggleActive(element)"
-                            [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                            role="button"
-                            tabindex="0">
-                            {{ tableUtilsService.getDisplayText(column.key, element) }}
-                          </span>
-                        }
+                        <app-token-active-toggle
+                          (toggled)="tokenService.userTokenResource.reload()"
+                          [token]="element" />
                       }
                       @case ("failcount") {
                         @if (authService.actionAllowed("reset")) {
@@ -169,6 +170,10 @@
                             [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                             role="button"
                             tabindex="0">
+                            {{ tableUtilsService.getDisplayText(column.key, element) }}
+                          </span>
+                        } @else {
+                          <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                             {{ tableUtilsService.getDisplayText(column.key, element) }}
                           </span>
                         }

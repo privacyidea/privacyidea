@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { WelcomeDialogComponent } from "./welcome-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("WelcomeDialogComponent", () => {
   let fixture: ComponentFixture<WelcomeDialogComponent>;
@@ -109,5 +110,11 @@ describe("WelcomeDialogComponent", () => {
     component.step.set(3);
     component.resetWelcome();
     expect(component.step()).toBe(0);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

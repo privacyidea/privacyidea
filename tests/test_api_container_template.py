@@ -1,25 +1,30 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import base64
+import binascii
 import copy
 import json
+import string
 from unittest import mock
 
 from flask import g, request
 
 from privacyidea.lib.container import (create_container_template, get_template_obj,
-                                       create_container_tokens_from_template)
+                                       create_container_tokens_from_template, get_templates_by_query,
+                                       get_all_containers)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass, get_policies
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
-from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.token import (get_tokens_from_serial_or_user,
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
+from privacyidea.lib.token import (get_tokens, get_tokens_from_serial_or_user,
                                    get_tokeninfo)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
@@ -923,20 +928,7 @@ class APIContainerTemplate(APIContainerTest):
         hans = User("hans", self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         template_tokens = [{"type": "hotp", "genkey": True, "user": True}, {"type": "totp", "genkey": True}]
-        request_data = {"type": "generic", "user": "hans", "realm": self.realm1}
-
-        with self.app.test_request_context("/container/init", method="POST"):
-            request.all_data = copy.deepcopy(request_data)
-            request.User = hans
-            g.request_data = copy.deepcopy(request_data)
-            g.policies = {}
-            g.client_ip = "127.0.0.1"
-            g.serial = None
-            g.audit_object = self.audit_object
-            g.policy_object = PolicyClass()
-            g.logged_in_user = {"role": "user", "username": "hans", "realm": self.realm1,
-                                "resolver": self.resolvername1}
-            create_container_tokens_from_template(container_serial, template_tokens, request, "user")
+        self._create_container_tokens_from_template_as_user(container_serial, template_tokens, hans)
 
         # All tokens of a user are assigned to the user, also if the container has no owner and independent of the
         # user flag
@@ -948,3 +940,394 @@ class APIContainerTemplate(APIContainerTest):
 
         container.delete()
         [token.delete_token() for token in tokens]
+
+    def test_25_create_container_with_template_change_pin_on_first_use(self):
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True,
+                                                            "change_pin_on_first_use": True},
+                                                           {"type": "totp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        # Without the policy change_pin_on_first_use, only the token with the option gets the PIN change
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertIsNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+        for serial, token_result in result["result"]["value"]["tokens"].items():
+            self.assertNotIn("change_pin_on_first_use", token_result["init_params"])
+            self.assertIsNone(get_tokeninfo(serial, "change_pin_on_first_use"))
+
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def test_26_create_container_tokens_from_template_change_pin_on_first_use_for_user(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        set_policy("user", scope=SCOPE.USER,
+                   action={PolicyAction.ENROLLPIN: True, "enrollHOTP": True, "enrollTOTP": True})
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_EVERY: "30d"})
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        template_tokens = [{"type": "hotp", "genkey": True, "pin": "1234", "change_pin_on_first_use": True},
+                           {"type": "totp", "genkey": True, "pin": "1234"}]
+
+        self._create_container_tokens_from_template_as_user(container_serial, template_tokens, hans)
+
+        container = find_container_by_serial(container_serial)
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        # The flag wins over the PIN the user sets and over change_pin_every
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertIsNotNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+        self.assertFalse(tokens["totp"].is_pin_change())
+
+        delete_policy("change_pin")
+        delete_policy("user")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def test_27_save_template_change_pin_on_first_use_must_be_boolean(self):
+        url = "/container/generic/template/test"
+        audit_action = "POST /container/<string:container_type>/template/<string:template_name>"
+        invalid_options = {"tokens": [{"type": "hotp", "change_pin_on_first_use": "true"}]}
+
+        # Create
+        self.request_assert_error(400, url, json.dumps({"template_options": invalid_options}), self.at, "POST",
+                                  error_code=905)
+        self.assert_audit_entry(audit_action, success=0, info=self.contains("ERR905"))
+        self.assertListEqual([], get_templates_by_query(name="test")["templates"])
+
+        # Update
+        valid_options = {"tokens": [{"type": "hotp", "change_pin_on_first_use": True}, {"type": "totp"}]}
+        self.request_assert_success(url, json.dumps({"template_options": valid_options}), self.at, "POST")
+        self.request_assert_error(400, url, json.dumps({"template_options": invalid_options}), self.at, "POST",
+                                  error_code=905)
+        self.assertDictEqual(valid_options, get_template_obj("test").get_template_options_as_dict())
+
+        get_template_obj("test").delete()
+
+    def test_28_create_container_with_template_name_policy_change_pin_on_first_use(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True})
+        create_container_template(container_type="generic", template_name="test",
+                                  options={"tokens": [{"type": "hotp", "genkey": True},
+                                                      {"type": "totp", "genkey": True,
+                                                       "change_pin_on_first_use": False}]})
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1, "template_name": "test"})
+
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        self.assertEqual("test", container.template.name)
+        # The policy sets the PIN change for an admin, also if the option of the template token is missing or false
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertTrue(tokens["totp"].is_pin_change())
+
+        delete_policy("change_pin")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+        get_template_obj("test").delete()
+
+    def test_29_create_container_with_template_change_pin_on_first_use_must_be_boolean(self):
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True,
+                                                            "change_pin_on_first_use": "false"}]}}
+        request_params = json.dumps({"type": "generic", "template": template_params})
+        containers_before = len(get_all_containers(ctype="generic")["containers"])
+
+        self.request_assert_error(400, "/container/init", request_params, self.at, "POST", error_code=905)
+
+        self.assertEqual(containers_before, len(get_all_containers(ctype="generic")["containers"]))
+
+    def test_30_create_container_with_unused_or_empty_template(self):
+        templates = {
+            # A template of another container type is not used, so its tokens are not checked
+            "other container type": {"name": "test", "container_type": "smartphone",
+                                     "template_options": {"tokens": [{"type": "hotp",
+                                                                      "change_pin_on_first_use": "yes"}]}},
+            "no template options": {"name": "test", "container_type": "smartphone", "template_options": None},
+            "no tokens": {"name": "test", "container_type": "generic", "template_options": {"tokens": None}},
+        }
+        for description, template_params in templates.items():
+            with self.subTest(description):
+                request_params = json.dumps({"type": "generic", "template": template_params})
+
+                result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+
+                self.assertNotIn("tokens", result["result"]["value"])
+                container = find_container_by_serial(result["result"]["value"]["container_serial"])
+                self.assertListEqual([], container.get_tokens())
+                container.delete()
+
+    def test_31_create_container_tokens_from_template_change_pin_on_first_use_not_true(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        # A stored template is not validated again when it is used
+        template_tokens = [{"type": "hotp", "genkey": True, "change_pin_on_first_use": "false"}]
+
+        self._create_container_tokens_from_template_as_user(container_serial, template_tokens, hans)
+
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        # Only the boolean True sets the PIN change
+        self.assertIsNone(get_tokeninfo(tokens[0].get_serial(), "next_pin_change"))
+
+        container.delete()
+        tokens[0].delete_token()
+
+    def _create_container_tokens_from_template_as_user(self, container_serial: str, template_tokens: list[dict],
+                                                       user: User) -> dict[str, dict]:
+        request_data = {"user": user.login, "realm": user.realm}
+        with self.app.test_request_context("/container/init", method="POST"):
+            request.all_data = copy.deepcopy(request_data)
+            request.User = user
+            g.request_data = copy.deepcopy(request_data)
+            g.policies = {}
+            g.client_ip = "127.0.0.1"
+            g.serial = None
+            g.audit_object = self.audit_object
+            g.policy_object = PolicyClass()
+            g.logged_in_user = {"role": "user", "username": user.login, "realm": user.realm,
+                                "resolver": user.resolver}
+            return create_container_tokens_from_template(container_serial, template_tokens, request, "user")
+
+    def test_32_create_container_with_template_applspec_password_follows_policies(self):
+        # The token parameters of a template can not define the generated password of an application specific
+        # password token: the length and contents are taken from the policies or the defaults of the token class.
+        set_serviceid("mail", "the service of the token below")
+        template_params = {"name": "applspec",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "applspec", "genkey": True,
+                                                            "service_id": "mail",
+                                                            "applspec.length": 4,
+                                                            "applspec.contents": "[0]"}]}}
+        containers = []
+
+        def get_password():
+            request_params = json.dumps({"type": "generic", "template": template_params})
+            result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            containers.append(container)
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            return result["result"]["value"]["tokens"][tokens[0].get_serial()]["password"]
+
+        try:
+            # Without a policy the default length is used
+            password = get_password()
+            self.assertEqual(ApplicationSpecificPasswordTokenClass.default_length, len(password), password)
+            self.assertTrue(set(password) - {"0"}, password)
+
+            set_policy("applspec_password", scope=SCOPE.ENROLL, action="applspec.length=16, applspec.contents=-s")
+            password = get_password()
+            self.assertEqual(16, len(password), password)
+            self.assertTrue(set(password) <= set(string.ascii_letters + string.digits), password)
+        finally:
+            for container in containers:
+                for token in container.get_tokens():
+                    token.delete_token()
+                container.delete()
+            if get_policies(name="applspec_password"):
+                delete_policy("applspec_password")
+            delete_serviceid("mail")
+
+    def _init_generic_container_with_template(self, tokens: list) -> dict:
+        template_params = {"name": "tmpl_postpolicies",
+                           "container_type": "generic",
+                           "template_options": {"tokens": tokens}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+        return self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+    @staticmethod
+    def _cleanup_container_and_tokens(container_serial: str | None, serials: list[str]):
+        if container_serial:
+            find_container_by_serial(container_serial).delete()
+        for serial in serials:
+            for token in get_tokens(serial=serial):
+                token.delete_token()
+
+    def test_33_create_container_with_template_reports_token_failing_postpolicies(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT26A"
+        totp_serial = "TMPLREPORT26B"
+        hotp_key = "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432"
+        hotp_key_base32 = base64.b32encode(binascii.unhexlify(hotp_key)).decode().strip("=")
+        # The hotp token has no description, so the condition raises an error for it
+        set_policy("verify_hotp_report", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "x", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "otpkey": hotp_key, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            # Only the created token is in the tokens of the response
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            # The token that was not created is reported with its type, serial and the error
+            not_created = value["tokens_not_created"]
+            self.assertEqual(1, len(not_created), not_created)
+            self.assertEqual("hotp", not_created[0]["type"])
+            self.assertEqual(hotp_serial, not_created[0]["serial"])
+            self.assertIsInstance(not_created[0]["error"], str)
+            self.assertTrue(not_created[0]["error"])
+            self.assertNotIn("googleurl", not_created[0])
+            self.assertNotIn("otpkey", not_created[0])
+            # No enrollment data of the token that was not created is anywhere in the response
+            response_text = json.dumps(result)
+            self.assertNotIn(hotp_key, response_text.lower())
+            self.assertNotIn(hotp_key_base32, response_text)
+            self.assertNotIn("otpauth://hotp", response_text)
+            self.assertEqual(0, len(get_tokens(serial=hotp_serial)))
+            # The container contains only the token that was created
+            container = find_container_by_serial(container_serial)
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+        finally:
+            delete_policy("verify_hotp_report")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_34_create_container_with_template_reports_token_failing_prepolicies_or_init(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT27A"
+        tiqr_serial = "TMPLREPORT27B"
+        totp_serial = "TMPLREPORT27C"
+        # The pre-policy fails for the hotp token without a description, the tiqr token fails in init_token as it
+        # requires a user
+        set_policy("require_desc_hotp", scope=SCOPE.ENROLL, action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp")
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "tiqr", "serial": tiqr_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            not_created = value["tokens_not_created"]
+            self.assertEqual(["hotp", "tiqr"], sorted(entry["type"] for entry in not_created), not_created)
+            for entry in not_created:
+                self.assertIsInstance(entry["error"], str)
+                self.assertTrue(entry["error"], entry)
+        finally:
+            delete_policy("require_desc_hotp")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, tiqr_serial, totp_serial])
+
+    def test_35_create_container_with_template_without_errors_omits_tokens_not_created(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT28A"
+        totp_serial = "TMPLREPORT28B"
+        set_policy("verify_hotp_ok", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"})
+        set_policy("pin_first_use_ok", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            # The response is unchanged if all tokens are created
+            self.assertNotIn("tokens_not_created", value)
+            self.assertSetEqual({hotp_serial, totp_serial}, set(value["tokens"].keys()))
+            self.assertIsInstance(value["tokens"][hotp_serial]["verify"], dict)
+            self.assertEqual(RolloutState.VERIFY_PENDING, value["tokens"][hotp_serial]["rollout_state"])
+            self.assertNotIn("verify", value["tokens"][totp_serial])
+            self.assertIsNotNone(get_tokeninfo(hotp_serial, "next_pin_change"))
+            self.assertIsNotNone(get_tokeninfo(totp_serial, "next_pin_change"))
+        finally:
+            delete_policy("verify_hotp_ok")
+            delete_policy("pin_first_use_ok")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_36_create_container_with_template_removes_token_failing_pin_change_policy(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT29A"
+        totp_serial = "TMPLREPORT29B"
+        # verify_enrollment succeeds, only change_pin_on_first_use fails for the hotp token without a description
+        set_policy("verify_hotp_plain", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"})
+        set_policy("pin_first_use_failing", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "y", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+            container = find_container_by_serial(container_serial)
+
+            # The token is neither in the database, nor in the container, nor in the tokens of the response
+            self.assertEqual(0, len(get_tokens(serial=hotp_serial)))
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            self.assertEqual([hotp_serial], [entry.get("serial") for entry in value["tokens_not_created"]])
+        finally:
+            delete_policy("verify_hotp_plain")
+            delete_policy("pin_first_use_failing")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_37_create_container_with_template_existing_serial_is_disabled_on_postpolicy_error(self):
+        self.setUp_user_realms()
+        existing_serial = "TMPLEXIST30A"
+        totp_serial = "TMPLEXIST30B"
+        init_token({"type": "hotp", "genkey": True, "serial": existing_serial})
+        set_policy("verify_hotp_exist", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "x", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": existing_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+            container = find_container_by_serial(container_serial)
+
+            # The token existed before and must not be deleted, but it was rolled over (new key nobody has),
+            # so it is disabled and not part of the new container
+            self.assertEqual(1, len(get_tokens(serial=existing_serial)))
+            self.assertFalse(get_one_token(serial=existing_serial).token.active)
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+            self.assertEqual([existing_serial], [entry.get("serial") for entry in value["tokens_not_created"]])
+        finally:
+            delete_policy("verify_hotp_exist")
+            self._cleanup_container_and_tokens(container_serial, [existing_serial, totp_serial])
+
+    def test_38_create_container_with_template_hides_internal_error_details(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLINTERNAL31"
+        container_serial = None
+
+        try:
+            with mock.patch("privacyidea.lib.container.init_token", side_effect=RuntimeError("internal detail xyz")):
+                result = self._init_generic_container_with_template([
+                    {"type": "hotp", "genkey": True, "serial": hotp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            not_created = value["tokens_not_created"]
+            self.assertEqual(1, len(not_created), not_created)
+            self.assertIsInstance(not_created[0]["error"], str)
+            self.assertTrue(not_created[0]["error"])
+            self.assertNotIn("internal detail xyz", not_created[0]["error"])
+            self.assertNotIn("internal detail xyz", json.dumps(result))
+        finally:
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial])

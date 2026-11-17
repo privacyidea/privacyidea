@@ -65,11 +65,11 @@ export class TokenDetailsInfoComponent {
   protected readonly hiddenInfoKeys: readonly string[] = [...TIMESTAMP_INFO_KEYS, ...BLOB_INFO_KEYS];
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
-  @Input() infoData!: WritableSignal<EditableElement[]>;
-  @Input() detailData!: WritableSignal<EditableElement[]>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
+  @Input({ required: true }) infoData!: WritableSignal<EditableElement[]>;
+  @Input({ required: true }) detailData!: WritableSignal<EditableElement[]>;
+  @Input({ required: true }) isAnyEditingOrRevoked!: Signal<boolean>;
+  @Input({ required: true }) isEditingInfo!: WritableSignal<boolean>;
+  @Input({ required: true }) isEditingUser!: WritableSignal<boolean>;
   /** Info entries the token maintains itself, see TokenDetails.readonly_info_keys */
   @Input() readonlyInfoKeys: Signal<string[]> = signal<string[]>([]);
   /** Info entries that may not be removed, see TokenDetails.undeletable_info_keys */
