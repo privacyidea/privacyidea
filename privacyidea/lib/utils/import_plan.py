@@ -33,7 +33,9 @@ import logging
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
+
+from sqlalchemy import select
 
 from privacyidea.lib import config  # noqa: F401 # registers the importer of the type 'config'
 from privacyidea.lib.caconnector import delete_caconnector
@@ -44,13 +46,14 @@ from privacyidea.lib.periodictask import delete_periodic_task
 from privacyidea.lib.policy import delete_policy, filter_invalid_actions, SCOPE
 from privacyidea.lib.privacyideaserver import delete_privacyideaserver
 from privacyidea.lib.radiusserver import delete_radius
-from privacyidea.lib.realm import delete_realm
+from privacyidea.lib.realm import delete_realm, get_default_realm, set_default_realm
 from privacyidea.lib.resolver import delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway
 from privacyidea.lib.smtpserver import delete_smtpserver
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
-from privacyidea.models import db
+from privacyidea.models import (db, PeriodicTask, Policy, PrivacyIDEAServer, RADIUSServer, SMSGateway,
+                                SMTPServer)
 from privacyidea.models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
@@ -66,6 +69,7 @@ ADMIN_POLICY_WARNING = ("Warning: after this import no active admin policy is le
                         "so every administrator may do everything.")
 
 _MISSING = object()
+NO_DEFAULT_REALM_PLAN = object()
 
 
 @dataclass
@@ -100,6 +104,8 @@ class TypePlan:
     notes: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
     data: Union[dict, list, None] = None
+    # name of the realm that is the default after the import (None: no default), NO_DEFAULT_REALM_PLAN: not planned
+    default_realm: Union[str, None, object] = NO_DEFAULT_REALM_PLAN
 
 
 def _import_order() -> list:
@@ -107,7 +113,7 @@ def _import_order() -> list:
     return [typ for typ, _ in sorted(IMPORT_FUNCTIONS.items(), key=lambda item: item[1]["prio"])]
 
 
-def _plain(value):
+def _plain(value: Any) -> Any:
     """Turn tuples into lists recursively, so that exported and JSON-parsed data compare equal."""
     if isinstance(value, dict):
         return {key: _plain(val) for key, val in value.items()}
@@ -116,7 +122,7 @@ def _plain(value):
     return value
 
 
-def _differs(import_value, target_value) -> bool:
+def _differs(import_value: Any, target_value: Any) -> bool:
     """A censored import value keeps the stored one of an existing entry, so it is never a change."""
     if is_censored(import_value):
         return False
@@ -142,7 +148,7 @@ def _changed_fields(import_entry: dict, target_entry: dict, subset_fields: tuple
     return sorted(changed)
 
 
-def _without(entry: dict, keys) -> dict:
+def _without(entry: dict, keys: Iterable[str]) -> dict:
     return {key: value for key, value in entry.items() if key not in keys}
 
 
@@ -213,12 +219,19 @@ class _TypeAdapter:
     an entry from this system with the existing lib function, without forcing.
     ``fold_name`` turns a name into the form in which the setter of the type finds
     an existing entry, so that the plan matches names like the setter does.
+    ``stored_name`` returns the name of the entry on this system that the setter
+    of the type finds for a name with its database lookup, or None. Depending on
+    the collation of the database this can be an entry whose name differs in
+    case. ``setter_renames`` tells whether the setter then writes the imported
+    name to that entry (else it keeps the name stored on this system).
     """
     name_field: Optional[str] = None
     normalize: Callable[[dict], dict] = dict
     subset_fields: tuple = ()
     delete: Optional[Callable[[PlanEntry], object]] = None
     fold_name: Callable[[str], str] = str
+    stored_name: Optional[Callable[[str], Optional[str]]] = None
+    setter_renames: bool = False
 
 
 def _fold_realm_name(name: str) -> str:
@@ -231,6 +244,13 @@ def _fold_case(name: str) -> str:
     return name.lower()
 
 
+def _stored_name_lookup(column: Any) -> Callable[[str], Optional[str]]:
+    """Find a stored name with the comparison of the setter, which follows the collation of the database."""
+    def lookup(name: str) -> Optional[str]:
+        return db.session.scalars(select(column).where(column == name)).first()
+    return lookup
+
+
 _ADAPTERS = {
     "resolver": _TypeAdapter(normalize=_normalize_resolver, subset_fields=("data",), fold_name=_fold_case,
                              delete=lambda entry: delete_resolver(entry.target_name or entry.key)),
@@ -239,21 +259,27 @@ _ADAPTERS = {
                           delete=lambda entry: delete_realm(entry.key, delete_custom_attributes=False,
                                                             confirm_ca_policies=False)),
     "policy": _TypeAdapter(name_field="name", normalize=_normalize_policy,
-                           delete=lambda entry: delete_policy(entry.key)),
+                           delete=lambda entry: delete_policy(entry.key),
+                           stored_name=_stored_name_lookup(Policy.name)),
     "event": _TypeAdapter(name_field="name", normalize=_normalize_event,
                           delete=lambda entry: delete_event(entry.target_id)),
     "periodictask": _TypeAdapter(name_field="name", normalize=_normalize_periodictask,
-                                 delete=lambda entry: delete_periodic_task(entry.target_id)),
+                                 delete=lambda entry: delete_periodic_task(entry.target_id),
+                                 stored_name=_stored_name_lookup(PeriodicTask.name), setter_renames=True),
     "machineresolver": _TypeAdapter(subset_fields=("data",), fold_name=_fold_case,
                                     delete=lambda entry: delete_machine_resolver(entry.target_name or entry.key)),
     "caconnector": _TypeAdapter(name_field="connectorname", subset_fields=("data",),
                                 delete=lambda entry: delete_caconnector(entry.key)),
-    "privacyideaserver": _TypeAdapter(delete=lambda entry: delete_privacyideaserver(entry.key)),
+    "privacyideaserver": _TypeAdapter(delete=lambda entry: delete_privacyideaserver(entry.key),
+                                      stored_name=_stored_name_lookup(PrivacyIDEAServer.identifier)),
     "radiusserver": _TypeAdapter(normalize=_normalize_radiusserver,
-                                 delete=lambda entry: delete_radius(entry.key)),
+                                 delete=lambda entry: delete_radius(entry.key),
+                                 stored_name=_stored_name_lookup(RADIUSServer.identifier)),
     "smtpserver": _TypeAdapter(normalize=_normalize_smtpserver,
-                               delete=lambda entry: delete_smtpserver(entry.key)),
-    "smsgateway": _TypeAdapter(delete=lambda entry: delete_smsgateway(entry.key)),
+                               delete=lambda entry: delete_smtpserver(entry.key),
+                               stored_name=_stored_name_lookup(SMTPServer.identifier)),
+    "smsgateway": _TypeAdapter(delete=lambda entry: delete_smsgateway(entry.key),
+                               stored_name=_stored_name_lookup(SMSGateway.identifier)),
 }
 
 # Deleting runs in the reverse import order, so that dependent entries (policies,
@@ -261,7 +287,7 @@ _ADAPTERS = {
 DELETE_ORDER = tuple(typ for typ in reversed(_import_order()) if typ != "config")
 
 
-def delete_plan_entry(typ: str, entry: PlanEntry):
+def delete_plan_entry(typ: str, entry: PlanEntry) -> Any:
     """
     Delete the entry of a planned ``delete`` from this system with the existing
     lib function of the type. Nothing is forced: e.g. a realm with assigned
@@ -274,7 +300,7 @@ def delete_plan_entry(typ: str, entry: PlanEntry):
     return _ADAPTERS[typ].delete(entry)
 
 
-def _keyed(adapter: _TypeAdapter, typ_data) -> dict:
+def _keyed(adapter: _TypeAdapter, typ_data: Union[dict, list, None]) -> dict:
     """Map the name of each entry to the entry, for data in the exporter format of the type."""
     if adapter.name_field:
         return {entry.get(adapter.name_field): entry for entry in typ_data or []}
@@ -286,7 +312,7 @@ def _fold_names(adapter: _TypeAdapter, entries: dict) -> dict:
     return {adapter.fold_name(key) if isinstance(key, str) else key: entry for key, entry in entries.items()}
 
 
-def _to_importer_format(adapter: _TypeAdapter, entries: dict):
+def _to_importer_format(adapter: _TypeAdapter, entries: dict) -> Union[list, dict]:
     if adapter.name_field:
         return list(entries.values())
     return entries
@@ -297,13 +323,16 @@ def _target_entries(typ: str) -> dict:
     return _keyed(_ADAPTERS[typ], copy.deepcopy(EXPORT_FUNCTIONS[typ]()))
 
 
-def _has_active_admin_policy(policies) -> bool:
+def _has_active_admin_policy(policies: Iterable[dict]) -> bool:
     return any(policy.get("scope") == SCOPE.ADMIN and is_true(policy.get("active", True))
                for policy in policies)
 
 
-def _admin_policy_warning(import_entries: dict, target: dict, entries: list) -> list:
-    """Warn when this system has an active admin policy now but none after the import."""
+def _admin_policy_warning(import_entries: dict, target: dict, entries: list, hits: dict) -> list:
+    """
+    Warn when this system has an active admin policy now but none after the import.
+    ``hits`` maps an imported name to the stored name of the entry that the setter updates instead.
+    """
     if not _has_active_admin_policy(target.values()):
         return []
     after = dict(target)
@@ -311,12 +340,31 @@ def _admin_policy_warning(import_entries: dict, target: dict, entries: list) -> 
         if entry.action == DELETE:
             after.pop(entry.key, None)
         elif entry.action in (CREATE, UPDATE):
+            after.pop(hits.get(entry.key), None)
             # set_policy writes every field, a missing 'active' becomes the default True
             after[entry.key] = import_entries[entry.key]
     return [] if _has_active_admin_policy(after.values()) else [ADMIN_POLICY_WARNING]
 
 
-def _plan_name_keyed(typ: str, typ_data, name: Optional[str], replace: bool, skip_invalid: bool) -> TypePlan:
+def _stored_name_hits(adapter: _TypeAdapter, import_entries: dict, stored_entries: dict) -> dict:
+    """
+    Map each imported name without an entry of the same name on this system to the
+    stored name of the entry that the setter of the type finds for it, if there is one.
+    """
+    if adapter.stored_name is None:
+        return {}
+    hits = {}
+    for key in import_entries:
+        if not isinstance(key, str) or key in stored_entries:
+            continue
+        stored = adapter.stored_name(key)
+        if stored is not None and stored != key and stored in stored_entries:
+            hits[key] = stored
+    return hits
+
+
+def _plan_name_keyed(typ: str, typ_data: Union[dict, list, None], name: Optional[str], replace: bool,
+                      skip_invalid: bool) -> TypePlan:
     adapter = _ADAPTERS[typ]
     if typ == "resolver" and isinstance(typ_data, list):
         # old style export, import_resolver takes it as well
@@ -326,8 +374,9 @@ def _plan_name_keyed(typ: str, typ_data, name: Optional[str], replace: bool, ski
         # keys starting with __ (e.g. __timestamp__) are specific to the instance
         import_entries = {key: value for key, value in import_entries.items() if not str(key).startswith("__")}
     if name is not None:
-        # the importer compares the name unchanged, so the filter does the same
-        import_entries = {key: value for key, value in import_entries.items() if key == name}
+        # the names of folded types (e.g. realm) match regardless of case, so the filter compares folded names
+        import_entries = {key: value for key, value in import_entries.items()
+                          if (adapter.fold_name(key) if isinstance(key, str) else key) == adapter.fold_name(name)}
     import_entries = _fold_names(adapter, import_entries)
     stored_targets = _target_entries(typ)
     stored_names = {adapter.fold_name(key) if isinstance(key, str) else key: key for key in stored_targets}
@@ -339,6 +388,7 @@ def _plan_name_keyed(typ: str, typ_data, name: Optional[str], replace: bool, ski
         folded_name = adapter.fold_name(name)
         targets = {key: value for key, value in targets.items() if key == folded_name}
 
+    hits = _stored_name_hits(adapter, import_entries, all_targets)
     plan = TypePlan(typ=typ)
     to_import = {}
     for key, entry in import_entries.items():
@@ -352,6 +402,10 @@ def _plan_name_keyed(typ: str, typ_data, name: Optional[str], replace: bool, ski
                     plan.entries.append(PlanEntry(SKIP, key, reason="no valid action is left for this version"))
                     continue
         target = targets.get(key)
+        if key in hits:
+            target = all_targets[hits[key]]
+            if adapter.name_field and not adapter.setter_renames:
+                target = {**target, adapter.name_field: key}
         if typ == "config" and is_censored(entry.get("Value")) and target is None:
             # import_config skips a censored entry that does not exist on this system
             plan.entries.append(PlanEntry(SKIP, key, reason="the value is censored and there is no value to keep"))
@@ -373,9 +427,13 @@ def _plan_name_keyed(typ: str, typ_data, name: Optional[str], replace: bool, ski
     elif replace:
         plan.entries.extend(PlanEntry(DELETE, key, target_id=target.get("id") if typ == "periodictask" else None,
                                       target_name=stored_names.get(key))
-                            for key, target in targets.items() if key not in import_entries)
+                            for key, target in targets.items()
+                            if key not in import_entries and key not in hits.values())
     if typ == "policy":
-        plan.warnings.extend(_admin_policy_warning(import_entries, all_targets, plan.entries))
+        plan.warnings.extend(_admin_policy_warning(import_entries, all_targets, plan.entries, hits))
+    if replace and typ == "realm" and name is None:
+        plan.default_realm = next((key for key, entry in import_entries.items() if is_true(entry.get("default"))),
+                                  None)
     plan.data = _to_importer_format(adapter, to_import)
     return plan
 
@@ -384,7 +442,7 @@ def _entry_count(count: int) -> str:
     return f"{count} entry" if count == 1 else f"{count} entries"
 
 
-def _plan_event(typ_data, name: Optional[str], replace: bool) -> TypePlan:
+def _plan_event(typ_data: Optional[list], name: Optional[str], replace: bool) -> TypePlan:
     """
     Plan the event handlers grouped by (name, handlermodule) like import_event:
     the n handlers of a group in the import replace the m handlers of this
@@ -441,7 +499,7 @@ def _plan_event(typ_data, name: Optional[str], replace: bool) -> TypePlan:
     return plan
 
 
-def build_import_plan(data: dict, types, name: Optional[str] = None, replace: bool = False,
+def build_import_plan(data: dict, types: Iterable[str], name: Optional[str] = None, replace: bool = False,
                       skip_invalid: bool = False) -> list:
     """
     Compare the configuration data to be imported with this system.
@@ -486,6 +544,10 @@ def _format_entry(typ: str, entry: PlanEntry) -> str:
     return line
 
 
+def _quote_or_none(name: Optional[str]) -> str:
+    return f'"{name}"' if name else "none"
+
+
 def format_import_plan(plans: list) -> list:
     """
     Return the plan as text lines, one per entry followed by the notes and
@@ -495,6 +557,9 @@ def format_import_plan(plans: list) -> list:
     lines = []
     for plan in plans:
         lines.extend(_format_entry(plan.typ, entry) for entry in plan.entries)
+        current = get_default_realm() or None if plan.default_realm is not NO_DEFAULT_REALM_PLAN else None
+        if plan.default_realm is not NO_DEFAULT_REALM_PLAN and current != plan.default_realm:
+            lines.append(f"  default realm: {_quote_or_none(current)} -> {_quote_or_none(plan.default_realm)}")
         lines.extend(f"  {text}" for text in plan.notes + plan.warnings)
     return lines
 
@@ -529,7 +594,8 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
     are not.
 
     :param plans: the list of ``TypePlan`` objects
-    :param name: passed to the importers, only the entries with this name are imported
+    :param name: passed to the importers of types with plain names, the plan data is already filtered by it
+        (folded types like realm get None, since their importers compare the raw name with the folded key)
     :param skip_invalid: passed to the importers that support it
     :param on_import: called with the type before its importer runs
     :param on_error: called with the type, the plan entry of a failed deletion
@@ -539,7 +605,7 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
     failed = []
     import_failed = set()
 
-    def fail(typ, entry, exx):
+    def fail(typ: str, entry: Optional[PlanEntry], exx: Exception) -> None:
         db.session.rollback()
         log.warning(f"Import of configuration type '{typ}' failed: {exx!r}")
         log.debug(traceback.format_exc())
@@ -548,7 +614,7 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
         if on_error:
             on_error(typ, entry, exx)
 
-    def delete(typ, entry):
+    def delete(typ: str, entry: PlanEntry) -> None:
         try:
             delete_plan_entry(typ, entry)
         except Exception as exx:  # noqa: Any error of a delete function is reported, the others go on
@@ -565,7 +631,8 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
         if not plan.data:
             continue
         func = IMPORT_FUNCTIONS[plan.typ]["func"]
-        kwargs = {"name": name}
+        # the plan data is already filtered by name, the importers of folded types would compare the raw name
+        kwargs = {"name": name if _ADAPTERS[plan.typ].fold_name is str else None}
         if "skip_invalid" in inspect.signature(func).parameters:
             kwargs["skip_invalid"] = skip_invalid
         try:
@@ -584,4 +651,13 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
         for entry in plan.entries:
             if entry.action == DELETE and id(entry) not in surplus:
                 delete(typ, entry)
+
+    realm_plan = by_type.get("realm")
+    if (realm_plan and realm_plan.default_realm is not NO_DEFAULT_REALM_PLAN
+            and "realm" not in import_failed):
+        try:
+            if (get_default_realm() or None) != realm_plan.default_realm:
+                set_default_realm(realm_plan.default_realm)
+        except Exception as exx:  # noqa: Any error is reported, the other steps are done
+            fail("realm", None, exx)
     return failed

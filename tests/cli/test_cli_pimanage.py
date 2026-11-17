@@ -2109,6 +2109,45 @@ class TestPIManageConfigImport:
         finally:
             _cli_imp_cleanup(app)
 
+    def test_13a_replace_import_makes_the_default_realm_follow_the_file(self, app, tmp_path):
+        from privacyidea.lib.realm import get_default_realm, get_realms, set_default_realm, set_realm
+        realm_a, realm_b = "cli-imp-def-a", "cli-imp-def-b"
+        runner = app.test_cli_runner()
+        try:
+            with app.app_context():
+                save_resolver({"resolver": CLI_IMP_REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+                set_realm(realm_a, resolvers=[{"name": CLI_IMP_REALM_RESOLVER}])
+                set_realm(realm_b, resolvers=[{"name": CLI_IMP_REALM_RESOLVER}])
+                set_default_realm(realm_a)
+            data = _cli_imp_export(runner, tmp_path / "export.json", "realm")
+            data["realm"] = _cli_imp_without("realm", data["realm"], {realm_a})
+            _cli_imp_entry("realm", data["realm"], realm_b)["default"] = False
+            infile = tmp_path / "import.json"
+            infile.write_text(json.dumps(data))
+            args = ["config", "import", "-i", str(infile), "--replace", "-t", "realm"]
+
+            result = runner.invoke(pi_manage, args + ["--dry-run"])
+            assert result.exit_code == 0, result.output
+            assert any(line.lstrip().startswith("default realm") for line in result.output.splitlines()), \
+                result.output
+            with app.app_context():
+                assert get_default_realm() == realm_a
+
+            for run in (1, 2):
+                result = runner.invoke(pi_manage, args)
+                assert result.exit_code == 0, (run, result.output)
+                lines = result.output.splitlines()
+                if run == 2:
+                    assert f'  unchanged realm "{realm_b}"' in lines, result.output
+                assert not any(line.startswith("  update realm") and realm_b in line for line in lines), \
+                    (run, result.output)
+                with app.app_context():
+                    assert realm_a not in get_realms(), run
+                    assert realm_b in get_realms(), run
+                    assert not get_default_realm(), run
+        finally:
+            _cli_imp_cleanup(app)
+
     def test_14_interactive_needs_input_file_and_terminal(self, app, tmp_path):
         # --interactive reads the answer from the terminal, so it refuses <stdin> as input and a missing
         # terminal (the test runner has none) before reading anything.
@@ -2207,6 +2246,46 @@ class TestPIManageConfigImport:
         regular.write_text("{}")
         with open(regular) as fh:
             assert not pi_config._reads_stdin(fh)
+
+    @pytest.mark.parametrize("typ, stored, spelling", [
+        ("resolver", "cli-imp-spell-res", "CLI-IMP-Spell-RES"),
+        ("realm", "cli-imp-spell-realm", " CLI IMP Spell Realm"),
+    ])
+    def test_18_replace_with_another_spelling_of_the_name_updates_the_entry(self, app, tmp_path, typ, stored,
+                                                                            spelling):
+        # A sibling missing from the import shows that --replace -n leaves the entries it does not name alone.
+        from privacyidea.lib.utils.export import EXPORT_FUNCTIONS
+        changed_value = {"resolver": lambda e: e["data"]["fileName"],
+                         "realm": lambda e: e["resolver"][0]["priority"]}
+        create, change = _cli_imp_type_table()[typ]
+        sibling = f"{stored}-sibling"
+        runner = app.test_cli_runner()
+        try:
+            with app.app_context():
+                create(stored)
+                create(sibling)
+            data = _cli_imp_export(runner, tmp_path / "export.json", typ)
+            imported = _cli_imp_entry(typ, data[typ], stored)
+            field = change(imported)
+            data[typ] = _cli_imp_without(typ, data[typ], {sibling})
+            infile = tmp_path / "import.json"
+            infile.write_text(json.dumps(data))
+
+            result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile), "-t", typ, "--replace",
+                                               "-n", spelling])
+
+            assert result.exit_code == 0, result.output
+            lines = result.output.splitlines()
+            assert f'  update {typ} "{stored}": {field}' in lines, result.output
+            assert not [line for line in lines if line.startswith(("  create ", "  delete "))], result.output
+            with app.app_context():
+                on_system = {name for name in _cli_imp_names_on_system(typ) if name.lower() == stored.lower()}
+                assert on_system == {stored}, on_system
+                assert sibling in _cli_imp_names_on_system(typ)
+                stored_entry = _cli_imp_entry(typ, EXPORT_FUNCTIONS[typ](), stored)
+                assert changed_value[typ](stored_entry) == changed_value[typ](imported)
+        finally:
+            _cli_imp_cleanup(app)
 
 
 class PIManageChallengeTestCase(CliTestCase):

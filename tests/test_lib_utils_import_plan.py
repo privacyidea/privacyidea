@@ -57,6 +57,7 @@ API under test
     out (it is never deleted).
 """
 import copy
+from typing import Union
 from unittest import mock
 
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
@@ -70,13 +71,13 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.privacyideaserver import add_privacyideaserver, delete_privacyideaserver
 from privacyidea.lib.radiusserver import add_radius, delete_radius
-from privacyidea.lib.realm import set_realm, delete_realm
+from privacyidea.lib.realm import set_realm, delete_realm, get_default_realm, get_realms, set_default_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.lib.utils.import_plan import (build_import_plan, format_import_plan, apply_import_plan,
-                                               DELETE_ORDER)
+                                               DELETE_ORDER, _ADAPTERS)
 from privacyidea.models import Config, db
 from .base import MyTestCase, PWFILE, PWFILE2
 
@@ -140,6 +141,11 @@ def names_on_system(typ):
     return set(exported)
 
 
+def names_folded_to(typ: str, name: str) -> set[str]:
+    """The names on this system that a setter of ``typ`` takes for ``name`` (case-insensitive, as stored)."""
+    return {stored for stored in names_on_system(typ) if stored.lower() == name.lower()}
+
+
 def _set_realm(name):
     set_realm(name, resolvers=[{"name": REALM_RESOLVER}])
 
@@ -191,6 +197,34 @@ NAME_KEYED_TYPES = {
         lambda n: set_privacyidea_config(n, "value-1"),
         lambda e: _change(e, "Value", "value-2", "Value")),
 }
+
+
+def plain_name_types() -> list[str]:
+    """The types whose plan compares names unchanged and which can be renamed by an import with --replace."""
+    return [typ for typ, adapter in _ADAPTERS.items()
+            if adapter.fold_name is str and typ in NAME_KEYED_TYPES and typ not in ("config", "caconnector")]
+
+
+def rename_entry(typ: str, typ_data: Union[list, dict], name: str, new_name: str) -> dict:
+    """Give the entry with this name in the import data of one type the new name, return the entry."""
+    entry = entry_of(typ, typ_data, name)
+    if typ in LIST_NAME_FIELD:
+        entry[LIST_NAME_FIELD[typ]] = new_name
+    else:
+        typ_data[new_name] = typ_data.pop(name)
+    return entry
+
+
+def add_entries(typ: str, typ_data: Union[list, dict], more: Union[list, dict]) -> None:
+    if typ in LIST_NAME_FIELD:
+        typ_data.extend(more)
+    else:
+        typ_data.update(more)
+
+
+def import_directly(typ: str, typ_data: Union[list, dict]) -> None:
+    """Store the import data of one type with its importer, without a plan."""
+    IMPORT_FUNCTIONS[typ]["func"](copy.deepcopy(typ_data))
 
 
 class ImportPlanTestCase(MyTestCase):
@@ -552,3 +586,181 @@ class ImportPlanTestCase(MyTestCase):
 
                 self.assertEqual([], failed)
                 self.assertNotIn(name, names_on_system(typ))
+
+    def _default_realm_scenario(self, import_default: bool) -> dict:
+        """Create the default realm a and the realm b, return import data holding only b."""
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        _set_realm("imp-default-a")
+        _set_realm("imp-default-b")
+        set_default_realm("imp-default-a")
+        data = {"realm": export("realm", {"imp-default-b"})}
+        entry_of("realm", data["realm"], "imp-default-b")["default"] = import_default
+        return data
+
+    def test_10_replace_makes_the_default_realm_follow_the_import(self):
+        data = self._default_realm_scenario(import_default=False)
+        self.assertEqual("imp-default-a", get_default_realm())
+
+        for run in (1, 2):
+            with self.subTest(run=run):
+                plans = build_import_plan(data, ["realm"], replace=True)
+                if run == 2:
+                    self.assertEqual({"imp-default-b": "unchanged"},
+                                     {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+                self.assertEqual([], apply_import_plan(plans))
+                self.assertNotIn("imp-default-a", get_realms())
+                self.assertIn("imp-default-b", get_realms())
+                self.assertFalse(get_default_realm())
+
+    def test_11_replace_keeps_the_default_realm_of_the_import(self):
+        data = self._default_realm_scenario(import_default=True)
+
+        for run in (1, 2):
+            with self.subTest(run=run):
+                plans = build_import_plan(data, ["realm"], replace=True)
+                self.assertEqual([], apply_import_plan(plans))
+                self.assertNotIn("imp-default-a", get_realms())
+                self.assertEqual("imp-default-b", get_default_realm())
+
+    def test_12_import_without_replace_leaves_the_default_realm(self):
+        data = self._default_realm_scenario(import_default=False)
+
+        for run in (1, 2):
+            with self.subTest(run=run):
+                plans = build_import_plan(data, ["realm"])
+                self.assertEqual({"imp-default-b": "unchanged"},
+                                 {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+                self.assertEqual([], apply_import_plan(plans))
+                self.assertIn("imp-default-a", get_realms())
+                self.assertEqual("imp-default-a", get_default_realm())
+
+    def test_13_name_filter_matches_the_folded_name(self):
+        # The setters find a resolver or machine resolver case-insensitively and store a realm lowercase with "-"
+        # for blanks, so a name given to limit the import has to select the entry of the import the same way.
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        cases = [("resolver", "imp-N-Res", "imp-n-res"),
+                 ("resolver", "imp-N-Res", "IMP-N-RES"),
+                 ("realm", "imp-n-realm", "IMP-N-Realm"),
+                 ("realm", "imp-n-realm", " imp n realm"),
+                 ("machineresolver", "imp-N-Mres", "imp-n-mres")]
+        for typ, stored, name in cases:
+            with self.subTest(typ=typ, name=name):
+                NAME_KEYED_TYPES[typ][0](stored)
+                data = {typ: export(typ, {stored})}
+                delete_object(typ, stored)
+                self.assertEqual(set(), names_folded_to(typ, stored))
+
+                plans = build_import_plan(data, [typ], name=name)
+                self.assertEqual(["create"], [e.action for e in self._type_plan(plans, typ).entries])
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                self.assertEqual({stored}, names_folded_to(typ, stored))
+                delete_object(typ, stored)
+
+    def test_14_replace_with_a_folded_name_keeps_the_entry_of_the_import(self):
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        for typ, stored, name in (("resolver", "imp-N-Res", "imp-n-res"), ("realm", "imp-n-realm", "IMP-N-Realm")):
+            with self.subTest(typ=typ, name=name):
+                NAME_KEYED_TYPES[typ][0](stored)
+                data = {typ: export(typ, {stored})}
+
+                plans = build_import_plan(data, [typ], name=name, replace=True)
+                self.assertEqual(["unchanged"], [e.action for e in self._type_plan(plans, typ).entries])
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                self.assertEqual({stored}, names_folded_to(typ, stored))
+
+    def _assert_one_entry_as_imported(self, typ: str, data: dict, name: str, field: str) -> None:
+        """Exactly one entry named like ``name`` regardless of case is left, and importing again changes nothing."""
+        stored = names_folded_to(typ, name)
+        self.assertEqual(1, len(stored), stored)
+        stored_entry = entry_of(typ, export(typ, stored), next(iter(stored)))
+        self.assertEqual(entry_of(typ, data[typ], name)[field], stored_entry[field])
+        plans = build_import_plan(copy.deepcopy(data), [typ], replace=True)
+        actions = [(e.key, e.action) for e in self._type_plan(plans, typ).entries]
+        self.assertEqual({"unchanged"}, {action for _, action in actions}, actions)
+
+    def test_15_replace_with_a_case_variant_of_a_name_keeps_one_entry(self):
+        # On databases that compare names case-insensitively the setter updates the stored entry for the variant,
+        # so a planned delete of the stored name would remove the entry that was just imported.
+        for typ in plain_name_types():
+            with self.subTest(typ=typ):
+                create, change = NAME_KEYED_TYPES[typ]
+                stored, variant = f"imp-variant-{typ}", f"imp-Variant-{typ}"
+                create(stored)
+                data = {typ: export(typ, names_on_system(typ))}
+                field = change(rename_entry(typ, data[typ], stored, variant))
+
+                plans = build_import_plan(copy.deepcopy(data), [typ], replace=True)
+                self.assertEqual([], apply_import_plan(plans))
+                self._assert_one_entry_as_imported(typ, data, variant, field)
+
+    def test_16_replace_with_one_of_two_case_variants_keeps_the_imported_one(self):
+        # Where the database allows both names, the entry that differs from the import only in case is a
+        # different entry and has to go, where it does not, both names are the same entry.
+        for typ in plain_name_types():
+            with self.subTest(typ=typ):
+                create, change = NAME_KEYED_TYPES[typ]
+                lower, upper = f"imp-pair-{typ}", f"imp-Pair-{typ}"
+                create(lower)
+                upper_data = export(typ, {lower})
+                rename_entry(typ, upper_data, lower, upper)
+                lower_data = export(typ, {lower})
+                change(entry_of(typ, lower_data, lower))
+                import_directly(typ, lower_data)
+                import_directly(typ, upper_data)
+
+                data = {typ: export(typ, names_on_system(typ) - names_folded_to(typ, lower))}
+                imported = copy.deepcopy(upper_data)
+                field = change(entry_of(typ, imported, upper))
+                add_entries(typ, data[typ], imported)
+
+                plans = build_import_plan(copy.deepcopy(data), [typ], replace=True)
+                self.assertEqual([], apply_import_plan(plans))
+                self._assert_one_entry_as_imported(typ, data, upper, field)
+
+    def test_17_replace_with_a_folded_name_deletes_only_the_named_entry(self):
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        cases = [("resolver", "imp-Gone-Res", "IMP-GONE-RES"),
+                 ("realm", "imp-gone-realm", "IMP-Gone-Realm"),
+                 ("realm", "imp-gone-realm", " imp gone realm"),
+                 ("machineresolver", "imp-Gone-Mres", "imp-gone-MRES")]
+        for typ, stored, name in cases:
+            with self.subTest(typ=typ, name=name):
+                create = NAME_KEYED_TYPES[typ][0]
+                kept = f"imp-stays-{typ}"
+                create(stored)
+                create(kept)
+                data = {typ: export(typ, names_on_system(typ) - {stored, kept})}
+
+                plans = build_import_plan(data, [typ], name=name, replace=True)
+                self.assertEqual(["delete"], [e.action for e in self._type_plan(plans, typ).entries])
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                self.assertEqual(set(), names_folded_to(typ, stored))
+                self.assertEqual({kept}, names_folded_to(typ, kept))
+                delete_object(typ, kept)
+
+    def test_18_folded_name_updates_the_stored_entry(self):
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        changed_value = {"resolver": lambda e: e["data"]["fileName"],
+                         "realm": lambda e: e["resolver"][0]["priority"],
+                         "machineresolver": lambda e: e["data"]["filename"]}
+        cases = [("resolver", "imp-Upd-Res", "IMP-UPD-res"),
+                 ("realm", "imp-upd-realm", "Imp-Upd-REALM"),
+                 ("realm", "imp-upd-realm", "imp upd realm "),
+                 ("machineresolver", "imp-Upd-Mres", "IMP-upd-mres")]
+        for typ, stored, name in cases:
+            with self.subTest(typ=typ, name=name):
+                create, change = NAME_KEYED_TYPES[typ]
+                create(stored)
+                data = {typ: export(typ, {stored})}
+                imported = entry_of(typ, data[typ], stored)
+                field = change(imported)
+
+                plans = build_import_plan(copy.deepcopy(data), [typ], name=name)
+                entries = self._type_plan(plans, typ).entries
+                self.assertEqual([("update", [field])], [(e.action, e.changed_fields) for e in entries])
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                on_system = names_folded_to(typ, stored)
+                self.assertEqual(1, len(on_system), on_system)
+                stored_entry = entry_of(typ, export(typ, on_system), next(iter(on_system)))
+                self.assertEqual(changed_value[typ](imported), changed_value[typ](stored_entry))
+                delete_object(typ, next(iter(on_system)))

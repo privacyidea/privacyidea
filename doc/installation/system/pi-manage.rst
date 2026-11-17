@@ -805,6 +805,55 @@ Currently ``--skip-invalid`` is evaluated for policies, where it removes policy
 actions that are not available in the running version. A policy that has no
 valid action left after this is skipped.
 
+The import plan
+~~~~~~~~~~~~~~~
+
+Before anything is written, ``pi-manage config import`` compares the import with
+the running system and prints a plan with one line per entry and type: ``create``,
+``update`` (followed by the names of the changed fields), ``unchanged`` and
+``skip``. Entries marked ``unchanged`` are not written again. The plan only
+shows names, a changed secret appears as a changed field and its value is never
+printed. Event handlers and periodic tasks are matched by their name (event
+handlers additionally by their handler module), not by the id of the exporting
+system. A name matches the entry that the import itself would update: if the
+database compares names without regard to case (as MySQL and MariaDB do by
+default), an imported name that differs only in case from a stored one updates
+that entry and the stored entry is not deleted with ``--replace``.
+
+With ``--dry-run`` only the plan is printed and nothing is changed::
+
+   pi-manage config import -i backup.json --dry-run
+
+With ``--replace`` the plan also contains ``delete`` lines for every entry of an
+imported type that is missing from the import. The types given with ``-t`` and
+the object given with ``-n`` limit what is deleted as well::
+
+   pi-manage config import -i backup.json --replace
+
+* Deleting runs after the import, in the reverse order of the import, so that
+  for example policies and event handlers are removed before realms and realms
+  before resolvers.
+* Nothing is forced. A realm that still has tokens or a resolver that is used
+  by a realm is kept and reported as an error, and the other deletions go on.
+* The type ``config`` is never replaced. Global configuration keys that are
+  missing from the import are kept.
+* If the realms are replaced (without ``-n``), the default realm is set to the
+  realm that is marked as default in the file, and the plan shows the change as
+  ``default realm: "old" -> "new"``.
+* If no active admin policy is left after the import, the plan warns that every
+  administrator may then do everything.
+
+With ``--interactive`` the plan is printed and you are asked once whether to
+apply it::
+
+   pi-manage config import -i backup.json --replace --interactive
+
+This needs an input file given with ``-i`` and a terminal, so the data can not
+be read from standard input. It can not be combined with ``--dry-run``.
+
+If the import of a type or a deletion fails, the command prints the error, still
+processes the remaining types and exits with status 1.
+
 .. _pimanage_development:
 
 Development Commands
