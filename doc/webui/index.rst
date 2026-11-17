@@ -671,6 +671,11 @@ In this tab, the :ref:`authentication_log` is displayed which lists how every
 authentication request was decided: the event, the reason behind it, the
 endpoint that served the request and what conditional access did about it.
 
+.. figure:: images/authentication_log.png
+   :width: 500
+
+   *The authentication log lists how each authentication request was decided.*
+
 .. _components:
 
 Known Clients
