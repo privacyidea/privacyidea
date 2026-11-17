@@ -6,11 +6,6 @@ Email Token Configuration
 
 .. index:: Email Token
 
-.. figure:: images/email.png
-   :width: 500
-
-   *Email Token configuration*
-
 For the :ref:`email token <email_token>` to work, you have to first set up an :ref:`smtpserver` and link it
 to the Email Token configuration at *Configuration -> Tokentypes -> E-Mail*. The UI warns the user
 if one of these requirements is not fulfilled yet.
