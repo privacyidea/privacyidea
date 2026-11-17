@@ -29,6 +29,7 @@
     <button
       (click)="reloadScripts()"
       [disabled]="eventService.moduleActionsResource.isLoading()"
+      disabledInteractive
       class="action-button-secondary button-width-m"
       mat-stroked-button
       type="button">

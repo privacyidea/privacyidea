@@ -166,6 +166,46 @@ describe("EventActionTabComponent", () => {
       expect(eventService.moduleActionsResource.reload).toHaveBeenCalled();
     });
 
+    describe("reload", () => {
+      const reloadButton = (): HTMLButtonElement => fixture.nativeElement.querySelector("button");
+      const status = () => eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
+      const clickReload = () => {
+        reloadButton().click();
+        status().set("reloading");
+        fixture.detectChanges();
+      };
+
+      it("keeps the reload button focusable while the actions load, but does not reload again", () => {
+        eventService.moduleActionsResource.isLoading.set(true);
+        fixture.detectChanges();
+        expect(reloadButton().hasAttribute("disabled")).toBe(false);
+        expect(reloadButton().getAttribute("aria-disabled")).toBe("true");
+        reloadButton().click();
+        expect(eventService.moduleActionsResource.reload).not.toHaveBeenCalled();
+      });
+
+      it("moves focus to the action dropdown when the reload finds scripts", async () => {
+        clickReload();
+        eventService.moduleActions.set({ "backup.sh": { background: { type: "str", required: true } } });
+        status().set("resolved");
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const select: HTMLElement = fixture.debugElement.query(By.directive(MatSelect)).nativeElement;
+        expect(document.activeElement).toBe(select);
+      });
+
+      it("does not move focus when the first load finds scripts", async () => {
+        status().set("loading");
+        fixture.detectChanges();
+        eventService.moduleActions.set({ "backup.sh": { background: { type: "str", required: true } } });
+        status().set("resolved");
+        fixture.detectChanges();
+        await fixture.whenStable();
+        const select: HTMLElement = fixture.debugElement.query(By.directive(MatSelect)).nativeElement;
+        expect(document.activeElement).not.toBe(select);
+      });
+    });
+
     it("keeps the hint while the actions reload, but hides it during the first load", () => {
       const status = eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
       status.set("reloading");

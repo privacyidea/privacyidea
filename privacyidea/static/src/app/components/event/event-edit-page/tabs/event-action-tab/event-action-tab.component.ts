@@ -19,7 +19,19 @@
 
 import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, effect, inject, input, output, signal, untracked } from "@angular/core";
+import {
+  afterNextRender,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild
+} from "@angular/core";
 import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -67,6 +79,7 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 })
 export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
+  private readonly injector = inject(Injector);
   protected readonly Object = Object;
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -76,6 +89,8 @@ export class EventActionTabComponent {
   newOptions = output<EventActionOptionValues>();
   optionsValid = output<boolean>();
   selectedAction = signal<string>("");
+  private readonly actionSelect = viewChild(MatSelect);
+  private readonly awaitingReload = signal(false);
   selectedActionForm = form(this.selectedAction, (f) => {
     required(f);
   });
@@ -136,6 +151,14 @@ export class EventActionTabComponent {
   optionNames = computed(() => Object.keys(this.selectedOptions()).filter((name) => name in this.actionOptions()));
 
   constructor() {
+    effect(() => {
+      const status = this.eventService.moduleActionsResource.status();
+      if (!this.awaitingReload() || status === "loading" || status === "reloading") {
+        return;
+      }
+      untracked(() => this.finishReload());
+    });
+
     // Sync the selectedAction signal with the input
     effect(() => {
       this.selectedAction.set(this.action());
@@ -189,7 +212,21 @@ export class EventActionTabComponent {
   }
 
   reloadScripts(): void {
-    this.eventService.moduleActionsResource.reload();
+    if (this.eventService.moduleActionsResource.isLoading()) {
+      return;
+    }
+    this.awaitingReload.set(this.eventService.moduleActionsResource.reload());
+  }
+
+  /**
+   * The reload button leaves the page together with the hint, so focus moves to the action dropdown. If the hint
+   * stays, the button keeps focus.
+   */
+  private finishReload(): void {
+    this.awaitingReload.set(false);
+    if (!this.noScriptsFound()) {
+      afterNextRender({ read: () => this.actionSelect()?.focus() }, { injector: this.injector });
+    }
   }
 
   checkOptionVisibility(optionName: string): boolean {
