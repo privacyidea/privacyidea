@@ -29,6 +29,7 @@ import {
   YUBICO_SECRET,
   YUBICO_URL
 } from "@constants/token.constants";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -757,4 +758,14 @@ describe("TokenTypeConfigComponent", () => {
       });
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

@@ -12,7 +12,7 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  width: table.details-panel-width(m, l, s);
+  width: table.details-panel-width(m, l, m);
   box-sizing: border-box;
 
   :host-context(body.self-service-layout) & {
@@ -59,8 +59,9 @@
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
 // after view-encapsulation attributes, is more specific than a lone class).
+// Wide enough for the user input and its save and cancel buttons in one row.
 .details-grid > .details-card--user {
-  @include table.card-width(s);
+  @include table.card-width(m);
 }
 
 // Add-token + token-table are a fixed-width pair kept together in one grid item,

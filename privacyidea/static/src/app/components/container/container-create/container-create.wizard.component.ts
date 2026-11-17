@@ -124,7 +124,9 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
-      registerContainer: this.registerContainer.bind(this)
+      registerContainer: this.registerContainer.bind(this),
+      tokensNotCreated: this.tokensNotCreated,
+      allTokensFailed: this.allTokensFailed
     });
 
     const dialogRef = this.dialogService.openDialog({

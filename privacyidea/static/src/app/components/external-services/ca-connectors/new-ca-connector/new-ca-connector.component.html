@@ -68,7 +68,6 @@
     <div class="ca-connector-form">
       <div class="flex-row gap-16">
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@caConnector.connectorName">Connector Name</mat-label>
           <app-clearable-input
@@ -93,7 +92,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@common.type">Type</mat-label>
           <mat-select [formField]="caConnectorForm.type">
@@ -119,7 +117,6 @@
 
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>
             <app-clearable-input
@@ -138,7 +135,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.caKey">CA Key</mat-label>
             <app-clearable-input
@@ -156,7 +152,6 @@
         </div>
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.opensslConfig">OpenSSL Config File</mat-label>
             <app-clearable-input
@@ -175,7 +170,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.certificatesTemplates">Certificates Templates File</mat-label>
             <app-clearable-input
@@ -190,7 +184,6 @@
         </div>
         <div class="flex-row gap-16">
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.workingDirectory">Working Directory</mat-label>
             <app-clearable-input
@@ -204,7 +197,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.certificateSigning">Certificate Signing Request Directory</mat-label>
             <app-clearable-input
@@ -219,7 +211,6 @@
         </div>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@caConnector.certificateDirectory">Certificate Directory</mat-label>
           <app-clearable-input
@@ -241,7 +232,6 @@
           >CRL Configuration</h4
         >
         <mat-form-field
-          appearance="fill"
           class="input-width-xl">
           <mat-label i18n="@@caConnector.certificateRevocation">Certificate Revocation List</mat-label>
           <app-clearable-input
@@ -260,7 +250,6 @@
 
         <div class="flex-row ali-start gap-16 margin-top-16 margin-bottom-32">
           <mat-form-field
-            appearance="fill"
             class="input-width-m"
             subscriptSizing="dynamic">
             <mat-label i18n="@@caConnector.validityPeriod">Validity Period</mat-label>
@@ -278,7 +267,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             class="input-width-m margin-bottom-16">
             <mat-label i18n="@@caConnector.overlapPeriod">Overlap Period</mat-label>
             <input
@@ -298,7 +286,6 @@
         <h4 i18n="@@caConnector.baseConfig">Base Config</h4>
         <div class="flex-row gap-16">
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.microsoftCaWorker">Microsoft CA Worker Hostname</mat-label>
             <app-clearable-input
@@ -315,7 +302,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@caConnector.microsoftCaWorkerPort">Microsoft CA Worker Port</mat-label>
             <input
@@ -348,7 +334,6 @@
         @if (caConnectorModel().use_ssl) {
           <div class="flex-row gap-16">
             <mat-form-field
-              appearance="fill"
               class="input-width-l">
               <mat-label i18n="@@caConnector.caCertificate">CA Certificate (Filename)</mat-label>
               <app-clearable-input
@@ -362,7 +347,6 @@
             </mat-form-field>
 
             <mat-form-field
-              appearance="fill"
               class="input-width-l">
               <mat-label i18n="@@caConnector.clientCertificate">Client Certificate (Filename)</mat-label>
               <app-clearable-input
@@ -378,7 +362,6 @@
 
           <div class="flex-row gap-16">
             <mat-form-field
-              appearance="fill"
               class="input-width-l">
               <mat-label i18n="@@caConnector.clientPrivate">Client Private Key (Filename)</mat-label>
               <app-clearable-input
@@ -392,7 +375,6 @@
             </mat-form-field>
 
             <mat-form-field
-              appearance="fill"
               class="input-width-l">
               <mat-label i18n="@@caConnector.passwordEncrypted">Password of Encrypted Client Private Key</mat-label>
               <app-clearable-input
@@ -412,7 +394,6 @@
         <div class="flex-row gap-16 margin-bottom-16">
           @if (availableCas().length > 0) {
             <mat-form-field
-              appearance="fill"
               class="input-width-l">
               <mat-label i18n="@@caConnector.domainCa">Domain CA</mat-label>
               <mat-select [formField]="caConnectorForm.ca">

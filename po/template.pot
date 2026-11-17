@@ -702,6 +702,10 @@ msgstr ""
 msgid "Change PIN"
 msgstr ""
 
+#: privacyidea/static_old/components/directives/views/directive.containertemplate.details.html:78
+msgid "Change PIN on first use"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.details.html:511
 msgid "Check OTP only."
 msgstr ""

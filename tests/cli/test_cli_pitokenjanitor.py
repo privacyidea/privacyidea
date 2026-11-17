@@ -40,6 +40,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import get_version_number
 from privacyidea.models import db, TokenContainerOwner
 from privacyidea.models.token import TokenOwner
 from ..base import _reset_database
@@ -216,6 +217,13 @@ def orphaned_token(app):
 
 
 class TestPiTokenJanitorFind:
+    def test_version(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["--version"])
+        assert result.exit_code == 0, result.output
+        assert f"privacyIDEA {get_version_number()}" in result.output
+        assert runner.invoke(cli, ["-h"]).output.count("--version") == 1
+
     def test_find_no_args(self, app, tokens):
         """
         Tests that `find list` with no arguments returns all tokens.
@@ -341,6 +349,13 @@ class TestPiTokenJanitorFind:
         assert "TOTP0001" not in result.output
         assert "HOTP0002" in result.output
 
+        # Both ends of the range are required
+        for range_of_serial in ["HOTP0001", "HOTP0001-", "-HOTP0002", "HOTP0001-HOTP0002-HOTP0003"]:
+            result = runner.invoke(cli, ["find", "--range-of-serial", range_of_serial, "list"])
+            assert result.exit_code == 1
+            assert "The range of serial numbers requires the syntax" in result.output
+            assert "Traceback" not in result.output
+
     def test_find_tokencontainer(self, app, tokens, token_container):
         """
         Tests filtering tokens by their container.
@@ -351,6 +366,18 @@ class TestPiTokenJanitorFind:
         assert "HOTP0001" in result.output
         assert "TOTP0001" not in result.output
         assert "HOTP0002" not in result.output
+
+        # Every column of the container table can be filtered, not only the ones of the container class
+        token_container.update_last_authentication()
+        db.session.commit()
+        for container_filter in [f"id={token_container.db_id}", "last_seen>-1h", "last_seen<+1h"]:
+            result = runner.invoke(cli, ["find", "--tokencontainer", container_filter, "list"])
+            assert result.exit_code == 0, result.output
+            assert "HOTP0001" in result.output, container_filter
+            assert "HOTP0002" not in result.output
+        result = runner.invoke(cli, ["find", "--tokencontainer", "last_seen<-1h", "list"])
+        assert result.exit_code == 0, result.output
+        assert "HOTP0001" not in result.output
 
     def test_find_filter_comparisons(self, app, tokens):
         """
@@ -401,6 +428,13 @@ class TestPiTokenJanitorFind:
         assert "HOTP0001" not in result.output
         assert "TOTP0001" in result.output
         assert "HOTP0002" not in result.output
+
+        # A token attribute is only compared as an integer with < and >
+        for comparison in ["failcount < abc", "failcount > abc"]:
+            result = runner.invoke(cli, ["find", "--tokenattribute", comparison, "list"])
+            assert result.exit_code == 1
+            assert "Not an integer: abc" in result.output
+            assert "Traceback" not in result.output
 
         # Test _compare_after (_try_convert_to_datetime)
         result = runner.invoke(cli, ["find", "list"])

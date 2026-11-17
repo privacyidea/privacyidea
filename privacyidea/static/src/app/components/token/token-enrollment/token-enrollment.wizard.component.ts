@@ -115,6 +115,10 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     super();
   }
 
+  // The wizard keeps the inputs of the enrolled token. Its template does not create the type-specific
+  // inputs anew.
+  protected override readonly resetsInputsAfterEnrollment = false;
+
   override descriptionRequired = computed(() => {
     return this.authService.requireDescription().includes(this.tokenType().key);
   });

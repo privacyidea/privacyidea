@@ -49,6 +49,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 import { AuthenticationLog } from "./authentication-log";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("AuthenticationLog", () => {
   let component: AuthenticationLog;
@@ -180,7 +181,7 @@ describe("AuthenticationLog", () => {
     expect(element.querySelectorAll("tr[aria-label]").length).toBe(0);
   });
 
-  it("links the serial and the user to their details pages", () => {
+  const showEntry = () => {
     service.authenticationLogResource.set(
       MockPiResponse.fromValue({
         auth_logs: [
@@ -200,6 +201,20 @@ describe("AuthenticationLog", () => {
       })
     );
     fixture.detectChanges();
+  };
+
+  it(
+    "passes the axe accessibility checks with an entry",
+    async () => {
+      showEntry();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
+
+  it("links the serial and the user to their details pages", () => {
+    showEntry();
     const hrefOf = (text: string) =>
       Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
         .find((a) => a.textContent?.trim() === text)

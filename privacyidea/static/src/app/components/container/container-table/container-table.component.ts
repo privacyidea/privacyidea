@@ -18,16 +18,21 @@
  **/
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
+import { MatTooltip } from "@angular/material/tooltip";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
   ElementRef,
   OnDestroy,
   ViewChild,
+  viewChild,
   WritableSignal,
   computed,
+  effect,
   inject,
-  linkedSignal
+  linkedSignal,
+  signal,
+  untracked
 } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
@@ -36,7 +41,10 @@ import {
   CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerTemplateComparisonRow,
+  ContainerServiceInterface,
+  TEMPLATE_FILTER_ANY,
+  TEMPLATE_FILTER_NONE
 } from "@services/container/container.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -57,6 +65,10 @@ import { ContainerTableActionsComponent } from "@components/container/container-
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "@services/container-template/container-template.service";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
@@ -68,7 +80,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withUser } from "@utils/filter.utils";
+import { exactMatch, withUser } from "@utils/filter.utils";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
@@ -87,6 +99,12 @@ const columnsKeyMap = [
   { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
 ];
 
+// Shown only while the comparison is visible.
+const comparisonColumnsKeyMap = [
+  { key: "template", label: $localize`:@@container.template:Template`, width: "l" },
+  { key: "differences", label: $localize`:@@container.differences:Differences`, width: "l" }
+];
+
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -98,6 +116,7 @@ const columnsKeyMap = [
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
+    MatTooltip,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -131,6 +150,7 @@ export class ContainerTableComponent implements OnDestroy {
   }
 
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -138,8 +158,16 @@ export class ContainerTableComponent implements OnDestroy {
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys = columnsKeyMap.map((column) => column.key);
+  readonly unsortableColumnKeys = ["template", ...comparisonColumnsKeyMap.map((column) => column.key)];
+  readonly comparisonByContainerSerial = signal<Record<string, ContainerTemplateComparisonRow>>({});
+  readonly comparisonVisible = signal(false);
+  readonly displayedColumns = computed(() =>
+    this.comparisonVisible() ? [...columnsKeyMap, ...comparisonColumnsKeyMap] : columnsKeyMap
+  );
+  readonly displayedColumnKeys = computed(() => this.displayedColumns().map((column) => column.key));
   readonly apiFilterKeys = this.containerService.apiFilterKeys;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
+  readonly toolbarFilterKeys = this.advancedApiFilterKeys.filter((keyword) => keyword !== "template");
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
@@ -247,6 +275,47 @@ export class ContainerTableComponent implements OnDestroy {
     });
   }
 
+  showComparison(rows: ContainerTemplateComparisonRow[]): void {
+    this.comparisonByContainerSerial.update((current) => ({
+      ...current,
+      ...Object.fromEntries(rows.map((row) => [row.containerSerial, row]))
+    }));
+    this.comparisonVisible.set(true);
+  }
+
+  private readonly containerTableActions = viewChild(ContainerTableActionsComponent);
+  private lastListState: unknown[] = [];
+
+  // While the comparison is visible, paging, a new page size, sorting or filtering compares the new rows again
+  // as soon as the new list has loaded. A plain reload of the same list keeps the comparison untouched.
+  private readonly recompareOnListChange = effect(() => {
+    const state = [
+      this.containerService.pageIndex(),
+      this.containerService.pageSize(),
+      this.containerService.sort(),
+      this.containerService.activeFilter()
+    ];
+    const loading = this.containerService.containerResource.isLoading();
+    this.containerService.containerResource.value();
+    const changed = state.some((part, i) => part !== this.lastListState[i]);
+    if (!changed || (this.comparisonVisible() && loading)) {
+      return;
+    }
+    this.lastListState = state;
+    if (this.comparisonVisible()) {
+      untracked(() => {
+        // The map is replaced, not merged, so rows of the old list disappear.
+        this.comparisonByContainerSerial.set({});
+        void this.containerTableActions()?.compareDisplayedContainers();
+      });
+    }
+  });
+
+  hideComparison(): void {
+    this.comparisonVisible.set(false);
+    this.comparisonByContainerSerial.set({});
+  }
+
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.containerService.eventPageSize.set(event.pageSize);
@@ -311,5 +380,24 @@ export class ContainerTableComponent implements OnDestroy {
     this.containerService.updateFilter((current) =>
       value ? current.addEntry(keyword, value) : current.removeKey(keyword)
     );
+  }
+
+  onTemplateFilterSelected(
+    selection: "all" | "with-template" | "without-template" | "specific",
+    templateName?: string
+  ): void {
+    this.containerService.updateFilter((current) => {
+      const filter = current.removeKey("template").removeKey("has_template");
+      if (selection === "with-template") {
+        return filter.addEntry("template", TEMPLATE_FILTER_ANY);
+      }
+      if (selection === "without-template") {
+        return filter.addEntry("template", TEMPLATE_FILTER_NONE);
+      }
+      if (selection === "specific" && templateName) {
+        return filter.addEntry("template", exactMatch(templateName));
+      }
+      return filter;
+    });
   }
 }

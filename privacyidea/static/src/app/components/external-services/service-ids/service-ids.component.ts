@@ -91,11 +91,20 @@ export class ServiceIdsComponent {
     allowed: () => this.authService.actionAllowed("serviceid_list"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("serviceid_add")
+      ? $localize`:@@serviceId.createServiceID:Create a service ID to attach SSH tokens to it.`
+      : ""
+  );
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "id", "servicename", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("serviceid_delete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["id", "servicename", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
@@ -119,6 +128,7 @@ export class ServiceIdsComponent {
       icon: "storage",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("serviceid_add"),
       run: () => this.onCreateNewServiceId()
     },
     {
@@ -128,6 +138,7 @@ export class ServiceIdsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

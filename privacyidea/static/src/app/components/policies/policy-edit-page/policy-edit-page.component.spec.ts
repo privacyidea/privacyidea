@@ -46,6 +46,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
@@ -583,6 +584,12 @@ describe("PolicyEditPageComponent – create mode", () => {
     await component.deletePolicy();
     expect(dialogService.confirmDelete).not.toHaveBeenCalled();
     expect(policyService.deletePolicy).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

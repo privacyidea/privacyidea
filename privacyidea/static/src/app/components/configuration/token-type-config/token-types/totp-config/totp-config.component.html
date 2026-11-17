@@ -21,7 +21,7 @@
     <mat-panel-title i18n="@@tokenTypeConfig.totp">TOTP</mat-panel-title>
     <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
-  <div class="panel-content expansion-well">
+  <div class="panel-content expansion-well margin-top-8">
     <p i18n="@@tokenTypeConfig.totpTokenTime"
       >The TOTP Token is a time based one time password token. It is described in
       <a
@@ -40,7 +40,6 @@
 
     <div class="flex-row gap-16">
       <mat-form-field
-        appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeStep">Default Time Step</mat-label>
         <mat-select [formField]="config().values[TOTP_TIME_STEP]">
@@ -54,7 +53,6 @@
       </mat-form-field>
 
       <mat-form-field
-        appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeWindow">Default Time Window</mat-label>
         <input
@@ -70,7 +68,6 @@
 
     <div class="flex-row gap-16">
       <mat-form-field
-        appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultHashlib">Default Hashlib</mat-label>
         <mat-select [formField]="config().values[TOTP_HASHLIB]">
@@ -84,7 +81,6 @@
       </mat-form-field>
 
       <mat-form-field
-        appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeShift">Default Time Shift</mat-label>
         <input

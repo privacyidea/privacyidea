@@ -39,6 +39,7 @@ import { MockSmsGatewayService } from "@testing/mock-services/mock-sms-gateway-s
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Observable, of } from "rxjs";
 import { NewSmsGatewayComponent } from "./new-sms-gateway.component";
+import { axe } from "@testing/axe";
 
 type ProvidersValueSignal = WritableSignal<PiResponse<SmsProviders> | undefined>;
 const providersValueSignal = (mock: MockSmsGatewayService): ProvidersValueSignal =>
@@ -1233,5 +1234,12 @@ describe("NewSmsGatewayComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

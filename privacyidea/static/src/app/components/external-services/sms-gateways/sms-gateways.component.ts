@@ -92,12 +92,21 @@ export class SmsGatewaysComponent {
     allowed: () => this.authService.actionAllowed("smsgateway_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("smsgateway_write")
+      ? $localize`:@@smsGateway.createSMSGateway:Create an SMS gateway to send one-time passwords by text message.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "name", "description", "providermodule"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("smsgateway_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["name", "description", "providermodule"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
@@ -130,6 +139,7 @@ export class SmsGatewaysComponent {
       icon: "sms",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("smsgateway_write"),
       run: () => this.onCreateNewGateway()
     },
     {
@@ -139,6 +149,7 @@ export class SmsGatewaysComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

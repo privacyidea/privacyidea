@@ -297,6 +297,7 @@ class TestPiManageDbUpgrade:
         assert "stamp the database with 'pi-manage db stamp head'" in result.stderr
         assert ("If an older version created the tables, stamp the database with the newest revision of that version."
                 in result.stderr)
+        assert "Then update the database with 'pi-manage db upgrade'." in result.stderr
         assert run_sql(database, "SELECT version_num FROM alembic_version") == []
         assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
 
@@ -323,6 +324,84 @@ class TestPiManageDbUpgrade:
         result = self.run_pi_manage(["db", "-d", str(missing_directory), "upgrade"], pi_manage_directory, database)
         assert result.returncode == 1, result
         assert f"Path doesn't exist: {missing_directory}" in result.stderr
+
+
+@pytest.mark.skipif(shutil.which("sh") is None, reason="sh is not available")
+class TestPiManageCreateTables:
+    """
+    "pi-manage setup create_tables" stops on a database that holds privacyIDEA tables or a schema revision stamp,
+    unless "--force" is given. The fixture stamped_database shows that it creates and stamps an empty database.
+    """
+
+    @staticmethod
+    def run_pi_manage(arguments: list[str], pi_manage_directory: Path, database: Path) -> subprocess.CompletedProcess:
+        return subprocess.run([str(pi_manage_directory / "pi-manage")] + arguments,  # nosec B603
+                              cwd=REPOSITORY_DIRECTORY, env=pi_manage_environment(pi_manage_directory, database),
+                              capture_output=True, text=True, timeout=120, check=False)
+
+    @staticmethod
+    def schema(database: Path) -> list[tuple]:
+        return run_sql(database, "SELECT type, name, sql FROM sqlite_master ORDER BY type, name")
+
+    @staticmethod
+    def assert_refused(result: subprocess.CompletedProcess, no_stamp: bool) -> None:
+        """The command failed and gave the reason that matches the stamp option."""
+        assert result.returncode == 1, result
+        assert "run the command again with '--force'" in result.stderr
+        stamp_reason = "but it stamps the newest revision, so the schema upgrade skips the migrations"
+        no_stamp_reason = "the schema upgrade later runs its migrations on them too and can fail"
+        if no_stamp:
+            assert no_stamp_reason in result.stderr
+            assert stamp_reason not in result.stderr
+        else:
+            assert stamp_reason in result.stderr
+            assert no_stamp_reason not in result.stderr
+
+    def test_01_stamped_database_is_left_unchanged(self, pi_manage_directory: Path, database: Path):
+        old_revision = "5cb310101a1f"
+        run_sql(database, f"UPDATE alembic_version SET version_num = '{old_revision}'")
+        run_sql(database, "DROP TABLE tokengroup")
+        schema = self.schema(database)
+
+        for no_stamp in (False, True):
+            arguments = ["setup", "create_tables"] + (["--no-stamp"] if no_stamp else [])
+            result = self.run_pi_manage(arguments, pi_manage_directory, database)
+            self.assert_refused(result, no_stamp)
+            assert f"The database sqlite:///{database} already holds a schema revision stamp." in result.stderr
+            assert "To update the database, run 'pi-manage db upgrade'." in result.stderr
+            assert "pi-manage db stamp" not in result.stderr
+            assert self.schema(database) == schema
+            assert run_sql(database, "SELECT version_num FROM alembic_version") == [(old_revision,)]
+
+    def test_02_tables_without_stamp_are_left_unchanged(self, pi_manage_directory: Path, database: Path):
+        """The command gives the same advice as the schema upgrade: stamp the database first."""
+        run_sql(database, "DELETE FROM alembic_version")
+        schema = self.schema(database)
+
+        for no_stamp in (False, True):
+            arguments = ["setup", "create_tables"] + (["--no-stamp"] if no_stamp else [])
+            result = self.run_pi_manage(arguments, pi_manage_directory, database)
+            self.assert_refused(result, no_stamp)
+            assert (f"The database sqlite:///{database} already holds privacyIDEA tables, but no schema revision "
+                    "stamp." in result.stderr)
+            assert "stamp the database with 'pi-manage db stamp head'." in result.stderr
+            assert ("If an older version created the tables, stamp the database with the newest revision of that "
+                    "version." in result.stderr)
+            assert "Then update the database with 'pi-manage db upgrade'." in result.stderr
+            assert "To update the database, run 'pi-manage db upgrade'." not in result.stderr
+            assert self.schema(database) == schema
+            assert run_sql(database, "SELECT version_num FROM alembic_version") == []
+
+    def test_03_force_creates_the_missing_tables_and_stamps(self, pi_manage_directory: Path, database: Path):
+        head = run_sql(database, "SELECT version_num FROM alembic_version")[0][0]
+        run_sql(database, "UPDATE alembic_version SET version_num = '5cb310101a1f'")
+        run_sql(database, "DROP TABLE tokengroup")
+
+        result = self.run_pi_manage(["setup", "create_tables", "--force"], pi_manage_directory, database)
+        assert result.returncode == 0, result
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tokengroup'") == [
+            ("tokengroup",)]
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == [(head,)]
 
 
 PI_CFG_WITH_SECRETS = """import logging

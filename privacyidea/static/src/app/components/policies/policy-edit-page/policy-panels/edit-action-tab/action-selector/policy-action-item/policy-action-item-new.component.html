@@ -71,7 +71,6 @@
               (valueChange)="updateSelectedActionValue($event ?? '')" />
           } @else {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <mat-select
@@ -90,7 +89,6 @@
         @switch (selectableAction().detail.type) {
           @case ("str") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <input
@@ -104,7 +102,6 @@
           }
           @case ("int") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <input
@@ -118,7 +115,6 @@
           }
           @case ("text") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <!-- The autosize measures 15px per line while the field renders 24px lines, so 8 measured rows are 5 rendered rows. -->

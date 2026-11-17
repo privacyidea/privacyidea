@@ -1,0 +1,38 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (tokensNotCreated()?.length) {
+  <div
+    class="inline-callout inline-callout-error"
+    data-testid="tokens-not-created">
+    @if (allFailed()) {
+      <p
+        class="error-message"
+        i18n="@@container.noTokenCreatedNotice"
+        ><strong>None of the tokens of the template was created:</strong></p
+      >
+    } @else {
+      <p i18n="@@container.tokensNotCreatedNotice">{tokensNotCreated()!.length, plural, =1 {This token of the template was not created:} other {These tokens of the template were not created:}}</p>
+    }
+    <ul>
+      @for (entry of tokensNotCreated(); track $index) {
+        <li>{{ entry.type }} ({{ entry.error }})</li>
+      }
+    </ul>
+  </div>
+}

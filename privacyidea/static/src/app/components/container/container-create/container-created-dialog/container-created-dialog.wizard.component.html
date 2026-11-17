@@ -20,8 +20,7 @@
   (actionTriggered)="onAction()"
   [actions]="actions"
   [showCloseButton]="false"
-  i18n-title="@@container.containerSuccessfully"
-  title="Container Successfully Created"
+  [title]="dialogTitle()"
   width="l">
   @let postTopHtml = postTopHtml$ | async;
   @if (postTopHtml?.hasContent) {
@@ -41,6 +40,9 @@
     >
   }
 
+  <app-tokens-not-created-callout
+    [allFailed]="data()?.allTokensFailed ?? false"
+    [tokensNotCreated]="data()?.tokensNotCreated" />
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {
       <img
