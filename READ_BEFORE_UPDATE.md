@@ -279,6 +279,13 @@
   ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
   and the log names the policy and the resolver.
 
+* **`date_within_last` does not match a date in the future.** Before 3.14.1, a condition with `date_within_last`
+  matched every date in the future, and `!date_within_last` matched none. Now a date in the future is not within the
+  past duration. A negative duration such as `-1d` is an error. A policy with such a condition fails the request with
+  "Invalid comparison". An event handler condition with it is always false. **Check the conditions with
+  `date_within_last` and `!date_within_last` in policies and event handlers.** Look for values that can lie in the
+  future, for example the token info `validity_period_end`. Replace each negative duration.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
