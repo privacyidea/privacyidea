@@ -387,7 +387,9 @@ def set_realm(realm, resolvers=None):
         if db_resolver:
             try:
                 new_resolver_realm = ResolverRealm(db_resolver.id, db_realm.id,
-                                                   node_uuid=str(reso.get('node', '')),
+                                                   # the node may be None (an export from Oracle, which stores
+                                                   # '' as NULL), and str(None) would be the unknown node 'None'
+                                                   node_uuid=str(reso.get('node') or ''),
                                                    priority=reso.get('priority'))
                 db.session.add(new_resolver_realm)
                 added.append(reso_name)
