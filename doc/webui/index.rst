@@ -168,6 +168,8 @@ administrator has read access is displayed in the dashboard.
 .. figure:: images/dashboard.png
    :width: 500
 
+   *Dashboard*
+
 Token usage
 ~~~~~~~~~~~
 
@@ -519,23 +521,28 @@ Tokens
 
 .. index:: tokensview
 
-The administrator can see all the tokens of all realms he is allowed to manage in the
-tokenview. Each token can be located in several realms and be assigned to one
-user. The administrator can see all the details of the token.
+Under *Token > Overview*, the administrator sees all the tokens of all realms they are allowed to manage. Each token can
+be located in several realms and be assigned to one user. *Enroll Token* opens the enrollment page, and the buttons
+above the list act on the selected tokens.
 
 .. figure:: images/token_view.png
    :width: 500
 
    *Tokens overview*
 
-The administrator can click on one token, to show more details of this token
-and to perform actions on this token. Read on here:
+Clicking the serial of a token opens its details, where the administrator can perform actions on this token. Read on
+here:
 
    :ref:`token_details`
 
-Under *Applications* in the token menu, the administrator can check for all SSH Keys attached to
-services and for HOTP tokens attached to machines for offline authentication.
-Also see :ref:`machines`.
+The *Token* menu also contains:
+
+* *Container* and *Templates*: the containers and the container templates, see :ref:`container_view`.
+* *Import*: importing token seed files, see :ref:`import`.
+* *Challenges*: the open challenges of challenge-response authentications.
+* *Applications*: the SSH keys attached to services and the HOTP tokens attached to machines for offline
+  authentication. Also see :ref:`machines`.
+* *Find Token*: determining the serial of a token from an OTP value, see :ref:`get_serial`.
 
 
 .. _container_view:
@@ -545,10 +552,10 @@ Containers
 
 .. index:: containerview
 
-In the container view, administrators can see all the containers in all the realms they are allowed to manage. Users can
-only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but can
-only be assigned to one user. You can click on a container to see more details and perform actions on the container and
-the tokens it contains.
+Under *Token > Container*, administrators can see all the containers in all the realms they are allowed to manage. Users
+can only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but
+can only be assigned to one user. You can click on the serial of a container to see more details and perform actions on
+the container and the tokens it contains.
 
 .. figure:: images/container_list.png
    :width: 500
@@ -567,15 +574,16 @@ More details about the container view can be found here:
 Users
 -----
 
-The administrator can see all users fetched by :ref:`useridresolvers` located in
-:ref:`realms` he is allowed to manage.
+Under *Users > Overview*, the administrator can see all users fetched by :ref:`useridresolvers` located in
+:ref:`realms` they are allowed to manage. The resolvers and realms themselves are configured under *Users > Resolvers*
+and *Users > Realms*.
 
 .. note:: Users are only visible, if the useridresolver is located
    within a realm. If you only define a useridresolver but no realm,
    you will not be able to see the users!
 
 You can select one of the realms in the *Select Realm* drop-down box. The administrator
-will only see the realms in the drop-down box, that he is allowed to manage.
+will only see the realms in the drop-down box that they are allowed to manage.
 
 
 .. figure:: images/usersview.png
@@ -583,9 +591,9 @@ will only see the realms in the drop-down box, that he is allowed to manage.
 
    *The Users view lists all users in a realm.*
 
-The list shows the users from the selected realm. The username, surname,
-given name, email and phone are filled according to the definition of
-the useridresolver.
+The list shows the users from the selected realm with their username, user ID, given name, surname, email, phone,
+mobile, description and resolver. The values are filled according to the attribute mapping of the useridresolver, so a
+column stays empty if the mapping does not contain the attribute.
 
 Even if a realm contains several useridresolvers, users from all
 resolvers within this realm are displayed. However, if a user with the
@@ -626,9 +634,15 @@ managing SSH keys or doing offline OTP. In most cases there is no need to manage
 Configuration
 -------------
 
-The *Configuration* menu is the heart of the privacyIDEA server. It contains the general
-:ref:`system_config` and lets the user set up :ref:`periodic_tasks`. The :ref:`policies`, which are important to
-configure behavior of the system, and the :ref:`eventhandler` are managed under the separate menu *Policies*.
+The *Configuration* menu contains the general :ref:`system_config` (*System*), the :ref:`token_config` (*Tokentypes*),
+the machines and machine resolvers (see :ref:`machines`) and lets the user set up :ref:`periodic_tasks`.
+
+The connections to other services are configured under *External Services*: :ref:`smtpserver`,
+:ref:`radiusserver_config`, :ref:`sms_gateway_config`, :ref:`caconnectors`, :ref:`privacyideaserver_config`,
+tokengroups and :ref:`serviceids`.
+
+The :ref:`policies`, which are important to configure behavior of the system, are managed under the separate menu
+*Policies*, together with :ref:`conditional_access`, the :ref:`api_clients` and the :ref:`eventhandler`.
 
 .. figure:: ../configuration/images/system-config.png
    :width: 500
