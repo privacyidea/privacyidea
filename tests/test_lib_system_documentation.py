@@ -1,6 +1,8 @@
 """
 The data the system documentation is rendered from: selected settings of the configuration and statistics.
 """
+from unittest import mock
+
 from sqlalchemy import text, update
 
 from privacyidea.lib.caconnector import delete_caconnector
@@ -12,7 +14,8 @@ from privacyidea.lib.machineresolver import save_resolver as save_machine_resolv
 from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway, set_smsgateway
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
-from privacyidea.lib.system_documentation import (_get_sms_provider_parameters, get_app_config_for_documentation,
+from privacyidea.lib.system_documentation import (_get_resolvers, _get_sms_provider_parameters,
+                                                  get_app_config_for_documentation,
                                                   get_caconnectors_for_documentation,
                                                   get_events_for_documentation, get_machines_for_documentation,
                                                   get_radiusservers_for_documentation, get_schema_revision,
@@ -196,3 +199,10 @@ class SystemDocumentationTestCase(MyTestCase):
         finally:
             db.session.execute(text("DROP TABLE alembic_version"))
             db.session.commit()
+
+    def test_10_resolver_without_class(self):
+        self.setUp_user_realms()
+        with mock.patch("privacyidea.lib.system_documentation.get_resolver_class", return_value=None):
+            resolvers = _get_resolvers()
+        self.assertEqual("passwdresolver", resolvers[self.resolvername1]["type"])
+        self.assertEqual({"editable": False}, resolvers[self.resolvername1]["data"])

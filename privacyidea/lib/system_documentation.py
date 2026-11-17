@@ -44,6 +44,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_class, get_resolver_list
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.smsprovider.SMSProvider import SMS_PROVIDERS, get_sms_provider_class, get_smsgateway
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.utils import get_version_number, is_true
@@ -308,7 +309,7 @@ def _get_system_config() -> dict:
 def _get_resolvers() -> dict:
     resolvers = get_resolver_list(censor=True)
     for resolver in resolvers.values():
-        resolver_class = get_resolver_class(resolver["type"])
+        resolver_class = get_resolver_class(resolver["type"]) or UserIdResolver
         resolver["data"] = resolver_class.get_config_for_documentation(resolver["data"])
     return resolvers
 
