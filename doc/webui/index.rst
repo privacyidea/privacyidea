@@ -10,6 +10,10 @@ the privacyIDEA server. It is also used as a self-service portal for the average
 manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
 
+.. contents:: On this page
+   :local:
+   :depth: 1
+
 .. _new_webui:
 
 Serving the WebUI
@@ -615,46 +619,35 @@ Read about the functionality of the users view in the following sections.
    manage_users
    user_attributes
 
-.. _webui_machines:
+.. _webui_policies_menu:
 
-Machines
+Policies
 --------
 
-Under *Configuration > Machines*, the machines fetched by the configured machine resolvers are listed.
-Machines are only necessary if you plan :ref:`special use cases<machines>` like
-managing SSH keys or doing offline OTP. In most cases there is no need to manage machines and this view is empty.
+The *Policies* menu contains everything that controls the behavior of privacyIDEA at runtime:
 
-.. figure:: images/machinesview.png
-   :width: 500
+* *Policy Overview*: the list of :ref:`policies`. Clicking a policy name opens its details, and *Create Policy* opens
+  the page to create a new one.
+* *Conditional Access*: the :ref:`conditional_access` policies.
+* *API Clients*: the :ref:`api_clients`.
+* *Event Handler*: the :ref:`eventhandler`, which trigger actions on certain events.
 
-   *The Machines view.*
+.. _webui_subscription:
 
-.. _config:
+Subscription
+------------
 
-Configuration
--------------
-
-The *Configuration* menu contains the general :ref:`system_config` (*System*), the :ref:`token_config` (*Tokentypes*),
-the machines and machine resolvers (see :ref:`machines`) and lets the user set up :ref:`periodic_tasks`.
-
-The connections to other services are configured under *External Services*: :ref:`smtpserver`,
-:ref:`radiusserver_config`, :ref:`sms_gateway_config`, :ref:`caconnectors`, :ref:`privacyideaserver_config`,
-tokengroups and :ref:`serviceids`.
-
-The :ref:`policies`, which are important to configure behavior of the system, are managed under the separate menu
-*Policies*, together with :ref:`conditional_access`, the :ref:`api_clients` and the :ref:`eventhandler`.
-
-.. figure:: ../configuration/images/system-config.png
-   :width: 500
-
-   *The Config section is the heart of the privacyIDEA server.*
+Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
+company behind privacyIDEA, can be viewed and managed in the menu *Subscription*.
 
 .. _webui_audit:
 
 Audit
 -----
 
-In this tab, the :ref:`audit` log is displayed which lists all events the server registers.
+The *Audit* menu contains *Audit Log*, *Authentication Log*, *Known Clients*, *Locked Users* and *IP Blocklist*.
+
+Under *Audit Log*, the :ref:`audit` log is displayed which lists all events the server registers.
 
 .. figure:: ../audit/auditlog.png
    :width: 500
@@ -665,9 +658,9 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
 .. _webui_authentication_log:
 
 Authentication log
-------------------
+~~~~~~~~~~~~~~~~~~
 
-In this tab, the :ref:`authentication_log` is displayed which lists how every
+Under *Authentication Log*, the :ref:`authentication_log` is displayed which lists how every
 authentication request was decided: the event, the reason behind it, the
 endpoint that served the request and what conditional access did about it.
 
@@ -679,7 +672,7 @@ endpoint that served the request and what conditional access did about it.
 .. _components:
 
 Known Clients
--------------
+~~~~~~~~~~~~~
 
 .. index:: Components, Known Clients
 
@@ -694,6 +687,56 @@ are connected to your network.
 
    *Known Clients lists the client applications that have authenticated.*
 
+.. _webui_locked_users_ip_blocklist:
 
-Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
-company behind privacyIDEA, can be viewed and managed in the menu *Subscription*.
+Locked Users and IP Blocklist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Locked Users* lists the users and *IP Blocklist* the IP addresses that are currently restricted, either by a
+:ref:`conditional_access` policy or by hand. The *IP Blocklist* page also blocks an IP address by hand, while users are
+locked on their details page. How locks and blocks work is described in :ref:`conditional_access_locks_and_blocks`, and
+restrictions set by hand in :ref:`conditional_access_manual_restrictions`.
+
+.. _webui_external_services:
+
+External Services
+-----------------
+
+The *External Services* menu contains the connections to other services:
+
+* *SMTP Servers*: the :ref:`smtpserver`.
+* *RADIUS Servers*: the :ref:`radiusserver_config`.
+* *SMS Gateways*: the :ref:`sms_gateway_config`.
+* *CA Connectors*: the :ref:`caconnectors`.
+* *PrivacyIDEA Servers*: the :ref:`privacyideaserver_config`.
+* *Tokengroups*: the tokengroups to which tokens can be added.
+* *Service IDs*: the :ref:`serviceids`.
+
+Each list opens the details of an entry by its name, and its create button opens the page to add a new one.
+
+.. _config:
+
+Configuration
+-------------
+
+The *Configuration* menu contains the general :ref:`system_config` (*System*), the :ref:`token_config` (*Tokentypes*),
+the machines and machine resolvers (*Machines*, see :ref:`machines`) and the :ref:`periodic_tasks` (*Periodic Tasks*).
+
+.. figure:: ../configuration/images/system-config.png
+   :width: 500
+
+   *The Config section of the privacyIDEA server.*
+
+.. _webui_machines:
+
+Machines
+~~~~~~~~
+
+Under *Configuration > Machines*, the machines fetched by the configured machine resolvers are listed.
+Machines are only necessary if you plan :ref:`special use cases<machines>` like
+managing SSH keys or doing offline OTP. In most cases there is no need to manage machines and this view is empty.
+
+.. figure:: images/machinesview.png
+   :width: 500
+
+   *The Machines view.*
