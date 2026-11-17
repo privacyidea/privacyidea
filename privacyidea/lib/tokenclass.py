@@ -96,7 +96,7 @@ from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
-                                   parse_legacy_time, split_pin_pass)
+                                   parse_legacy_time, split_pin_pass, convert_column_to_unicode)
 from .challenge import get_challenges, consume_challenge
 from .challenge_types import ChallengeSession
 # Re-exported for backwards compatibility: these live in challenge_types so that
@@ -646,8 +646,9 @@ class TokenClass:
             token_info = TokenInfo(token_id=self.token.id, Key=key, Value=value, Type=value_type)
             db.session.add(token_info)
         else:
-            # Update existing info
-            token_info.Value = value
+            # Update existing info. The value is converted to a string like in the constructor of a new entry, so
+            # that for example True is saved as "True" and not as an engine specific value like 1.
+            token_info.Value = convert_column_to_unicode(value)
             token_info.Type = value_type
         if commit_db_session:
             db.session.commit()
@@ -1442,6 +1443,20 @@ class TokenClass:
             statement = statement.where(TokenInfo.Key == key)
         db.session.execute(statement)
         db.session.commit()
+
+    def remove_tokeninfo_keys(self, keys: list[str], commit_db_session: bool = True) -> None:
+        """
+        Deletes the token info for the given keys in one statement, without checking whether the token class owns
+        the keys. Like remove_tokeninfo(), this is for server side code that maintains the token info of a token.
+
+        :param keys: The keys to delete. If the list is empty, nothing is deleted.
+        :param commit_db_session: Whether to commit the database session after the delete
+        """
+        if not keys:
+            return
+        db.session.execute(delete(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key.in_(keys)))
+        if commit_db_session:
+            db.session.commit()
 
     def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None) -> bool:
         """

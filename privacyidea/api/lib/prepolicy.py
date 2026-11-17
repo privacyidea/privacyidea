@@ -2827,6 +2827,11 @@ def fido2_enroll(request, action):
     request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = get_policy_value_set(
         PasskeyAction.AllowedAuthenticatorDeviceTypes, scope=SCOPE.ENROLL, user=user_object)
 
+    # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf. Always set, so that only the policy
+    # decides and not a parameter of the request.
+    request.all_data[PasskeyAction.DisablePrf] = Match.user(g, scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf,
+                                                            user_object=user_object).any()
+
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
     else:

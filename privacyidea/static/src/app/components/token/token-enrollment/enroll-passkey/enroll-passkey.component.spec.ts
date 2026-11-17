@@ -106,9 +106,13 @@ describe("EnrollPasskeyComponent", () => {
       authenticatorAttachment: "platform",
       response: {
         attestationObject: new Uint8Array([7]).buffer,
-        clientDataJSON: new Uint8Array([8]).buffer
+        clientDataJSON: new Uint8Array([8]).buffer,
+        getTransports: () => ["nfc", "usb"]
       },
-      getClientExtensionResults: () => ({ credProps: { rk: true } })
+      getClientExtensionResults: () => ({
+        credProps: { rk: true },
+        prf: { enabled: true, results: { first: new Uint8Array([1]).buffer } }
+      })
     };
 
     setNavigatorCredentials({
@@ -144,6 +148,12 @@ describe("EnrollPasskeyComponent", () => {
 
     expect(tokenService.enrollToken).toHaveBeenCalledTimes(2);
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+
+    // The finalize request contains the transports and only the PRF flag, the PRF results stay in the client
+    const finalizeArgs = tokenService.enrollToken.mock.calls[1][0];
+    const finalizePayload = finalizeArgs.mapper.toApiPayload(finalizeArgs.data);
+    expect(finalizePayload.transports).toEqual(["nfc", "usb"]);
+    expect(finalizePayload.prf).toStrictEqual({ enabled: true });
 
     expect(b64.base64URLToBytes).toHaveBeenCalled();
     expect(b64.bytesToBase64).toHaveBeenCalled();
