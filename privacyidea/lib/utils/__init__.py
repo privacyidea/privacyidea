@@ -1993,7 +1993,10 @@ def convert_imagefile_to_dataimage(imagepath):
         return ""
 
 
-ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+# The name of the client application at the start of a user agent string. The policy check on save uses the same
+# pattern, so that a user agent in a policy can match the name that is read from a request.
+USER_AGENT_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
+ua_re = re.compile(rf'^(?P<agent>{USER_AGENT_NAME_PATTERN})(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
 
 
 def get_plugin_info_from_useragent(useragent):
