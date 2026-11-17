@@ -18,13 +18,28 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, input, output, signal, untracked } from "@angular/core";
+import { HttpErrorResponse } from "@angular/common/http";
+import {
+  afterNextRender,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild
+} from "@angular/core";
 import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
+import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ActionOptionDetails, EventService } from "@services/event/event.service";
+import { ActionOptionDetails, CONFIG_ADMIN_ERROR_CODE, EventService } from "@services/event/event.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { valueDisplayLabel } from "@utils/value-label.utils";
@@ -45,12 +60,26 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 @Component({
   selector: "app-event-action-tab",
   standalone: true,
-  imports: [MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatInput, MatCheckbox, MatError, NgClass, FormField],
+  imports: [
+    MatButton,
+    MatFormField,
+    MatHint,
+    MatIcon,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    MatInput,
+    MatCheckbox,
+    MatError,
+    NgClass,
+    FormField
+  ],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"
 })
 export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
+  private readonly injector = inject(Injector);
   protected readonly Object = Object;
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -60,6 +89,8 @@ export class EventActionTabComponent {
   newOptions = output<EventActionOptionValues>();
   optionsValid = output<boolean>();
   selectedAction = signal<string>("");
+  private readonly actionSelect = viewChild(MatSelect);
+  private readonly awaitingReload = signal(false);
   selectedActionForm = form(this.selectedAction, (f) => {
     required(f);
   });
@@ -72,6 +103,28 @@ export class EventActionTabComponent {
         this.isOptionRequired(ctx.key()) && this.isEmpty(ctx.value()) ? { kind: ERR.required } : undefined
       );
     });
+  });
+
+  /**
+   * The Script handler offers each file in its script directory as an action. If the directory is empty, or if the
+   * server answers that it cannot open the directory, the tab explains where the scripts go instead of showing an
+   * empty dropdown. The server reads the directory on each request, so new scripts show up after a reload of the
+   * actions. A reload keeps the hint visible. During the first load, after any other failed request and if the
+   * request does not run (for example without eventhandling_read), the tab shows the dropdown.
+   */
+  noScriptsFound = computed(() => {
+    if (this.eventService.selectedHandlerModule() !== "Script") {
+      return false;
+    }
+    const resource = this.eventService.moduleActionsResource;
+    const status = resource.status();
+    if (status === "error") {
+      const error = resource.error() as HttpErrorResponse | undefined;
+      return error?.error?.result?.error?.code === CONFIG_ADMIN_ERROR_CODE;
+    }
+    return (
+      (status === "resolved" || status === "reloading") && Object.keys(this.eventService.moduleActions()).length === 0
+    );
   });
 
   actionOptions = computed(() => {
@@ -98,6 +151,14 @@ export class EventActionTabComponent {
   optionNames = computed(() => Object.keys(this.selectedOptions()).filter((name) => name in this.actionOptions()));
 
   constructor() {
+    effect(() => {
+      const status = this.eventService.moduleActionsResource.status();
+      if (!this.awaitingReload() || status === "loading" || status === "reloading") {
+        return;
+      }
+      untracked(() => this.finishReload());
+    });
+
     // Sync the selectedAction signal with the input
     effect(() => {
       this.selectedAction.set(this.action());
@@ -148,6 +209,24 @@ export class EventActionTabComponent {
 
   onActionSelectionChange(value: string): void {
     this.newAction.emit(value);
+  }
+
+  reloadScripts(): void {
+    if (this.eventService.moduleActionsResource.isLoading()) {
+      return;
+    }
+    this.awaitingReload.set(this.eventService.moduleActionsResource.reload());
+  }
+
+  /**
+   * The reload button leaves the page together with the hint, so focus moves to the action dropdown. If the hint
+   * stays, the button keeps focus.
+   */
+  private finishReload(): void {
+    this.awaitingReload.set(false);
+    if (!this.noScriptsFound()) {
+      afterNextRender({ read: () => this.actionSelect()?.focus() }, { injector: this.injector });
+    }
   }
 
   checkOptionVisibility(optionName: string): boolean {
