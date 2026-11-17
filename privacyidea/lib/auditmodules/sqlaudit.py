@@ -63,6 +63,7 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
 from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.log import redact
 from privacyidea.lib.pooling import get_engine, engines_are_shared
 from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
@@ -313,7 +314,7 @@ class Audit(AuditBase):
             ConfigKey.SQLALCHEMY_DATABASE_URI))
         log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
         sqa_options = get_audit_engine_options(self.config)
-        log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
+        log.debug(f"Using Audit SQLAlchemy engine options: {redact(sqa_options)!s}")
         # The engine options are merged over the pool defaults instead of being passed
         # alongside them, because a key present in both would raise a TypeError about
         # duplicate keyword arguments and take the whole pool configuration down with it.

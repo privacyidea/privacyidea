@@ -30,6 +30,7 @@ import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError
+from privacyidea.lib.log import get_url_origin
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -212,7 +213,7 @@ class WebHookHandler(BaseEventHandler):
                 self.run_details = "Unable to replace the placeholders in the data."
                 ret = False
             except (ValueError, TypeError) as err:
-                log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
+                log.warning(f"Unable to parse the data of the webhook as JSON: {err}")
                 self.run_details = "Unable to parse the data as JSON."
                 ret = False
 
@@ -220,7 +221,9 @@ class WebHookHandler(BaseEventHandler):
         if action.lower() == ActionType.POST_WEBHOOK:
             if content_type in (ContentType.JSON, ContentType.URLENCODED):
                 try:
-                    log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
+                    # The URL of a webhook is the credential of the receiving service, and the data can hold the
+                    # details of a user, so only the server is logged
+                    log.info(f"A webhook is called at {get_url_origin(webhook_url)}")
                     response = requests.post(webhook_url, data=webhook_text,
                                              headers={'Content-Type': content_type}, timeout=TIMEOUT)
                     # Responses will be logged when running debug. The HTTP response code is shown in the audit too
@@ -231,7 +234,9 @@ class WebHookHandler(BaseEventHandler):
                         self.run_details = f"The webhook answered with HTTP {response.status_code}."
                         ret = False
                 except (HTTPError, ConnectionError, RequestException, Timeout) as err:
-                    log.warning(err)
+                    # The message of the error names the URL
+                    log.warning(f"The webhook at {get_url_origin(webhook_url)} could not be called: "
+                                f"{type(err).__name__}")
                     self.run_details = f"The webhook could not be called ({type(err).__name__})."
                     ret = False
             else:

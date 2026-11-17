@@ -597,6 +597,21 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens["tok4"]["timeStep"], 60)
         self.assertNotIn("counter", tokens["tok4"])
 
+    def test_00_import_oath_is_not_logged(self):
+        # A line of the file holds the OTP key of a token. Reading it logs the serial and the type only.
+        with self.assertLogs("privacyidea.lib.importotp", level="DEBUG") as captured:
+            parseOATHcsv(OATHCSV)
+        output = "\n".join(captured.output)
+        self.assertIn("read the line of the token tok5 of type hotp", output)
+        self.assertNotIn("12345678901234567890123456789023", output)
+
+        # The content is also hidden when it is passed by keyword
+        with self.assertLogs("privacyidea.lib.importotp", level="DEBUG") as captured:
+            parseOATHcsv(csv=OATHCSV)
+        output = "\n".join(captured.output)
+        self.assertNotIn("12345678901234567890123456789023", output)
+        self.assertNotIn("Could not hide", output)
+
     def test_00_import_oath_user(self):
         tokens = parseOATHcsv(OATHCSV_USER)
         self.assertEqual(len(tokens), 2)

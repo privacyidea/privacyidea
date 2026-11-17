@@ -102,7 +102,8 @@ def getTagName(elem):
         return elem.tag
 
 
-@log_with(log)
+# The content of a token file holds the OTP keys of the tokens, so it is not logged
+@log_with(log, hide_args=["csv"])
 def parseOATHcsv(csv):
     """
     (#653)
@@ -184,7 +185,8 @@ def parseOATHcsv(csv):
             if not tok_class:
                 raise TokenImportException(f"Unknown token type '{ttype}' of token {serial}.")
             params = tok_class.get_import_csv(values)
-            log.debug(f"read the line {params!s}")
+            # The parameters hold the OTP key of the token, so only the serial and the type are logged
+            log.debug(f"read the line of the token {serial!s} of type {ttype!s}")
 
             params["user"] = user
             parsed_tokens[serial] = params
@@ -192,7 +194,7 @@ def parseOATHcsv(csv):
     return parsed_tokens
 
 
-@log_with(log)
+@log_with(log, hide_args=["csv"])
 def parseYubicoCSV(csv):
     """
     This function reads the CSV data as created by the Yubico personalization
@@ -334,7 +336,7 @@ def parseYubicoCSV(csv):
     return parsed_tokens
 
 
-@log_with(log)
+@log_with(log, hide_args=["xml"])
 def parseSafeNetXML(xml):
     """
     This function parses XML data of a Aladdin/SafeNet XML
@@ -444,7 +446,7 @@ def derive_key(xml, password):
     return binascii.hexlify(r)
 
 
-@log_with(log)
+@log_with(log, hide_args=["xml_data"])
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,

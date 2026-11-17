@@ -33,7 +33,7 @@ from privacyidea.lib.conditional_access.request_context import recheck_condition
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
                                 audit_column_length)
 
@@ -106,7 +106,8 @@ class event:
         event_audit_data = dict(self.g.audit_object.audit_data)
         event_audit_data["action"] = (f"{position} {self.eventname}>>"
                                       f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+        # The options are listed by their names: a value can hold a credential, like the URL of a WebHook
+        event_audit_data["action_detail"] = ", ".join(sorted(e_handler_def.get("options") or {}))
         event_audit_data["info"] = e_handler_def.get("name")
         return event_audit, event_audit_data
 
@@ -157,7 +158,9 @@ class event:
         try:
             if not event_handler.check_condition(options=options):
                 return False
-            log.debug(f"{position} handling event {self.eventname} with options {options}")
+            log.debug(f"{position} handling event {self.eventname} with the event handler "
+                      f"{e_handler_def.get('name')!r} ({e_handler_def.get('handlermodule')}, "
+                      f"action {e_handler_def.get('action')})")
             event_audit, event_audit_data = self._new_handler_audit(position, e_handler_def)
             event_audit.log(event_audit_data)
             result = event_handler.do(e_handler_def.get("action"), options=options)
@@ -207,7 +210,7 @@ class event:
             # do Pre-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname, position="pre")
             for e_handler_def in e_handles:
-                log.debug(f"Pre-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Pre-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
@@ -225,7 +228,7 @@ class event:
             # Post-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname)
             for e_handler_def in e_handles:
-                log.debug(f"Post-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Post-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
@@ -493,7 +496,7 @@ def import_event(data, name=None):
     handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
     these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
     """
-    log.debug(f'Import event config: {data!s}')
+    log.debug(f'Import event config: {get_import_names(data)}')
     existing = defaultdict(list)
     for handler_id, handler_name, handlermodule in db.session.execute(
             select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):
