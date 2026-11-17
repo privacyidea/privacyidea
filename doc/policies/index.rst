@@ -248,8 +248,10 @@ kind of request has, and which actions have special rules.
   This can be useful if you e.g. only want certain administrative actions on
   dedicated nodes.
 
-  Enter the names of the nodes. The field does not support ``*`` or exclusions.
-  The nodes are configured in pi.cfg. See :ref:`cfgfile`.
+  Enter the names of the nodes. The nodes are configured in pi.cfg. See :ref:`cfgfile`. The node names are
+  compared exactly.
+  Wildcards (``*``) and negations (``!node`` or ``-node``) are not supported and are rejected
+  when you save the policy. To apply a policy on every node, leave the field empty.
 
 .. versionadded:: 3.4
 
@@ -323,9 +325,13 @@ kind of request has, and which actions have special rules.
   space or a dot. Thus ``PAM.module/1.0`` has the name ``PAM``. The privacyIDEA
   plugins send their own name, for example ``privacyIDEA-Keycloak``. Browsers send
   ``Mozilla``. For an authentication through a plugin, the user agent is the plugin, not
-  the browser of the user. The field does not support ``*`` or exclusions. A request
-  without a user agent only matches policies without a user agent. A header that starts
-  with another character counts as no user agent.
+  the browser of the user. A request without a user agent only matches policies without a
+  user agent. A header that starts with another character counts as no user agent.
+
+  A user agent in a policy must be such a name, like ``privacyidea-cp``. A version
+  (``privacyidea-cp/1.0``), a space, ``*`` or ``!`` never matches and is rejected when you
+  save the policy. The field does not support exclusions: ``-PAM`` is the name ``-PAM``, not
+  every user agent except ``PAM``.
 
 .. versionadded:: 3.12
 

@@ -405,6 +405,17 @@
   start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
   start again for these clients.
 
+* **Policy nodes and user agents that can never match are rejected when you save a policy.** A node is compared
+  exactly with the node name, so a wildcard (`*`) or a negation (`!node1`, `-node1`) never matched. A user agent must
+  be a plain name like `privacyidea-cp`; a version (`privacyidea-cp/1.0`), a space, `*` or `!` never matched. Such
+  values are now rejected. To apply a policy on every node, leave the node field empty.
+
+  A stored policy with such a value keeps working as before: the rejected entries never matched, while the other
+  entries of the list still do. `pinode: node1, -node2` still applies on *node1*, and
+  `user_agents: PAM, privacyidea-cp/1.0` still applies to requests from PAM. You can only save, copy or import such a
+  policy again after you correct the value. Correct these values before you export your policies, or in the file
+  before you import it.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
