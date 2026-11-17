@@ -102,6 +102,11 @@
   output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
   both scripts is accepted and has no effect.
 
+* **`pi-manage setup create_tables` stops on an existing database.** If the database holds privacyIDEA tables or a
+  schema revision stamp, the command exits with an error and changes nothing. Update an existing database with
+  `pi-manage db upgrade`. If a script runs `create_tables` on every start, run it only on an empty database.
+  `--force` keeps the previous behavior.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
@@ -195,11 +200,6 @@
   login request whose `realm` parameter names another realm than REMOTE_USER does not use the REMOTE_USER
   login. Check `remote_user` policies that name a resolver.
 
-* **A RADIUS token without a RADIUS user forwards the authenticating user.** As documented, the request to the RADIUS
-  server is sent for the user who authenticates, or for the owner of the token if it is used by its serial.
-  Previously such a token sent the request with an empty user name, so it could never authenticate. Existing RADIUS
-  tokens with an empty RADIUS user start to forward the authentication requests of their users after the update.
-
 * **Updating an existing policy keeps the fields that are not sent.** `POST /policy/<name>` and
   `pi-manage config policy create` with the name of an existing policy keep the stored value of every field the request
   leaves out, e.g. a disabled policy stays disabled and its priority and description are kept. With 3.14 these fields
@@ -226,6 +226,11 @@
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
   it exited with status 0.
+
+* **`pi-manage setup encrypt_enckey -o` creates the file readable only by its owner.** A new output file gets the
+  permissions `0600`. Before, it got the default permissions of the system, for example `0644`. If you run the command
+  as root, change the owner of the new file to the user that privacyIDEA runs as. `-o` can not name the key file itself
+  anymore.
 
 * **Token janitor `update` writes only the secrets of an export entry.** `privacyidea-token-janitor update` and
   `pi-tokenjanitor update` store the OTP key, the OTP length, the description and the encrypted token info of
@@ -282,6 +287,13 @@
   a lower-priority resolver of the realm, as documented. To check this, privacyIDEA asks the named resolvers that are
   ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
   and the log names the policy and the resolver.
+
+* **`date_within_last` does not match a date in the future.** Before 3.14.1, a condition with `date_within_last`
+  matched every date in the future, and `!date_within_last` matched none. Now a date in the future is not within the
+  past duration. A negative duration such as `-1d` is an error. A policy with such a condition fails the request with
+  "Invalid comparison". An event handler condition with it is always false. **Check the conditions with
+  `date_within_last` and `!date_within_last` in policies and event handlers.** Look for values that can lie in the
+  future, for example the token info `validity_period_end`. Replace each negative duration.
 
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
@@ -585,6 +597,9 @@
   token: a container is created without any token that could not be initialized, and the reason is only written to
   the log, so a template naming a service ID that is no longer defined silently produces a container with one token
   missing.
+
+* **A RADIUS token needs a RADIUS user.** `POST /token/init` refuses a RADIUS token with an empty `radius.user`
+  with ERR905. Add the RADIUS user to scripts that enroll RADIUS tokens.
 
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token

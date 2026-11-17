@@ -49,6 +49,7 @@ import logging
 import re
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 
 from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text
 from sqlalchemy import inspect as sqlalchemy_inspect
@@ -62,6 +63,7 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
 from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.log import redact
 from privacyidea.lib.pooling import get_engine, engines_are_shared
 from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
@@ -109,6 +111,16 @@ def _csv_cell(value: object) -> str:
         if not _NUMBER.fullmatch(text.strip()):
             return f"'{text}"
     return text
+
+
+def get_audit_engine_options(config: Mapping) -> dict:
+    """
+    Get the SQLAlchemy engine options for the audit database.
+
+    :param config: The privacyIDEA configuration
+    :return: The options of PI_AUDIT_SQL_OPTIONS, or of SQLALCHEMY_ENGINE_OPTIONS if no audit options are given
+    """
+    return config.get(ConfigKey.AUDIT_SQL_OPTIONS, config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
 
 
 def _pool_accepts_pool_size(connect_string, engine_kwargs):
@@ -301,11 +313,8 @@ class Audit(AuditBase):
         connect_string = self.config.get(ConfigKey.AUDIT_SQL_URI, self.config.get(
             ConfigKey.SQLALCHEMY_DATABASE_URI))
         log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
-        # if no specific audit engine options are given, use the default from
-        # SQLALCHEMY_ENGINE_OPTIONS or none
-        sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
-                                      self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
-        log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
+        sqa_options = get_audit_engine_options(self.config)
+        log.debug(f"Using Audit SQLAlchemy engine options: {redact(sqa_options)!s}")
         # The engine options are merged over the pool defaults instead of being passed
         # alongside them, because a key present in both would raise a TypeError about
         # duplicate keyword arguments and take the whole pool configuration down with it.

@@ -37,7 +37,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource, to_unicode, validate_path_identifier
-from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names, import_entries)
 from privacyidea.models import SMTPServer as SMTPServerDB, db
 
 __doc__ = """
@@ -291,7 +291,8 @@ def _record_email_send(identifier, start, success, error=False):
     inc("email_send_total", {**labels, "result": result})
 
 
-@log_with(log)
+# The subject and the body can hold an OTP, a registration code or the link to reset a password
+@log_with(log, hide_args=["subject", "body"])
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):
     """
@@ -319,7 +320,7 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
     return success
 
 
-@log_with(log)
+@log_with(log, hide_args=["subject", "message"])
 def send_email_data(mailserver, subject, message, mail_from,
                     recipient, username=None,
                     password=None, port=25, email_tls=False, timeout=TIMEOUT):
@@ -633,6 +634,6 @@ def import_smtpserver(data, name=None):
     are still imported and a ``ConfigAdminError`` summarizing the failures is
     raised after all servers have been processed.
     """
-    log.debug(f'Import SMTP server config: {data!s}')
+    log.debug(f'Import SMTP server config: {get_import_names(data)}')
     entries = [(res_name, res_data) for res_name, res_data in data.items() if not name or name == res_name]
     import_entries(entries, lambda res_name, res_data: add_smtpserver(res_name, **res_data), "SMTP servers")
