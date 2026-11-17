@@ -110,11 +110,6 @@ realms all resolvers are still shown, grouped by *All nodes* and by node. A real
 nodes* is not listed for the node, although the node uses it: a node uses the resolvers under *All nodes* together with
 the resolvers assigned to it.
 
-.. figure:: images/realm_list_node.png
-   :width: 500
-
-   *Realm list of testnode*
-
 A node lists and manages the tokens of the users it serves: the tokens whose owner belongs to a resolver the node
 uses in a realm, and the tokens without an owner. The tokens of users that only other nodes serve are left out. A
 token whose owner belongs to a resolver that is in no realm at all, e.g. because the resolver was deleted, belongs to
@@ -147,18 +142,6 @@ selected under *All nodes* are not node specific, and these settings will be app
 
    *Create a realm on the list page*
 
-In the previous WebUI, navigate to the *Create Realm* page in the sidebar menu for more advanced node-specific settings.
-A unique realm name is required and resolvers applicable for all nodes can be selected.
-Additionally, multiple nodes can be selected from the drop down menu. All selected nodes appear in the table where the
-resolvers and priorities can be selected individually for each node.
-Another option is to select non-node specific resolvers and click *Apply Selection to Nodes* to select the selected
-resolvers and priorities for all nodes. This can be useful if only the priority differs between nodes.
-
-.. figure:: images/realm_create_page.png
-   :width: 500
-
-   *Create a node-specific realm on the create page*
-
 .. _edit_realm:
 
 Edit Realm
@@ -166,21 +149,13 @@ Edit Realm
 
 .. index:: realm edit
 
-In the realm list, you can click *Edit realm* to edit an existing realm.
-The resolvers and priorities can be selected in place, for each node separately. A realm can contain several resolvers.
+In the realm list, the edit button of a realm switches its row to edit mode. The resolvers and priorities can be
+selected in place, for each node separately. A realm can contain several resolvers. The save button stores the changes.
 
-.. figure:: images/realm_edit_list_one_node.png
+.. figure:: images/realm_edit_list.png
    :width: 500
 
    *Edit a realm directly in the realm list*
-
-In the previous WebUI, if multiple nodes exist, you are forwarded to an edit page, similar to the create page, where
-you can edit the realm for each node.
-
-.. figure:: images/realm_edit_page.png
-   :width: 500
-
-   *Edit a realm on a separate page*
 
 
 .. _resolver_priority:

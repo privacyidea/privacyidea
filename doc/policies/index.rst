@@ -28,10 +28,13 @@ privacyIDEA knows these scopes:
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
 
+The WebUI lists the policies under *Policies > Policy Overview* with their priority, scope, description, actions and
+conditions. Clicking a policy name opens the policy, and *Create Policy* opens the page to create a new one.
+
 .. figure:: images/policies.png
    :width: 500
 
-   *Policy Definition*
+   *The policy list*
 
 You can use policy templates to ease the setup.
 
