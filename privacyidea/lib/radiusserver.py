@@ -49,7 +49,7 @@ from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource, to_bytes, validate_path_identifier
-from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names, import_entries)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
 log = logging.getLogger(__name__)
@@ -409,7 +409,7 @@ def import_radiusserver(data, name=None):
     are still imported and a ``ConfigAdminError`` summarizing the failures is
     raised after all servers have been processed.
     """
-    log.debug(f'Import radiusserver config: {data!s}')
+    log.debug(f'Import radiusserver config: {get_import_names(data)}')
     entries = []
     for res_name, res_data in data.items():
         if name and name != res_name:

@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailsDefaultValueCellComponent } from "./details-default-value-cell.component";
+import { axe } from "@testing/axe";
 
 describe("DetailsDefaultValueCellComponent", () => {
   let fixture: ComponentFixture<DetailsDefaultValueCellComponent>;
@@ -64,5 +65,11 @@ describe("DetailsDefaultValueCellComponent", () => {
     textarea.dispatchEvent(new Event("input"));
 
     expect(fixture.componentInstance.value()).toBe("changed");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

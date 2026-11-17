@@ -31,6 +31,7 @@ import { TokenService } from "@services/token/token.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { checkboxInput, clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
@@ -159,5 +160,11 @@ describe("EnrollAspComponent", () => {
     fixture.detectChanges();
 
     expect(checkboxInput(fixture).disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

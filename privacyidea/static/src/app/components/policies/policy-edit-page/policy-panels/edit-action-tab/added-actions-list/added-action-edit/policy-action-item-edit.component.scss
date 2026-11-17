@@ -32,13 +32,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 1.1rem;
   font-weight: bold;
 }
 
 .detail-description {
   font-weight: normal;
   font-size: 0.75rem;
+  line-height: normal;
   color: var(--mat-sys-on-surface-variant);
 }
 

@@ -24,8 +24,10 @@ import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokensNotCreatedCalloutComponent } from "@components/container/container-create/tokens-not-created-callout/tokens-not-created-callout.component";
 import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ContainerTokenNotCreated } from "@services/container/container.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
 
 export type EnrolledTokenInfo = EnrollmentResponseDetail & {
@@ -37,11 +39,12 @@ export type EnrolledTokenInfo = EnrollmentResponseDetail & {
 export interface ContainerTokensEnrolledDialogData {
   enrolledTokens: EnrolledTokenInfo[];
   containerSerial: string;
+  tokensNotCreated?: ContainerTokenNotCreated[];
 }
 
 @Component({
   selector: "app-container-tokens-enrolled-dialog",
-  imports: [MatProgressBar, TokenEnrollmentDataComponent, TitleCasePipe, DialogWrapperComponent],
+  imports: [MatProgressBar, TokenEnrollmentDataComponent, TitleCasePipe, DialogWrapperComponent, TokensNotCreatedCalloutComponent],
   templateUrl: "./container-tokens-enrolled-dialog.component.html",
   styleUrl: "./container-tokens-enrolled-dialog.component.scss"
 })
@@ -50,6 +53,8 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
 
   readonly currentIndex = signal(0);
   readonly enrolledTokens = signal<EnrolledTokenInfo[]>(this.data.enrolledTokens);
+
+  readonly tokensNotCreated = this.data.tokensNotCreated ?? [];
 
   readonly currentToken = computed(() => this.enrolledTokens()[this.currentIndex()]);
   readonly total = computed(() => this.enrolledTokens().length);

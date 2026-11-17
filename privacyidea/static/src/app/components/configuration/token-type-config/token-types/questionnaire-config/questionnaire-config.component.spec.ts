@@ -22,6 +22,7 @@ import { QuestionnaireConfigComponent } from "@components/configuration/token-ty
 import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { touchAll } from "@utils/form-state.utils";
+import { axe } from "@testing/axe";
 
 const mockQuestionKeys = ["question.question.1", "question.question.2", "question.question.3"];
 const filledConfig = () => ({
@@ -220,5 +221,12 @@ describe("QuestionnaireConfigComponent", () => {
       expect(errors()).toEqual([]);
       expect(configForm.form().valid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

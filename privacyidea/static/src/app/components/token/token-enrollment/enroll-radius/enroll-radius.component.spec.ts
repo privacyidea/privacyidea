@@ -29,6 +29,7 @@ import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { ContentService } from "@services/content/content.service";
 import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { axe } from "@testing/axe";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -146,5 +147,11 @@ describe("EnrollRadiusComponent", () => {
         expect.objectContaining({ radiusUser: "remote-user", radiusServerConfiguration: "radius-a" })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

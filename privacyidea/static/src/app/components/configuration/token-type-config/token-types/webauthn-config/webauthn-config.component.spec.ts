@@ -21,6 +21,7 @@ import { provideRouter } from "@angular/router";
 import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
 import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 describe("WebauthnConfigComponent", () => {
   let fixture: ComponentFixture<WebauthnConfigComponent>;
@@ -94,5 +95,12 @@ describe("WebauthnConfigComponent", () => {
   it("keeps the form valid while a warning shows", async () => {
     await create({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "relative/path/" });
     expect(configForm.form().valid()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -35,7 +35,7 @@ import sys
 import time
 import uuid
 from pathlib import Path, PurePath
-from typing import IO, Any
+from typing import IO, Any, NamedTuple
 
 import click
 import flask_migrate.cli
@@ -95,6 +95,7 @@ from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.lib.utils import censor_connect_string
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
@@ -501,22 +502,42 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+class SchemaState(NamedTuple):
+    """The schema state of a database: whether it has a schema revision stamp, and whether it holds the tables."""
+    stamped: bool
+    has_tables: bool
+
+
+def get_schema_state() -> SchemaState:
+    """
+    Read the schema state of the database of the current app. The token table stands for the tables of privacyIDEA.
+    """
+    with db.engine.connect() as connection:
+        stamped = bool(MigrationContext.configure(connection).get_current_heads())
+        has_tables = sa.inspect(connection).has_table("token")
+    return SchemaState(stamped=stamped, has_tables=has_tables)
+
+
+# What to do with a database that holds the tables of privacyIDEA but no schema revision stamp.
+TABLES_WITHOUT_STAMP_HINTS = (
+    "If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+    "stamp the database with 'pi-manage db stamp head'.",
+    "If an older version created the tables, stamp the database with the newest revision of that version. "
+    "The upgrade documentation lists the revisions of the versions before 3.10.",
+    "Then update the database with 'pi-manage db upgrade'.")
+
+
 def _check_revision_stamp() -> None:
     """
     Raise a ClickException if the database has no schema revision stamp. The migrations cannot tell which of them
     such a database needs: run from the first revision, they would rename and recreate the tables of a current schema.
     """
-    with db.engine.connect() as connection:
-        if MigrationContext.configure(connection).get_current_heads():
-            return
-        has_tables = sa.inspect(connection).has_table("token")
+    schema_state = get_schema_state()
+    if schema_state.stamped:
+        return
     database = db.engine.url.render_as_string(hide_password=True)
-    if has_tables:
-        hints = ["If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
-                 "stamp the database with 'pi-manage db stamp head'.",
-                 "If an older version created the tables, stamp the database with the newest revision of that "
-                 "version. The upgrade documentation lists the revisions of the versions before 3.10.",
-                 "Then run the upgrade again."]
+    if schema_state.has_tables:
+        hints = list(TABLES_WITHOUT_STAMP_HINTS)
     else:
         hints = ["If the database is empty, create the tables with 'pi-manage setup create_tables'."]
     raise click.ClickException("\n  ".join([f"The database {database} has no schema revision stamp, so the "
@@ -763,11 +784,13 @@ def create_docker_app():
     # Check database connection
     with app.app_context():
         try:
-            log.debug("Test Database using URL '%s'", app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
-            db.session.execute(sa.text('SELECT 1'))
+            database_uri = censor_connect_string(app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
+            log.debug("Test Database using URL '%s'", database_uri)
+            # Compiled per dialect: "SELECT 1" on most databases, "SELECT 1 FROM DUAL" on Oracle, which needs a FROM
+            db.session.execute(sa.select(sa.literal_column("1")))
             log.debug("Database Connection successful!")
         except Exception as e:
-            raise RuntimeError(f"Could not connect to database: {e}")
+            raise RuntimeError(f"Could not connect to database: {e}") from e
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)

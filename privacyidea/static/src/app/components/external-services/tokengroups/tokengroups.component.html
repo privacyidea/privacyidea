@@ -23,10 +23,9 @@
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
         <mat-form-field
-          appearance="fill"
           class="tokengroups-table-filter"
           subscriptSizing="dynamic">
-          <mat-label i18n="@@tokenGroup.filterTokengroups">Filter Tokengroups...</mat-label>
+          <mat-label i18n="@@tokenGroup.filterTokengroups">Filter Tokengroups</mat-label>
           <app-clearable-input
             (clearButtonClick)="resetFilter()"
             [showClearButton]="filterString().length > 0">

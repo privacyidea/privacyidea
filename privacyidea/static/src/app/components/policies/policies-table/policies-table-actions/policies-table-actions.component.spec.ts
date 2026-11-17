@@ -34,6 +34,7 @@ import { MockNotificationService } from "@testing/mock-services/mock-notificatio
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { of } from "rxjs";
 import { PoliciesTableActionsComponent } from "./policies-table-actions.component";
+import { axe } from "@testing/axe";
 
 describe("PoliciesTableActionsComponent", () => {
   let component: PoliciesTableActionsComponent;
@@ -147,5 +148,11 @@ describe("PoliciesTableActionsComponent", () => {
 
       expect(notificationService.error).toHaveBeenCalledWith("Copying the policy to policy1-copy failed");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

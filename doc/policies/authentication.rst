@@ -369,6 +369,10 @@ and ``/recover``. It is applied before the first user resolving to avoid unneces
 requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
 Please note, due to this, it is not possible to use user-related conditions for this policy!
+privacyIDEA compares the login name and the realm of the request. It does not check the
+resolver of the policy, and a ``userinfo`` condition has no user. A request with only a
+serial has neither a user nor a realm. For such a request, privacyIDEA does not check the
+realm of the policy either.
 
 Also, the given parameters can actually point to a non-existing user object.
 
@@ -1114,6 +1118,17 @@ The following options are available:
     is allowed for this token.
 
 The default is to ``allow`` polling
+
+privacyIDEA reads this policy at two points:
+
+* When privacyIDEA creates a push challenge, it checks the policy for the user who
+  authenticates. With ``deny``, privacyIDEA creates the challenge only if the push
+  gateway accepts the message.
+* When the smartphone polls, it sends no user. privacyIDEA then does not check the
+  realm, resolver and user of the policy.
+
+Thus a policy ``push_allow_polling=deny`` for the realm *sales* blocks the poll requests
+of all users. See :ref:`policy_condition_checks`.
 
 .. versionadded:: 3.4
 

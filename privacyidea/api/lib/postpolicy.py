@@ -76,7 +76,7 @@ from privacyidea.lib.remembered_device import (CookieAction, apply_cookie_action
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            EXPIRE_MESSAGE)
-from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
+from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token, remove_token, enable_token
 from privacyidea.lib.tokenclass import ChallengeSession, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -153,6 +153,43 @@ class postpolicy:
             return self.function(self.request, response, *args, **kwds)
 
         return policy_wrapper
+
+
+def remove_new_token_on_error(function: callable) -> callable:
+    """
+    Wraps a post-policy function of the /token/init endpoint. If the policy function raises an error, a token that was
+    created by the request is deleted, so that it does not stay active without the enrollment policies applied. A
+    token that existed before the request (rollover, second step of a 2step enrollment or verify enrollment) is not
+    deleted but disabled, because it may already carry the new key. The endpoint stores the token returned by
+    init_token in g.enrolled_token, its attribute newly_created tells whether the request created it. The error is
+    raised again.
+
+    :param function: The post-policy function to wrap
+    :return: The wrapped post-policy function
+    """
+
+    @functools.wraps(function)
+    def policy_wrapper(request, response, *args, **kwds):
+        try:
+            return function(request, response, *args, **kwds)
+        except Exception:
+            token = g.get("enrolled_token")
+            if token:
+                serial = token.get_serial()
+                try:
+                    if token.newly_created:
+                        log.warning(f"Post-policy {function.__name__} failed, deleting the new token {serial}.")
+                        remove_token(serial=serial)
+                    else:
+                        log.warning(f"Post-policy {function.__name__} failed, disabling the existing token {serial}.")
+                        enable_token(serial, enable=False)
+                except Exception as ex:
+                    # The error of the policy is returned to the client, not the error of the removal or disabling
+                    log.warning(f"Failed to handle the token {serial} after the failed post-policy: {ex}")
+                    log.debug(traceback.format_exc())
+            raise
+
+    return policy_wrapper
 
 
 class postrequest:
@@ -869,7 +906,8 @@ def get_webui_settings(request, response):
         audit_page_size = DEFAULT_AUDIT_PAGE_SIZE
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
-        require_description = list(require_description.keys())
+        # The WebUI compares these with the token types as privacyIDEA stores them, that is in lower case
+        require_description = [token_type.lower() for token_type in require_description.keys()]
         default_tokentype = DEFAULT_TOKENTYPE
         default_container_type = DEFAULT_CONTAINER_TYPE
         logout_redirect_url = ""
@@ -945,6 +983,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["container_wizard"] = container_wizard
 
         if role == ROLE.ADMIN:
+            # Any subscription, also one of a plugin or one that expired, means that the system has support. The
+            # WebUI then addresses the email with the system documentation to the support.
+            content["result"]["value"]["has_subscription"] = len(get_subscription()) > 0
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")
             if len(subscriptions) == 1:

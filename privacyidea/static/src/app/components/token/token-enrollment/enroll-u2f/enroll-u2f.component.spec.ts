@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollU2fComponent } from "./enroll-u2f.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("EnrollU2fComponent", () => {
   let component: EnrollU2fComponent;
@@ -45,5 +46,11 @@ describe("EnrollU2fComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

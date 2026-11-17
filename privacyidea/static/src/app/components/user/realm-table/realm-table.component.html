@@ -10,7 +10,7 @@
           <mat-form-field
             class="token-table-filter"
             subscriptSizing="dynamic">
-            <mat-label i18n="@@realm.filterRealms">Filter Realms...</mat-label>
+            <mat-label i18n="@@realm.filterRealms">Filter Realms</mat-label>
             <app-clearable-input
               (clearButtonClick)="resetFilter()"
               [showClearButton]="filterString().length > 0">
@@ -36,7 +36,7 @@
             #pageActions
             [actions]="toolbarActions()">
             <mat-form-field
-              class="input-width-m"
+              class="input-width-m margin-top-8"
               subscriptSizing="dynamic">
               <mat-label i18n="@@realm.node">Node</mat-label>
 
@@ -134,7 +134,7 @@
                               <span>{{ group.label }}</span>
                             </div>
 
-                            <mat-form-field class="node-resolvers-select">
+                            <mat-form-field appearance="fill" class="node-resolvers-select">
                               <mat-label i18n="@@common.resolvers">Resolvers</mat-label>
                               <mat-select
                                 (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
@@ -270,7 +270,8 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="table-cell-field margin-top-16"
+                      appearance="fill"
+                      class="table-cell-field"
                       subscriptSizing="dynamic">
                       <mat-label i18n="@@realm.realmName">Realm Name</mat-label>
                       <input
@@ -298,6 +299,7 @@
                           </div>
 
                           <mat-form-field
+                            appearance="fill"
                             class="input-width-l"
                             subscriptSizing="dynamic">
                             <mat-label i18n="@@common.resolvers">Resolvers</mat-label>

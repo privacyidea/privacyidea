@@ -36,6 +36,7 @@ import { TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
+import { axe } from "@testing/axe";
 
 const makeEnrollInitResponse = (): WebauthnEnrollmentResponse =>
   ({
@@ -385,5 +386,11 @@ describe("EnrollWebauthnComponent", () => {
       expect(await pending).toBe(ENROLLMENT_CANCELLED);
       expect(component.reopenDialog()).toBeUndefined();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
