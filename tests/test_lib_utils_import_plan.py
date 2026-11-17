@@ -57,7 +57,6 @@ API under test
     out (it is never deleted).
 """
 import copy
-from typing import Union
 from unittest import mock
 
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
@@ -205,7 +204,7 @@ def plain_name_types() -> list[str]:
             if adapter.fold_name is str and typ in NAME_KEYED_TYPES and typ not in ("config", "caconnector")]
 
 
-def rename_entry(typ: str, typ_data: Union[list, dict], name: str, new_name: str) -> dict:
+def rename_entry(typ: str, typ_data: list | dict, name: str, new_name: str) -> dict:
     """Give the entry with this name in the import data of one type the new name, return the entry."""
     entry = entry_of(typ, typ_data, name)
     if typ in LIST_NAME_FIELD:
@@ -215,14 +214,14 @@ def rename_entry(typ: str, typ_data: Union[list, dict], name: str, new_name: str
     return entry
 
 
-def add_entries(typ: str, typ_data: Union[list, dict], more: Union[list, dict]) -> None:
+def add_entries(typ: str, typ_data: list | dict, more: list | dict) -> None:
     if typ in LIST_NAME_FIELD:
         typ_data.extend(more)
     else:
         typ_data.update(more)
 
 
-def import_directly(typ: str, typ_data: Union[list, dict]) -> None:
+def import_directly(typ: str, typ_data: list | dict) -> None:
     """Store the import data of one type with its importer, without a plan."""
     IMPORT_FUNCTIONS[typ]["func"](copy.deepcopy(typ_data))
 

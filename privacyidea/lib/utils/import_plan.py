@@ -33,7 +33,8 @@ import logging
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any
+from collections.abc import Callable, Iterable
 
 from sqlalchemy import select
 
@@ -83,11 +84,11 @@ class PlanEntry:
     differs from ``key``.
     """
     action: str
-    key: Union[str, tuple]
+    key: str | tuple
     changed_fields: list = field(default_factory=list)
-    reason: Optional[str] = None
-    target_id: Optional[int] = None
-    target_name: Optional[str] = None
+    reason: str | None = None
+    target_id: int | None = None
+    target_name: str | None = None
 
 
 @dataclass
@@ -103,9 +104,9 @@ class TypePlan:
     entries: list = field(default_factory=list)
     notes: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
-    data: Union[dict, list, None] = None
+    data: dict | list | None = None
     # name of the realm that is the default after the import (None: no default), NO_DEFAULT_REALM_PLAN: not planned
-    default_realm: Union[str, None, object] = NO_DEFAULT_REALM_PLAN
+    default_realm: str | None | object = NO_DEFAULT_REALM_PLAN
 
 
 def _import_order() -> list:
@@ -225,12 +226,12 @@ class _TypeAdapter:
     case. ``setter_renames`` tells whether the setter then writes the imported
     name to that entry (else it keeps the name stored on this system).
     """
-    name_field: Optional[str] = None
+    name_field: str | None = None
     normalize: Callable[[dict], dict] = dict
     subset_fields: tuple = ()
-    delete: Optional[Callable[[PlanEntry], object]] = None
+    delete: Callable[[PlanEntry], object] | None = None
     fold_name: Callable[[str], str] = str
-    stored_name: Optional[Callable[[str], Optional[str]]] = None
+    stored_name: Callable[[str], str | None] | None = None
     setter_renames: bool = False
 
 
@@ -244,9 +245,9 @@ def _fold_case(name: str) -> str:
     return name.lower()
 
 
-def _stored_name_lookup(column: Any) -> Callable[[str], Optional[str]]:
+def _stored_name_lookup(column: Any) -> Callable[[str], str | None]:
     """Find a stored name with the comparison of the setter, which follows the collation of the database."""
-    def lookup(name: str) -> Optional[str]:
+    def lookup(name: str) -> str | None:
         return db.session.scalars(select(column).where(column == name)).first()
     return lookup
 
@@ -300,7 +301,7 @@ def delete_plan_entry(typ: str, entry: PlanEntry) -> Any:
     return _ADAPTERS[typ].delete(entry)
 
 
-def _keyed(adapter: _TypeAdapter, typ_data: Union[dict, list, None]) -> dict:
+def _keyed(adapter: _TypeAdapter, typ_data: dict | list | None) -> dict:
     """Map the name of each entry to the entry, for data in the exporter format of the type."""
     if adapter.name_field:
         return {entry.get(adapter.name_field): entry for entry in typ_data or []}
@@ -312,7 +313,7 @@ def _fold_names(adapter: _TypeAdapter, entries: dict) -> dict:
     return {adapter.fold_name(key) if isinstance(key, str) else key: entry for key, entry in entries.items()}
 
 
-def _to_importer_format(adapter: _TypeAdapter, entries: dict) -> Union[list, dict]:
+def _to_importer_format(adapter: _TypeAdapter, entries: dict) -> list | dict:
     if adapter.name_field:
         return list(entries.values())
     return entries
@@ -363,7 +364,7 @@ def _stored_name_hits(adapter: _TypeAdapter, import_entries: dict, stored_entrie
     return hits
 
 
-def _plan_name_keyed(typ: str, typ_data: Union[dict, list, None], name: Optional[str], replace: bool,
+def _plan_name_keyed(typ: str, typ_data: dict | list | None, name: str | None, replace: bool,
                       skip_invalid: bool) -> TypePlan:
     adapter = _ADAPTERS[typ]
     if typ == "resolver" and isinstance(typ_data, list):
@@ -442,7 +443,7 @@ def _entry_count(count: int) -> str:
     return f"{count} entry" if count == 1 else f"{count} entries"
 
 
-def _plan_event(typ_data: Optional[list], name: Optional[str], replace: bool) -> TypePlan:
+def _plan_event(typ_data: list | None, name: str | None, replace: bool) -> TypePlan:
     """
     Plan the event handlers grouped by (name, handlermodule) like import_event:
     the n handlers of a group in the import replace the m handlers of this
@@ -499,7 +500,7 @@ def _plan_event(typ_data: Optional[list], name: Optional[str], replace: bool) ->
     return plan
 
 
-def build_import_plan(data: dict, types: Iterable[str], name: Optional[str] = None, replace: bool = False,
+def build_import_plan(data: dict, types: Iterable[str], name: str | None = None, replace: bool = False,
                       skip_invalid: bool = False) -> list:
     """
     Compare the configuration data to be imported with this system.
@@ -544,7 +545,7 @@ def _format_entry(typ: str, entry: PlanEntry) -> str:
     return line
 
 
-def _quote_or_none(name: Optional[str]) -> str:
+def _quote_or_none(name: str | None) -> str:
     return f'"{name}"' if name else "none"
 
 
@@ -576,9 +577,9 @@ def _surplus_event_deletes(plan: TypePlan) -> list:
     return [entry for entry in plan.entries if entry.action == DELETE and entry.key in imported_keys]
 
 
-def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: bool = False,
-                      on_import: Optional[Callable[[str], None]] = None,
-                      on_error: Optional[Callable[[str, Optional[PlanEntry], Exception], None]] = None) -> list:
+def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool = False,
+                      on_import: Callable[[str], None] | None = None,
+                      on_error: Callable[[str, PlanEntry | None, Exception], None] | None = None) -> list:
     """
     Apply an import plan of :func:`build_import_plan` to this system.
 
@@ -605,7 +606,7 @@ def apply_import_plan(plans: list, name: Optional[str] = None, skip_invalid: boo
     failed = []
     import_failed = set()
 
-    def fail(typ: str, entry: Optional[PlanEntry], exx: Exception) -> None:
+    def fail(typ: str, entry: PlanEntry | None, exx: Exception) -> None:
         db.session.rollback()
         log.warning(f"Import of configuration type '{typ}' failed: {exx!r}")
         log.debug(traceback.format_exc())

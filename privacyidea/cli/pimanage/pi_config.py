@@ -24,7 +24,7 @@ import sys
 import ast
 import inspect
 from functools import partial
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
@@ -622,7 +622,7 @@ def _plan_entry_name(typ: str, entry: PlanEntry) -> str:
               help='Print the import plan and ask before applying it. Needs an input '
                    'file and a terminal.')
 @click.pass_context
-def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], name: Optional[str],
+def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], name: str | None,
                   skip_invalid: bool, replace: bool, dry_run: bool, interactive: bool) -> None:
     """
     Import server configuration using specific or all registered importer types.
@@ -691,7 +691,7 @@ def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], na
     if interactive and any(entry.action != UNCHANGED for plan in plans for entry in plan.entries):
         click.confirm("Apply this import plan?", abort=True)
 
-    def on_error(typ: str, entry: Optional[PlanEntry], e: Exception) -> None:
+    def on_error(typ: str, entry: PlanEntry | None, e: Exception) -> None:
         if entry is not None:
             click.secho(f"Could not delete {typ} {_plan_entry_name(typ, entry)}: {e}", fg="red")
             return
