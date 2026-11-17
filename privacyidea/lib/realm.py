@@ -419,7 +419,7 @@ def export_realms(name=None):
 
 
 @register_import('realm')
-def import_realms(data, name=None):
+def import_realms(data: dict, name: str | None = None) -> None:
     """
     Import given realm configurations
 

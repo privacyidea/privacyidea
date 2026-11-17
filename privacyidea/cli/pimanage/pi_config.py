@@ -24,7 +24,7 @@ import sys
 import ast
 import inspect
 from functools import partial
-from typing import TextIO
+from typing import Any, Optional, TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
@@ -48,7 +48,7 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
-from privacyidea.lib.utils.import_plan import (UNCHANGED, apply_import_plan, build_import_plan,
+from privacyidea.lib.utils.import_plan import (UNCHANGED, PlanEntry, apply_import_plan, build_import_plan,
                                                format_import_plan)
 from privacyidea.cli.pimanage.challenge import challenge_cli
 from privacyidea.cli.pimanage.metrics import metrics_cli
@@ -586,12 +586,12 @@ def _is_interactive() -> bool:
     return sys.stdin.isatty()
 
 
-def _reads_stdin(infile) -> bool:
+def _reads_stdin(infile: Any) -> bool:
     """Whether the import data is read from stdin (no -i or -i -)."""
     return infile in (sys.stdin, sys.__stdin__) or getattr(infile, "name", None) in ("<stdin>", "-")
 
 
-def _plan_entry_name(typ: str, entry) -> str:
+def _plan_entry_name(typ: str, entry: PlanEntry) -> str:
     """The quoted name of a plan entry as the plan prints it, with the handler module for event."""
     return f'"{entry.key[0]}" ({entry.key[1]})' if typ == "event" else f'"{entry.key}"'
 
@@ -622,7 +622,8 @@ def _plan_entry_name(typ: str, entry) -> str:
               help='Print the import plan and ask before applying it. Needs an input '
                    'file and a terminal.')
 @click.pass_context
-def config_import(ctx, infile, types, name, skip_invalid, replace, dry_run, interactive):
+def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], name: Optional[str],
+                  skip_invalid: bool, replace: bool, dry_run: bool, interactive: bool) -> None:
     """
     Import server configuration using specific or all registered importer types.
 
@@ -690,7 +691,7 @@ def config_import(ctx, infile, types, name, skip_invalid, replace, dry_run, inte
     if interactive and any(entry.action != UNCHANGED for plan in plans for entry in plan.entries):
         click.confirm("Apply this import plan?", abort=True)
 
-    def on_error(typ, entry, e):
+    def on_error(typ: str, entry: Optional[PlanEntry], e: Exception) -> None:
         if entry is not None:
             click.secho(f"Could not delete {typ} {_plan_entry_name(typ, entry)}: {e}", fg="red")
             return
