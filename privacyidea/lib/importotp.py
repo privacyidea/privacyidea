@@ -181,6 +181,8 @@ def parseOATHcsv(csv):
             ttype = values[2].strip().lower()
 
             tok_class = get_token_class(ttype)
+            if not tok_class:
+                raise TokenImportException(f"Unknown token type '{ttype}' of token {serial}.")
             params = tok_class.get_import_csv(values)
             log.debug(f"read the line {params!s}")
 
