@@ -226,6 +226,51 @@
 
 // --- Form fields and inputs -------------------------------------------------------------------
 
+// The outline of a field keeps the two tones of the flat depth border and follows the light source the same way: the
+// shadow tone on the sides the light falls away from, the light tone on the two it reaches. Material draws the outline
+// as three pieces, each with its own borders, so every side takes its tone from the sign of the light direction: a
+// sign of 1 gives the whole shadow tone, -1 the whole light tone. Hovered, focused, invalid and disabled fields keep
+// Material's own single colour.
+.mat-mdc-form-field:not(.mat-focused):not(.mat-form-field-invalid):not(.mat-form-field-disabled)
+  .mdc-text-field--outlined:not(:hover)
+  .mdc-notched-outline {
+  --input-border-left: color-mix(
+    in srgb,
+    var(--input-border-shadow) calc(50% + 50% * var(--depth-sign-x)),
+    var(--input-border-light)
+  );
+  --input-border-right: color-mix(
+    in srgb,
+    var(--input-border-shadow) calc(50% - 50% * var(--depth-sign-x)),
+    var(--input-border-light)
+  );
+  --input-border-top: color-mix(
+    in srgb,
+    var(--input-border-shadow) calc(50% + 50% * var(--depth-sign-y)),
+    var(--input-border-light)
+  );
+  --input-border-bottom: color-mix(
+    in srgb,
+    var(--input-border-shadow) calc(50% - 50% * var(--depth-sign-y)),
+    var(--input-border-light)
+  );
+
+  > .mdc-notched-outline__leading,
+  > .mdc-notched-outline__notch,
+  > .mdc-notched-outline__trailing {
+    border-top-color: var(--input-border-top);
+    border-bottom-color: var(--input-border-bottom);
+  }
+
+  > .mdc-notched-outline__leading {
+    border-inline-start-color: var(--input-border-left);
+  }
+
+  > .mdc-notched-outline__trailing {
+    border-inline-end-color: var(--input-border-right);
+  }
+}
+
 .input-width-xs .mat-mdc-form-field-infix {
   width: var(--input-width-xs);
 }
@@ -556,6 +601,15 @@ mat-chip.mat-mdc-chip {
   margin-bottom: 16px;
 }
 
+// .mat-divider resets its margin the same way.
+.mat-divider.margin-top-16 {
+  margin-top: 16px;
+}
+
+.mat-divider.margin-bottom-16 {
+  margin-bottom: 16px;
+}
+
 // A list item carries .pad-0 to drop every side of its padding, but the one-line rule above sets padding-bottom at two
 // classes of specificity, which outranks the lone utility class; naming both Material classes beside it wins.
 .mdc-list-item.mdc-list-item--with-one-line.pad-0 {
@@ -594,4 +648,19 @@ tr.mat-mdc-row:not(:hover):not(:has(:focus-visible)) app-copyable:has(.cell-trun
   max-width: 0;
   margin-left: 0;
   overflow: hidden;
+}
+
+// A value next to its actions (copy, filter) that does not truncate wraps within its cell, at any character if it has
+// no break (serials, hashes, user names). Without this the value keeps its full width, pushes its actions out of the
+// cell and the cell's clipping hides them.
+app-copyable > .flex-row > :not(.copyable-actions):not(.cell-truncate) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// The focus state layer of a tab is white (see the tabs overrides), which does not show on a light surface, so
+// keyboard focus is marked with an outline. It sits inside the tab because the tab header clips what leaves it.
+.mat-mdc-tab:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: -2px;
 }

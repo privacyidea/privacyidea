@@ -178,7 +178,11 @@
 
 * **`/validate/check` with `otponly=1` checks the token like any other authentication.** This is the *test OTP*
   action of the WebUI. A disabled, expired or revoked token, or one past its fail counter, is refused, and a
-  wrong value increases the fail counter of the token.
+  wrong value increases the fail counter of the token. The request also needs a session token from `/auth` in the
+  `PI-Authorization` or `Authorization` header: of an administrator with the admin right `tokenlist` for the token,
+  or of the owner of the token. Other requests with `otponly` are refused. If a script or another client sends
+  `otponly`, change it to send the OTP PIN with the OTP value and without `otponly`, or to send the session token of
+  such an administrator.
 
 * **Users assign only tokens and containers of their own realm.** As documented for the user actions `assign` and
   `container_assign_user`, the token or container has to be in the user's realm or in no realm. A pool of spare
@@ -227,6 +231,11 @@
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
   it exited with status 0.
+
+* **`pi-manage setup encrypt_enckey -o` creates the file readable only by its owner.** A new output file gets the
+  permissions `0600`. Before, it got the default permissions of the system, for example `0644`. If you run the command
+  as root, change the owner of the new file to the user that privacyIDEA runs as. `-o` can not name the key file itself
+  anymore.
 
 * **Token janitor `update` writes only the secrets of an export entry.** `privacyidea-token-janitor update` and
   `pi-tokenjanitor update` store the OTP key, the OTP length, the description and the encrypted token info of
@@ -331,6 +340,13 @@
 
 * **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
   stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
+
+* **Two-step enrollment for every token rollover.** If a `hotp_2step` or `totp_2step` policy has the value `force`,
+  every rollover of an enrolled token uses the two-step enrollment. This applies to each request to `/token/init` for
+  such a token, with or without the `rollover` parameter. The rollover in the WebUI does not change, because the
+  WebUI always sends the `rollover` parameter. If a script rolls over such tokens through the API, make sure that it
+  sends the client component in a second request. The server refuses a request that sends its own key (`otpkey`) for
+  such a token, as for a new token.
 
 * **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
   for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.

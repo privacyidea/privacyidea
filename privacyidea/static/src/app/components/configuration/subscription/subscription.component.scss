@@ -7,6 +7,16 @@
   @include table.page-table-state-size;
 }
 
+// The headings follow the page's h1 without skipping a level; their sizes are set here, not by the level.
+.subscriptions-title {
+  font-size: 1.17em;
+  margin: 1em 0;
+}
+
+.application-title {
+  font-size: 1em;
+}
+
 .application-color {
   color: var(--mat-sys-primary);
 }
