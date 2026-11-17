@@ -238,6 +238,11 @@ class TokenClass:
     })
     settable_tokeninfo_prefixes = frozenset()
 
+    # Settable keys that must not be empty, declared the same way. The token needs a value to work, so the
+    # enrollment requires one and POST /token/set refuses an empty value.
+    required_tokeninfo_keys = frozenset()
+    required_tokeninfo_prefixes = frozenset()
+
     @classmethod
     def _collect_tokeninfo_declaration(cls, keys_attribute: str, prefixes_attribute: str) -> tuple:
         """
@@ -316,6 +321,18 @@ class TokenClass:
                                                             "settable_tokeninfo_prefixes")
         return key in keys or any(key.startswith(prefix) for prefix in prefixes)
 
+    @classmethod
+    def is_required_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Whether POST /token/set refuses an empty value for the given token info key, see required_tokeninfo_keys.
+
+        :param key: The token info key to check
+        :return: True if the key must not be set to an empty value
+        """
+        keys, prefixes = cls._collect_tokeninfo_declaration("required_tokeninfo_keys",
+                                                            "required_tokeninfo_prefixes")
+        return key in keys or any(key.startswith(prefix) for prefix in prefixes)
+
     @log_with(log)
     def __init__(self, db_token):
         """
@@ -335,6 +352,8 @@ class TokenClass:
         # These are temporary details to store during authentication
         # like the "matched_otp_counter".
         self.auth_details = {}
+        # init_token sets this to True if it created the token, False if it updated an existing token
+        self.newly_created = False
 
     def set_type(self, tokentype):
         """

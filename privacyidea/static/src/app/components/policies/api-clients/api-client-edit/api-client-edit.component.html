@@ -80,7 +80,6 @@
     <div class="api-client-form">
       <div class="flex-row gap-16">
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@apiClient.displayName">Display Name</mat-label>
           <app-clearable-input
@@ -102,7 +101,6 @@
                paint. Since this value is immutable in edit mode anyway, show it as
                plain read-only text instead of a select. -->
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@apiClient.clientType">Client Type</mat-label>
             <input
@@ -111,7 +109,6 @@
           </mat-form-field>
         } @else {
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@apiClient.clientType">Client Type</mat-label>
             <mat-select [formField]="apiClientForm.client_type">
@@ -130,7 +127,6 @@
 
         @if (isEditMode() && authService.actionAllowed("api_client_edit")) {
           <mat-form-field
-            appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@common.status">Status</mat-label>
             <mat-select [formField]="apiClientForm.status">

@@ -286,12 +286,17 @@ condition. The right value is always text.
   .. versionadded:: 3.12 ``date_before`` and ``date_after``
 
 * ``date_within_last`` is true if the left date and time is within the time span of the
-  right value before now. ``!date_within_last`` is true if this is not the case. The
-  right value is a whole number and a unit: ``s`` (seconds), ``m`` (minutes), ``h``
-  (hours), ``d`` (days) or ``y`` (years of 365 days). For example, ``7d`` means "within
-  the last 7 days". A left date without time zone counts as UTC.
+  right value before now. A date in the future is not within this time span.
+  ``!date_within_last`` is true if this is not the case. The right value is a whole
+  number and a unit: ``s`` (seconds), ``m`` (minutes), ``h`` (hours), ``d`` (days) or
+  ``y`` (years of 365 days). For example, ``7d`` means "within the last 7 days". A left
+  date without time zone counts as UTC. If the right value is negative, privacyIDEA
+  raises an error.
 
   .. versionadded:: 3.12
+
+  .. versionchanged:: 3.14.1 ``date_within_last`` does not match a date in the future, and a
+     negative duration is an error.
 
 * ``string_contains`` is true if the left value contains the right value as part of the
   text. ``!string_contains`` is true if this is not the case. Upper and lower case do not

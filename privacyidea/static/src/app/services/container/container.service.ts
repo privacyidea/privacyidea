@@ -187,8 +187,15 @@ export interface ContainerTemplate {
   };
 }
 
+export interface ContainerTokenNotCreated {
+  type: string;
+  error: string;
+  serial?: string;
+}
+
 export interface ContainerCreateResult {
   container_serial: string;
+  tokens_not_created?: ContainerTokenNotCreated[];
   tokens?: Record<string, EnrollmentResponseDetail & { type: string }>;
 }
 
