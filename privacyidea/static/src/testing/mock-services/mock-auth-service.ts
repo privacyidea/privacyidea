@@ -68,6 +68,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly showSeed = computed(() => this.authData()?.show_seed ?? false);
   readonly showNode = computed(() => this.authData()?.show_node ?? "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status ?? 0);
+  readonly hasSubscription = computed(() => this.authData()?.has_subscription ?? false);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android ?? null);
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios ?? null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom ?? null);

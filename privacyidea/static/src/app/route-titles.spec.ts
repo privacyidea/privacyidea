@@ -22,6 +22,7 @@ import { routes as appRoutes } from "./app.routes";
 import { routes as adminRoutes } from "./admin.routes";
 import { routes as selfServiceRoutes } from "./self-service.routes";
 import { detailsTitle, newTitle, PAGE_NAMES } from "./core/route-titles";
+import { ALL_PAGES } from "../../playwright-e2e/support/routes";
 
 // Every route that draws a page, with the path it is reached by and the title it carries. A route that only groups
 // its children, redirects or matches anything else draws no page of its own.
@@ -46,6 +47,22 @@ describe("route titles", () => {
     expect(pages.length).toBeGreaterThan(0);
     const untitled = pages.filter(({ route }) => typeof route.title !== "string" || route.title.trim() === "");
     expect(untitled.map(({ path }) => path)).toEqual([]);
+  });
+
+  it.each(trees)("gives every page of the %s routes a title of its own", (_name, routes) => {
+    const pages = pagesOf(routes);
+    const duplicates = pages.filter(
+      ({ route }, i) => pages.findIndex((other) => other.route.title === route.title) !== i
+    );
+    expect(duplicates.map(({ path, route }) => `${path}: ${String(route.title)}`)).toEqual([]);
+  });
+
+  it("has the e2e suite visit every admin page that needs no record", () => {
+    const visited = new Set(ALL_PAGES.map(({ path }) => path));
+    const missing = pagesOf(adminRoutes)
+      .map(({ path }) => path)
+      .filter((path) => !path.includes(":") && !visited.has(path));
+    expect(missing).toEqual([]);
   });
 
   it("walks the nested routes", () => {

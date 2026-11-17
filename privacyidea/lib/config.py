@@ -47,8 +47,8 @@ from sqlalchemy import select, delete
 
 from privacyidea.config import DefaultConfigValues, ConfigKey
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
-from privacyidea.lib.utils import to_list, censor_connect_string
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils import to_list
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .caconnectors.baseca import BaseCAConnector
 from .crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from .crypto import encryptPassword
@@ -404,7 +404,8 @@ def get_config_object():
     return store['config_object']
 
 
-@log_with(log)
+# The result is not logged: it is the decrypted value of a password-type entry, or a whole configuration with them
+@log_with(log, log_exit=False)
 # @cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
     """
@@ -992,55 +993,6 @@ def get_machine_resolver_module_list():
     return modules
 
 
-# Fragments in the name of a pi.cfg key that say its value is a secret. Matched as
-# case-insensitive substrings rather than against a list of known keys, because the pi.cfg key
-# space is open-ended: an installation and a plugin may define their own keys, and a key named
-# after what it holds is then covered without privacyIDEA having to know about it.
-#
-# Only fragments that no harmless key contains are listed. "KEY" for instance is deliberately
-# absent: it appears in PI_AUDIT_KEY_PRIVATE and PI_AUDIT_KEY_PUBLIC, which hold file paths, and
-# in the PI_AUDIT_NO_PRIVATE_KEY_CHECK flag, none of which is a secret.
-SENSITIVE_APP_CONFIG_FRAGMENTS = ("PASSWORD", "SECRET", "PEPPER", "PASSPHRASE", "CREDENTIAL")
-
-# Keys whose value is a secret although their name does not say so. A new key that the fragments
-# above do not catch belongs here.
-SENSITIVE_APP_CONFIG_KEYS = frozenset({"PI_HSM_MODULE_KEY"})
-
-# Keys whose value is a database connect string. The credential sits inside the value rather
-# than being the whole of it, so these are shortened with censor_connect_string() instead of
-# being replaced: the host and the driver are what the report is read for.
-CONNECT_STRING_APP_CONFIG_KEYS = frozenset({"PI_AUDIT_SQL_URI"})
-
-
-def censor_app_config(app_config: dict) -> dict:
-    """
-    Return a copy of the app configuration with the secret values replaced by ``__CENSORED__``.
-
-    This is for rendering the configuration into a report that is read by somebody other than
-    the person who wrote ``pi.cfg`` - the value of a key that holds a credential must not be
-    part of it.
-
-    The decision is made on the name of the key, which cannot be complete: a custom key that is
-    named after neither its content nor anything in SENSITIVE_APP_CONFIG_FRAGMENTS still has its
-    value rendered. It is a denylist because the alternative, rendering only the values of keys
-    privacyIDEA knows, would hide most of what the report is read for.
-
-    :param app_config: the application configuration
-    :return: a dict with the same keys, and the secret values replaced
-    """
-    censored = {}
-    for key, value in app_config.items():
-        upper_key = str(key).upper()
-        if upper_key in CONNECT_STRING_APP_CONFIG_KEYS:
-            censored[key] = censor_connect_string(value) if value else value
-        elif (upper_key in SENSITIVE_APP_CONFIG_KEYS
-                or any(fragment in upper_key for fragment in SENSITIVE_APP_CONFIG_FRAGMENTS)):
-            censored[key] = CENSORED
-        else:
-            censored[key] = value
-    return censored
-
-
 def get_stored_config_type(key: str) -> str:
     """
     Return the type a config entry is stored under, or "" when there is no such entry.
@@ -1058,6 +1010,37 @@ def get_stored_config_type(key: str) -> str:
     return (pi_config.Type or "") if pi_config else ""
 
 
+def get_token_setting_type(key: str) -> str:
+    """
+    Return the type that the token class a config entry belongs to declares for it, like "public" or "password".
+
+    The token type is the part of the key before the first dot, e.g. "yubikey" for "yubikey.apiid.client1".
+
+    :param key: the name of the config entry
+    :return: the declared type, or "" if the entry is no token setting or the token class declares no type for it
+    """
+    try:
+        token_class = get_token_class(key.split(".")[0])
+        return token_class.get_setting_type(key) or ""
+    except Exception:
+        log.debug("This seems to be no token specific setting")
+        return ""
+
+
+def is_password_config_entry(key: str, stored_type: str | None) -> bool:
+    """
+    Whether the value of a config entry is a password, by the type it is stored under or the type its token class
+    declares for it.
+
+    An entry written before its token class declared it a password is stored under no type and in plain text. It is
+    encrypted the next time it is written, and is to be treated as a password until then as well.
+
+    :param key: the name of the config entry
+    :param stored_type: the type the entry is stored under
+    """
+    return stored_type == "password" or get_token_setting_type(key) == "password"
+
+
 def set_privacyidea_config(key, value, typ="", desc=""):
     """
     Set a config value and writes it to the Config database table.
@@ -1068,13 +1051,7 @@ def set_privacyidea_config(key, value, typ="", desc=""):
     pi_config = db.session.scalars(stmt).first()
 
     if not typ:
-        # check if this is a token specific config and if it should be public
-        try:
-            token_type = key.split(".")[0]
-            tclass = get_token_class(token_type)
-            typ = tclass.get_setting_type(key)
-        except Exception:
-            log.debug("This seems to be no token specific setting")
+        typ = get_token_setting_type(key)
 
     if not typ:
         typ = PUBLIC_SYSTEM_SETTINGS.get(key, "")
@@ -1243,17 +1220,25 @@ def export_config(name=None, censor=False):
     instance (starting with ``__``) are left out.
 
     :param censor: If True, the value of password-type entries is replaced with
-        the ``__CENSORED__`` placeholder instead of being exported.
+        the ``__CENSORED__`` placeholder instead of being exported. This includes
+        the entries their token class declares a password, which may still be
+        stored in plain text.
     """
     c = {key: values for key, values in get_config_object().config.items() if not _is_internal_config_key(key)}
     if name:
         c = {name: c[name]} if name in c.keys() else {}
     # The values are still those of the cached config object, so build new dicts
     # for the password-type entries instead of mutating them
-    c = {key: ({**values, "Value": CENSORED if censor else _export_password(key, values.get("Value"))}
-               if isinstance(values, dict) and values.get("Type") == "password"
-               else values)
-         for key, values in c.items()}
+    if censor:
+        c = {key: ({**values, "Value": CENSORED}
+                   if isinstance(values, dict) and is_password_config_entry(key, values.get("Type"))
+                   else values)
+             for key, values in c.items()}
+    else:
+        c = {key: ({**values, "Value": _export_password(key, values.get("Value"))}
+                   if isinstance(values, dict) and values.get("Type") == "password"
+                   else values)
+             for key, values in c.items()}
     return c
 
 
@@ -1264,7 +1249,7 @@ def import_config(data, name=None):
     Keys internal to an instance (starting with ``__``) are skipped, so that an
     export of another instance cannot replace the ones of this instance.
     """
-    log.debug(f'Import server config: {data!s}')
+    log.debug(f'Import server config: {get_import_names(data)}')
     res = {}
     for key, values in data.items():
         if name and name != key:
