@@ -60,7 +60,7 @@ none that names the user store or an account in it.
 
 {% for resolvername, reso in context.resolverconfig.items() %}
 {{ rst_text(resolvername) }}
-{{ "~" * rst_text(resolvername)|length }}
+{{ rst_underline(rst_text(resolvername)) }}
 * Name of the resolver: {{ rst_text(resolvername) }}
 * Type of the resolver: {{ rst_text(reso.type) }}
 
@@ -85,7 +85,7 @@ The following realms have been defined from the resolvers:
 
 {% for realmname, realm in context.realmconfig.items() %}
 {{ rst_text(realmname) }}
-{{ "~" * rst_text(realmname)|length }}
+{{ rst_underline(rst_text(realmname)) }}
 * Name of the realm: {{ rst_text(realmname) }}
 
 {% if realm.default: %}
@@ -121,7 +121,7 @@ The following policies are defined in your system:
 
 {% for policy in context.policyconfig: %}
 {{ rst_text(policy.name) }}
-{{ "~" * rst_text(policy.name)|length }}
+{{ rst_underline(rst_text(policy.name)) }}
 
 ::
 
@@ -144,7 +144,7 @@ The following event handlers are defined in your system:
 
 {% for event in context.eventconfig %}
 {{ rst_text(event.name) }}
-{{ "~" * rst_text(event.name)|length }}
+{{ rst_underline(rst_text(event.name)) }}
 
 ::
 
@@ -169,7 +169,7 @@ the sender or the account.
 
 {% for server in context.smtpservers %}
 {{ rst_text(server.identifier) }}
-{{ "~" * rst_text(server.identifier)|length }}
+{{ rst_underline(rst_text(server.identifier)) }}
 
 ::
 
@@ -188,7 +188,7 @@ the URL and the credentials of the gateway, and the headers are censored.
 
 {% for gateway in context.smsgateways %}
 {{ rst_text(gateway.identifier) }}
-{{ "~" * rst_text(gateway.identifier)|length }}
+{{ rst_underline(rst_text(gateway.identifier)) }}
 
 ::
 
@@ -210,7 +210,7 @@ queried, not by the host or the shared secret.
 
 {% for server in context.radiusservers %}
 {{ rst_text(server.identifier) }}
-{{ "~" * rst_text(server.identifier)|length }}
+{{ rst_underline(rst_text(server.identifier)) }}
 
 ::
 

@@ -20,7 +20,8 @@ from privacyidea.lib.system_documentation import (_get_resolvers, _get_sms_provi
                                                   get_events_for_documentation, get_machines_for_documentation,
                                                   get_radiusservers_for_documentation, get_schema_revision,
                                                   get_smsgateways_for_documentation,
-                                                  get_smtpservers_for_documentation, get_token_statistics)
+                                                  get_smtpservers_for_documentation, get_token_statistics,
+                                                  rst_underline)
 from privacyidea.lib.container import delete_container_by_serial, init_container
 from privacyidea.lib.token import enable_token, init_token, remove_token
 from privacyidea.lib.user import User
@@ -206,3 +207,9 @@ class SystemDocumentationTestCase(MyTestCase):
             resolvers = _get_resolvers()
         self.assertEqual("passwdresolver", resolvers[self.resolvername1]["type"])
         self.assertEqual({"editable": False}, resolvers[self.resolvername1]["data"])
+
+    def test_11_rst_underline(self):
+        self.assertEqual("~~~~~~~", rst_underline("users\\_"))
+        # An East Asian wide character takes two columns, a combining character none
+        self.assertEqual("~~~~~~~~", rst_underline("メール\\_"))
+        self.assertEqual("~~~~", rst_underline("Cafe\u0301"))

@@ -27,6 +27,7 @@ import logging
 import re
 import socket
 import string
+import unicodedata
 
 from alembic.runtime.migration import MigrationContext
 from flask import current_app
@@ -350,11 +351,25 @@ def rst_text(text: object) -> str:
     return re.sub(f"([{re.escape(string.punctuation)}])", r"\\\1", " ".join(str(text).split()))
 
 
+def rst_underline(title: str) -> str:
+    """
+    Return the underline of a section title. docutils measures a title in display columns: an East Asian wide
+    character takes two, a combining character none.
+
+    :param title: the section title as it is written into the document
+    :return: the underline, as wide as the title
+    """
+    width = sum(2 if unicodedata.east_asian_width(character) in ("W", "F") else 1 for character in title)
+    width -= sum(1 for character in title if unicodedata.combining(character))
+    return "~" * width
+
+
 def render_system_documentation() -> str:
     """
     Render the system documentation as reStructuredText.
     """
     template = _TEMPLATE_ENVIRONMENT.get_template("system_documentation.rst")
-    rendered = template.render(context=get_system_documentation_context(), rst_text=rst_text)
+    rendered = template.render(context=get_system_documentation_context(), rst_text=rst_text,
+                               rst_underline=rst_underline)
     # The template lines that hold no text leave empty lines, three or more line breaks are reduced to two
     return re.sub("\n{3,}", "\n\n", rendered)
