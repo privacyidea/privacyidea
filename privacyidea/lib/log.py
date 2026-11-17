@@ -338,14 +338,18 @@ def get_url_origin(url: str) -> str:
     is part of the result.
 
     :param url: the URL a request is sent to
-    :return: the URL reduced to its scheme, host and port
+    :return: the URL reduced to its scheme, host and port, or a placeholder for a URL that can not be parsed or
+        that has no scheme or no host
     """
     try:
         parsed_url = urlparse(str(url))
         port = f":{parsed_url.port}" if parsed_url.port else ""
     except ValueError:
         return "<URL that can not be parsed>"
-    return f"{parsed_url.scheme}://{parsed_url.hostname}{port}"
+    if not parsed_url.scheme or not parsed_url.hostname:
+        return "<URL without a scheme or a host>"
+    host = f"[{parsed_url.hostname}]" if ":" in parsed_url.hostname else parsed_url.hostname
+    return f"{parsed_url.scheme}://{host}{port}"
 
 
 def redact_url(url: str) -> str:

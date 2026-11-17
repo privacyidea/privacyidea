@@ -103,12 +103,20 @@ class TestUrlOrigin:
         ("https://hooks.example.com/services/T000/B000/webhook-token", "https://hooks.example.com"),
         ("https://user:password@gateway.example.com:8443/send?apikey=key", "https://gateway.example.com:8443"),
         ("http://api.example.com/bot123456:token/sendMessage", "http://api.example.com"),
+        ("http://[2001:db8::1]:8080/webhook-token", "http://[2001:db8::1]:8080"),
+        ("https://user:password@[::1]:8443/send?apikey=key", "https://[::1]:8443"),
     ])
     def test_origin(self, url, origin):
         assert get_url_origin(url) == origin
 
     def test_url_that_can_not_be_parsed(self):
         assert get_url_origin("http://example.com:port/path") == "<URL that can not be parsed>"
+        assert get_url_origin("https://[::1/path") == "<URL that can not be parsed>"
+
+    @pytest.mark.parametrize("url", ["hooks.example.com/webhook-token", "//hooks.example.com/webhook-token",
+                                     "gateway.example.com:8443/send?apikey=key"])
+    def test_url_without_scheme_or_host(self, url):
+        assert get_url_origin(url) == "<URL without a scheme or a host>"
 
     def test_original_is_not_modified(self):
         data = {"pin": TEST_PIN, "nested": {"password": TEST_PASSWORD}}
