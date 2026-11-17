@@ -31,6 +31,7 @@ prune **/.angular
 # the files that "graft privacyidea" pulls in.
 prune privacyidea/static/src
 prune privacyidea/static/tools
+prune privacyidea/static/playwright-e2e
 exclude privacyidea/static/.editorconfig privacyidea/static/.prettierrc
 exclude privacyidea/static/angular.json privacyidea/static/eslint.config.js
 exclude privacyidea/static/jest.config.ts privacyidea/static/tsconfig*.json

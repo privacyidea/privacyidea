@@ -22,6 +22,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContentService } from "@services/content/content.service";
 import { MockContentService } from "@testing/mock-services";
 import { FindSerialResultDialogComponent, GetSerialResultDialogData } from "./find-serial-result-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("GetSerialResultDialogComponent", () => {
   let component: FindSerialResultDialogComponent;
@@ -66,5 +67,11 @@ describe("GetSerialResultDialogComponent", () => {
   it("should call dialogRef.close() when you invoke close()", () => {
     component.dialogRef.close("reset");
     expect(mockDialogRef.close).toHaveBeenCalledWith("reset");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

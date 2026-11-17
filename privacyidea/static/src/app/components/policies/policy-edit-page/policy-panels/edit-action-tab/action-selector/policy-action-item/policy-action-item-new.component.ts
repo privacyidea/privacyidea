@@ -27,7 +27,13 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
-import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  COMMA_UNESCAPING_ACTIONS,
+  hasUnescapedComma,
+  PolicyActionDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -93,6 +99,8 @@ export class PolicyActionItemComponent {
   readonly textField = this.valueForm as unknown as FieldTree<string>;
 
   readonly currentAction = computed(() => ({ name: this.selectableAction().actionName, value: this.valueModel() }));
+  readonly valueHasComma = computed(() => hasUnescapedComma(this.currentAction()?.value));
+  readonly commaCanBeEscaped = computed(() => COMMA_UNESCAPING_ACTIONS.has(this.selectableAction().actionName));
 
   private readonly labelOptions = computed<ValueLabelOptions>(() => ({
     vocabulary: POLICY_VOCABULARY_ACTIONS.has(this.selectableAction().actionName)

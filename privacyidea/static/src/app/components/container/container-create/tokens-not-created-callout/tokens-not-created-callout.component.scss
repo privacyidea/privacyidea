@@ -1,0 +1,4 @@
+// The host adds no box of its own, so the callout lays out in the dialog exactly as if it were inlined there.
+:host {
+  display: contents;
+}

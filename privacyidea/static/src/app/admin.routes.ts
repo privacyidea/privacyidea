@@ -18,6 +18,7 @@
  **/
 
 import { Routes } from "@angular/router";
+import { ROUTE_PARAMS } from "@app/route_paths";
 import { detailsTitle, newTitle, PAGE_NAMES } from "@core/route-titles";
 import { dashboardGuard } from "@app/guards/dashboard.guard";
 import { logsLandingRedirect } from "@app/routing/landing-redirects";
@@ -142,7 +143,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.containerTemplates),
             component: ContainerTemplateEditPageComponent,
             canDeactivate: [pendingChangesGuard]
@@ -181,7 +182,7 @@ export const routes: Routes = [
         canDeactivate: [pendingChangesGuard]
       },
       {
-        path: "resolvers/details/:name",
+        path: `resolvers/details/:${ROUTE_PARAMS.NAME}`,
         title: detailsTitle(PAGE_NAMES.resolvers),
         component: UserNewResolverComponent,
         canDeactivate: [pendingChangesGuard]
@@ -199,7 +200,7 @@ export const routes: Routes = [
         canDeactivate: [pendingChangesGuard]
       },
       {
-        path: "details/:name",
+        path: `details/:${ROUTE_PARAMS.NAME}`,
         title: detailsTitle(PAGE_NAMES.policies),
         component: PolicyEditPageComponent,
         canDeactivate: [pendingChangesGuard]
@@ -217,7 +218,7 @@ export const routes: Routes = [
         canDeactivate: [pendingChangesGuard]
       },
       {
-        path: "conditional-access/details/:id",
+        path: `conditional-access/details/:${ROUTE_PARAMS.ID}`,
         title: detailsTitle(PAGE_NAMES.conditionalAccess),
         component: ConditionalAccessEditPageComponent,
         canDeactivate: [pendingChangesGuard]
@@ -233,7 +234,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:id",
+            path: `details/:${ROUTE_PARAMS.ID}`,
             title: detailsTitle(PAGE_NAMES.apiClients),
             component: ApiClientEditComponent,
             canDeactivate: [pendingChangesGuard]
@@ -253,7 +254,7 @@ export const routes: Routes = [
         canDeactivate: [pendingChangesGuard]
       },
       {
-        path: "details/:id",
+        path: `details/:${ROUTE_PARAMS.ID}`,
         title: detailsTitle(PAGE_NAMES.events),
         component: EventEditPageComponent,
         canDeactivate: [pendingChangesGuard]
@@ -275,7 +276,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.machineResolvers),
             component: MachineResolverDetailsComponent,
             canDeactivate: [pendingChangesGuard]
@@ -287,7 +288,7 @@ export const routes: Routes = [
         children: [
           { path: "", title: PAGE_NAMES.machines, component: MachinesComponent },
           {
-            path: "details/:id",
+            path: `details/:${ROUTE_PARAMS.ID}`,
             title: detailsTitle(PAGE_NAMES.machines),
             component: MachineDetailsComponent,
             canDeactivate: [pendingChangesGuard]
@@ -305,7 +306,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.periodicTasks),
             component: PeriodicTaskEditComponent,
             canDeactivate: [pendingChangesGuard]
@@ -358,7 +359,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:identifier",
+            path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
             title: detailsTitle(PAGE_NAMES.smtp),
             component: NewSmtpServerComponent,
             canDeactivate: [pendingChangesGuard]
@@ -376,7 +377,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:identifier",
+            path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
             title: detailsTitle(PAGE_NAMES.radius),
             component: NewRadiusServerComponent,
             canDeactivate: [pendingChangesGuard]
@@ -394,7 +395,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.sms),
             component: NewSmsGatewayComponent,
             canDeactivate: [pendingChangesGuard]
@@ -412,7 +413,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:identifier",
+            path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
             title: detailsTitle(PAGE_NAMES.privacyideaServers),
             component: NewPrivacyideaServerComponent,
             canDeactivate: [pendingChangesGuard]
@@ -430,7 +431,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.caConnectors),
             component: NewCaConnectorComponent,
             canDeactivate: [pendingChangesGuard]
@@ -448,7 +449,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.tokengroups),
             component: NewTokengroupComponent,
             canDeactivate: [pendingChangesGuard]
@@ -466,7 +467,7 @@ export const routes: Routes = [
             canDeactivate: [pendingChangesGuard]
           },
           {
-            path: "details/:name",
+            path: `details/:${ROUTE_PARAMS.NAME}`,
             title: detailsTitle(PAGE_NAMES.serviceIds),
             component: NewServiceIdComponent,
             canDeactivate: [pendingChangesGuard]

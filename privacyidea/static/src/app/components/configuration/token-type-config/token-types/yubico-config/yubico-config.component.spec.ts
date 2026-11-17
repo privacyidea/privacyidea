@@ -22,6 +22,7 @@ import { YubicoConfigComponent } from "@components/configuration/token-type-conf
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { touchAll } from "@utils/form-state.utils";
+import { axe } from "@testing/axe";
 
 describe("YubicoConfigComponent", () => {
   let fixture: ComponentFixture<YubicoConfigComponent>;
@@ -179,5 +180,12 @@ describe("YubicoConfigComponent", () => {
     fixture.componentRef.setInput("expanded", false);
     fixture.detectChanges();
     expect(component.expanded()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

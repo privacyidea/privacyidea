@@ -50,14 +50,17 @@ export class UserDetailsEditComponent {
   private lastUserData = signal<UserAttributeValues | null>(null);
   resolver = input.required<string>();
   initialUserData = input<UserData>();
+  // The fields to edit. Without them the fields come from the resolver mapping, which only admins may read.
+  fields = input<string[]>();
   updateData = output<EditUserData>();
+  private readonly sourceAttributes = computed(() => this.fields() ?? this.resolverService.userAttributes());
   attributes = computed(() => {
-    const attributes = this.resolverService.userAttributes();
+    const attributes = this.sourceAttributes();
     // Remove 'username' and 'userid' from the list of attributes
     return attributes.filter((attribute) => attribute !== "username" && attribute !== "userid");
   });
   protected newUserData: WritableSignal<UserAttributeValues> = linkedSignal({
-    source: () => ({ attributes: this.resolverService.userAttributes(), initial: this.initialUserData() }),
+    source: () => ({ attributes: this.sourceAttributes(), initial: this.initialUserData() }),
     computation: ({ attributes, initial }) => {
       const previousData: Record<string, unknown> | undefined = untracked(this.lastUserData) ?? initial;
       const newData: UserAttributeValues = { username: String(previousData?.["username"] || "") };
@@ -72,6 +75,7 @@ export class UserDetailsEditComponent {
 
   constructor() {
     effect(() => {
+      if (this.fields()) return;
       this.resolverService.selectedResolverName.set(this.resolver());
     });
     effect(() => {

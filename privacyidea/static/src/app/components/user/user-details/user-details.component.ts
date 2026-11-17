@@ -20,7 +20,6 @@ import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
-  effect,
   inject,
   linkedSignal,
   OnDestroy,
@@ -29,7 +28,6 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { applyWhen, form, FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -53,6 +51,8 @@ import {
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
+import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -79,27 +79,6 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
 import { formatLocalDateTime } from "@utils/date-format.utils";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { exactMatch, withUser } from "@utils/filter.utils";
-import { requiredNonBlank } from "@utils/form-rules.utils";
-
-/** Value of the key select's last option, which switches the add-attribute row to a free-text key. */
-export const CUSTOM_KEY_OPTION = "__CUSTOM__";
-
-/** The add-attribute row: the key comes from the select or from the text input, depending on `keyMode`. */
-interface AttributeRowModel {
-  keyMode: "select" | "input";
-  selectedKey: string;
-  customKey: string;
-  selectedValue: string;
-  customValue: string;
-}
-
-const EMPTY_ATTRIBUTE_ROW: AttributeRowModel = {
-  keyMode: "select",
-  selectedKey: "",
-  customKey: "",
-  selectedValue: "",
-  customValue: ""
-};
 
 @Component({
   selector: "app-user-details",
@@ -117,7 +96,6 @@ const EMPTY_ATTRIBUTE_ROW: AttributeRowModel = {
     MatLabel,
     MatOption,
     MatFormField,
-    FormField,
     NgClass,
     NgTemplateOutlet,
     UserDetailsContainerTableComponent,
@@ -127,6 +105,7 @@ const EMPTY_ATTRIBUTE_ROW: AttributeRowModel = {
     RouterLink,
     CopyableComponent,
     UserDetailsEditComponent,
+    UserCustomAttributesComponent,
     StickyHeaderDirective,
     DetailsCardComponent,
     DetailFieldComponent,
@@ -181,83 +160,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     }
   });
 
-  attributeSetMap = this.userService.attributeSetMap;
-  deletableAttributes = this.userService.deletableAttributes;
-  keyOptions = this.userService.keyOptions;
-  hasWildcardKey = this.userService.hasWildcardKey;
-  canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
+  readonly attributeDraft = new CustomAttributeDraft();
   showsAttributeExtrasColumn = computed(
     () =>
-      this.canSetCustomAttribute() ||
+      this.attributeDraft.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
       this.authService.actionAllowed("get_user_internal_attributes") ||
       this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
-  protected readonly CUSTOM_KEY_OPTION = CUSTOM_KEY_OPTION;
-  attributeRow = signal<AttributeRowModel>({ ...EMPTY_ATTRIBUTE_ROW });
-  attributeForm = form(this.attributeRow, (f) => {
-    applyWhen(
-      f.selectedKey,
-      ({ valueOf }) => valueOf(f.keyMode) === "select",
-      (key) => requiredNonBlank(key)
-    );
-    applyWhen(
-      f.customKey,
-      ({ valueOf }) => valueOf(f.keyMode) === "input",
-      (key) => requiredNonBlank(key)
-    );
-    applyWhen(
-      f.selectedValue,
-      () => !this.isValueInput(),
-      (value) => requiredNonBlank(value)
-    );
-    applyWhen(
-      f.customValue,
-      () => this.isValueInput(),
-      (value) => requiredNonBlank(value)
-    );
-  });
-  keyMode = computed(() => this.attributeRow().keyMode);
-  attributeKey = computed(() => {
-    const row = this.attributeRow();
-    return (row.keyMode === "input" ? row.customKey : row.selectedKey).trim();
-  });
-  valueOptions = computed<string[]>(() => {
-    const map = this.attributeSetMap();
-    const key = this.attributeKey();
-    if (key && map[key]) return map[key];
-    if (map["*"]) return map["*"];
-    return [];
-  });
-  isValueInput = computed<boolean>(() => {
-    const opts = this.valueOptions();
-    if (opts.includes("*")) return true;
-    return opts.length === 0;
-  });
-  attributeValue = computed(() => {
-    const row = this.attributeRow();
-    return (this.isValueInput() ? row.customValue : row.selectedValue).trim();
-  });
-  canAddAttribute = computed<boolean>(() => this.attributeForm().valid());
-  hasAttributeInput = computed(() => {
-    const row = this.attributeRow();
-    return !!(row.selectedKey || row.customKey || row.selectedValue || row.customValue);
-  });
-
-  constructor() {
-    effect(() => {
-      const hasWildcard = this.hasWildcardKey();
-      const hasFixedKeys = this.keyOptions().length > 0;
-      const keyMode = hasWildcard && !hasFixedKeys ? "input" : "select";
-      this.attributeRow.update((row) => ({ ...row, keyMode }));
-    });
-    effect(() => {
-      if (this.attributeRow().selectedKey === CUSTOM_KEY_OPTION) {
-        this.switchToCustomKey();
-      }
-    });
-  }
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
@@ -305,11 +216,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.hasAttributeInput());
-    this.pendingChangesService.registerValidChanges(() => this.editMode() || this.canAddAttribute());
-    this.pendingChangesService.registerSave(() => {
-      if (this.editMode()) return this.saveEditAsync();
-      return this.addCustomAttribute();
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
+    this.pendingChangesService.registerValidChanges(
+      () => !this.attributeDraft.hasChanges() || this.attributeDraft.hasValidChanges()
+    );
+    this.pendingChangesService.registerSave(async () => {
+      if (this.editMode() && !(await this.saveEditAsync())) return false;
+      return !this.attributeDraft.hasChanges() || this.attributeDraft.save();
     });
   }
 
@@ -348,38 +261,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       next.add(key);
     }
     this.expandedKeys.set(next);
-  }
-
-  switchToCustomKey() {
-    this.attributeRow.update((row) => ({ ...row, keyMode: "input", selectedKey: "" }));
-  }
-
-  switchToSelectKey() {
-    this.attributeRow.update((row) => ({ ...row, keyMode: "select", customKey: "" }));
-  }
-
-  async addCustomAttribute(): Promise<boolean> {
-    if (!this.canAddAttribute()) return false;
-
-    try {
-      await firstValueFrom(this.userService.setUserAttribute(this.attributeKey(), this.attributeValue()));
-      this.userService.userAttributesResource.reload();
-      this.userService.userResource.reload();
-      this.attributeRow.set({ ...EMPTY_ATTRIBUTE_ROW, keyMode: this.keyMode() });
-      this.attributeForm().reset();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  deleteCustomAttribute(key: string) {
-    this.userService.deleteUserAttribute(key).subscribe({
-      next: () => {
-        this.userService.userAttributesResource.reload();
-        this.userService.userResource.reload();
-      }
-    });
   }
 
   assignUserToToken(option: TokenDetails) {

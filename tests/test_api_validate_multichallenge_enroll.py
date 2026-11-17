@@ -1009,6 +1009,36 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"], res.json)
         self.reset_flask_g()
 
+    @ldap3mock.activate
+    def test_08c_enroll_smartphone_template_change_pin_on_first_use(self):
+        create_container_template(container_type="smartphone", template_name="test",
+                                  options={"tokens": [{"type": "hotp", "genkey": True,
+                                                       "change_pin_on_first_use": True},
+                                                      {"type": "totp", "genkey": True}]})
+        self.addCleanup(delete_container_template, "test")
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
+                           PolicyAction.PASSTHRU: True})
+        self.addCleanup(delete_policy, "enroll_via_multichallenge")
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        self.addCleanup(delete_policy, "registration")
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            serial = res.json["detail"]["serial"]
+        self.reset_flask_g()
+        self.addCleanup(self._delete_container_with_tokens, serial)
+
+        tokens = {token.get_tokentype(): token for token in find_container_by_serial(serial).get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertIsNone(tokens["totp"].get_tokeninfo("next_pin_change"))
+
     @staticmethod
     def _delete_container_with_tokens(container_serial: str):
         for token in find_container_by_serial(container_serial).tokens:

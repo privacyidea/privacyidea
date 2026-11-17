@@ -75,10 +75,10 @@ export class TokenDetailsUserComponent {
   protected readonly userRealm = computed(
     () => (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) ?? ""
   );
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
+  @Input({ required: true }) tokenSerial!: WritableSignal<string>;
+  @Input({ required: true }) isEditingUser!: WritableSignal<boolean>;
+  @Input({ required: true }) isEditingInfo!: WritableSignal<boolean>;
+  @Input({ required: true }) isAnyEditingOrRevoked!: Signal<boolean>;
   tokenType = computed(() => {
     if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
     const tokenDetail = this.tokenService.tokenDetailResource.value();

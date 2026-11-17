@@ -18,18 +18,15 @@
 -->
 <div
   appScrollToTop
-  class="periodic-task-layout"
-  aria-label="Periodic Tasks"
-  i18n-aria-label="@@common.periodicTasks">
+  class="periodic-task-layout">
 
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
         <mat-form-field
-          appearance="fill"
           class="periodic-task-table-filter"
           subscriptSizing="dynamic">
-          <mat-label i18n="@@periodicTask.filterPeriodic">Filter Periodic Tasks ...</mat-label>
+          <mat-label i18n="@@periodicTask.filterPeriodic">Filter Periodic Tasks</mat-label>
           <app-clearable-input
             (clearButtonClick)="resetFilter()"
             [showClearButton]="filterString().length > 0">

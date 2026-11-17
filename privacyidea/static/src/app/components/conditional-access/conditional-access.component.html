@@ -18,18 +18,15 @@
 -->
 <div
   appScrollToTop
-  aria-label="Conditional Access Policies"
-  class="conditional-access-container"
-  i18n-aria-label="@@conditionalAccess.conditionalAccessPolicies">
+  class="conditional-access-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
         <mat-form-field
-          appearance="fill"
           class="conditional-access-table-filter"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.filterConditionalAccessPolicies"
-            >Filter Conditional Access Policies...</mat-label
+            >Filter Conditional Access Policies</mat-label
           >
           <app-clearable-input
             (clearButtonClick)="resetFilter()"

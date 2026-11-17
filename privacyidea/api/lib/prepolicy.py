@@ -869,31 +869,25 @@ def init_token_length_contents(request=None, action=None):
     """
     This policy function is to be used as a decorator in the API token init function.
 
-    It can set the parameters for automatic code or password created in regards to length and
-    contents for the tokentypes 'registration' and 'pw'.
+    It sets the length and the contents of the password, which is generated for token types that are derived from
+    the password token, like 'pw', 'registration' and 'applspec'.
 
-    If there is a valid policy set the action values of REGISTRATIONCODE_LENGTH / PASSWORD_LENGTH
-    and REGISTRATIONCODE_CONTENTS / PASSWORD_CONTENTS are added to request.all_data as
+    The values are taken from the policies ``<type>.length`` and ``<type>.contents`` or, if there is no policy, from
+    the defaults of the token class. They are added to request.all_data as
 
-    { 'registration.length': '10', 'registration.contents': 'cn' }
-    or
     { 'pw.length': '10', 'pw.contents': 'cn' }
+
+    Both values are always set, so that request parameters of the same names can not define the generated password.
     """
+    from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
     no_content_policy = True
     no_length_policy = True
     params = request.all_data
     tokentype = params.get("type")
-
-    if tokentype == 'registration':
-        from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = PolicyAction.REGISTRATIONCODE_LENGTH
-        contents_action = PolicyAction.REGISTRATIONCODE_CONTENTS
-    elif tokentype == 'pw':
-        from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-        length_action = PolicyAction.PASSWORD_LENGTH
-        contents_action = PolicyAction.PASSWORD_CONTENTS
-    else:
+    token_class = get_token_class(tokentype) if isinstance(tokentype, str) else None
+    if not token_class or not issubclass(token_class, PasswordTokenClass):
         return True
+    length_action, contents_action = token_class.get_password_policy_actions()
 
     user_object = get_user_from_param(params)
     length_pols = Match.user(g, scope=SCOPE.ENROLL, action=length_action,
@@ -908,9 +902,9 @@ def init_token_length_contents(request=None, action=None):
         no_content_policy = False
     # if there is no policy, set defaults.
     if no_length_policy:
-        request.all_data[length_action] = DEFAULT_LENGTH
+        request.all_data[length_action] = token_class.default_length
     if no_content_policy:
-        request.all_data[contents_action] = DEFAULT_CONTENTS
+        request.all_data[contents_action] = token_class.default_contents
     return True
 
 
@@ -1009,12 +1003,17 @@ def twostep_enrollment_activation(request=None, action=None):
     It is used to decorate the ``/token/init`` endpoint.
 
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
-    If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    With ``force``, it is set for a new token and for a token that is rolled over: like
+    :func:`check_token_init`, a request for a token whose enrollment is not pending rolls it over, with or without the
+    ``rollover`` parameter. Such a request must not contain ``verify``, because only a token in the state ``verify``
+    is verified. If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+
+    The policies are matched for ``request.User``: for a request that names only the serial of a token, this is the
+    owner of the token.
     """
-    user_object = get_user_from_param(request.all_data)
+    user_object = request.User
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type", default="hotp")
-    rollover = get_optional(request.all_data, "rollover")
     token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
@@ -1036,9 +1035,12 @@ def twostep_enrollment_activation(request=None, action=None):
             # The user is allowed to pass 2stepinit=1
             pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1 if the token does not exist yet or
-            # if a token rollover is triggered and the token is not in 'clientwait' state
-            if not token or (token.rollout_state != RolloutState.CLIENTWAIT and rollover):
+            # A token in a pending enrollment state is in the second step of its enrollment or in its
+            # verification, every other token is rolled over
+            rolled_over = token is not None and token.rollout_state not in RolloutState.enrollment_pending_states()
+            if rolled_over and get_optional(request.all_data, "verify"):
+                raise ParameterError(f"The token {serial} is not waiting for the verification of its enrollment.")
+            if not token or rolled_over:
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError(f"Unknown 2step policy setting: {enabled_setting}")
@@ -1177,10 +1179,12 @@ def check_max_token_user(request=None, action=None, token_type=None):
                 tokentype = get_token_type(serial) or "hotp"
             else:
                 tokentype = "hotp"
+        # Token types are stored in lower case, and so are the names of the type-specific policy actions
+        tokentype = tokentype.lower()
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
-                                action=f"{tokentype.lower()!s}_{PolicyAction.MAXTOKENUSER!s}",
+                                action=f"{tokentype!s}_{PolicyAction.MAXTOKENUSER!s}",
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens of this specific type the user already has assigned!
@@ -2258,8 +2262,9 @@ def api_key_required(request=None, action=None):
             g.logged_in_user = {"username": r.get("username", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
-        except (AttributeError, jwt.DecodeError):
-            # PyJWT 1.3.0 raises AttributeError, PyJWT 1.6.4 raises DecodeError.
+        except (AttributeError, jwt.InvalidTokenError):
+            # PyJWT 1.3.0 raises AttributeError, newer versions raise a subclass of InvalidTokenError
+            # (e.g. DecodeError or ExpiredSignatureError).
             raise PolicyError("No valid API key was passed.")
 
         role = g.logged_in_user.get("role")
@@ -3046,8 +3051,9 @@ def require_description(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    # Token types are stored in lower case, so both the request and the policy are compared in lower case
+    token_types = [token_type.lower() for token_type in action_values.keys()]
+    type_value = (request.all_data.get("type") or 'hotp').lower()
     if type_value in token_types:
         token = None
         serial = get_optional(params, "serial")
@@ -3087,8 +3093,9 @@ def require_description_on_edit(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    # Token types are stored in lower case, so both the token and the policy are compared in lower case
+    token_types = [token_type.lower() for token_type in action_values.keys()]
+    type_value = (request.all_data.get("type") or 'hotp').lower()
     if type_value in token_types:
         description = request.all_data.get("description", "").strip()
         if not description:

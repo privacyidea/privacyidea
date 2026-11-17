@@ -26,6 +26,19 @@
         class="detail-description"
         [innerHTML]="description | highlight: highlight() : true"></span>
     }
+    @if (valueHasComma()) {
+      @if (commaCanBeEscaped()) {
+        <span
+          class="detail-error"
+          role="alert"
+          i18n="@@policy.actionValueCommaEscape">Commas are not allowed in action values. Write a comma as \,</span>
+      } @else {
+        <span
+          class="detail-error"
+          role="alert"
+          i18n="@@policy.actionValueComma">Commas are not allowed in action values.</span>
+      }
+    }
   </div>
 
   <div class="detail-input">
@@ -58,7 +71,6 @@
               (valueChange)="updateSelectedActionValue($event ?? '')" />
           } @else {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <mat-select
@@ -77,7 +89,6 @@
         @switch (selectableAction().detail.type) {
           @case ("str") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <input
@@ -91,7 +102,6 @@
           }
           @case ("int") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <input
@@ -105,7 +115,6 @@
           }
           @case ("text") {
             <mat-form-field
-              appearance="fill"
               class="flex-1"
               subscriptSizing="dynamic">
               <!-- The autosize measures 15px per line while the field renders 24px lines, so 8 measured rows are 5 rendered rows. -->

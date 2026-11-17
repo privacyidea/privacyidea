@@ -66,6 +66,10 @@ DUMP_SUFFIXES = {SQLITE: ".sqlite", MYSQL: ".sql", POSTGRESQL: ".pgsql"}
 DUMP_FAMILIES = {suffix: family for family, suffix in DUMP_SUFFIXES.items()}
 DUMP_FILE_PATTERN = re.compile(r"dbdump-\d{8}-\d{4}(?P<suffix>\.sqlite|\.pgsql|\.sql)$")
 
+# The backup archive, named with the date and time of the backup
+ARCHIVE_BASE_NAME = "privacyidea-backup"
+ARCHIVE_FILE_PATTERN = re.compile(rf"{ARCHIVE_BASE_NAME}-\d{{8}}-\d{{4}}\.tgz$")
+
 # The connection parameters that pg_dump and psql take as a command line
 # option; everything else has to reach them through the environment.
 POSTGRESQL_COMMAND_LINE_PARAMS = frozenset(["host", "port", "user", "password", "dbname"])
@@ -128,10 +132,7 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     #  regardless of the given config directory (so they can differ).
     #  Since all the necessary paths are given in the config file, we should
     #  just use that for the gathering the files for backup.
-    # TODO: Remove generated/copied file in case of an error. Maybe create a
-    #  temporary folder where the data is collected
     cur_date = datetime.now(tz=tzlocal()).strftime("%Y%m%d-%H%M")
-    base_name = "privacyidea-backup"
 
     conf_dir = pathlib.Path(config_dir).absolute()
     directory = pathlib.Path(backup_dir).absolute()
@@ -147,38 +148,67 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     url = _database_url(current_app.config.get("SQLALCHEMY_DATABASE_URI"))
     family = _backend_family(url)
 
-    backup_file = directory.joinpath(f"{base_name}-{cur_date}.tgz")
+    backup_file = directory.joinpath(f"{ARCHIVE_BASE_NAME}-{cur_date}.tgz")
     sqlfile = directory.joinpath(f"dbdump-{cur_date}{DUMP_SUFFIXES[family]}")
 
-    if family == SQLITE:
-        _dump_sqlite(url, sqlfile)
-    elif family == MYSQL:
-        _report_obsolete_mysql_defaults(conf_dir)
-        _dump_mysql(url, sqlfile)
-    else:
-        _dump_postgresql(url, sqlfile)
+    # A backup directory in the configuration directory holds the dump, which is already in the archive, and the
+    # earlier archives. They are left out, else every archive contains all earlier ones.
+    backup_dir_name = _name_in_archive(conf_dir, directory)
 
-    with tarfile.open(backup_file, "x:gz") as tf:
-        tf.add(sqlfile)
-        if radius_dir:
-            # Simply append the radius directory to the backup command
-            tf.add(radius_dir, recursive=True)
+    def config_filter(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo | None:
+        parent_name, _, file_name = tarinfo.name.rpartition("/")
+        if parent_name == backup_dir_name and (ARCHIVE_FILE_PATTERN.fullmatch(file_name)
+                                               or DUMP_FILE_PATTERN.fullmatch(file_name)):
+            return None
+        if not enckey and enc_file.match(tarinfo.name):
+            return None
+        return tarinfo
 
-        if not enckey:
-            # Exclude enckey from backup
+    # The archive name has a resolution of one minute. The archive is reserved before the dump is written, so a
+    # second backup in the same minute stops before it touches the dump of the first one. The archive holds pi.cfg and
+    # the dump, so it is only readable by its owner from the start.
+    try:
+        archive = os.fdopen(os.open(backup_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb")
+    except FileExistsError:
+        click.secho(f"The backup file {backup_file} already exists. Wait a minute and try again.",
+                    fg="red")
+        sys.exit(2)
 
-            def exclude_encfile(t):
-                if enc_file.match(t.name):
-                    return None
-                return t
+    # The dump is not encrypted and contains the token seeds. It is only readable by its owner, also in the archive,
+    # and it must not be left in the backup directory, whatever happens after it was written.
+    old_umask = os.umask(0o077)
+    try:
+        with archive:
+            if family == SQLITE:
+                _dump_sqlite(url, sqlfile)
+            elif family == MYSQL:
+                _report_obsolete_mysql_defaults(conf_dir)
+                _dump_mysql(url, sqlfile)
+            else:
+                _dump_postgresql(url, sqlfile)
 
-            tf.add(conf_dir, recursive=True, filter=exclude_encfile)
-        else:
-            click.secho("Including encryption key in backup", fg="yellow")
-            tf.add(conf_dir, recursive=True)
+            # With the name, tarfile skips the archive itself, if it lies in a directory that is added
+            with tarfile.open(name=backup_file, fileobj=archive, mode="w:gz") as tf:
+                tf.add(sqlfile)
+                if radius_dir:
+                    # Simply append the radius directory to the backup command
+                    tf.add(radius_dir, recursive=True)
 
-    sqlfile.unlink()
-    backup_file.chmod(0o600)
+                if enckey:
+                    if enc_file.resolve().is_relative_to(conf_dir.resolve()):
+                        click.secho("Including encryption key in backup", fg="yellow")
+                    else:
+                        click.secho(f"The encryption key {enc_file} is not in the config directory "
+                                    f"{conf_dir} and is NOT included in the backup!", fg="yellow")
+                tf.add(conf_dir, recursive=True, filter=config_filter)
+    except BaseException:
+        # Do not leave a partial archive behind
+        backup_file.unlink(missing_ok=True)
+        raise
+    finally:
+        os.umask(old_umask)
+        sqlfile.unlink(missing_ok=True)
+
     click.echo(f"Backup written to file {backup_file}")
 
 
@@ -258,7 +288,11 @@ def backup_restore(backup_file, keep_db_uri):
     # If requested, capture the current DB URI before extraction overwrites pi.cfg.
     current_sqluri = None
     read_success = False
-    if keep_db_uri and config_file.exists():
+    if keep_db_uri and not config_file.exists():
+        click.secho(f"--keep-db-uri: no live config found at {config_file}. "
+                    "Using database URI from backup.",
+                    fg="yellow")
+    elif keep_db_uri:
         try:
             current_cfg = Config(config_file.parent)
             current_cfg.from_pyfile(config_file)
@@ -296,8 +330,15 @@ def backup_restore(backup_file, keep_db_uri):
     if restore_client and not shutil.which(restore_client):
         _missing_client(restore_client, family)
 
-    with tarfile.open(backup_file, "r:gz") as tf:
-        _extract_backup(tf)
+    try:
+        with tarfile.open(backup_file, "r:gz") as tf:
+            _extract_backup(tf)
+    except (tarfile.TarError, OSError) as e:
+        # The dump may already be extracted, it is not left behind unencrypted
+        sqlfile.unlink(missing_ok=True)
+        click.secho(f"Extracting the backup file failed: {e}. The files may be only partially "
+                    "restored, the database was not restored.", fg="red")
+        sys.exit(2)
     click.echo(60 * "=")
 
     if keep_db_uri and current_sqluri:
@@ -649,6 +690,22 @@ def _refused_member(member: tarfile.TarInfo) -> str | None:
         except tarfile.FilterError as error:
             return f"{member.name}: {error}"
     return None
+
+
+def _name_in_archive(top_dir: pathlib.Path, directory: pathlib.Path) -> str | None:
+    """
+    Get the name that a directory gets in the archive, if tarfile adds it as part of top_dir.
+
+    :param top_dir: The directory that is added to the archive with all its content
+    :param directory: The directory to find in the archive
+    :return: The name in the archive, or None if the directory is neither top_dir nor inside it
+    """
+    real_top_dir = top_dir.resolve()
+    real_directory = directory.resolve()
+    if not real_directory.is_relative_to(real_top_dir):
+        return None
+    # tarfile does not follow symbolic links inside top_dir, and it removes the leading slash of an absolute path
+    return (top_dir / real_directory.relative_to(real_top_dir)).as_posix().lstrip("/")
 
 
 def _extract_backup(tf: tarfile.TarFile) -> None:

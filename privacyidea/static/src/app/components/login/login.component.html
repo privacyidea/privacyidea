@@ -17,9 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="Login Container"
-  class="login-container"
-  i18n-aria-label="@@login.loginContainer">
+  class="login-container">
   <div class="login-scroll">
     <app-login-logo />
 
@@ -93,7 +91,6 @@
 
         @if (!showOtpField()) {
           <mat-form-field
-            appearance="outline"
             subscriptSizing="dynamic">
             <mat-label i18n="Login username label@@common.username">Username</mat-label>
             <input
@@ -107,7 +104,6 @@
 
         @if (!showOtpField()) {
           <mat-form-field
-            appearance="outline"
             subscriptSizing="dynamic">
             <mat-label i18n="Login password label@@common.password">Password</mat-label>
             <input
@@ -138,7 +134,6 @@
 
         @if (showOtpField()) {
           <mat-form-field
-            appearance="outline"
             subscriptSizing="dynamic">
             <mat-label i18n="Login OTP label@@login.oneTimePassword">One-Time-Password</mat-label>
             <input

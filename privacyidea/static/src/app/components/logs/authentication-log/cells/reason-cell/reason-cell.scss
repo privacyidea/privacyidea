@@ -17,7 +17,7 @@
   gap: 2px;
 }
 
-// Groups the placeholder link with the icon button that can follow it, so the tooltip bound here covers both as one
+// Groups the placeholder with the icon button that can follow it, so the tooltip bound here covers both as one
 // area instead of each control raising its own.
 .reason-detail-trigger {
   display: flex;
@@ -25,10 +25,16 @@
 }
 
 // Stands in for the reason an entry has none of, so the cell is not an empty column beside a lone button. It opens
-// the same dialog the icon button beside it does, so it reads as a link rather than inert text.
+// the same dialog the icon button beside it does: a button, since it opens a dialog rather than a page, styled as
+// link text rather than inert text.
 .reason-placeholder {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
   color: var(--mat-sys-primary);
   white-space: nowrap;
+  cursor: pointer;
 }
 
 // Sized down to the line it sits beside, through Material's own size tokens: the button's box is what carries the

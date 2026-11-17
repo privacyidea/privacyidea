@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="Token Applications Offline"
-  class="token-applications-offline"
-  i18n-aria-label="@@token.tokenApplicationsOffline">
+<div class="token-applications-offline">
   <div class="details-flex-layout flex-column">
     <div class="margin-left-16 margin-bottom-16">
       <p i18n="@@token.hotpTokensAttached">HOTP tokens can be attached with offline to e.g. notebooks.</p>
@@ -35,7 +32,7 @@
         <mat-form-field
           subscriptSizing="dynamic"
           class="application-table-filter">
-          <mat-label i18n="@@token.filterOffline">Filter Offline Applications...</mat-label>
+          <mat-label i18n="@@token.filterOffline">Filter Offline Applications</mat-label>
           <app-clearable-input
             (clearButtonClick)="machineService.clearFilter()"
             [showClearButton]="machineService.filterDraft().isNotEmpty">
@@ -134,16 +131,9 @@
                   }
                 }
                 @default {
-                  @if (tableUtilsService.isLink(column.key) && element[column.key]) {
-                    <a
-                      href="#">
-                      {{ element[column.key] }}
-                    </a>
-                  } @else {
-                    <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
-                  }
+                  <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
                 }
               }
             </div>

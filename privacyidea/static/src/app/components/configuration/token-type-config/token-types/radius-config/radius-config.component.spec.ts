@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockRadiusServers = ["radius-server-1", "radius-server-2", "radius-server-3"];
 
@@ -155,5 +156,12 @@ describe("RadiusConfigComponent", () => {
     fixture.componentRef.setInput("expanded", false);
     fixture.detectChanges();
     expect(component.expanded()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

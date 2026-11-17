@@ -55,7 +55,9 @@ do not name the administrator, but the users the administrator may act on.
    sets a value such as ``hide_tokeninfo``, or one for another admin realm - every
    administrator may only do what a matching policy grants.
 
-.. note:: Admin policies are also checked for all local administrators.
+.. note:: Admin policies are also checked for all local administrators. A local
+   administrator has no admin realm: only the policies without an admin realm, or with
+   the admin realm ``*``, apply to them. See :ref:`faq_admins`.
 
 The following actions are available in the scope
 *admin*:
@@ -1372,8 +1374,8 @@ Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified ha
 The corresponding input selector will be disabled in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*. Without this policy, a request that does not
 send the hashlib gets the value of the token configuration (``hotp.hashlib``, ``totp.hashlib`` or
-``daypassword.hashlib``), or *sha1* if it is not set there. The current WebUI presets *sha1* in the
-HOTP and TOTP forms (the token configuration value in the DayPassword form) and always sends it.
+``daypassword.hashlib``), or *sha1* if it is not set there. The WebUI presets its forms with that
+value.
 
 .. versionadded:: 3.2 ``hotp_hashlib`` and ``totp_hashlib``
 
@@ -1422,7 +1424,7 @@ Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
 Possible values are *30* or *60*. Without this policy, a request that does not send the time step
 gets the value of the token configuration (``totp.timeStep``), or *30* if it is not set there.
-The current WebUI presets *30* in the form and always sends it.
+The WebUI presets its form with that value.
 
 .. versionadded:: 3.2
 
@@ -1445,9 +1447,20 @@ system_documentation
 
 type: ``bool``
 
-The administrator is allowed to export a complete system documentation
-including resolvers and realms.
-The documentation is created as restructured text.
+The administrator is allowed to export a documentation of the system
+configuration: the privacyIDEA version, the revision of the database schema
+and the nodes, selected settings of the ``pi.cfg``, the local administrators,
+the system configuration, the resolvers, realms, policies and event handlers,
+the SMTP servers, SMS gateways, RADIUS servers and CA connectors, the machine
+resolvers and the number of tokens attached to machines, and the number of
+tokens and containers per type. The documentation is created as restructured
+text.
+
+The ``pi.cfg``, the resolvers, the event handlers and the external services
+are documented by selected settings, which leave out hosts, URLs, paths,
+credentials and free text. A connect string is documented by its driver, and
+a resolver by the settings that describe how privacyIDEA uses the user store,
+like the kind of TLS of an LDAP resolver or the requests of an HTTP resolver.
 
 .. versionadded:: 2.5
 

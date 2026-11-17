@@ -11,9 +11,16 @@
   flex-direction: column;
   overflow: hidden;
   // Sized from the same col-width-* tiers the columns below use (select checkbox + serial m + type s
-  // + states m + description xl + user_name s + user_realm s + realms s), so the empty/error state
+  // + states m + description xl + user_name s + user_realm s + realms m), so the empty/error state
   // is as wide as the table it stands in for, not the unrelated 44rem default.
   @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m));
+
+  // The Template and Differences columns (l each) only exist while the comparison is shown, so only then does
+  // the card, and the panel standing in for the table, grow by them.
+  &.comparison-active {
+    @include table.paginator-range-floor(table.table-width(checkbox, m, s, m, xl, s, s, m, l, l));
+    @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m, l, l));
+  }
 
   // The table is as wide as its col-width-* tiers, not stretched across the card: a stretched table
   // hands its spare width to every column in proportion, so no column stays at its tier.
@@ -111,4 +118,12 @@ tr.example-detail-row td {
 
 .realm-break {
   margin-top: 3px;
+}
+
+// The chip's global display:inline-block (.highlight-false) would stack the icon above the text, so it becomes a row.
+.highlight-false.comparison-failed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }

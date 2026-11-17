@@ -86,6 +86,7 @@ export interface RealmServiceInterface {
   defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
   defaultRealmResolved: Signal<boolean>;
+  noRealm: Signal<boolean>;
 
   createRealm(
     realm: string,
@@ -211,6 +212,15 @@ export class RealmService implements RealmServiceInterface {
   // False while the default realm request is still in flight, so consumers can
   // avoid latching onto a provisional realm before the real default is known.
   defaultRealmResolved = computed<boolean>(() => !this.defaultRealmResource.isLoading());
+
+  // True only once the realm list has been loaded and is empty, so it never fires on a provisional state.
+  noRealm = computed<boolean>(
+    () =>
+      this.realmResource.hasValue() &&
+      !this.realmResource.isLoading() &&
+      this.realmOptions().length === 0 &&
+      this.defaultRealmResolved()
+  );
 
   constructor() {
     effect(() => {

@@ -28,6 +28,7 @@ import { EnrollMotpComponent } from "./enroll-motp.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
@@ -229,5 +230,11 @@ describe("EnrollMotpComponent", () => {
     expect(component.generateOnServer()).toBe(false);
     expect(component.generateOnServerForm().dirty()).toBe(true);
     expect(component.otpKeyForm().disabled()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

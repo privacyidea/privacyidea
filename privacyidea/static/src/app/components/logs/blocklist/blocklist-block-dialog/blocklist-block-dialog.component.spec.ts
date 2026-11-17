@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { POSITIVE_INTEGER_ERROR } from "@utils/duration-unit.utils";
 import { ERR } from "@utils/form-rules.utils";
 import { BlocklistBlockDialogComponent, BlocklistBlockDialogResult } from "./blocklist-block-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("BlocklistBlockDialogComponent", () => {
   let component: BlocklistBlockDialogComponent;
@@ -287,5 +288,11 @@ describe("BlocklistBlockDialogComponent", () => {
     component.onAction("cancel");
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

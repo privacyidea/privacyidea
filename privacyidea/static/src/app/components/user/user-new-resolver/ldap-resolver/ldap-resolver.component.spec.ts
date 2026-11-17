@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { LdapResolverComponent } from "./ldap-resolver.component";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("LdapResolverComponent", () => {
   let component: LdapResolverComponent;
@@ -145,6 +146,88 @@ describe("LdapResolverComponent", () => {
     const passwordInput: HTMLInputElement = fixture.nativeElement.querySelector("input[type='password']");
     expect(passwordInput.value).toBe("secret");
     expect(passwordInput.getAttribute("autocomplete")).toBe("new-password");
+  });
+
+  describe("server pool strategy", () => {
+    it("should send ROUND_ROBIN by default", () => {
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("ROUND_ROBIN");
+    });
+
+    it("should load the strategy from data input", () => {
+      componentRef.setInput("data", { SERVERPOOL_STRATEGY: "FIRST" });
+      fixture.detectChanges();
+
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("FIRST");
+    });
+
+    it("should offer every strategy the server supports and store the selected one", () => {
+      const formFields: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("mat-form-field"));
+      const strategyField = formFields.find((field) => field.textContent?.includes("Server Pool Strategy"));
+      strategyField!.querySelector<HTMLElement>(".mat-mdc-select-trigger")!.click();
+      fixture.detectChanges();
+
+      const options = Array.from(document.querySelectorAll<HTMLElement>("mat-option"));
+      expect(options.map((option) => option.textContent?.trim())).toEqual(["ROUND_ROBIN", "FIRST", "RANDOM"]);
+
+      options[2].click();
+      fixture.detectChanges();
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("RANDOM");
+    });
+  });
+
+  describe("recursive group search", () => {
+    const userSearch = {
+      LDAPURI: "ldap://directory.example.org",
+      LDAPBASE: "dc=example,dc=org",
+      LOGINNAMEATTRIBUTE: "uid",
+      LDAPSEARCHFILTER: "(objectClass=person)",
+      USERINFO: "{ \"email\": \"mail\" }"
+    };
+    const groupSearch = {
+      group_search_filter: "(&(objectClass=group)(member={distinguishedName}))",
+      group_name_attribute: "cn",
+      group_attribute_mapping_key: "memberships"
+    };
+
+    it("should stay valid with empty group fields while the recursive search is off", () => {
+      componentRef.setInput("data", { ...userSearch, recursive_group_search: false });
+      fixture.detectChanges();
+
+      expect(component.isValid()).toBe(true);
+    });
+
+    it("should be valid when the recursive search is on and all group fields are filled", () => {
+      componentRef.setInput("data", { ...userSearch, ...groupSearch, recursive_group_search: true });
+      fixture.detectChanges();
+
+      expect(component.isValid()).toBe(true);
+    });
+
+    it.each(Object.keys(groupSearch))(
+      "should be invalid when the recursive search is on and %s is empty",
+      (emptyField) => {
+        componentRef.setInput("data", {
+          ...userSearch,
+          ...groupSearch,
+          [emptyField]: "",
+          recursive_group_search: true
+        });
+        fixture.detectChanges();
+
+        expect(component.isValid()).toBe(false);
+      }
+    );
+
+    it("should show an error under an empty group field once it was touched", () => {
+      componentRef.setInput("data", { ...userSearch, ...groupSearch, group_name_attribute: "", recursive_group_search: true });
+      fixture.detectChanges();
+
+      const input: HTMLInputElement = fixture.nativeElement.querySelector("input[placeholder='distinguishedName']");
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain("Required when the recursive search is enabled.");
+    });
   });
 
   it("should apply LDAP presets", () => {
@@ -391,4 +474,14 @@ describe("LdapResolverComponent", () => {
       expect(messages.join(" ")).toContain("number");
     });
   });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

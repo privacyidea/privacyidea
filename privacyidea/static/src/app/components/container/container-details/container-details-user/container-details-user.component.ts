@@ -34,6 +34,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 export interface ContainerDetailsUserHost {
   isEditingInfo: WritableSignal<boolean>;
@@ -49,6 +50,7 @@ export interface ContainerDetailsUserHost {
   selector: "app-container-details-user",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     NgClass,
     MatFormFieldModule,
     MatInput,

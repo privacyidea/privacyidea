@@ -26,6 +26,7 @@ import { RecoverService } from "@services/recover/recover.service";
 import { MockNotificationService, MockPiResponse, MockRecoverService } from "@testing/mock-services";
 import { of, throwError } from "rxjs";
 import { PasswordRecoveryResetComponent, splitUserAndRealm } from "./password-recovery-reset.component";
+import { axe } from "@testing/axe";
 
 describe("splitUserAndRealm", () => {
   it("splits at the last @", () => {
@@ -191,6 +192,12 @@ describe("PasswordRecoveryResetComponent", () => {
 
     expect(component.errorMessage()).toBe("The password could not be changed.");
     expect(component.submitting()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

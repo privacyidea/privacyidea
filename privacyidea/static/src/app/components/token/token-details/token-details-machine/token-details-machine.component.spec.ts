@@ -23,6 +23,7 @@ import { ContentService } from "@services/content/content.service";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { MockContentService, MockMachineService } from "@testing/mock-services";
 import { TokenDetailsMachineComponent } from "./token-details-machine.component";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsMachineComponent", () => {
   let component: TokenDetailsMachineComponent;
@@ -85,5 +86,11 @@ describe("TokenDetailsMachineComponent", () => {
 
     expect(deleteSpy).toHaveBeenCalledWith({ serial: "Mock serial", application: "ssh", mtid: "42" });
     expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

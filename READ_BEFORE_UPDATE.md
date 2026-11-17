@@ -30,6 +30,14 @@
       that completes an enrollment via multichallenge. A passkey login at `/auth` without a username matches
       `last_auth` for the owner as well.
 
+* **Request header, environment and request data conditions work on the WebUI start page and the push poll** — Before,
+  these conditions had no data on the WebUI start page. Header and environment conditions also had no data on the
+  poll of the smartphone (`GET /ttype/push`). *Handle Missing Data* decided the result: a policy applied to every
+  request (*Condition is true*) or to none (*Condition is false*). With *Raise an error*, the start page and every
+  poll returned 403. Now these conditions read the data of the request. The WebUI reads its policies with a request
+  to `/config`. It adds the parameters of its start URL to this request. **Check WebUI policies and policies for the
+  push poll, like `push_allow_polling`, that have such a condition before the update.**
+
 * **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
   returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
   as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
@@ -94,6 +102,11 @@
   output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
   both scripts is accepted and has no effect.
 
+* **`pi-manage setup create_tables` stops on an existing database.** If the database holds privacyIDEA tables or a
+  schema revision stamp, the command exits with an error and changes nothing. Update an existing database with
+  `pi-manage db upgrade`. If a script runs `create_tables` on every start, run it only on an empty database.
+  `--force` keeps the previous behavior.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
@@ -121,11 +134,11 @@
 
 * **More event handlers fail the request when they fail.** The schema update sets *Abort on error* for the existing
   **request mangler** and **response mangler** handlers and for the **Script** handlers that are configured to raise an
-  error. With 3.14 it was only set for **Federation** handlers. A request mangler changes the parameters the endpoint
-  works with and a response mangler the response the client receives, so the request must not go on without them, and
-  *raise error* makes the script decide whether the request may go on. New request mangler and response mangler bindings
-  start with the option enabled. Clear the option after the update for a handler whose failure should not fail the
-  request.
+  error, also where the option was cleared in 3.14. With 3.14 it was only set for **Federation** handlers. A request
+  mangler changes the parameters the endpoint works with and a response mangler the response the client receives, so
+  the request must not go on without them, and *raise error* makes the script decide whether the request may go on. New
+  request mangler and response mangler bindings start with the option enabled. Clear the option after the update for a
+  handler whose failure should not fail the request.
 
   A handler that could not do what it is configured for now records `success=False` and the reason in the `info` column
   of its audit entry instead of being audited as successful, e.g. a notification without a recipient, a script that
@@ -165,7 +178,11 @@
 
 * **`/validate/check` with `otponly=1` checks the token like any other authentication.** This is the *test OTP*
   action of the WebUI. A disabled, expired or revoked token, or one past its fail counter, is refused, and a
-  wrong value increases the fail counter of the token.
+  wrong value increases the fail counter of the token. The request also needs a session token from `/auth` in the
+  `PI-Authorization` or `Authorization` header: of an administrator with the admin right `tokenlist` for the token,
+  or of the owner of the token. Other requests with `otponly` are refused. If a script or another client sends
+  `otponly`, change it to send the OTP PIN with the OTP value and without `otponly`, or to send the session token of
+  such an administrator.
 
 * **Users assign only tokens and containers of their own realm.** As documented for the user actions `assign` and
   `container_assign_user`, the token or container has to be in the user's realm or in no realm. A pool of spare
@@ -183,11 +200,6 @@
   login request whose `realm` parameter names another realm than REMOTE_USER does not use the REMOTE_USER
   login. Check `remote_user` policies that name a resolver.
 
-* **A RADIUS token without a RADIUS user forwards the authenticating user.** As documented, the request to the RADIUS
-  server is sent for the user who authenticates, or for the owner of the token if it is used by its serial.
-  Previously such a token sent the request with an empty user name, so it could never authenticate. Existing RADIUS
-  tokens with an empty RADIUS user start to forward the authentication requests of their users after the update.
-
 * **Updating an existing policy keeps the fields that are not sent.** `POST /policy/<name>` and
   `pi-manage config policy create` with the name of an existing policy keep the stored value of every field the request
   leaves out, e.g. a disabled policy stays disabled and its priority and description are kept. With 3.14 these fields
@@ -195,13 +207,30 @@
   value.
 
 * **The policy actions of the `u2f` token type are removed.** The schema update removes `enrollU2F` and the actions
-  starting with `u2f_` from the policies and logs the names of the policies it changed. A configuration exported from an
-  earlier version that still contains them is imported with `pi-manage config import --skip-invalid`, which drops these
-  actions; without the option, the import refuses such a policy.
+  that start with `u2f_` from the policies. It deletes a policy that holds only these actions, together with the
+  conditions and the description of the policy. The update prints the names of the changed and the deleted policies.
+
+  The update keeps such a policy if it is the last active policy of the admin or the user scope. Without an active
+  policy, every administrator or user gets all rights of that scope. The update names these policies in a warning.
+  They allow nothing. Replace their actions with other actions, or add another active policy to the scope and then
+  delete them. Do not save them without actions. A policy without actions allows every action of its scope.
+
+  `pi-manage config import --skip-invalid` imports a configuration that an earlier version exported with these
+  actions. The option drops the actions and skips a policy that holds only these actions. Without the option, the
+  import refuses such a policy.
+
+* **A policy without actions applies to every action only in the `admin`, `user` and `container` scopes.** In the
+  other scopes, a policy without actions has no effect. Before, such a policy made authentication, login and token
+  enrollment requests fail.
 
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
   it exited with status 0.
+
+* **`pi-manage setup encrypt_enckey -o` creates the file readable only by its owner.** A new output file gets the
+  permissions `0600`. Before, it got the default permissions of the system, for example `0644`. If you run the command
+  as root, change the owner of the new file to the user that privacyIDEA runs as. `-o` can not name the key file itself
+  anymore.
 
 * **Token janitor `update` writes only the secrets of an export entry.** `privacyidea-token-janitor update` and
   `pi-tokenjanitor update` store the OTP key, the OTP length, the description and the encrypted token info of
@@ -259,6 +288,13 @@
   ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
   and the log names the policy and the resolver.
 
+* **`date_within_last` does not match a date in the future.** Before 3.14.1, a condition with `date_within_last`
+  matched every date in the future, and `!date_within_last` matched none. Now a date in the future is not within the
+  past duration. A negative duration such as `-1d` is an error. A policy with such a condition fails the request with
+  "Invalid comparison". An event handler condition with it is always false. **Check the conditions with
+  `date_within_last` and `!date_within_last` in policies and event handlers.** Look for values that can lie in the
+  future, for example the token info `validity_period_end`. Replace each negative duration.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
@@ -307,6 +343,68 @@
 * **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
   stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
 
+* **Two-step enrollment for every token rollover.** If a `hotp_2step` or `totp_2step` policy has the value `force`,
+  every rollover of an enrolled token uses the two-step enrollment. This applies to each request to `/token/init` for
+  such a token, with or without the `rollover` parameter. The rollover in the WebUI does not change, because the
+  WebUI always sends the `rollover` parameter. If a script rolls over such tokens through the API, make sure that it
+  sends the client component in a second request. The server refuses a request that sends its own key (`otpkey`) for
+  such a token, as for a new token.
+
+* **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
+  for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
+  It is now left out of `multi_challenge` and of the serials in the audit and authentication log, instead of being
+  offered with a challenge that does not exist. If it was the only token to trigger a challenge, the response is
+  `authentication` `REJECT` instead of `CHALLENGE`, in the audit log as well. Event handler conditions on
+  `result_authentication` are matched accordingly.
+
+* **A challenge trigger that creates no challenge is logged as a failure** — At `/validate/check` and `/auth`, a request
+  whose PIN matched but for which no token got a challenge is logged as `CHALLENGE_TRIGGER_FAIL` instead of
+  `CHALLENGE_TRIGGERED`. The reasons name why: `CHALLENGE_NOT_DELIVERED` if the SMS, email or push message could not be
+  sent, or the token state if the trigger itself made the token unusable, e.g. `TOKEN_FAILCOUNT_EXCEEDED` with
+  `increase_failcounter_on_challenge`. With `push_wait`, a request no longer waits if the push token creates no
+  challenge. It fails at once, and the response message is "The PIN was correct, but the push notification was not
+  sent." The fail counter of the push token increases only with `increase_failcounter_on_challenge`. At
+  `/validate/triggerchallenge` such a request was logged as `NO_TOKEN` and is now logged as `CHALLENGE_TRIGGER_FAIL` as
+  well. A trigger there for a user whose tokens are all unusable is logged as `NO_USABLE_TOKEN` instead of `NO_TOKEN`,
+  with a reason for each token, among them `TOKEN_NO_CHALLENGE_MODE` for a token type without challenge-response such as
+  a simple pass token, and `TOKEN_NOT_APPLICABLE` for a passkey without `passkey_trigger_by_pin`. A conditional-access
+  policy counts these requests only if `CHALLENGE_TRIGGER_FAIL` is one of its *Tracked Event Types*. Policies from the
+  *Per-User Failed-Attempt Rate Limit* and *Per-IP Failed-Attempt Rate Limit (Distinct Accounts)* templates do not track
+  it. These policies track `NO_TOKEN`, so they no longer count a trigger at `/validate/triggerchallenge` that creates no
+  challenge. To count these requests, add `CHALLENGE_TRIGGER_FAIL` to the *Tracked Event Types* of the policy.
+
+* **`/validate/triggerchallenge` checks the token state before raising the failcounter** — Like `/validate/check`, it
+  now only uses tokens that pass the usual checks: below the failcounter, within the authentication counters and the
+  validity period, and fully enrolled. It also applies `disabled_token_types` and does not challenge a token of a
+  disabled type. Before, the trigger sent the challenge, and `/validate/check` refused the answer. With
+  `increase_failcounter_on_challenge`, only the failcounter of these tokens is raised; a token that can not get a
+  challenge anyway is no longer counted. A failcounter whose reset timeout (`failcounter_clear_timeout`) has passed is
+  reset before the check, as at `/validate/check`. Also as there, why a token was refused (e.g. "Failcounter exceeded")
+  is only the response message if no token got a challenge; it is no longer listed in `detail.messages` next to the
+  challenge texts. At `/validate/check` and `/auth` this now also holds for a token whose failcounter the trigger itself
+  raised to the maximum.
+
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An
+  [*Override Authorization Client*](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client)
+  entry such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+  documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
+
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy path.** The entries
+  after it are recorded in the authentication log but never become the client IP. If your proxy writes such a value,
+  the client IP of these requests is the proxy's address, so configure the proxy to write the client address
+  instead. Entries with a port (`192.0.2.43:51234`) or in brackets (`[2001:db8::1]`) are now read as addresses. How
+  privacyIDEA determines the client IP and how to configure your proxies for it is described in
+  [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
+
+* **The client IP of an IPv4 client is now always its IPv4 address.** A dual-stack listener reports an IPv4 client
+  as `::ffff:10.0.0.5`. privacyIDEA now uses `10.0.0.5` as the client IP, with and without
+  *Override Authorization Client*. The authentication log keeps the reported address in `peer_ip` and `ip_chain`.
+  IPv4 networks in *Override Authorization Client* now also contain the mapped form of a proxy address. Policies and
+  event handler conditions with an IPv6 network such as `::/0` no longer contain these clients. If your audit log
+  shows client IPs that start with `::ffff:`, check these policies and event handlers. IP blocks of addresses that
+  start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
+  start again for these clients.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
@@ -337,6 +435,10 @@
   (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
   Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
   over HTTP under `/static/`.
+
+* **privacyIDEA checks `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` at start** — An unknown algorithm or parameter,
+  a parameter for an algorithm that is not in the list, or a value PassLib would adjust stops the server and
+  `pi-manage`, and with it the schema update. Check both settings before updating.
 
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
@@ -495,6 +597,9 @@
   token: a container is created without any token that could not be initialized, and the reason is only written to
   the log, so a template naming a service ID that is no longer defined silently produces a container with one token
   missing.
+
+* **A RADIUS token needs a RADIUS user.** `POST /token/init` refuses a RADIUS token with an empty `radius.user`
+  with ERR905. Add the RADIUS user to scripts that enroll RADIUS tokens.
 
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token

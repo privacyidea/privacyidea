@@ -18,16 +18,14 @@
 -->
 <div
   appScrollToTop
-  aria-label="Event Handlers"
-  class="events-table-container"
-  i18n-aria-label="@@event.eventHandlers">
+  class="events-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
         <mat-form-field
           class="event-handler-table-filter"
           subscriptSizing="dynamic">
-          <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
+          <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers</mat-label>
           <app-clearable-input
             (clearButtonClick)="onClearFilter()"
             [showClearButton]="filterString().length > 0">
@@ -211,6 +209,7 @@
                     <span>{{ element.ordering }}</span>
                   } @else {
                     <mat-form-field
+                      appearance="fill"
                       class="input-width-xs"
                       subscriptSizing="dynamic">
                       <input

@@ -17,10 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="Layout"
   class="layout"
-  [class.with-secondary-toolbar]="hasSecondaryToolbar()"
-  i18n-aria-label="@@nav.layout">
+  [class.with-secondary-toolbar]="hasSecondaryToolbar()">
   <div>
     @if (authService.role() === "admin") {
       <div class="admin-layout">

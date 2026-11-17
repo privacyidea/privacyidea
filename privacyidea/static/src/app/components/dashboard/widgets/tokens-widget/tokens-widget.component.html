@@ -55,6 +55,15 @@
       i18n="@@dashboard.noRealms"
       >There is no realm to count. Create one to see its tokens and users.</p
     >
+    @if (canCreateRealm()) {
+      <button
+        [routerLink]="routePaths.USERS_REALMS"
+        class="create-realm"
+        mat-stroked-button
+        i18n="@@dashboard.createRealm"
+        >Create realm</button
+      >
+    }
   } @else {
     <table class="tokens-table">
       <tbody>

@@ -78,6 +78,9 @@ class RadiusTokenClass(RemoteTokenClass):
     # "radius.secret" is not listed, it is the shared secret and is stored as the secret of the token.
     settable_tokeninfo_keys = frozenset({"radius.identifier", "radius.server", "radius.user",
                                          "radius.local_checkpin", "radius.system_settings"})
+    # The request to the RADIUS server is always sent for the RADIUS user, so the enrollment requires it and it
+    # can not be emptied later
+    required_tokeninfo_keys = frozenset({"radius.user"})
 
     def __init__(self, db_token):
         RemoteTokenClass.__init__(self, db_token)
@@ -90,6 +93,11 @@ class RadiusTokenClass(RemoteTokenClass):
     @staticmethod
     def get_class_prefix():
         return "PIRA"
+
+    @staticmethod
+    def get_setting_type(key: str) -> str:
+        settings = {"radius.secret": "password"}
+        return settings.get(key, "")
 
     @staticmethod
     @log_with(log)
@@ -169,7 +177,7 @@ class RadiusTokenClass(RemoteTokenClass):
         TokenClass.update(self, param)
         val = get_optional(param, "radius.local_checkpin") or 0
         self.write_tokeninfo("radius.local_checkpin", val)
-        val = get_required(param, "radius.user", allow_empty=True)
+        val = get_required(param, "radius.user")
         self.write_tokeninfo("radius.user", val)
         self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
@@ -454,25 +462,6 @@ class RadiusTokenClass(RemoteTokenClass):
         else:
             return -1
 
-    def _radius_user(self, options: dict) -> str:
-        """
-        The user name the RADIUS request is sent for: the RADIUS user of the token, or, if that is empty, the user who
-        is authenticating. A token that is used without naming the user, e.g. by its serial, falls back to its owner.
-
-        :param options: The options of the authentication, which carry the authenticating user
-        :return: The user name, empty if the token has neither a RADIUS user nor an owner and no user authenticates
-        """
-        radius_user = self.get_tokeninfo("radius.user")
-        if radius_user:
-            return radius_user
-        user = options.get("user")
-        login = user if isinstance(user, str) else getattr(user, "login", "")
-        if not login and self.user:
-            login = self.user.login
-        if not login:
-            log.warning(f"The RADIUS token {self.token.serial} has no RADIUS user and no user is authenticating.")
-        return login or ""
-
     @log_with(log, hide_args=[1])
     @check_token_locked
     def _check_radius(self, otpval, options=None, radius_state=None):
@@ -491,7 +480,7 @@ class RadiusTokenClass(RemoteTokenClass):
             options = {}
 
         radius_identifier = self.get_tokeninfo("radius.identifier")
-        radius_user = self._radius_user(options)
+        radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
         system_radius_dictfile = get_from_config("radius.dictfile",
                                                  default="/etc/privacyidea/dictionary")

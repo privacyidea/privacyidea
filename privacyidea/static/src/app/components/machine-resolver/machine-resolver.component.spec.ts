@@ -34,6 +34,7 @@ import { of } from "rxjs";
 import { MachineResolverComponent } from "./machine-resolver.component";
 import { TableAction } from "@components/shared/table-actions/table-actions.component";
 import { grantRights, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -198,5 +199,11 @@ describe("MachineResolverComponent", () => {
 
       expect(toolbarButton(fixture, "New Machine Resolver")).toBeUndefined();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

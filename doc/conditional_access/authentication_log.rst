@@ -103,13 +103,11 @@ Failure
      ``/validate/`` endpoints and ``/auth``. A conditional access policy cannot count it.
    ``NO_TOKEN``
      the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
-     no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``
-     whenever no challenge was triggered - also when the user has tokens, but none that is active, not revoked, not
-     locked and able to do challenge-response. A user whose only token is disabled therefore gets ``NO_TOKEN`` there,
-     not ``NO_USABLE_TOKEN``.
+     no token, or a token of another user than the one named in the request.
    ``NO_USABLE_TOKEN``
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
-     over the failcount.
+     over the failcount. At ``/validate/triggerchallenge`` also when none of them can be triggered there: a token type
+     without challenge mode, or a passkey without :ref:`policy_passkey_trigger_by_pin`.
    ``INVALID_TOKEN_TYPE``
      the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
@@ -117,9 +115,13 @@ Failure
      the challenge response was wrong or expired, or the transaction ID is unknown. A passkey or WebAuthn answer
      that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
-     ``/validate/initialize`` could not create the passkey challenge, for
-     example because the :ref:`policy_webauthn_enroll_relying_party_id` policy
-     is missing.
+     a challenge was asked for but none could be created. At ``/validate/check``
+     and ``/auth`` the PIN matched, and at ``/validate/triggerchallenge`` a
+     usable challenge token was found, but no token got a challenge; the reasons
+     name why, for example ``CHALLENGE_NOT_DELIVERED`` or a token state such as
+     ``TOKEN_FAILCOUNT_EXCEEDED``. ``/validate/initialize`` could not create the
+     passkey challenge, for example because the
+     :ref:`policy_webauthn_enroll_relying_party_id` policy is missing.
    ``CHALLENGE_DECLINED``
      a challenge was rejected out of band, for example a push notification
      declined in the authenticator app, without the app saying why. Either it is
@@ -219,8 +221,11 @@ The state of a token
    ``TOKEN_TYPE_DISABLED``
      a policy disabled this token's whole type for the request.
    ``TOKEN_NOT_APPLICABLE``
-     the token excluded itself from this request, for example an
-     application-specific password whose service does not match.
+     the token excluded itself from this request, for example an application-specific password whose service does not
+     match, or a passkey at ``/validate/triggerchallenge`` without :ref:`policy_passkey_trigger_by_pin`.
+   ``TOKEN_NO_CHALLENGE_MODE``
+     the token type has no challenge mode, so ``/validate/triggerchallenge``
+     can not create a challenge for it, for example a simple pass token.
 
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
@@ -260,6 +265,10 @@ The credentials
      a client whose OTP list is out of sync with the server.
 
 Challenge-response
+   ``CHALLENGE_NOT_DELIVERED``
+     the challenge could not be sent: the SMS or email gateway failed, or a
+     push token has no push gateway or its push gateway failed while polling is
+     not allowed.
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
    ``CHALLENGE_UNKNOWN_TRANSACTION``

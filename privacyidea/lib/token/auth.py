@@ -38,7 +38,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               reset_all_user_tokens, force_challenge_response)
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import AuthenticationMode, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)
@@ -220,16 +220,18 @@ def check_user_pass(user: User, passw: str, options: dict | None = None) -> tupl
 
 
 def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict,
-                                  options: dict | None = None) -> None:
+                                  options: dict | None = None) -> list[TokenClass]:
     """
     Get a list of active tokens and create challenges for these tokens.
     The reply_dict is modified accordingly. The transaction_id and
     the messages are added to the reply_dict.
 
     :param token_list: The list of the token objects, that can do challenge response
-    :param reply_dict: The dictionary that is passed to the API response
+    :param reply_dict: The dictionary that is passed to the API response. Why check_all refused a token is only its
+        message if no token got a challenge.
     :param options: Additional options. Passed from the upper layer
-    :return: None
+    :return: The tokens that got no challenge, because check_all refused them or creating the challenge failed. Each
+        records why in its ``auth_details``, if it named a reason.
     """
     options = options or {}
     options["push_triggered"] = False
@@ -237,21 +239,20 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
+    refusals = []
+    unchallenged = []
     for token in token_list:
-        # Check if the max auth is succeeded
-        if token.check_all(message_list):
+        if not token.check_all(refusals):
+            unchallenged.append(token)
+        else:
             challenge_created, message, new_transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
             if message:
-                # We need to pass the info if a push token has been triggered, so that require presence can reuse the
-                # challenge instead of creating a new one with a different answer
-                # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
+                # Pass the presence answer on for tag replacement
                 additional_tags = {}
-                if token.get_type() == "push":
-                    options["push_triggered"] = True
-                    if "presence_answer" in challenge_info:
-                        additional_tags["presence_answer"] = challenge_info["presence_answer"]
+                if token.get_type() == "push" and "presence_answer" in challenge_info:
+                    additional_tags["presence_answer"] = challenge_info["presence_answer"]
                 # Add the reply to the response
                 message = challenge_text_replace(message, user=token.user, token_obj=token,
                                                  additional_tags=additional_tags)
@@ -284,9 +285,18 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
                     passkey_nonce = challenge_info["challenge"]
                     options["passkey_nonce"] = passkey_nonce
 
+                # Further push tokens reuse the presence options of this challenge, so every smartphone shows the same
+                # answer
+                if token_type == "push":
+                    options["push_triggered"] = True
+
                 reply_dict["multi_challenge"].append(challenge_info)
                 reply_dict.update(challenge_info)  # FIXME: This is deprecated and should be removed one day
+            else:
+                unchallenged.append(token)
 
+    if not reply_dict["multi_challenge"]:
+        message_list.extend(refusals)
     if message_list:
         unique_messages = set(message_list)
         reply_dict["message"] = ", ".join(unique_messages)
@@ -295,6 +305,7 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in
                                      reply_dict.get("multi_challenge", [])]
+    return unchallenged
 
 
 def weigh_token_type(token_obj: TokenClass) -> int:
@@ -465,6 +476,79 @@ def _record_reason(token_reasons: dict[str, str], token: TokenClass,
         token_reasons[serial] = str(reason)
 
 
+@dataclass(frozen=True)
+class ChallengeTrigger:
+    """The classification of :func:`trigger_challenges` for the authentication log."""
+    event_type: AuthEventType
+    # The tokens the event is about: the challenged ones, or for CHALLENGE_TRIGGER_FAIL the ones that got none
+    serials: list[str]
+    # The reasons explaining a failed event, in vocabulary order
+    reasons: list[AuthEventReason]
+    # What each token was found to be, keyed by serial
+    token_reasons: dict[str, str]
+
+
+def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: dict) -> ChallengeTrigger:
+    """
+    Create challenges for the usable challenge-response tokens of *token_list*, as /validate/triggerchallenge does.
+
+    A token is only used if a challenge can be triggered for it at all (see :meth:`TokenClass.can_trigger_challenge`),
+    and then, like at :func:`check_token_list`, if it is not revoked, passes :func:`keep_tokens_usable_for_request`,
+    is active and passes ``check_all``. Only those tokens get their failcounter increased by
+    ``increase_failcounter_on_challenge``. Every token left out records why.
+
+    :param token_list: The tokens of the user or serial of the request
+    :param reply_dict: The details of the response, which get the challenges, see
+        :func:`create_challenges_from_tokens`, or, if no token is left to challenge, the message why the tokens
+        were refused
+    :param options: The request options passed to the tokens, with the disabled token types
+    :return: The event, serials and reasons for the authentication log
+    """
+    token_reasons: dict[str, str] = {}
+    # The token type decides first: the state of a token that can not be triggered at all does not matter here
+    tokens = _keep_usable(token_list, token_reasons,
+                          lambda token: token.can_trigger_challenge(options),
+                          lambda token: (AuthEventReason.TOKEN_NO_CHALLENGE_MODE
+                                         if AuthenticationMode.CHALLENGE not in token.mode
+                                         else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    tokens = _keep_usable(tokens, token_reasons, lambda token: not (token.is_revoked() or token.is_locked()),
+                          AuthEventReason.TOKEN_REVOKED)
+    # A challenge that /validate/check would refuse to accept the answer for is not created
+    tokens = keep_tokens_usable_for_request(tokens, options, token_reasons)
+    tokens = _keep_usable(tokens, token_reasons, lambda token: token.is_active(), AuthEventReason.TOKEN_DISABLED)
+    challenge_tokens = []
+    messages = []
+    for token in tokens:
+        token.check_reset_failcount()
+        if token.check_all(messages):
+            challenge_tokens.append(token)
+        else:
+            _record_reason(token_reasons, token)
+    if is_true(options.get("increase_failcounter_on_challenge")):
+        for token in challenge_tokens:
+            token.inc_failcount()
+
+    unchallenged = create_challenges_from_tokens(challenge_tokens, reply_dict, options)
+    if reply_dict["multi_challenge"]:
+        return ChallengeTrigger(AuthEventType.CHALLENGE_TRIGGERED,
+                                [challenge["serial"] for challenge in reply_dict["multi_challenge"]], [], {})
+    if challenge_tokens:
+        for token in unchallenged:
+            _record_reason(token_reasons, token)
+        serials = [token.get_serial() for token in unchallenged]
+        return ChallengeTrigger(AuthEventType.CHALLENGE_TRIGGER_FAIL, serials,
+                                order_request_reasons(token_reasons[serial] for serial in serials
+                                                      if serial in token_reasons),
+                                token_reasons)
+    if token_list:
+        # As at /validate/check, why the tokens were refused is only the message when no token was left to challenge
+        if messages:
+            reply_dict["message"] = ", ".join(set(messages))
+        return ChallengeTrigger(AuthEventType.NO_USABLE_TOKEN, [], order_request_reasons(token_reasons.values()),
+                                token_reasons)
+    return ChallengeTrigger(AuthEventType.NO_TOKEN, [], [], {})
+
+
 @log_with(log, hide_args=[1])
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
@@ -505,6 +589,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     challenge_response_token_list = []
     challenge_request_token_list = []
     pin_matching_token_list = []
+    # Tokens whose PIN matched but that could not create the challenge they wait for (push_wait)
+    untriggered_token_list = []
     invalid_token_list = []
     valid_token_list = []
     messages = []
@@ -591,6 +677,16 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     # LOGIN_SUCCESS is classified once, later in the final valid_token_list block, after it
                     # re-checks check_all - so it is not appended here too, avoiding a duplicate event.
                     valid_token_list.append(token_object)
+                elif (pin_match and token_object.auth_details.get(AUTH_EVENT_TYPE_KEY)
+                      == AuthEventType.CHALLENGE_TRIGGER_FAIL):
+                    # The token could not create the challenge it waits for, so no OTP was checked. As for a
+                    # challenge request that creates no challenge, the failcounter is only increased with
+                    # increase_failcounter_on_challenge.
+                    untriggered_token_list.append(token_object)
+                    if is_true(options.get("increase_failcounter_on_challenge")):
+                        token_object.inc_failcount()
+                    _note_event(request_events, event_serials, AuthEventType.CHALLENGE_TRIGGER_FAIL, token_object)
+                    _record_reason(token_reasons, token_object)
                 elif pin_match:
                     # The PIN matched but the OTP did not; the classification below depends on whether a PIN was
                     # required at all.
@@ -820,8 +916,13 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 token_obj.check_reset_failcount()
                 if is_true(options.get("increase_failcounter_on_challenge")):
                     token_obj.inc_failcount()
-            create_challenges_from_tokens(active_challenge_token, reply_dict, options)
-            request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+            unchallenged = create_challenges_from_tokens(active_challenge_token, reply_dict, options)
+            if reply_dict["multi_challenge"]:
+                request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+            else:
+                for token in unchallenged:
+                    _note_event(request_events, event_serials, AuthEventType.CHALLENGE_TRIGGER_FAIL, token)
+                    _record_reason(token_reasons, token)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
@@ -847,6 +948,13 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
                 reply_dict["type"] = pin_matching_token_list[0].token.tokentype
                 reply_dict["otplen"] = pin_matching_token_list[0].token.otplen
+
+    elif untriggered_token_list:
+        # The PIN matched, but no challenge was created. The reply keeps the message of the token, and, as after a
+        # challenge request, the failcounters of the tokens whose PIN did not match stay as they are.
+        if len(untriggered_token_list) == 1:
+            reply_dict["serial"] = untriggered_token_list[0].token.serial
+            reply_dict["type"] = untriggered_token_list[0].token.tokentype
 
     elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and

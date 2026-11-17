@@ -369,6 +369,10 @@ and ``/recover``. It is applied before the first user resolving to avoid unneces
 requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
 Please note, due to this, it is not possible to use user-related conditions for this policy!
+privacyIDEA compares the login name and the realm of the request. It does not check the
+resolver of the policy, and a ``userinfo`` condition has no user. A request with only a
+serial has neither a user nor a realm. For such a request, privacyIDEA does not check the
+realm of the policy either.
 
 Also, the given parameters can actually point to a non-existing user object.
 
@@ -491,10 +495,12 @@ type: ``string``
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
 
-``/validate/triggerchallenge`` still creates challenges for these token types, but
-an answer to them is rejected.
+``/validate/triggerchallenge`` does not create challenges for these token types. For a trigger by serial only,
+it applies only the policies that do not name a user, realm or resolver.
 
 .. versionadded:: 3.12
+
+.. versionchanged:: 3.14.1 ``/validate/triggerchallenge`` applies the policy.
 
 .. _policy_force_challenge_response:
 
@@ -899,6 +905,9 @@ seconds and check, if the push challenge was confirmed by the user.
 
 This way push tokens can be used with any non-push-capable applications.
 
+If the push token does not create a challenge, the request does not wait and fails at once. This happens if the
+token has no push gateway, or if the push gateway fails and :ref:`policy_auth_push_allow_poll` does not allow polling.
+
 Sensible numbers might be 10 or 20 seconds.
 
 .. note:: This behavior can interfere with other tokentypes. A request that
@@ -913,6 +922,8 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 .. versionadded:: 3.1
+
+.. versionchanged:: 3.14.1 A request without a challenge does not wait.
 
 .. _policy_push_code_to_phone:
 
@@ -1107,6 +1118,17 @@ The following options are available:
     is allowed for this token.
 
 The default is to ``allow`` polling
+
+privacyIDEA reads this policy at two points:
+
+* When privacyIDEA creates a push challenge, it checks the policy for the user who
+  authenticates. With ``deny``, privacyIDEA creates the challenge only if the push
+  gateway accepts the message.
+* When the smartphone polls, it sends no user. privacyIDEA then does not check the
+  realm, resolver and user of the policy.
+
+Thus a policy ``push_allow_polling=deny`` for the realm *sales* blocks the poll requests
+of all users. See :ref:`policy_condition_checks`.
 
 .. versionadded:: 3.4
 

@@ -24,6 +24,7 @@ import {
   SubscriptionExpiryDialogComponent,
   SubscriptionExpiryDialogData
 } from "./subscription-expiry-dialog.component";
+import { axe } from "@testing/axe";
 
 const dialogData: SubscriptionExpiryDialogData = {
   items: [
@@ -70,5 +71,11 @@ describe("SubscriptionExpiryDialogComponent", () => {
   it("remainingDays() clamps positive timedelta to 0", () => {
     const value = component.remainingDays({ application: "x", date_till: "d", timedelta: 5 });
     expect(value).toBe(0);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

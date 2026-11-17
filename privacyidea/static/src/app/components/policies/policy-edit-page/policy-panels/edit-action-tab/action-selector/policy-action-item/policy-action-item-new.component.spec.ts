@@ -30,6 +30,7 @@ import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-g
 import { MockPolicyService } from "@testing/mock-services";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;
@@ -83,6 +84,34 @@ describe("PolicyActionItemComponent", () => {
     fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "int", desc: "new" } });
     fixture.detectChanges();
     expect(component.currentAction().name).toBe("testAction");
+  });
+
+  describe("comma hint", () => {
+    const commaHint = () => fixture.debugElement.query(By.css(".detail-error"))?.nativeElement.textContent.trim();
+
+    it("should explain the escape in a message the server unescapes", () => {
+      fixture.componentRef.setInput("selectableAction", {
+        ...defaultAction,
+        actionName: "smstext",
+        detail: { type: "str", desc: "" }
+      });
+      component.updateSelectedActionValue("Hello, World");
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values. Write a comma as \\,");
+    });
+
+    it("should not mention the escape in an action the server does not unescape", () => {
+      fixture.componentRef.setInput("selectableAction", {
+        ...defaultAction,
+        actionName: "challenge_text_header",
+        detail: { type: "str", desc: "" }
+      });
+      component.updateSelectedActionValue("Hello, World");
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values.");
+    });
   });
 
   it("should default currentAction value to 'true' for bool actions", () => {
@@ -180,12 +209,13 @@ describe("PolicyActionItemComponent", () => {
       ["str", "input[type=text]"],
       ["int", "input[type=number]"],
       ["text", "textarea"]
-    ] as const)("wraps the %s control in a dynamic fill form field", (actionType, selector) => {
+    ] as const)("wraps the %s control in a dynamic form field", (actionType, selector) => {
       setType(actionType);
 
       const field = fixture.debugElement.query(By.css(".detail-value mat-form-field"));
       const element = control(selector);
-      expect(field.nativeElement.classList).toContain("mat-form-field-appearance-fill");
+      // The field takes the app's default appearance (outline), so the template names none of its own.
+      expect(field.nativeElement.hasAttribute("appearance")).toBe(false);
       expect(field.componentInstance.subscriptSizing).toBe("dynamic");
       expect(element).not.toBeNull();
       expect(element.classList).toContain("mat-mdc-input-element");
@@ -677,5 +707,11 @@ describe("PolicyActionItemComponent", () => {
 
       expect(mockButton.focus).toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

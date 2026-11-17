@@ -42,7 +42,6 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
-import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 import { tokenTypes } from "@utils/token.utils";
 import { lastValueFrom, switchMap } from "rxjs";
 import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
@@ -71,7 +70,6 @@ import { OverflowNavDirective } from "@components/shared/directives/overflow-nav
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { PolicyAction } from "@services/auth/policy-actions";
-import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -127,8 +125,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly validateService: ValidateServiceInterface = inject(ValidateService);
-  private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected isLost = signal(false);
@@ -141,11 +137,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  passkeyTestResult = signal<{
-    kind: "success" | "warning";
-    message: string;
-    mismatch?: { serial: string; username: string; realm?: string };
-  } | null>(null);
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
@@ -478,69 +469,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
       });
-  }
-
-  testPasskey(): void {
-    this.passkeyTestResult.set(null);
-    const expectedHash = (this.tokenDetails()?.info as Record<string, string> | undefined)?.["credential_id_hash"];
-    let usedCredentialId: string | null = null;
-    this.validateService
-      .authenticatePasskey({
-        isTest: true,
-        onCredentialId: (id) => (usedCredentialId = id)
-      })
-      .subscribe({
-        next: async (checkResponse) => {
-          if (!checkResponse.result?.value) {
-            this.passkeyTestResult.set({ kind: "warning", message: $localize`:@@token.noUserFound:No user found.` });
-            return;
-          }
-          const username = checkResponse.detail?.username ?? $localize`:@@token.unknownUser:Unknown User`;
-          const authenticatedSerial = checkResponse.detail?.serial;
-          const isAdmin = this.authService.role() === "admin";
-          let mismatch = false;
-          if (isAdmin && expectedHash && usedCredentialId) {
-            const actualHash = await this.sha256HexFromBase64Url(usedCredentialId);
-            mismatch = actualHash.toLowerCase() !== expectedHash.toLowerCase();
-          }
-          if (mismatch) {
-            const matchedSerial = authenticatedSerial ?? "";
-            this.passkeyTestResult.set({
-              kind: "warning",
-              message: $localize`:@@token.youAuthenticated:You authenticated with a different passkey than the one shown on this page.`,
-              mismatch: { serial: matchedSerial, username }
-            });
-            if (matchedSerial) {
-              this.tokenService.getTokenDetails(matchedSerial).subscribe({
-                next: (response) => {
-                  const realm = response?.result?.value?.tokens?.[0]?.user_realm;
-                  const current = this.passkeyTestResult();
-                  if (current?.mismatch && current.mismatch.serial === matchedSerial && realm) {
-                    this.passkeyTestResult.set({
-                      ...current,
-                      mismatch: { ...current.mismatch, realm }
-                    });
-                  }
-                }
-              });
-            }
-          } else {
-            this.passkeyTestResult.set({
-              kind: "success",
-              message: $localize`:@@token.authenticationSuccessful:Authentication successful. You would have been logged in as: ${username}:USERNAME:`
-            });
-          }
-        }
-      });
-  }
-
-  private async sha256HexFromBase64Url(base64Url: string): Promise<string> {
-    const bytes = this.base64Service.webAuthnBase64DecToArr(base64Url);
-    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-    const digest = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
   }
 
   attachSshToMachineDialog(): void {
