@@ -102,7 +102,13 @@ export class LdapResolverComponent {
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
         '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
-      uidType: "objectGUID"
+      uidType: "objectGUID",
+      groupSearch: {
+        searchFilter:
+          "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))",
+        nameAttribute: "distinguishedName",
+        attributeMappingKey: "groups"
+      }
     }
   ];
   protected readonly ERR = ERR;
@@ -237,5 +243,16 @@ export class LdapResolverComponent {
     clearField(this.ldapForm.USERINFO, preset.userInfo);
     clearField(this.ldapForm.UIDTYPE, preset.uidType);
     clearField(this.ldapForm.MULTIVALUEATTRIBUTES, "");
+    // The resolver does not follow search references. If the base DN is the domain root of an Active Directory, the
+    // search for a user also returns references to the DNS and configuration partitions. With referrals on, the
+    // resolver counts them as objects and finds more than one object for every login name.
+    clearField(this.ldapForm.NOREFERRALS, true);
+    clearField(this.ldapForm.EDITABLE, false);
+    if (preset.groupSearch) {
+      clearField(this.ldapForm.recursive_group_search, false);
+      clearField(this.ldapForm.group_search_filter, preset.groupSearch.searchFilter);
+      clearField(this.ldapForm.group_name_attribute, preset.groupSearch.nameAttribute);
+      clearField(this.ldapForm.group_attribute_mapping_key, preset.groupSearch.attributeMappingKey);
+    }
   }
 }
