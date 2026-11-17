@@ -384,16 +384,14 @@
 
 * **Policy nodes and user agents that can never match are rejected when you save a policy.** A node is compared
   exactly with the node name, so a wildcard (`*`) or a negation (`!node1`, `-node1`) never matched. A user agent must
-  be a plain name like `privacyidea-cp`; a version (`privacyidea-cp/1.0`), a space, `*` or a leading `!` or `-` never
-  matched. Such values are now rejected. To apply a policy on every node, leave the node field empty.
+  be a plain name like `privacyidea-cp`; a version (`privacyidea-cp/1.0`), a space, `*` or `!` never matched. Such
+  values are now rejected. To apply a policy on every node, leave the node field empty.
 
   A stored policy with such a value keeps working as before: the rejected entries never matched, while the other
   entries of the list still do. `pinode: node1, -node2` still applies on *node1*, and
-  `user_agents: PAM, privacyidea-cp/1.0` still applies to requests from PAM. Such a policy can only be saved again
-  after you correct the value. This also applies to an import: a policy file from `GET /policy/export/<file>` that
-  contains such a value stops the import (`POST /policy/import/<file>`) at that policy, so the policies before it are
-  imported and the ones after it are not. `pi-manage config import` imports the other policies and reports this one
-  as failed. Correct these values before you export your policies, or in the file before you import it.
+  `user_agents: PAM, privacyidea-cp/1.0` still applies to requests from PAM. You can only save, copy or import such a
+  policy again after you correct the value. Correct these values before you export your policies, or in the file
+  before you import it.
 
 ## Update from 3.13 to 3.14
 

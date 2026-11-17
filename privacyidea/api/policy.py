@@ -193,7 +193,7 @@ def set_policy_api(name=None):
     :jsonparam user_agents: list of user-agent names the policy
         applies to, e.g. ``privacyidea-cp``. Each name may only contain
         letters, digits, ``_`` and ``-``; a version
-        (``privacyidea-cp/1.0``), spaces, wildcards and negations are
+        (``privacyidea-cp/1.0``), spaces, ``*`` and ``!`` are
         rejected. Compared case-insensitively with the name from the
         user agent of the request.
     :jsonparam active: boolean, whether the policy starts out active.
@@ -449,7 +449,9 @@ def import_policy_api(filename=None):
     :formparam file: the file contents (required).
     :status 200: number of imported policies in ``result.value``.
     :status 400: the file is empty or its contents are not valid
-        text.
+        text, or a policy in the file can not be imported. The other
+        policies are still imported, and the error message names the
+        failed and the imported policies.
 
     **Example request**:
 

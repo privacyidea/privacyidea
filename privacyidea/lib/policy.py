@@ -200,7 +200,8 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict,
-                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like,
+                                   USER_AGENT_NAME_PATTERN)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
 from .log import log_with
@@ -255,9 +256,8 @@ def check_policy_name(name):
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll']
-# The name of a user agent as get_plugin_info_from_useragent extracts it from the request. A leading "-" is
-# rejected, as it reads like a negation.
-USER_AGENT_NAME_RE = re.compile(r"[a-zA-Z0-9_][a-zA-Z0-9_-]*")
+# The name of a user agent as get_plugin_info_from_useragent extracts it from the request
+USER_AGENT_NAME_RE = re.compile(USER_AGENT_NAME_PATTERN)
 
 comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
                                  "need to escape it with a backslash.")
@@ -1417,7 +1417,8 @@ def validate_values(values: str | list | None, allowed_values: list, name: str) 
 
 def _split_values(values: str | list | None, name: str) -> list[str]:
     """
-    Splits the values into a list of stripped, non-empty strings.
+    Splits the values into a list of stripped, non-empty strings. Each entry of a list is also split at the commas,
+    as the stored value is split at the commas when the policy is read.
 
     :param values: Either a list of strings or a comma separated list as single string
     :param name: The name of the parameter used for an error message
@@ -1426,19 +1427,20 @@ def _split_values(values: str | list | None, name: str) -> list[str]:
     if values is None:
         return []
     if isinstance(values, str):
-        values = values.split(",")
+        values = [values]
     elif not isinstance(values, list):
         raise ParameterError(f"Invalid {name} type '{type(values)}'!")
     if any(value is not None and not isinstance(value, str) for value in values):
         raise ParameterError(f"Invalid {name}: all values must be strings!")
-    return [value.strip() for value in values if value and value.strip()]
+    return [part.strip() for value in values if value for part in value.split(",") if part.strip()]
 
 
 def validate_user_agents(user_agents: str | list | None) -> list[str]:
     """
     Checks that each user agent is a plain user agent name like "privacyidea-cp". The policy match compares the
     name from the user agent of the request (see :func:`privacyidea.lib.utils.get_useragent_name`), so a version,
-    a comment, wildcards or negations would let the policy apply on no request.
+    a comment, a wildcard or a "!" would let the policy apply on no request. A leading "-" is part of the name, as
+    in the request.
 
     :param user_agents: Either a list of strings or a comma separated list as single string
     :return: The user agents without empty entries, raise a ParameterError if one is invalid
@@ -1447,7 +1449,7 @@ def validate_user_agents(user_agents: str | list | None) -> list[str]:
     invalid_agents = sorted(agent for agent in agents if not USER_AGENT_NAME_RE.fullmatch(agent))
     if invalid_agents:
         raise ParameterError(f"Invalid User-Agents: {invalid_agents}! A user agent must be a plain name that only "
-                             f"contains letters, digits, '_' and '-', without a version, wildcards or negations.")
+                             f"contains letters, digits, '_' and '-', without a version or wildcards.")
     return agents
 
 
@@ -1837,10 +1839,31 @@ def export_policies(policies):
         for policy in policies:
             file_contents += "[{!s}]\n".format(policy.get("name"))
             for key, value in policy.items():
-                file_contents += f"{key!s} = {value!s}\n"
+                file_contents += f"{key!s} = {_quote_policy_file_value(str(value), policy.get('name'), key)}\n"
             file_contents += "\n"
 
     return file_contents
+
+
+def _quote_policy_file_value(value: str, policy_name: str, key: str) -> str:
+    """
+    Puts a value of the policy file in triple quotes if it contains a "#" or a line break. Without the quotes,
+    ConfigObj reads a "#" as the start of a comment and cuts the value there, and a line break ends the value.
+    Other values are written as they are, as in the files of older versions.
+
+    :param value: The value as it is written to the file
+    :param policy_name: The name of the policy, used for a log message
+    :param key: The key of the value, used for a log message
+    :return: The value for the policy file
+    """
+    if "#" not in value and "\n" not in value:
+        return value
+    for quote in ('"""', "'''"):
+        if quote not in value:
+            return f"{quote}{value}{quote}"
+    log.warning(f"The value of '{key}' in the policy '{policy_name}' contains both kinds of triple quotes and can "
+                f"not be quoted. The import of the policy file will fail for this policy.")
+    return value
 
 
 @log_with(log)
@@ -1855,30 +1878,37 @@ def import_policies(file_contents):
 
     and key value pairs.
 
+    Each policy is imported on its own. If a policy can not be imported, the other policies are still imported.
+
     :param file_contents: The contents of the file
     :type file_contents: basestring
     :return: number of imported policies
     :rtype: int
+    :raises ParameterError: if at least one policy could not be imported. The message names the failed and the
+        imported policies.
     """
-    policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
-    res = 0
-    for policy_name, policy in policies.items():
-        ret = set_policy(name=policy_name,
-                         action=ast.literal_eval(policy.get("action")),
-                         scope=policy.get("scope"),
-                         realm=ast.literal_eval(policy.get("realm", "[]")),
-                         user=ast.literal_eval(policy.get("user", "[]")),
-                         resolver=ast.literal_eval(policy.get("resolver", "[]")),
-                         client=ast.literal_eval(policy.get("client", "[]")),
-                         pinode=ast.literal_eval(policy.get("pinode", "[]")),
-                         time=policy.get("time", ""),
-                         priority=policy.get("priority", "1"),
-                         user_agents=ast.literal_eval(policy.get("user_agents", "[]"))
-                         )
-        if ret > 0:
-            log.debug(f"import policy {policy_name!s}: {ret!s}")
-            res += 1
-    return res
+    # The values are Python literals like "['realm1', 'realm2']" for ast.literal_eval. Without list_values=False,
+    # ConfigObj splits a value with a comma into a list and fails on these literals. A value with a "#" or a line
+    # break is in triple quotes (see export_policies), which ConfigObj removes.
+    policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8", list_values=False)
+
+    def import_policy_entry(policy_name: str, policy: dict) -> int:
+        return set_policy(name=policy_name,
+                          action=ast.literal_eval(policy.get("action")),
+                          scope=policy.get("scope"),
+                          realm=ast.literal_eval(policy.get("realm", "[]")),
+                          user=ast.literal_eval(policy.get("user", "[]")),
+                          resolver=ast.literal_eval(policy.get("resolver", "[]")),
+                          client=ast.literal_eval(policy.get("client", "[]")),
+                          pinode=ast.literal_eval(policy.get("pinode", "[]")),
+                          time=policy.get("time", ""),
+                          priority=policy.get("priority", "1"),
+                          user_agents=ast.literal_eval(policy.get("user_agents", "[]")))
+
+    # ParameterError keeps the HTTP status 400 of POST /policy/import for a policy that can not be imported
+    imported_policies = import_entries(policies.items(), import_policy_entry, "policies",
+                                       error_class=ParameterError)
+    return len(imported_policies)
 
 
 @log_with(log)
