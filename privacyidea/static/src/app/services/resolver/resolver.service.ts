@@ -42,6 +42,17 @@ export interface LdapPreset {
   searchFilter: string;
   userInfo: string;
   uidType: string;
+  groupSearch?: LdapPresetGroupSearch;
+}
+
+/**
+ * The fields of the recursive group search that a preset fills in. The preset switches the search off, so the
+ * fields only take effect if the administrator switches it on.
+ */
+export interface LdapPresetGroupSearch {
+  searchFilter: string;
+  nameAttribute: string;
+  attributeMappingKey: string;
 }
 
 export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";

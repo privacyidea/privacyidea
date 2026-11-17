@@ -119,9 +119,17 @@ describe("SqlResolverComponent", () => {
     component.applySqlPreset(preset);
     expect(component.model().Table).toBe(preset.table);
     expect(component.model().Map).toBe(preset.map);
-    expect(component.model().poolSize).toBe("5");
-    expect(component.model().poolTimeout).toBe("10");
-    expect(component.model().poolRecycle).toBe("7200");
+  });
+
+  it("should keep the connection pool values when a preset is applied", () => {
+    componentRef.setInput("data", { poolSize: "20", poolTimeout: "30", poolRecycle: "3600" });
+    fixture.detectChanges();
+
+    component.applySqlPreset(component.sqlPresets[0]);
+
+    expect(component.model().poolSize).toBe("20");
+    expect(component.model().poolTimeout).toBe("30");
+    expect(component.model().poolRecycle).toBe("3600");
   });
 
   describe("password hash type", () => {

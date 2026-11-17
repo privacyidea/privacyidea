@@ -20,7 +20,7 @@ import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
-import { ResolverService } from "@services/resolver/resolver.service";
+import { LdapPreset, ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { LdapResolverComponent } from "./ldap-resolver.component";
 import { AXE_TIMEOUT, axe } from "@testing/axe";
@@ -238,6 +238,61 @@ describe("LdapResolverComponent", () => {
     expect(component.model().USERINFO).toBe(preset.userInfo);
     expect(component.model().UIDTYPE).toBe(preset.uidType);
     expect(component.model().MULTIVALUEATTRIBUTES).toBe("");
+  });
+
+  describe("presets", () => {
+    const groupSearch = {
+      group_search_filter: "(&(objectClass=group)(member={distinguishedName}))",
+      group_name_attribute: "cn",
+      group_attribute_mapping_key: "memberships"
+    };
+
+    function presetNamed(name: string): LdapPreset {
+      const preset = component.ldapPresets.find((ldapPreset) => ldapPreset.name === name);
+      expect(preset).toBeDefined();
+      return preset as LdapPreset;
+    }
+
+    it("should switch referrals off and the resolver to read-only with the OpenLDAP preset", () => {
+      componentRef.setInput("data", {
+        NOREFERRALS: false,
+        EDITABLE: true,
+        recursive_group_search: true,
+        ...groupSearch
+      });
+      fixture.detectChanges();
+
+      component.applyLdapPreset(presetNamed("OpenLDAP"));
+
+      expect(component.model().NOREFERRALS).toBe(true);
+      expect(component.model().EDITABLE).toBe(false);
+      // The OpenLDAP preset has no group search defaults and keeps the group search as it is
+      expect(component.model().recursive_group_search).toBe(true);
+      expect(component.model().group_search_filter).toBe(groupSearch.group_search_filter);
+      expect(component.model().group_name_attribute).toBe(groupSearch.group_name_attribute);
+      expect(component.model().group_attribute_mapping_key).toBe(groupSearch.group_attribute_mapping_key);
+    });
+
+    it("should switch referrals off and fill in the group search with the Active Directory preset", () => {
+      componentRef.setInput("data", {
+        NOREFERRALS: false,
+        EDITABLE: true,
+        recursive_group_search: true,
+        ...groupSearch
+      });
+      fixture.detectChanges();
+
+      component.applyLdapPreset(presetNamed("Active Directory"));
+
+      expect(component.model().NOREFERRALS).toBe(true);
+      expect(component.model().EDITABLE).toBe(false);
+      expect(component.model().recursive_group_search).toBe(false);
+      expect(component.model().group_search_filter).toBe(
+        "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))"
+      );
+      expect(component.model().group_name_attribute).toBe("distinguishedName");
+      expect(component.model().group_attribute_mapping_key).toBe("groups");
+    });
   });
 
   describe("TLS controls", () => {
