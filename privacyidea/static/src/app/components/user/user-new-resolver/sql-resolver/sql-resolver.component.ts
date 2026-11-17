@@ -175,8 +175,5 @@ export class SqlResolverComponent {
   applySqlPreset(preset: SqlPreset): void {
     clearField(this.sqlForm.Table, preset.table);
     clearField(this.sqlForm.Map, preset.map);
-    clearField(this.sqlForm.poolSize, "5");
-    clearField(this.sqlForm.poolTimeout, "10");
-    clearField(this.sqlForm.poolRecycle, "7200");
   }
 }
