@@ -57,10 +57,10 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly responseDetails = this.data.response?.detail;
-  protected readonly tokenType = this.data.response?.type ?? "hotp";
   protected readonly verifyMessage = this.responseDetails?.verify?.message ?? "";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   protected readonly enrollData: TokenEnrollmentData | null = this.enrollParameters?.data;
+  protected readonly tokenType: string = this.enrollData?.type ?? this.data.tokenType;
 
   verifyOTP_value = signal<string>("");
   verifyOTPForm = form(this.verifyOTP_value, (f) => {

@@ -459,7 +459,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.enrolledDialogData.set({
       response: enrollmentResponse,
       enrollParameters: enrollmentArgs,
-      tokenType: this.tokenService.selectedTokenType().key,
+      tokenType: enrollmentArgs.data.type,
       username: enrollmentArgs.data.user,
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,

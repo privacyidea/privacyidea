@@ -70,6 +70,44 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("shows the enrollment data for the enrolled token type", async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [TokenVerifyEnrollmentComponent],
+      providers: [
+        provideHttpClient(),
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: MatDialogRef, useValue: dialogRefSpy },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            tokenType: "hotp",
+            response: {
+              result: { status: true },
+              detail: {
+                serial: "PIEM0001",
+                rollout_state: "verify",
+                verify: { message: "Enter OTP" },
+                googleurl: { description: "", img: "data:image/png;base64,QR", value: "otpauth://hotp/PIEM0001" },
+                otpkey: { description: "", img: "", value: "seed://3132", value_b32: "GEZA" }
+              }
+            },
+            enrollParameters: { data: { type: "email" } },
+            onEnrollmentResponseChange: jest.fn()
+          }
+        }
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
+    }).compileComponents();
+    const emailFixture = TestBed.createComponent(TokenVerifyEnrollmentComponent);
+    emailFixture.detectChanges();
+
+    const element: HTMLElement = emailFixture.nativeElement;
+    expect(element.querySelector("img.enrollment-data__qr")).toBeNull();
+    expect(element.querySelector("app-otp-key")).toBeNull();
+  });
+
   it("should report a regenerated QR code to the opener of the dialog", () => {
     const regenerated = {
       type: "hotp",
