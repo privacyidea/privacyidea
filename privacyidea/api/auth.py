@@ -109,6 +109,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthntoken import require_fido2_assertion
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
@@ -260,6 +261,20 @@ def _realm_parameter_fits_remote_user(remote_user: str) -> bool:
         return True
     remote_user_realm = split_user(remote_user)[1] or get_default_realm()
     return realm_parameter.lower() == (remote_user_realm or "").lower()
+
+
+def _remote_user_login_mode() -> str:
+    """
+    Returns the value of the remote_user policy for the login. If the policy check fails, the login does not use
+    REMOTE_USER and checks the password, and the log file gets the error. Examples are ``Raise an error`` for missing
+    data and an invalid comparison. The WebUI start page also does not offer the REMOTE_USER login in this case.
+    """
+    try:
+        return is_remote_user_allowed(request)
+    except PolicyError as error:
+        log.error(f"The login does not use REMOTE_USER and checks the password, because the check of the policy "
+                  f"'{PolicyAction.REMOTE_USER}' failed: {error}")
+        return REMOTE_USER.DISABLE
 
 
 def _owner_is_session_user(token: TokenClass, owner: User) -> bool:
@@ -652,7 +667,7 @@ def get_auth_token():
         })
     # Check if the remote user is allowed
     elif (request.remote_user == username and _realm_parameter_fits_remote_user(request.remote_user)
-          and is_remote_user_allowed(request) != REMOTE_USER.DISABLE):
+          and _remote_user_login_mode() != REMOTE_USER.DISABLE):
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins

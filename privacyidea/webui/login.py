@@ -30,6 +30,8 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 import logging
 import os
+from collections.abc import Callable
+from typing import TypeVar
 
 from flask import (Blueprint, render_template, request,
                    current_app, g, redirect, abort, Response)
@@ -40,7 +42,7 @@ from privacyidea.api.lib.postpolicy import hide_version
 from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token, check_unquote,
                                        get_auth_token_from_request, logged_in_user_from_token, set_request_context)
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
-from privacyidea.lib.error import HSMException
+from privacyidea.lib.error import HSMException, PolicyError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
@@ -160,9 +162,77 @@ def after_request(response):
     return response
 
 
+SettingValue = TypeVar("SettingValue")
+
+
+def _read_policy_setting(setting: str, read_setting: Callable[[], SettingValue],
+                         default: SettingValue) -> SettingValue:
+    """
+    Reads one setting of the start page from the policies. If a policy check fails, the setting uses *default* and
+    the log file gets the error. Examples are ``Raise an error`` for missing data, for example a ``userinfo``
+    condition without a user, an invalid comparison, and two policies with the same priority and different values.
+    Thus a policy error changes only the setting of its own policy, and the start page stays available.
+
+    :param setting: the name of the setting in the log file, usually the policy action
+    :param read_setting: reads the setting from the policies
+    :param default: the value of the setting if no policy applies
+    :return: the value of the setting
+    """
+    try:
+        return read_setting()
+    except PolicyError as error:
+        log.error(f"The WebUI start page uses the default value of the setting '{setting}', because the check of its "
+                  f"policies failed: {error}")
+        return default
+
+
+def _start_page_policies(scope: str, action: str) -> list[dict]:
+    """
+    Returns the policies of the scope with the action that apply to the start page. If the policy check fails, the
+    list is empty, see :func:`_read_policy_setting`.
+    """
+    return _read_policy_setting(
+        action,
+        lambda: Match.action_only(g, scope=scope, action=action).policies(write_to_audit_log=False),
+        [])
+
+
+def _start_page_action_value(action: str, allow_white_space_in_action: bool = False) -> str:
+    """
+    Returns the value of the WebUI action from the policy with the highest priority that applies to the start page.
+    Without such a policy, or if the policy check fails, the value is empty, see :func:`_read_policy_setting`.
+    """
+    action_values = _read_policy_setting(
+        action,
+        lambda: Match.action_only(g, scope=SCOPE.WEBUI, action=action).action_values(
+            unique=True, allow_white_space_in_action=allow_white_space_in_action, write_to_audit_log=False),
+        {})
+    return next(iter(action_values), "")
+
+
+def _realm_dropdown_realms() -> str:
+    """
+    Returns the realms of the realm dropdown as a comma-separated list. Without a realm_dropdown policy, the list is
+    empty.
+    """
+    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN)
+    if not realm_dropdown.any(write_to_audit_log=False):
+        return ""
+    try:
+        # Use the realms from the policy.
+        return ",".join(realm_dropdown.action_values(unique=False, write_to_audit_log=False))
+    except AttributeError:
+        # The policy is still a boolean realm_dropdown action
+        # Thus we display ALL realms
+        return ",".join(get_realms())
+
+
 def get_render_context():
     """
     Provides a dictionary with configurations for the web ui.
+
+    A policy error changes only the setting of its own policy: the setting uses its default value, see
+    :func:`_read_policy_setting`.
     """
     instance = request.script_root
     if instance == "/":
@@ -203,80 +273,47 @@ def get_render_context():
     if not hasattr(request, "all_data"):
         request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
-    realms = ""
-    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN).policies(
-        write_to_audit_log=False)
-    show_node = get_privacyidea_node() \
-        if Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE).any(write_to_audit_log=False) else ""
-    if realm_dropdown:
-        try:
-            realm_dropdown_values = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN) \
-                .action_values(unique=False, write_to_audit_log=False)
-            # Use the realms from the policy.
-            realms = ",".join(realm_dropdown_values)
-        except AttributeError:
-            # The policy is still a boolean realm_dropdown action
-            # Thus we display ALL realms
-            realms = ",".join(get_realms())
+    realms = _read_policy_setting(PolicyAction.REALMDROPDOWN, _realm_dropdown_realms, "")
+    show_node = get_privacyidea_node() if _start_page_policies(SCOPE.WEBUI, PolicyAction.SHOW_NODE) else ""
 
     try:
-        r = is_remote_user_allowed(request, write_to_audit_log=False)
-        force_remote_user = r == REMOTE_USER.FORCE
-        if r != REMOTE_USER.DISABLE:
+        remote_user_mode = _read_policy_setting(PolicyAction.REMOTE_USER,
+                                                lambda: is_remote_user_allowed(request, write_to_audit_log=False),
+                                                REMOTE_USER.DISABLE)
+        force_remote_user = remote_user_mode == REMOTE_USER.FORCE
+        if remote_user_mode != REMOTE_USER.DISABLE:
             remote_user = request.remote_user
-        password_reset = is_password_reset(g)
+        password_reset = _read_policy_setting(PolicyAction.PASSWORDRESET, lambda: is_password_reset(g), False)
         hsm_ready = True
     except HSMException:
         hsm_ready = False
 
-    # Use policies to determine the customization of menu
-    # and baseline. get_action_values returns an array!
+    # Use policies to determine the customization of menu and baseline, the login text and the privacy statement link.
+    # With the subscription states 1 and 2, the defaults apply.
     sub_state = subscription_status()
-    customization_menu_file = Match.action_only(g, action=PolicyAction.CUSTOM_MENU,
-                                                scope=SCOPE.WEBUI) \
-        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
-    if len(customization_menu_file) and list(customization_menu_file)[0] \
-            and sub_state not in [1, 2]:
-        customization_menu_file = list(customization_menu_file)[0]
-    else:
+    customization_menu_file = _start_page_action_value(PolicyAction.CUSTOM_MENU, allow_white_space_in_action=True)
+    if not customization_menu_file or sub_state in [1, 2]:
         customization_menu_file = "templates/menu.html"
-    customization_baseline_file = Match.action_only(g, action=PolicyAction.CUSTOM_BASELINE,
-                                                    scope=SCOPE.WEBUI) \
-        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
-    if len(customization_baseline_file) and list(customization_baseline_file)[0] \
-            and sub_state not in [1, 2]:
-        customization_baseline_file = list(customization_baseline_file)[0]
-    else:
+    customization_baseline_file = _start_page_action_value(PolicyAction.CUSTOM_BASELINE,
+                                                           allow_white_space_in_action=True)
+    if not customization_baseline_file or sub_state in [1, 2]:
         customization_baseline_file = "templates/baseline.html"
 
-    login_text = Match.action_only(g, action=PolicyAction.LOGIN_TEXT, scope=SCOPE.WEBUI) \
-        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
-    if len(login_text) and list(login_text)[0] and sub_state not in [1, 2]:
-        login_text = list(login_text)[0]
-    else:
+    login_text = _start_page_action_value(PolicyAction.LOGIN_TEXT, allow_white_space_in_action=True)
+    if sub_state in [1, 2]:
         login_text = ""
 
-    gdpr_link = Match.action_only(g, action=PolicyAction.GDPR_LINK, scope=SCOPE.WEBUI) \
-        .action_values(unique=True, allow_white_space_in_action=True, write_to_audit_log=False)
-    if len(gdpr_link) and list(gdpr_link)[0] and sub_state not in [1, 2]:
-        gdpr_link = list(gdpr_link)[0]
-    else:
+    gdpr_link = _start_page_action_value(PolicyAction.GDPR_LINK, allow_white_space_in_action=True)
+    if sub_state in [1, 2]:
         gdpr_link = ""
 
-    otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=PolicyAction.OTPPINSETRANDOM).policies(
-        write_to_audit_log=False)
-
-    passkey_login_policy = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.PASSKEY_LOGIN).action_values(
-        unique=True, write_to_audit_log=False)
-    passkey_login = list(passkey_login_policy)[0] if len(
-        passkey_login_policy) else PasskeyLoginButtonOptions.SHOW
+    passkey_login = _start_page_action_value(PolicyAction.PASSKEY_LOGIN) or PasskeyLoginButtonOptions.SHOW
 
     # The version number is injected into the rendered login HTML, which the
     # hide_version postpolicy cannot strip (it only rewrites JSON responses).
     # Blank it here for the anonymous login page when the hide_version policy
     # is active. Authenticated requests (valid JWT) still receive it.
-    hide_version_active = Match.action_only(g, scope=SCOPE.HARDENING,
-                                            action=PolicyAction.HIDE_VERSION).policies(write_to_audit_log=False)
+    hide_version_active = _start_page_policies(SCOPE.HARDENING, PolicyAction.HIDE_VERSION)
     show_version = bool(getattr(g, "logged_in_user", None)) or not hide_version_active
     version_number = get_version_number() if show_version else ""
 
@@ -302,7 +339,6 @@ def get_render_context():
         'gdpr_link': gdpr_link,
         'logo': logo,
         'page_title': page_title,
-        'otp_pin_set_random_user': otp_pin_set_random_user,
         'privacyideaVersionNumber': version_number,
         'passkey_login': passkey_login,
     }
