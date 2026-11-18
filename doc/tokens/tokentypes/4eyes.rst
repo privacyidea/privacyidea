@@ -18,7 +18,7 @@ present, when authenticating:
    *Enroll a 4 eyes token*
 
 In this example authentication will only be possible if at least two tokens
-from *realm2* and one token from realm *sqlite* are present.
+from realm *example* and one token from realm *helpdesk* are present.
 
 Authentication is done by concatenating the OTP PINs and the OTP values of
 all tokens. The concatenation is split by the *separator* character.
@@ -33,11 +33,11 @@ It does not matter, in which order the tokens from the realms are entered.
 
 Authentication as::
 
-   username: "root@r2"
-   password: "pin123456 secret789434 key098123"
+   username: "alice@example"
+   password: "pin123456|secret789434|key098123"
 
-The three blocks separated by the *blank* are checked, if they match tokens
-in the realms *realm2* and *sqlite*.
+The three blocks separated by the separator ``|`` are checked, if they match tokens
+in the realms *example* and *helpdesk*.
 
 The separator is set during enrollment (one character; the WebUI suggests
 ``|``, the API default is a blank). The example uses a blank; with ``|`` the
