@@ -55,11 +55,7 @@ describe("VerifyEnrollmentComponent", () => {
   it("should call verifyToken and reload on verifyOTP", () => {
     component.otpValue.set("123456");
     component.verifyOTP();
-    expect(tokenService.verifyToken).toHaveBeenCalledWith({
-      serial: tokenService.tokenSerial(),
-      type: tokenService.selectedTokenType().key,
-      verify: "123456"
-    });
+    expect(tokenService.verifyToken).toHaveBeenCalledWith(tokenService.tokenSerial(), "123456");
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Token verified successfully!"));
   });

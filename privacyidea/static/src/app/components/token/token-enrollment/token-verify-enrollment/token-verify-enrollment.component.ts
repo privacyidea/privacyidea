@@ -111,12 +111,11 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   }
 
   verifyOTP() {
-    const verifyData: TokenEnrollmentData = {
-      serial: this.responseDetails?.serial,
-      type: this.tokenService.selectedTokenType().key,
-      verify: this.verifyOTP_value()
-    };
-    this.tokenService.verifyToken(verifyData).subscribe({
+    const tokenSerial = this.responseDetails?.serial;
+    if (!tokenSerial) {
+      return;
+    }
+    this.tokenService.verifyToken(tokenSerial, this.verifyOTP_value()).subscribe({
       next: (response) => {
         if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
           this.dialogRef.close(response as unknown as EnrollmentResponse);

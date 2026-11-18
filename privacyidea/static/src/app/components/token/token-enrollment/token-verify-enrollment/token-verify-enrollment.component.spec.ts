@@ -109,7 +109,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
   it("should call verifyToken and close dialog on successful verify", () => {
     component.verifyOTP_value.set("123456");
     component.onDialogAction("verify");
-    expect(mockTokenService.verifyToken).toHaveBeenCalled();
+    expect(mockTokenService.verifyToken).toHaveBeenCalledWith("123", "123456");
     expect(dialogRefSpy.close).toHaveBeenCalled();
   });
 
