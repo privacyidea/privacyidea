@@ -133,7 +133,7 @@ describe("TestOtpPinActionComponent", () => {
     tokenService.tokenSerial.set("Mock serial");
 
     component.testToken();
-    component.verifyOTPValue();
+    component.testOtpOnly();
 
     expect(testSpy).toHaveBeenCalledWith("Mock serial", "1234");
   });
@@ -353,10 +353,10 @@ describe("TestOtpPinActionComponent", () => {
     expect(notificationService.warning).not.toHaveBeenCalled();
   });
 
-  describe("Verify OTP Value", () => {
-    const verifyOtpValueButton = (): HTMLButtonElement | undefined =>
+  describe("Test OTP Only", () => {
+    const testOtpOnlyButton = (): HTMLButtonElement | undefined =>
       Array.from(fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((button) =>
-        button.textContent?.includes("Verify OTP Value")
+        button.textContent?.includes("Test OTP Only")
       );
 
     it.each(["spass", "push", "question", "indexedsecret", "4eyes", "certificate", "sshkey", "ocra", "tiqr", "u2f"])(
@@ -364,7 +364,7 @@ describe("TestOtpPinActionComponent", () => {
       (tokenType) => {
         fixture.componentRef.setInput("tokenType", tokenType);
         fixture.detectChanges();
-        expect(verifyOtpValueButton()).toBeUndefined();
+        expect(testOtpOnlyButton()).toBeUndefined();
       }
     );
 
@@ -373,14 +373,14 @@ describe("TestOtpPinActionComponent", () => {
       (tokenType) => {
         fixture.componentRef.setInput("tokenType", tokenType);
         fixture.detectChanges();
-        expect(verifyOtpValueButton()).toBeDefined();
+        expect(testOtpOnlyButton()).toBeDefined();
       }
     );
 
     it("notifies success if the OTP value is accepted", () => {
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
-      component.verifyOTPValue();
+      component.testOtpOnly();
 
       expect(notificationService.success).toHaveBeenCalledWith("The OTP value was accepted.");
     });
@@ -388,7 +388,7 @@ describe("TestOtpPinActionComponent", () => {
     it("notifies a warning if the OTP value is rejected", () => {
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
 
-      component.verifyOTPValue();
+      component.testOtpOnly();
 
       expect(notificationService.warning).toHaveBeenCalledWith("The OTP value was rejected.");
     });
@@ -572,12 +572,12 @@ describe("TestOtpPinActionComponent", () => {
       expect(document.activeElement).toBe(button("Test Token"));
     });
 
-    it("keeps the focus on Verify OTP Value after a test without a challenge", async () => {
+    it("keeps the focus on Test OTP Only after a test without a challenge", async () => {
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
-      await click("Verify OTP Value");
+      await click("Test OTP Only");
 
-      expect(document.activeElement).toBe(button("Verify OTP Value"));
+      expect(document.activeElement).toBe(button("Test OTP Only"));
     });
 
     it("does not move the focus if the admin moved it out of the section", async () => {

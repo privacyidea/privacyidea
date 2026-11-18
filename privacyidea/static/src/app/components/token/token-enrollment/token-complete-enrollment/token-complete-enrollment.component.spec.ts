@@ -80,6 +80,34 @@ describe("TokenCompleteEnrollmentComponent", () => {
     expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regenerated);
   });
 
+  it("shows the enrollment data for the type of the enrollment request", async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [TokenCompleteEnrollmentComponent],
+      providers: [
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: MatDialogRef, useValue: dialogRefSpy },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            tokenType: "totp",
+            // A /token/init response has no top-level type
+            response: { result: { status: true }, detail: { serial: "TOTP0001", rollout_state: "clientwait" } },
+            enrollParameters: { data: { type: "totp", twoStepInit: true } },
+            onEnrollmentResponseChange: jest.fn()
+          }
+        }
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
+    }).compileComponents();
+    const totpFixture = TestBed.createComponent(TokenCompleteEnrollmentComponent);
+    totpFixture.detectChanges();
+
+    const enrollmentData = totpFixture.debugElement.query(By.css("app-token-enrollment-data"));
+    expect(enrollmentData.componentInstance.tokenType()).toBe("totp");
+  });
+
   it("should disable enroll action if input is invalid", () => {
     component.clientPart.set("");
     fixture.detectChanges();

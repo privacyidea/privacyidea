@@ -19,13 +19,11 @@
 
 import { Component, inject, Input, input, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { ResyncTokenActionComponent } from "@components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component";
 import { TestPasskeyActionComponent } from "@components/token/token-details/token-details-actions/test-passkey-action/test-passkey-action.component";
 import { SetPinActionComponent } from "@components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "@components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component";
-import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenDetails } from "@services/token/token.service";
 
@@ -34,13 +32,11 @@ import { TokenDetails } from "@services/token/token.service";
   standalone: true,
   imports: [
     MatButtonModule,
-    MatDivider,
     MatIconModule,
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,
-    TestPasskeyActionComponent,
-    VerifyEnrollmentComponent
+    TestPasskeyActionComponent
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -52,10 +48,8 @@ export class TokenDetailsActionsComponent {
 
   protected get hasAnyAction(): boolean {
     const type = this.tokenType?.();
-    const isVerify = this.token().rollout_state === "verify";
     const nonWebauthn = type !== "passkey" && type !== "webauthn";
     return (
-      isVerify ||
       type === "passkey" ||
       nonWebauthn ||
       this.authService.actionAllowed("setpin") ||

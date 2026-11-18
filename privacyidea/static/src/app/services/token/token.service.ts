@@ -455,7 +455,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
 
@@ -1307,10 +1307,11 @@ export class TokenService extends FilterableTableService implements TokenService
       );
   }
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
+  // The server takes the type from the token, so the request does not name it
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, { serial, verify }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to verify token.", error);

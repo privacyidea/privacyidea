@@ -6,11 +6,6 @@
   display: contents;
 }
 
-// The verify-enrollment prompt stays a single full-width row above the sections.
-.actions-verify-row {
-  flex: 0 0 100%;
-}
-
 .actions-status-row {
   @include styles.card-raised(3);
   display: flex;
