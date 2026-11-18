@@ -31,7 +31,7 @@ import { TokenDetailsInfoComponent } from "./token-details-info/token-details-in
 import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
-import { VerifyEnrollmentComponent } from "./token-details-actions/verify-enrollment/verify-enrollment.component";
+import { VerifyEnrollmentComponent } from "./verify-enrollment/verify-enrollment.component";
 
 @Component({
   selector: "app-token-details-self-service",

@@ -82,7 +82,7 @@ import { TokenDetailsMachineComponent } from "./token-details-machine/token-deta
 import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
-import { VerifyEnrollmentComponent } from "./token-details-actions/verify-enrollment/verify-enrollment.component";
+import { VerifyEnrollmentComponent } from "./verify-enrollment/verify-enrollment.component";
 import {
   SshMachineAssignDialogData,
   TokenSshMachineAssignDialogComponent
