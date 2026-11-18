@@ -83,9 +83,20 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
+  /** Every action value must be valid, e.g. a multi-select action needs at least one selected value. */
+  readonly actionValuesAreValid = computed(() => {
+    const policy = this.editedPolicy();
+    return Object.entries(policy.action ?? {}).every(([name, value]) => {
+      const detail = this.policyService.getDetailsOfAction(name, policy.scope);
+      return detail === null || this.policyService.actionValueIsValid(detail, value);
+    });
+  });
   readonly canSave = computed(
     () =>
-      this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
+      this.isPolicyEdited() &&
+      !!this.editedPolicy().name?.trim() &&
+      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
+      this.actionValuesAreValid()
   );
   readonly title = computed(() =>
     this.mode() === "edit"

@@ -21,6 +21,7 @@ import { ElementRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
@@ -324,5 +325,113 @@ describe("PolicyActionItemComponent", () => {
 
       expect(mockButton.focus).toHaveBeenCalled();
     });
+  });
+});
+
+describe("PolicyActionItemComponent – multi-select value order", () => {
+  let component: PolicyActionItemComponent;
+  let fixture: ComponentFixture<PolicyActionItemComponent>;
+  let select: MatSelect;
+
+  const orderedDetail: PolicyActionDetail = {
+    type: "str",
+    desc: "Key algorithms",
+    multiple: true,
+    value: ["secp256r1", "rsa_4096"],
+    ordered: true
+  };
+
+  const setUp = (detail: PolicyActionDetail) => {
+    fixture.componentRef.setInput("selectableAction", {
+      actionName: "push_key_algorithms",
+      label: "push_key_algorithms",
+      scope: "enrollment",
+      detail
+    });
+    fixture.detectChanges();
+    select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+    select.open();
+    fixture.detectChanges();
+  };
+
+  /** Clicks the option like a user. The component writes the selection back itself. */
+  const click = (value: string) => {
+    select.options.find((option) => option.value === value)!._selectViaInteraction();
+    fixture.detectChanges();
+  };
+
+  const triggerText = (): string =>
+    (fixture.nativeElement as HTMLElement).querySelector(".mat-mdc-select-value")?.textContent?.trim() ?? "";
+
+  const addButton = (): HTMLButtonElement =>
+    fixture.debugElement.query(By.css("button[mat-icon-button]")).nativeElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PolicyActionItemComponent, MatSelectModule],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
+    })
+      .overrideComponent(PolicyActionItemComponent, {
+        set: {
+          imports: [MockSelectorButtonsComponent, MatSelectModule, MultiSelectOnlyComponent, HighlightPipe]
+        }
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(PolicyActionItemComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput("actionValue", "");
+  });
+
+  afterEach(() => {
+    if (select?.panelOpen) {
+      select.close();
+    }
+  });
+
+  it("adds secp256r1 checked before rsa_4096 as 'secp256r1 rsa_4096'", () => {
+    setUp(orderedDetail);
+    const spy = jest.spyOn(component.actionAdd, "emit");
+
+    click("secp256r1");
+    click("rsa_4096");
+
+    expect(component.currentAction().value).toBe("secp256r1 rsa_4096");
+    expect(triggerText()).toBe("secp256r1, rsa_4096");
+    select.close();
+    fixture.detectChanges();
+    addButton().click();
+    expect(spy).toHaveBeenCalledWith({ name: "push_key_algorithms", value: "secp256r1 rsa_4096" });
+  });
+
+  it("adds rsa_4096 checked before secp256r1 as 'rsa_4096 secp256r1'", () => {
+    setUp(orderedDetail);
+
+    click("rsa_4096");
+    click("secp256r1");
+
+    expect(component.currentAction().value).toBe("rsa_4096 secp256r1");
+    expect(triggerText()).toBe("rsa_4096, secp256r1");
+  });
+
+  it("moves a value deselected and checked again to the end", () => {
+    setUp(orderedDetail);
+
+    click("rsa_4096");
+    click("secp256r1");
+    click("rsa_4096");
+    click("rsa_4096");
+
+    expect(component.currentAction().value).toBe("secp256r1 rsa_4096");
+  });
+
+  it("keeps the sorted order for an action without the ordered flag", () => {
+    setUp({ ...orderedDetail, ordered: undefined });
+
+    click("secp256r1");
+    click("rsa_4096");
+
+    expect(component.currentAction().value).toBe("rsa_4096 secp256r1");
+    expect(triggerText()).toBe("rsa_4096, secp256r1");
   });
 });

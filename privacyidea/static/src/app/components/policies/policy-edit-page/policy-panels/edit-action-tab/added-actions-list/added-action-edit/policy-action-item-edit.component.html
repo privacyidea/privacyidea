@@ -33,16 +33,23 @@
       @if (!isBooleanAction()) {
         @if (actionDetail()?.value; as actionValues) {
           @if (actionDetail()?.multiple) {
-            <app-multi-select-only
-              class="flex-2"
-              subscriptSizing="dynamic"
-              i18n-placeholder="@@policy.selectOptions"
-              placeholder="Select options..."
-              [items]="actionValues"
-              [itemLabel]="valueLabelOf"
-              [selectedItems]="selectedItems()"
-              (selectionChange)="handleUpdateAction($event)">
-            </app-multi-select-only>
+            <div class="flex-column flex-2">
+              <app-multi-select-only
+                subscriptSizing="dynamic"
+                i18n-placeholder="@@policy.selectOptions"
+                placeholder="Select options..."
+                [items]="actionValues"
+                [itemLabel]="valueLabelOf"
+                [selectedItems]="selectedItems()"
+                [ordered]="actionDetail()?.ordered ?? false"
+                (selectionChange)="handleUpdateAction($event)">
+              </app-multi-select-only>
+              @if (!inputIsValid()) {
+                <mat-error i18n="@@policy.atLeastOneValueRequired"
+                  >At least one value is <strong>required</strong>.</mat-error
+                >
+              }
+            </div>
           } @else if (actionValues.length === 0) {
             <p i18n="@@policy.noValuesAvailable">No values available.</p>
           } @else if (actionValues.length < 3) {

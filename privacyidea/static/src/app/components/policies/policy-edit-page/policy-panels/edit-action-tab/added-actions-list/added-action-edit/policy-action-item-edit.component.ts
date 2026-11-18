@@ -89,7 +89,7 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
 
   selectedItems = computed<T[]>(() => {
     const value = this.action()?.value;
-    const valueList = typeof value === "string" ? value.split(" ") : [value];
+    const valueList = typeof value === "string" ? value.split(" ").filter(Boolean) : [value];
     return valueList as T[];
   });
 

@@ -34,7 +34,7 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { PolicyActionDetail, PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import {
   MockContentService,
   MockNotificationService,
@@ -233,6 +233,51 @@ describe("PolicyEditPageComponent – edit mode", () => {
     const success = await component.onSave();
     expect(success).toBe(false);
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  describe("multi-select action values", () => {
+    const multiDetail: PolicyActionDetail = {
+      type: "str",
+      desc: "Key algorithms",
+      multiple: true,
+      value: ["secp256r1", "rsa_4096"]
+    };
+    const saveButton = (): HTMLButtonElement =>
+      fixture.debugElement.query(By.css("button.action-button-primary")).nativeElement;
+
+    beforeEach(() => {
+      policyService.getDetailsOfAction.mockImplementation((name: string) =>
+        name === "push_key_algorithms" ? multiDetail : null
+      );
+      policyService.actionValueIsValid.mockImplementation(
+        (detail: PolicyActionDetail, value: string | number | boolean) =>
+          PolicyService.prototype.actionValueIsValid.call(policyService, detail, value)
+      );
+    });
+
+    it("cannot be saved once all values of a multi-select action are deselected", () => {
+      component.addPolicyEdit({
+        name: "TestPolicy",
+        scope: "enrollment",
+        action: { push_key_algorithms: "" }
+      });
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(false);
+      expect(saveButton().disabled).toBe(true);
+    });
+
+    it("can be saved while a multi-select action keeps at least one value", () => {
+      component.addPolicyEdit({
+        name: "TestPolicy",
+        scope: "enrollment",
+        action: { push_key_algorithms: "secp256r1" }
+      });
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(true);
+      expect(saveButton().disabled).toBe(false);
+    });
   });
 
   describe("deletePolicy", () => {

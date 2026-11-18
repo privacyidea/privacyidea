@@ -33,6 +33,8 @@ export interface PolicyActionDetail<T extends string | number | boolean = string
   desc: string;
   type: ActionType;
   multiple?: boolean;
+  /** A multiple action whose value order matters: the selection is kept in click order. */
+  ordered?: boolean;
   group?: string;
   mainmenu?: string[];
   value?: T[];

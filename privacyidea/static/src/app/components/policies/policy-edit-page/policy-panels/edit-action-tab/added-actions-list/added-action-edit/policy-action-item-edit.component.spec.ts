@@ -24,6 +24,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
@@ -54,6 +55,7 @@ describe("PolicyActionItemEditComponent", () => {
             MatIconModule,
             MatFormFieldModule,
             MatSelectModule,
+            MultiSelectOnlyComponent,
             HighlightPipe
           ]
         }
@@ -124,5 +126,132 @@ describe("PolicyActionItemEditComponent", () => {
     const deleteBtn = fixture.debugElement.query(By.css(".delete-icon-button"));
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();
+  });
+
+  describe("multi-select action", () => {
+    const multiDetail: PolicyActionDetail = {
+      type: "str",
+      desc: "Key algorithms",
+      multiple: true,
+      value: ["secp256r1", "rsa_4096"]
+    };
+    const requiredError = "At least one value is required";
+
+    beforeEach(() => {
+      const policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+      policyService.actionValueIsValid.mockImplementation(
+        (detail: PolicyActionDetail, value: string | number | boolean) =>
+          PolicyService.prototype.actionValueIsValid.call(policyService, detail, value)
+      );
+      fixture.componentRef.setInput("actionDetail", multiDetail);
+    });
+
+    it("emits an empty value when all values are deselected", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      component.handleUpdateAction([]);
+      expect(spy).toHaveBeenCalledWith("");
+    });
+
+    it("is invalid and shows the required error when no value is selected", () => {
+      fixture.componentRef.setInput("action", { name: "push_key_algorithms", value: "" });
+      fixture.detectChanges();
+
+      expect(component.inputIsValid()).toBe(false);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain(requiredError);
+    });
+
+    it("stays valid without an error while at least one value is selected", () => {
+      fixture.componentRef.setInput("action", { name: "push_key_algorithms", value: "secp256r1" });
+      fixture.detectChanges();
+
+      expect(component.inputIsValid()).toBe(true);
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(requiredError);
+    });
+  });
+
+  describe("multi-select action value order", () => {
+    const orderedDetail: PolicyActionDetail = {
+      type: "str",
+      desc: "Key algorithms",
+      multiple: true,
+      value: ["secp256r1", "rsa_4096"],
+      ordered: true
+    };
+    const unorderedDetail: PolicyActionDetail = { ...orderedDetail, ordered: undefined };
+    let select: MatSelect;
+    let updateSpy: jest.SpyInstance;
+
+    /** MatSelect checks the options of a saved value in a microtask (`_initializeSelection`), so wait for it. */
+    const setUp = async (detail: PolicyActionDetail, value: string) => {
+      fixture.componentRef.setInput("actionDetail", detail);
+      fixture.componentRef.setInput("action", { name: "push_key_algorithms", value });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      select.open();
+      fixture.detectChanges();
+      updateSpy = jest.spyOn(component.updateAction, "emit");
+    };
+
+    /** Clicks the option like a user and writes the saved value back, as the policy editor does. */
+    const click = (value: string): string => {
+      select.options.find((option) => option.value === value)!._selectViaInteraction();
+      fixture.detectChanges();
+      const saved = updateSpy.mock.calls[updateSpy.mock.calls.length - 1][0] as string;
+      fixture.componentRef.setInput("action", { name: "push_key_algorithms", value: saved });
+      fixture.detectChanges();
+      return saved;
+    };
+
+    const triggerText = (): string =>
+      (fixture.nativeElement as HTMLElement).querySelector(".mat-mdc-select-value")?.textContent?.trim() ?? "";
+
+    afterEach(() => {
+      if (select?.panelOpen) {
+        select.close();
+      }
+    });
+
+    it("saves secp256r1 checked before rsa_4096 as 'secp256r1 rsa_4096'", async () => {
+      await setUp(orderedDetail, "");
+
+      click("secp256r1");
+
+      expect(click("rsa_4096")).toBe("secp256r1 rsa_4096");
+      expect(triggerText()).toBe("secp256r1, rsa_4096");
+    });
+
+    it("saves rsa_4096 checked before secp256r1 as 'rsa_4096 secp256r1'", async () => {
+      await setUp(orderedDetail, "");
+
+      click("rsa_4096");
+
+      expect(click("secp256r1")).toBe("rsa_4096 secp256r1");
+      expect(triggerText()).toBe("rsa_4096, secp256r1");
+    });
+
+    it("shows an existing value in its saved order", async () => {
+      await setUp(orderedDetail, "secp256r1 rsa_4096");
+
+      expect(triggerText()).toBe("secp256r1, rsa_4096");
+    });
+
+    it("keeps an existing value's order and moves a value deselected and checked again to the end", async () => {
+      await setUp(orderedDetail, "rsa_4096 secp256r1");
+
+      expect(click("rsa_4096")).toBe("secp256r1");
+      expect(click("rsa_4096")).toBe("secp256r1 rsa_4096");
+      expect(triggerText()).toBe("secp256r1, rsa_4096");
+    });
+
+    it("keeps saving in sorted order for an action without the ordered flag", async () => {
+      await setUp(unorderedDetail, "");
+
+      click("secp256r1");
+
+      expect(click("rsa_4096")).toBe("rsa_4096 secp256r1");
+      expect(triggerText()).toBe("rsa_4096, secp256r1");
+    });
   });
 });

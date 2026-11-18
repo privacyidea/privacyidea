@@ -146,6 +146,132 @@ describe("MultiSelectOnlyComponent", () => {
     });
   });
 
+  describe("Selection order", () => {
+    let select: MatSelect;
+    let emitSpy: jest.SpyInstance;
+
+    /** Clicks the option like a user and writes the emitted selection back, as every parent does. */
+    const click = (value: string): (string | number)[] => {
+      const option = select.options.find((candidate) => candidate.value === value);
+      option!._selectViaInteraction();
+      fixture.detectChanges();
+      const emitted = emitSpy.mock.calls[emitSpy.mock.calls.length - 1][0] as (string | number)[];
+      fixture.componentRef.setInput("selectedItems", emitted);
+      fixture.detectChanges();
+      return emitted;
+    };
+
+    const triggerText = (): string =>
+      (fixture.nativeElement as HTMLElement).querySelector(".mat-mdc-select-value")?.textContent?.trim() ?? "";
+
+    /**
+     * MatSelect applies its value to newly rendered options in a microtask
+     * (`_initializeSelection`), so an existing selection is only checked once that has run.
+     */
+    const render = async (items: string[], selectedItems: string[]) => {
+      fixture.componentRef.setInput("items", items);
+      fixture.componentRef.setInput("selectedItems", selectedItems);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    const setUp = async (selectedItems: string[], ordered?: boolean) => {
+      if (ordered !== undefined) {
+        fixture.componentRef.setInput("ordered", ordered);
+      }
+      await render(["secp256r1", "rsa_4096"], selectedItems);
+      select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      select.open();
+      fixture.detectChanges();
+      emitSpy = jest.spyOn(component.selectionChange, "emit");
+    };
+
+    afterEach(() => {
+      if (select?.panelOpen) {
+        select.close();
+      }
+    });
+
+    describe("with ordered", () => {
+      it("should emit the selection in click order when secp256r1 is checked before rsa_4096", async () => {
+        await setUp([], true);
+
+        click("secp256r1");
+        expect(click("rsa_4096")).toEqual(["secp256r1", "rsa_4096"]);
+      });
+
+      it("should emit the selection in click order when rsa_4096 is checked before secp256r1", async () => {
+        await setUp([], true);
+
+        click("rsa_4096");
+        expect(click("secp256r1")).toEqual(["rsa_4096", "secp256r1"]);
+      });
+
+      it("should show the trigger text in click order", async () => {
+        await setUp([], true);
+
+        click("secp256r1");
+        click("rsa_4096");
+
+        expect(triggerText()).toBe("secp256r1, rsa_4096");
+      });
+
+      it("should keep the order of an existing selection when a further value is checked", async () => {
+        fixture.componentRef.setInput("ordered", true);
+        await render(["secp256r1", "rsa_4096", "rsa_2048"], ["secp256r1", "rsa_4096"]);
+        select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+        select.open();
+        fixture.detectChanges();
+        emitSpy = jest.spyOn(component.selectionChange, "emit");
+
+        expect(click("rsa_2048")).toEqual(["secp256r1", "rsa_4096", "rsa_2048"]);
+      });
+
+      it("should move a value to the end when it is deselected and checked again", async () => {
+        await setUp(["rsa_4096", "secp256r1"], true);
+
+        expect(click("rsa_4096")).toEqual(["secp256r1"]);
+        expect(click("rsa_4096")).toEqual(["secp256r1", "rsa_4096"]);
+        expect(triggerText()).toBe("secp256r1, rsa_4096");
+      });
+
+      it("should append the missing values after the current ones on select all", async () => {
+        await setUp(["secp256r1"], true);
+
+        component.toggleAll();
+
+        expect(emitSpy).toHaveBeenCalledWith(["secp256r1", "rsa_4096"]);
+      });
+    });
+
+    describe("without ordered", () => {
+      it("should emit the selection in sorted option order whatever the click order", async () => {
+        await setUp([]);
+
+        click("secp256r1");
+        expect(click("rsa_4096")).toEqual(["rsa_4096", "secp256r1"]);
+      });
+
+      it("should show the trigger text in sorted order whatever the click order", async () => {
+        await setUp([]);
+
+        click("secp256r1");
+        click("rsa_4096");
+
+        expect(triggerText()).toBe("rsa_4096, secp256r1");
+      });
+
+      it("should emit all values sorted on select all", async () => {
+        await setUp(["secp256r1"]);
+
+        component.toggleAll();
+
+        expect(emitSpy).toHaveBeenCalledWith(["rsa_4096", "secp256r1"]);
+      });
+    });
+  });
+
   describe("Panel Keyboard Navigation", () => {
     let select: MatSelect;
     let selectHost: HTMLElement;

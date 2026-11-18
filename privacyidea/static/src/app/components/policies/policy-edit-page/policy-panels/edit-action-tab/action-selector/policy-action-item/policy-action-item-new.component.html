@@ -40,6 +40,7 @@
             [items]="actionValues"
             [itemLabel]="valueLabelOf"
             [selectedItems]="selectedItems()"
+            [ordered]="selectableAction().detail.ordered ?? false"
             (selectionChange)="updateSelectedActionValue($event)">
           </app-multi-select-only>
         } @else {

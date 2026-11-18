@@ -99,7 +99,7 @@ export class PolicyActionItemComponent {
 
   selectedItems = computed<(string | number)[]>(() => {
     const value = this.currentAction()?.value;
-    const valueList = typeof value === "string" ? value.split(" ") : [value];
+    const valueList = typeof value === "string" ? value.split(" ").filter(Boolean) : [value];
     return valueList as (string | number)[];
   });
 

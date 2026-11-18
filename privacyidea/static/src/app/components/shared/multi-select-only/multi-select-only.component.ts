@@ -64,6 +64,9 @@ export class MultiSelectOnlyComponent<T = string | number> {
   /** Width utility class applied to the form field (e.g. "input-width-xl"). Defaults to filling the host. */
   readonly fieldClass = input<string>("width-100");
 
+  /** Keeps the selection in click order instead of option order, for values whose order matters. */
+  readonly ordered = input<boolean>(false);
+
   // Outputs
   readonly selectionChange = output<T[]>();
 
@@ -143,7 +146,16 @@ export class MultiSelectOnlyComponent<T = string | number> {
     // A click on an option moves MatSelect's own highlight with it, so the marker cannot stay on
     // the header or on the button of the row the user has just left.
     this.resetMarker();
-    this.selectionChange.emit(event.value);
+    this.selectionChange.emit(this.ordered() ? this.inClickOrder(event.value) : event.value);
+  }
+
+  /**
+   * MatSelect reports a multiple selection in option order. Keeps the values already selected in
+   * their order and appends the newly checked ones, so the selection follows the click order.
+   */
+  private inClickOrder(next: T[]): T[] {
+    const kept = this.selectedItems().filter((item) => next.includes(item));
+    return [...kept, ...next.filter((item) => !kept.includes(item))];
   }
 
   /**
@@ -338,6 +350,10 @@ export class MultiSelectOnlyComponent<T = string | number> {
    * Toggles between selecting all and none.
    */
   public toggleAll(): void {
-    this.selectionChange.emit(this.isAllSelected() ? [] : this.uniqueItems());
+    if (this.isAllSelected()) {
+      this.selectionChange.emit([]);
+      return;
+    }
+    this.selectionChange.emit(this.ordered() ? this.inClickOrder(this.uniqueItems()) : this.uniqueItems());
   }
 }
