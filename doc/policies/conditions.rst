@@ -338,7 +338,7 @@ The data for a condition is missing in these cases:
 ``Handle Missing Data`` has three options:
 
 * ``Raise an error``: privacyIDEA stops the request with a policy error. This is the
-  default. It also applies to conditions from privacyIDEA versions before 3.12. For two
+  default. It also applies to conditions from privacyIDEA versions before 3.12. For the
   exceptions, see `Error Handling`_.
 * ``Condition is false``: the policy does not apply.
 * ``Condition is true``: the policy applies.
@@ -380,11 +380,13 @@ If a condition is not valid, privacyIDEA raises a policy error and stops the req
 
 The log file contains the details.
 
-In two cases, a policy error does not stop the request. This applies to an invalid
+In three cases, a policy error does not stop the request. This applies to an invalid
 condition and to ``Raise an error`` for missing data:
 
-* A policy of the scope :ref:`policies_hardening` on the API: the policy does not apply.
-  Thus the error turns off the protection of the policy.
+* A policy of the scope :ref:`policies_hardening` on the API and on the WebUI start page:
+  the policy does not apply. Thus the error turns off the protection of the policy.
+* The other policies of the WebUI start page: the setting of the policy uses its default
+  value. :ref:`policy_condition_checks` lists these policies.
 * A token that privacyIDEA creates from a container template: if a policy check before
   the creation fails, privacyIDEA does not create this token. Examples are a token limit,
   the right to enroll the token type, or a default value. privacyIDEA creates the other
