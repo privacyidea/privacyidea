@@ -162,6 +162,10 @@
     </div>
   </div>
 
+  @if (showVerifyEnrollment()) {
+    <app-verify-enrollment class="details-verify-card" />
+  }
+
   <div
     #detailsGrid
     class="details-grid margin-bottom-16">

@@ -17,13 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (hasAnyAction) {
-  @if (token().rollout_state === "verify") {
-    <div class="actions-verify-row">
-      <app-verify-enrollment></app-verify-enrollment>
-      <mat-divider class="margin-top-8 margin-bottom-8" />
-    </div>
-  }
-
   <div class="actions-sections-row">
     @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
       <section class="actions-section actions-section--pin">

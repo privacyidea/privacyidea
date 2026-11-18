@@ -22,13 +22,13 @@ import { form, FormField, required } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 
 @Component({
   selector: "app-verify-enrollment",
-  imports: [MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
+  imports: [DetailsCardComponent, MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
   templateUrl: "./verify-enrollment.component.html"
 })
 export class VerifyEnrollmentComponent {
@@ -41,12 +41,7 @@ export class VerifyEnrollmentComponent {
   });
 
   verifyOTP() {
-    const verifyData: TokenEnrollmentData = {
-      serial: this.tokenService.tokenSerial(),
-      type: this.tokenService.selectedTokenType().key,
-      verify: this.otpValue()
-    };
-    this.tokenService.verifyToken(verifyData).subscribe({
+    this.tokenService.verifyToken(this.tokenService.tokenSerial(), this.otpValue()).subscribe({
       next: (response) => {
         this.tokenService.tokenDetailResource.reload();
         if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {

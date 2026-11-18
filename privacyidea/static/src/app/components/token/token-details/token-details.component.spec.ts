@@ -397,6 +397,35 @@ describe("TokenDetailsComponent", () => {
     });
   });
 
+  describe("verify enrollment card", () => {
+    const verifyCard = (): HTMLElement | null => fixture.nativeElement.querySelector("app-verify-enrollment");
+    const showToken = (tokentype: TokenTypeKey, rollout_state: string) => {
+      component.tokenDetails.set({ ...component.tokenDetails(), tokentype, rollout_state });
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => {
+      jest.spyOn(component["authService"], "actionAllowed").mockImplementation((action) => action === "enrollTOTP");
+    });
+
+    it("is shown above the grid while the enrollment waits for its verification", () => {
+      showToken("totp", "verify");
+      const card = verifyCard();
+      expect(card).not.toBeNull();
+      expect(card!.nextElementSibling?.classList).toContain("details-grid");
+    });
+
+    it("is hidden without the right to enroll the token type", () => {
+      showToken("hotp", "verify");
+      expect(verifyCard()).toBeNull();
+    });
+
+    it("is hidden once the token is enrolled", () => {
+      showToken("totp", "enrolled");
+      expect(verifyCard()).toBeNull();
+    });
+  });
+
   it("attachPasskeyToMachine logs an error when the request fails", () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
     jest
