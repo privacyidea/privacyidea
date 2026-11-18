@@ -34,6 +34,12 @@ export async function settleContent(page: Page): Promise<void> {
   await forceTheme(page);
 }
 
+// Asserts that the browser ended on `path` and not on the login page or another page that the app redirected to.
+export async function expectPath(page: Page, path: string): Promise<void> {
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page).toHaveURL(new RegExp(`/${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/?$`));
+}
+
 // Waits until the loading indicators are gone. They come and go with the data; a page measured while one shows is not
 // the settled page.
 export async function waitForData(page: Page): Promise<void> {

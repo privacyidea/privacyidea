@@ -107,8 +107,9 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 # remapped to the current one, see _resolve_ui_folders().
 PREVIEW_STATIC_FOLDER = "static_new"
 
-# The style hashes allow the inline styles of the legacy WebUI. The WebUI allows its inline styles
-# and scripts with the nonce of CSP_NONCE_DIRECTIVES instead.
+# The style hashes allow the inline styles of the legacy WebUI. The WebUI allows its styles with the
+# nonce of CSP_NONCE_DIRECTIVES instead. script-src allows no inline script: the build of the WebUI
+# writes none, because it does not inline the critical CSS (inlineCritical in angular.json).
 CSP = {
     'default-src': [
         '\'self\'',
@@ -144,9 +145,9 @@ CSP = {
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
     ]
 }
-# Talisman adds a new nonce for each request to these directives. The WebUI puts it on the inline style
-# and script of its index.html and on the style elements that Angular adds at runtime, see _serve_locale().
-CSP_NONCE_DIRECTIVES = ['script-src', 'style-src']
+# Talisman adds a new nonce for each request to these directives. Angular puts it on the style elements
+# that it adds for the components at runtime, see _serve_locale().
+CSP_NONCE_DIRECTIVES = ['style-src']
 
 migrate = Migrate()
 babel = Babel()
@@ -181,6 +182,22 @@ class PrivacyIDEARequest(Request):
     The request class of both application factories.
     """
     form_data_parser_class = UrlencodedSizeLimitFormDataParser
+
+
+def _enable_csp(app: Flask) -> bool:
+    """
+    Add the Content Security Policy and the other headers of Talisman to each response, if PI_ENABLE_CSP is set.
+
+    Both application factories call this, so that the package and the Docker image send the same policy.
+
+    :return: True if the policy is on
+    """
+    if not app.config.get(ConfigKey.ENABLE_CSP, False):
+        return False
+    Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
+             force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+             session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+    return True
 
 
 def _register_spa_fallback(app: Flask) -> None:
@@ -626,13 +643,8 @@ def create_app(config_name="development",
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
-                 force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.config.get(ConfigKey.VERBOSE):
-            print("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.config.get(ConfigKey.VERBOSE):
+        print("Enabling CSP with Talisman")
 
     # Setup logging
     if config_name == "docker":
@@ -750,13 +762,8 @@ def create_docker_app():
     # And then we check if we have a minimal viable config
     _check_config(app)
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
-                 force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.debug:
-            sys.stderr.write("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.debug:
+        sys.stderr.write("Enabling CSP with Talisman")
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG

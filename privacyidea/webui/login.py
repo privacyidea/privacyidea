@@ -69,8 +69,8 @@ LOCALE_COOKIE_NAME = "pi_ui_locale"
 SCRIPT_ROOT_META_NAME = "pi-script-root"
 
 # Placeholder for the CSP nonce in the ngCspNonce attribute of <app-root> in the WebUI's src/index.html.
-# The Angular build copies it to the nonce attribute of the inline <style> and <script> elements, and
-# Angular reads it at runtime for the <style> elements of the components. Keep the value in sync.
+# Angular reads it at runtime for the <style> elements of the components. The build also copies it to the
+# nonce attribute of the <script> elements, which the CSP allows by 'self' anyway. Keep the value in sync.
 CSP_NONCE_PLACEHOLDER = "PRIVACYIDEA_CSP_NONCE"
 
 # Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale

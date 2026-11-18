@@ -3,7 +3,7 @@
 #
 # Builds the WebUI, runs privacyIDEA with PI_ENABLE_CSP = True and opens every page of the WebUI in Chromium
 # (privacyidea/static/playwright-e2e/csp.spec.ts). The check fails if the Content Security Policy blocks an inline
-# style or script on a page. The unit tests check the policy and the nonce of the served index.html; only a browser
+# style or script on a page. The unit tests check the policy and the nonce of the served index.html. Only a browser
 # shows what the policy blocks while the WebUI runs. A failed nightly run opens or updates a GitHub issue.
 name: WebUI CSP check
 on:
@@ -12,10 +12,12 @@ on:
     - cron: '30 1 * * *'
   workflow_dispatch:
   pull_request:
-    # A change to the check itself runs it on the pull request.
+    # A change to the check itself, or to the files that the spec imports, runs it on the pull request.
     paths:
       - '.github/workflows/webui-csp.yml'
       - 'privacyidea/static/playwright-e2e/csp.spec.ts'
+      - 'privacyidea/static/playwright-e2e/playwright.config.ts'
+      - 'privacyidea/static/playwright-e2e/support/**'
 
 permissions:
   contents: read

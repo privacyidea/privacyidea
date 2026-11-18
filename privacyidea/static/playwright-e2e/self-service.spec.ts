@@ -19,7 +19,7 @@
 
 import { expect, selfTest as test, SELF_PASS, SELF_USER } from "./support/self-service";
 import { expectNoNewViolations } from "./support/axe";
-import { settleContent, sideways } from "./support/helpers";
+import { expectPath, settleContent, sideways } from "./support/helpers";
 import { SELF_PAGES } from "./support/routes";
 import { Page } from "@playwright/test";
 
@@ -32,8 +32,7 @@ test.beforeEach(() => {
 
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(path, { waitUntil: "networkidle" });
-  await expect(page).not.toHaveURL(/\/login/);
-  await expect(page).toHaveURL(new RegExp(`${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/?$`));
+  await expectPath(page, path);
   await settleContent(page);
 }
 

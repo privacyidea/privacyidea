@@ -17,16 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Page, Response, test as visitorTest } from "@playwright/test";
+import { Locator, Page, Response, test as visitorTest } from "@playwright/test";
 import { expect, test } from "./support/test";
 import { selfTest, SELF_PASS, SELF_USER } from "./support/self-service";
-import { expectAdminPage, waitForData } from "./support/helpers";
+import { expectAdminPage, expectPath, setSticky, waitForData } from "./support/helpers";
 import { ALL_PAGES, SELF_PAGES } from "./support/routes";
 
-// With PI_ENABLE_CSP = True, the server sends a Content Security Policy that allows inline styles and scripts only with
-// the nonce of the response. The WebUI must put that nonce on the inline style and script of its index.html and on the
-// styles that Angular adds while it runs. The browser blocks every other inline style and script and reports it with a
-// securitypolicyviolation event. Each test loads one page and fails on any such event.
+// With PI_ENABLE_CSP = True, the server sends a Content Security Policy. It allows inline styles only with the nonce of
+// the response, and no inline script at all. Angular puts the nonce on the styles that it adds while it runs, and the
+// build of the WebUI writes no inline style or script. The browser blocks every other inline style and script and
+// reports it with a securitypolicyviolation event. Each test loads one page, or opens one overlay on it, and fails on
+// any such event.
 //
 // Set E2E_CSP when the instance runs with PI_ENABLE_CSP = True. Without it, the spec skips: without the policy, the
 // browser blocks nothing and the tests prove nothing. With E2E_CSP, the self-service user is required as well, so that
@@ -70,29 +71,32 @@ async function load(page: Page, path: string): Promise<Response> {
   return response!;
 }
 
-// Asserts that the browser ended on `path` and not on a page that the app redirected to.
-async function expectPath(page: Page, path: string): Promise<void> {
-  await expect(page).not.toHaveURL(/\/login/);
-  await expect(page).toHaveURL(new RegExp(`/${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/?$`));
+// Returns one directive of the policy, for example "style-src 'self' 'nonce-...'", or "" if the policy has none.
+function directive(policy: string, name: string): string {
+  return (
+    policy
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${name} `)) ?? ""
+  );
 }
 
-// Asserts that the page ran under a policy with a nonce and that the browser blocked nothing on it.
+// Asserts that the page ran under the expected policy and that the browser blocked nothing on it.
 async function expectNothingBlocked(page: Page, response: Response): Promise<void> {
   const policy = response.headers()["content-security-policy"] ?? "";
-  // Without a nonce in the policy, the check of the violations below proves nothing.
-  for (const directive of ["script-src", "style-src"]) {
-    expect(policy, `the ${directive} of the policy has a nonce`).toMatch(
-      new RegExp(`(^|;)\\s*${directive}\\s[^;]*'nonce-`)
-    );
-  }
+  // Without a nonce in style-src, the check of the violations below proves nothing.
+  expect(directive(policy, "style-src"), "the style-src of the policy").toContain("'nonce-");
+  // With a nonce in script-src, anyone who reads the nonce from <app-root> can add an inline script, and a new inline
+  // script in the WebUI then passes this check.
+  expect(directive(policy, "script-src"), "the script-src of the policy").not.toContain("'nonce-");
   const violations = await page.evaluate(() => (window as ViolationLog).cspViolations ?? null);
   expect(violations, "the violation recorder runs on the page").not.toBeNull();
   // Soft assertions, so that a failure reports what the policy blocked and also what the page lost by it.
   expect
     .soft(countViolations(violations!), "the inline styles and scripts that the Content Security Policy blocked")
     .toEqual([]);
-  // The global stylesheet loads for print first, and a script with the nonce switches it to all media. If the policy
-  // blocks that script, the page has no theme and no icons.
+  // A stylesheet that does not apply to the screen leaves the page without its theme and icons. This happens, for
+  // example, if a build loads the stylesheet for print first and the policy blocks the script that switches it.
   const media = await page
     .locator('link[rel="stylesheet"]')
     .evaluateAll((links) => links.map((link) => (link as HTMLLinkElement).media));
@@ -128,6 +132,71 @@ test.describe("Content Security Policy, admin pages", () => {
       await expectAdminPage(page);
       await expectPath(page, route.path);
       await waitForData(page);
+      await expectNothingBlocked(page, response);
+    });
+  }
+});
+
+interface OverlayCase {
+  name: string;
+  page: string;
+  // Opens the overlay and returns it.
+  open: (page: Page) => Promise<Locator>;
+}
+
+// Angular adds the styles of a menu, a select list, a tooltip or a dialog only when it opens. The tests only open them:
+// nothing is selected, saved or confirmed, and the dialog closes with the page at the end of the test.
+const OVERLAYS: OverlayCase[] = [
+  {
+    // The actions trigger shows when the table header is sticky. The users table needs users, and the CI instance has
+    // some.
+    name: "actions menu",
+    page: "users",
+    open: async (page) => {
+      await setSticky(page, true);
+      await page.locator(".table-actions-trigger").first().click();
+      return page.locator(".cdk-overlay-pane .mat-mdc-menu-panel").first();
+    }
+  },
+  {
+    name: "select list",
+    page: "tokens/enrollment",
+    open: async (page) => {
+      await page.locator("mat-select").first().click();
+      return page.locator(".cdk-overlay-pane [role='listbox']").first();
+    }
+  },
+  {
+    name: "tooltip",
+    page: "dashboard",
+    open: async (page) => {
+      await page.getByRole("button", { name: "UI Settings" }).hover();
+      return page.locator(".cdk-overlay-container .mat-mdc-tooltip").first();
+    }
+  },
+  {
+    // The instance needs a realm. The CI instance has one.
+    name: "delete confirmation",
+    page: "users/realms",
+    open: async (page) => {
+      await page.getByRole("button", { name: "Delete realm" }).first().click();
+      return page.locator("mat-dialog-container").first();
+    }
+  }
+];
+
+test.describe("Content Security Policy, overlays", () => {
+  test.beforeEach(() => {
+    test.skip(!CSP_ENABLED, NOT_ENABLED);
+  });
+
+  for (const overlay of OVERLAYS) {
+    test(`${overlay.name}: the policy blocks nothing`, async ({ page }) => {
+      const response = await load(page, overlay.page);
+      await expectAdminPage(page);
+      await waitForData(page);
+      // A missing trigger fails the test instead of skipping it, so that a changed page cannot hide the check.
+      await expect(await overlay.open(page)).toBeVisible();
       await expectNothingBlocked(page, response);
     });
   }

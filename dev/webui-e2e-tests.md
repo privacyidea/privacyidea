@@ -84,13 +84,19 @@ covered.
 
 ## The Content Security Policy check
 
-With `PI_ENABLE_CSP = True`, the server sends a Content Security Policy. It allows an inline style or script only with
-the nonce of the response. `csp.spec.ts` loads the login page, every admin page and every self-service page. A test
-fails in these cases:
+With `PI_ENABLE_CSP = True`, the server sends a Content Security Policy. It allows an inline style only with the nonce
+of the response, and no inline script at all. Angular puts the nonce on the styles that it adds at runtime. The build
+writes no inline style or script into `index.html`, because it does not inline the critical CSS (`inlineCritical` in
+`angular.json`).
 
-- The policy of the response has no nonce in `script-src` or `style-src`.
+`csp.spec.ts` loads the login page, every admin page and every self-service page. It also opens a menu, a select list,
+a tooltip and a delete confirmation, because Angular adds their styles only when they open. The tests select, save and
+confirm nothing. A test fails in these cases:
+
+- The policy of the response has no nonce in `style-src`, or a nonce in `script-src`.
 - The browser blocked an inline style or script (a `securitypolicyviolation` event).
 - A stylesheet of the page does not apply to the screen.
+- The trigger of an overlay is missing. The delete confirmation needs a realm on the instance.
 
 With `E2E_CSP`, the self-service user is required. A run without it fails instead of skipping these pages.
 
