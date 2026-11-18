@@ -822,9 +822,10 @@ In the privacyIDEA WebUI, in the authorization section of the Entra ID resolver,
 settings:
 
     * **Authority**: The URL of Microsoft where the application needs to authenticate to receive an access token.
-      This is usually ``https://login.microsoftonline.com/{tenant}``, where ``{tenant}`` is the name of your tenant.
-      You can use the tenant tag and define the tenant name below.
-    * **Tenant ID**: The name of your Microsoft Entra ID tenant
+      This is usually ``https://login.microsoftonline.com/{tenant}``, where ``{tenant}`` is your tenant ID.
+      You can use the tenant tag and define the tenant ID below.
+    * **Tenant ID**: The ID of your Microsoft Entra ID tenant, for example ``12345678-1234-1234-1234-123456789012``.
+      A domain name of the tenant also works.
     * **Client ID**: The application (client) ID of the registered application in Entra ID. In the Microsoft Entra admin
       center, browse to *Applications > App registrations > All applications* and select your privacyIDEA server. On
       the application overview page, you can find the application (client) ID.
