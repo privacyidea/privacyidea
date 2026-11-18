@@ -4,18 +4,18 @@ import datetime
 from base64 import b32encode
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import (remove_token)
-from privacyidea.lib.tokens.pushtoken import (PushAction, POLL_ONLY, strip_pem_headers,
-                                              DEFAULT_MOBILE_TEXT)
+from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, DEFAULT_MOBILE_TEXT
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_unicode
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase
+from .push_key_utils import SmartphoneKey
 
 
 class PushChallengeTags(MyApiTestCase):
@@ -39,15 +39,7 @@ class PushChallengeTags(MyApiTestCase):
     # We now allow white spaces in the firebase config name
     firebase_config_name = "my firebase config"
 
-    smartphone_private_key = rsa.generate_private_key(public_exponent=65537,
-                                                      key_size=4096,
-                                                      backend=default_backend())
-    smartphone_public_key = smartphone_private_key.public_key()
-    smartphone_public_key_pem = to_unicode(smartphone_public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo))
-    # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_key = SmartphoneKey.rsa()
     serial_push = "PIPU001"
     user = "selfservice"
     registration_url = "http://test/ttype/push"
@@ -87,7 +79,7 @@ class PushChallengeTags(MyApiTestCase):
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
                                                  "serial": serial,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "pubkey": self.smartphone_key.public_key_urlsafe,
                                                  "fbtoken": "firebaseT"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -118,9 +110,7 @@ class PushChallengeTags(MyApiTestCase):
         # We do poll only, so we need to poll
         timestamp = datetime.datetime.utcnow().isoformat()
         sign_string = f"{serial}|{timestamp}"
-        signature = self.smartphone_private_key.sign(sign_string.encode('utf8'),
-                                                     padding.PKCS1v15(),
-                                                     hashes.SHA256())
+        signature = self.smartphone_key.sign(sign_string)
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
                                            query_string={"serial": serial,
