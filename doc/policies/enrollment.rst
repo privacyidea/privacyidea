@@ -505,16 +505,20 @@ type: ``string``
 
 allowed values: ``rsa_4096``, ``secp256r1``
 
-Defines which key algorithms a push token may use. The value is a free text field. Several values can be given,
-separated by spaces. The order is the order of preference: ``secp256r1 rsa_4096`` prefers the curve P-256,
-``rsa_4096 secp256r1`` prefers RSA. If the policy is not set, only ``rsa_4096`` is allowed.
-If two matching policies of the same highest priority contain different lists, the enrollment fails with a
-policy error.
+Defines which key algorithms a push token may use. Select one or both values. The selected order is the
+preference: the server offers the values in the order in which they are stored in the policy, and the app takes the
+first one it supports. In the new WebUI this is the order of the clicks, the value checked first is preferred. To
+change the order, deselect a value and check it again. The old WebUI saves the values in the order of the list.
+If the policy is not set, only ``rsa_4096`` is allowed.
+
+The values of matching policies with different priorities are merged, the values of the policy with the higher
+priority come first. If two matching policies of the same highest priority define different lists, the enrollment
+fails with a policy error.
 
 The enrollment URL of a privacyIDEA server of this version always contains the parameter ``capabilities``,
 which tells the smartphone app what the server can do. If the policy allows more than ``rsa_4096``, the URL
-also contains the parameter ``key_algorithm`` with the allowed algorithms as a comma separated list in the order of
-the policy, for example ``secp256r1,rsa_4096``. A smartphone app that supports ECDSA takes the first entry it can
+also contains the parameter ``key_algorithm`` with the allowed algorithms as a comma separated list in the order
+of preference, for example ``secp256r1,rsa_4096``. A smartphone app that supports ECDSA takes the first entry it can
 create and generates exactly one key pair.
 The key of the privacyIDEA server for this token always has the same type as the key of the smartphone.
 This action requires a privacyIDEA Authenticator version that supports ECDSA push tokens.

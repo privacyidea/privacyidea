@@ -65,7 +65,7 @@ the smartphone should respond in the enrollment process.
 The QR code of a privacyIDEA server of this version also contains the parameter ``capabilities``, which tells
 the app what the server can do at the enrollment. If the enrollment policy
 :ref:`policy_push_key_algorithms` allows more than ``rsa_4096``, it contains the parameter ``key_algorithm`` as well,
-a comma separated list of the allowed key algorithms in the order of the policy.
+a comma separated list of the allowed key algorithms in the order of preference set in the policy.
 
 The smartphone stores this data and creates a new key pair. It takes the first entry of ``key_algorithm`` that it
 can create and generates exactly one key pair. Without ``key_algorithm`` it creates an RSA 4096 key pair.
@@ -93,7 +93,11 @@ Key algorithms
 
 By default, push tokens use RSA keys with 4096 bits. With the enrollment policy
 :ref:`policy_push_key_algorithms` an administrator can additionally allow ECDSA keys on the
-curve P-256 (``secp256r1``) and define the order of preference. Existing push tokens keep their RSA keys.
+curve P-256 (``secp256r1``). The selected order is the preference: the server offers the allowed algorithms in
+the order in which they are stored in the policy. In the new WebUI this is the order of the clicks, the value
+checked first is preferred, and a value is moved to the end by deselecting and checking it again. The old WebUI
+saves the values in the order of the list. If two matching policies of the same highest priority define different
+lists, the enrollment fails with a policy error. Existing push tokens keep their RSA keys.
 The use of ECDSA requires a privacyIDEA Authenticator version that supports ECDSA push tokens.
 An app that cannot create an ECDSA key takes the next entry of the list.
 
@@ -118,7 +122,7 @@ The two key types differ in the following places:
    * - Enrollment URL (step 1)
      - Always ``capabilities`` (what the server can), no parameter ``key_algorithm`` if the policy allows only
        ``rsa_4096``
-     - Always ``capabilities``, and ``key_algorithm`` as a comma separated list in the order of the policy,
+     - Always ``capabilities``, and ``key_algorithm`` as a comma separated list in the order of preference,
        for example ``secp256r1,rsa_4096``
    * - ``pubkey`` (smartphone to server, step 2)
      - SubjectPublicKeyInfo (SPKI) in DER format, base64 encoded, without PEM header

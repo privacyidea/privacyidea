@@ -1,10 +1,14 @@
 Version 3.15
 
   Features:
-  * Push tokens can use ECDSA P-256 keys instead of RSA 4096. The new enrollment policy `push_key_algorithms` lists
-    the allowed algorithms in order of preference (default `rsa_4096`). The enrollment URL tells the app what the
-    server supports, older apps ignore this and keep using RSA. The token details in the WebUI show the key
-    algorithm (#2943)
+  * Push tokens can use ECDSA P-256 keys instead of RSA 4096. The new enrollment policy `push_key_algorithms` selects
+    the allowed algorithms (default `rsa_4096`), the selected order is the preference and the app takes the first one
+    it supports. The enrollment URL tells the app what the server supports, older apps ignore this and keep using RSA.
+    The token details in the WebUI show the key algorithm (#2943)
+
+  Enhancements:
+  * The policy editor of the WebUI requires at least one selected value for actions with a multiple choice. For
+    `push_key_algorithms` it keeps the order in which the values are checked (#2943)
 
 Version 3.14, 2026-09-30
 
