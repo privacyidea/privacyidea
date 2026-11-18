@@ -1013,14 +1013,13 @@ def twostep_enrollment_activation(request=None, action=None):
     """
     user_object = request.User
     serial = get_optional(request.all_data, "serial")
-    token_type = get_optional(request.all_data, "type", default="hotp")
+    # check_token_init runs before and writes the type of an existing token to the request data
+    token_type = get_optional(request.all_data, "type", default="hotp").lower()
     token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
             token = tokensobject_list[0]
-            token_type = token.get_tokentype()
-    token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
     # In any case, the policy's user attribute is matched against the
@@ -1067,13 +1066,8 @@ def twostep_enrollment_parameters(request=None, action=None):
 
     This policy function is used to decorate the ``/token/init`` endpoint.
     """
-    serial = get_optional(request.all_data, "serial")
-    token_type = get_optional(request.all_data, "type", default="hotp")
-    if serial:
-        tokensobject_list = get_tokens(serial=serial)
-        if len(tokensobject_list) == 1:
-            token_type = tokensobject_list[0].token.tokentype
-    token_type = token_type.lower()
+    # check_token_init runs before and writes the type of an existing token to the request data
+    token_type = get_optional(request.all_data, "type", default="hotp").lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
