@@ -496,6 +496,55 @@ If this policy is not enabled, the ``otpauth`` scheme is used by default.
 
 .. versionadded:: 3.12
 
+.. _policy_push_key_algorithms:
+
+push_key_algorithms
+~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+allowed values: ``rsa_4096``, ``secp256r1``
+
+Defines which key algorithms a push token may use. The value is a free text field. Several values can be given,
+separated by spaces. The order is the order of preference: ``secp256r1 rsa_4096`` prefers the curve P-256,
+``rsa_4096 secp256r1`` prefers RSA. If the policy is not set, only ``rsa_4096`` is allowed.
+If two matching policies of the same highest priority contain different lists, the enrollment fails with a
+policy error.
+
+The enrollment URL of a privacyIDEA server of this version always contains the parameter ``capabilities``,
+which tells the smartphone app what the server can do. If the policy allows more than ``rsa_4096``, the URL
+also contains the parameter ``key_algorithm`` with the allowed algorithms as a comma separated list in the order of
+the policy, for example ``secp256r1,rsa_4096``. A smartphone app that supports ECDSA takes the first entry it can
+create and generates exactly one key pair.
+The key of the privacyIDEA server for this token always has the same type as the key of the smartphone.
+This action requires a privacyIDEA Authenticator version that supports ECDSA push tokens.
+
+.. note:: The enrollment URL of a server of this version differs from the URL of an older server, even with the
+   default policy, because it contains ``capabilities``. Older apps ignore unknown parameters in the URL and use
+   RSA. This was verified live for the privacyIDEA Authenticator 4.8.1 and 4.7.5. For the versions 4.0 to 4.6 it was
+   only verified by reading the code, and for versions before 4.0 it is unknown.
+
+If the policy does not allow the key type of the smartphone, for example if only ``secp256r1`` is allowed and an
+older app sends an RSA key, the second enrollment step is rejected with the HTTP status 400. The error message
+names the allowed key algorithms and, if the app reported them, the key algorithms of the app, and asks to update
+the privacyIDEA Authenticator. The token stays in the state ``clientwait``. The user has to update the app and scan
+the same QR code again, which works because the token is still waiting for the enrollment.
+Delete the failed token in the app before scanning the QR code again.
+The server does not store the capabilities the app reports in the second step.
+
+.. note:: The privacyIDEA Authenticator versions 4.7.0 to 4.7.5 show only "Status code: 400" instead of the text of
+   the server. If only ``secp256r1`` is allowed, users of these versions see no hint to update the app.
+   The same applies if the policy ``hide_specific_error_message_for_ttype`` hides the error message.
+
+Existing push tokens keep their RSA keys.
+
+.. warning:: Allow ``secp256r1`` only after all privacyIDEA nodes run a version that supports it.
+   A node of an older version that handles the second enrollment step would create a broken token.
+
+See :ref:`push_key_algorithms_section` for the details of the protocol.
+
+.. versionadded:: 3.15
+
 .. _policy_verify_enrollment:
 
 verify_enrollment

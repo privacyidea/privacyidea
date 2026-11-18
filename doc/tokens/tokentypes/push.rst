@@ -62,7 +62,13 @@ The user scans a QR code. This QR code contains the
 basic information for the push token and an enrollment URL, to which
 the smartphone should respond in the enrollment process.
 
-The smartphone stores this data and creates a new key pair.
+The QR code of a privacyIDEA server of this version also contains the parameter ``capabilities``, which tells
+the app what the server can do at the enrollment. If the enrollment policy
+:ref:`policy_push_key_algorithms` allows more than ``rsa_4096``, it contains the parameter ``key_algorithm`` as well,
+a comma separated list of the allowed key algorithms in the order of the policy.
+
+The smartphone stores this data and creates a new key pair. It takes the first entry of ``key_algorithm`` that it
+can create and generates exactly one key pair. Without ``key_algorithm`` it creates an RSA 4096 key pair.
 
 Step 2
 ......
@@ -71,8 +77,76 @@ The smartphone sends its device token (named ``fbtoken`` in the enrollment API
 for compatibility), the public key of the keypair,
 the serial number and an enrollment credential back to the
 enrollment URL of the privacyIDEA server.
+If the QR code contained ``capabilities``, the app also sends its own capabilities in the optional parameter
+``capabilities`` as a JSON object, for example
+``{"decline_reason":true,"key_algorithm":{"values":["rsa_4096","secp256r1"]}}``.
+Older apps send the array of capability names or no ``capabilities`` at all.
 
 The server responds with its public key for this token.
+
+.. _push_key_algorithms_section:
+
+Key algorithms
+~~~~~~~~~~~~~~
+
+.. versionadded:: 3.15
+
+By default, push tokens use RSA keys with 4096 bits. With the enrollment policy
+:ref:`policy_push_key_algorithms` an administrator can additionally allow ECDSA keys on the
+curve P-256 (``secp256r1``) and define the order of preference. Existing push tokens keep their RSA keys.
+The use of ECDSA requires a privacyIDEA Authenticator version that supports ECDSA push tokens.
+An app that cannot create an ECDSA key takes the next entry of the list.
+
+The server decides the key type of its own key pair by the type of the public key of the smartphone and checks
+it against the allowed key algorithms of the policy. The server reads the capabilities the app sends in step 2
+only to name the key algorithms of the app in an error message. It does not store them.
+
+.. note:: The enrollment URL of a server of this version differs from the URL of an older server, even with the
+   default policy, because it contains ``capabilities``. Older apps ignore unknown parameters in the URL and use
+   RSA. This was verified live for the privacyIDEA Authenticator 4.8.1 and 4.7.5. For the versions 4.0 to 4.6 it was
+   only verified by reading the code, and for versions before 4.0 it is unknown.
+
+The two key types differ in the following places:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 35 40
+
+   * - Place
+     - RSA 4096 (default)
+     - ECDSA P-256
+   * - Enrollment URL (step 1)
+     - Always ``capabilities`` (what the server can), no parameter ``key_algorithm`` if the policy allows only
+       ``rsa_4096``
+     - Always ``capabilities``, and ``key_algorithm`` as a comma separated list in the order of the policy,
+       for example ``secp256r1,rsa_4096``
+   * - ``pubkey`` (smartphone to server, step 2)
+     - SubjectPublicKeyInfo (SPKI) in DER format, base64 encoded, without PEM header
+     - The same, containing an EC key on the curve secp256r1
+   * - ``detail.public_key`` (server to smartphone)
+     - PKCS#1 in DER format, base64 encoded, without header and whitespace
+     - SPKI in DER format, base64 encoded, without header and whitespace
+   * - Signatures (both directions)
+     - RSA PKCS#1 v1.5 with SHA-256
+     - ECDSA with SHA-256, DER encoded
+   * - Encoding of signatures
+     - base32
+     - base32
+
+The signed messages are the same for both key types.
+
+If the policy does not allow the key type that the smartphone sends, the server answers the second
+enrollment step with the HTTP status 400. The error message names the allowed key algorithms and, if the app
+reported them, the key algorithms of the app. It asks the user to update the privacyIDEA Authenticator and the
+token stays in the state ``clientwait``. Delete the failed token in the app before scanning the QR code again.
+This happens if the policy contains only ``secp256r1`` and an older app sends an RSA key. The privacyIDEA
+Authenticator versions 4.7.0 to 4.7.5 show only "Status code: 400" instead of this text. The policy
+``hide_specific_error_message_for_ttype`` suppresses the text for every app.
+
+.. warning:: Allow ``secp256r1`` only after all privacyIDEA nodes run a version that supports ECDSA push tokens.
+   A node of an older version that handles the second enrollment step would create a broken token.
+
+.. warning:: A push token with an ECDSA key cannot be exported to an older privacyIDEA version.
 
 Authentication
 ~~~~~~~~~~~~~~
