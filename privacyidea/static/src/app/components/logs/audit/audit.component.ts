@@ -238,7 +238,7 @@ export class AuditComponent {
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);
-    this.auditService.pageIndex.set(event.pageIndex);
+    this.auditService.pageIndex.set(event.pageIndex + 1);
   }
 
   toggleFilter(filterKeyword: string): void {
