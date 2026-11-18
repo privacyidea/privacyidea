@@ -169,10 +169,9 @@ def _read_policy_setting(setting: str, read_setting: Callable[[], SettingValue],
                          default: SettingValue) -> SettingValue:
     """
     Reads one setting of the start page from the policies. If a policy check fails, the setting uses *default* and
-    the log file gets the error. Examples are ``Raise an error`` for missing data, which every ``userinfo``, token and
-    container condition has on the start page, an invalid comparison, and two policies with the same priority and
-    different values. Thus a policy error changes only the setting of its own policy, and the start page stays
-    available.
+    the log file gets the error. Examples are ``Raise an error`` for missing data, for example a ``userinfo``
+    condition without a user, an invalid comparison, and two policies with the same priority and different values.
+    Thus a policy error changes only the setting of its own policy, and the start page stays available.
 
     :param setting: the name of the setting in the log file, usually the policy action
     :param read_setting: reads the setting from the policies

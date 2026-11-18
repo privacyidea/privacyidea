@@ -284,6 +284,8 @@ WebUI
   with the same priority and different values. The setting of this policy uses its default
   value, and the log file contains the details. For example, the start page does not use
   ``REMOTE_USER`` and shows no link for the password reset.
+* Login, error in :ref:`policy_remote_user`: the login (``/auth``) does not use
+  ``REMOTE_USER`` and checks the password. The log file contains the details.
 * The WebUI settings of the session, like ``logout_time`` or the page sizes, are fixed at
   the login. A later change of the time or of the client IP does not change them.
 * The WebUI shows the menus and buttons from the rights at the login. For these rights,

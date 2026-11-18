@@ -154,27 +154,24 @@ class LoginUITestCase(MyTestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_09_realm_dropdown_attribute_error(self):
-        """Covers AttributeError fallback when realm_dropdown has no action values."""
+        """A realm_dropdown policy without action values lists all realms on the start page."""
         def patched_action_only(*_args, **kwargs):
-            m = mock.MagicMock()
+            match = mock.MagicMock()
             if kwargs.get("action") == PolicyAction.REALMDROPDOWN:
-                m.policies.return_value = [{"name": "realmdrop"}]
-                m.action_values.side_effect = AttributeError
+                match.any.return_value = True
+                match.action_values.side_effect = AttributeError
             else:
-                m.policies.return_value = []
-                m.action_values.return_value = []
-            return m
+                match.policies.return_value = []
+                match.action_values.return_value = []
+            return match
 
-        def patched_generic(*_args, **_kwargs):
-            m = mock.MagicMock()
-            m.any.return_value = False
-            return m
-
-        with mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only), \
-             mock.patch("privacyidea.webui.login.Match.generic", side_effect=patched_generic):
+        all_realms = {"realm_a": {}, "realm_b": {}}
+        with (mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only),
+              mock.patch("privacyidea.webui.login.get_realms", return_value=all_realms)):
             with self.app.test_request_context('/', method='GET'):
                 res = self.app.full_dispatch_request()
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(200, res.status_code)
+        self.assertIn('id="REALMS" value="realm_a,realm_b"', res.get_data(as_text=True))
 
     def test_10_hsm_exception(self):
         """Covers HSMException handler: renders with hsm_ready=False."""
@@ -261,8 +258,8 @@ class LoginUITestCase(MyTestCase):
                 self.assertIn(b"Hello plugin", res.data)
 
     def test_policy_error_uses_default_value(self):
-        # The hide_version policy raises an error for its userinfo condition. The start page still renders, and the
-        # login text policy still applies.
+        # The hide_version policy raises an error for its userinfo condition. The start page still renders and shows
+        # the version, and the login text policy still applies.
         self._set_login_text_policy("Hello start page")
         set_policy("hide_version", scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION,
                    conditions=userinfo_condition(ConditionHandleMissingData.RAISE_ERROR))
@@ -272,6 +269,7 @@ class LoginUITestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(200, res.status_code, res.data)
         self.assertIn(b"Hello start page", res.data)
+        self.assertIn(f'id="PRIVACYIDEA_VERSION_NUMBER" value="{get_version_number()}"', res.get_data(as_text=True))
         self.assertIn(f"'{PolicyAction.HIDE_VERSION}'", captured_logs.output[0])
 
 

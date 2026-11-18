@@ -89,6 +89,10 @@ can only log in with the REMOTE_USER from the browser.
    credentials. An authentication policy :ref:`policy_set_realm` still changes
    the realm of the login.
 
+.. note:: If the check of this policy fails, for example because of an invalid
+   condition, the start page and the login do not use REMOTE_USER. The user has
+   to log in with credentials, and the log file contains the error.
+
 .. note:: The policy setting "force" only works on the UI level. On the API level
    the user could still log in with credentials! If you want to avoid this, see
    the next note.
