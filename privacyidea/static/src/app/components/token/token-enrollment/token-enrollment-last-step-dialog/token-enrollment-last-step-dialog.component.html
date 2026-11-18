@@ -18,8 +18,6 @@
 -->
 <app-dialog-wrapper
   width="l"
-  [cancelButtonDisabled]="!!closeBlockedReason()"
-  [cancelButtonTooltip]="closeBlockedReason()"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
   title="{{ title() }}">
@@ -28,7 +26,7 @@
     [navigationBlocked]="!!closeBlockedReason()"
     [containerSerial]="containerSerial"
     [onlyAddToRealm]="data.enrollParameters.data.onlyAddToRealm"
-    [rollover]="data.rollover ?? false"
+    [rollover]="rollover"
     [serial]="serial"
     [userRealm]="data.enrollParameters.data.realm"
     [username]="data.enrollParameters.data.user"></app-token-enrolled-text>

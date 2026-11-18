@@ -23,6 +23,7 @@ import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import {
   ENROLLMENT_CANCELLED,
@@ -36,7 +37,16 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
 
 @Component({
   selector: "app-token-complete-enrollment",
-  imports: [DialogWrapperComponent, MatFormField, MatHint, MatInput, MatLabel, TokenEnrollmentDataComponent, FormField],
+  imports: [
+    DialogWrapperComponent,
+    EnrollmentCustomizationFrameComponent,
+    MatFormField,
+    MatHint,
+    MatInput,
+    MatLabel,
+    TokenEnrollmentDataComponent,
+    FormField
+  ],
   templateUrl: "./token-complete-enrollment.component.html"
 })
 export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
@@ -51,6 +61,7 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   // The enrollment response has no type, so the type comes from the enrollment request
   protected readonly tokenType: string = this.enrollParameters?.data?.type ?? this.data.tokenType;
+  protected readonly wizard = this.data.wizard ?? false;
   protected readonly twoStepEnrollment = computed(() => {
     return (
       this.enrollDetails?.["2step_output"] ||
@@ -83,8 +94,6 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
     return actions;
   });
 
-  protected readonly showCloseButton = computed(() => !this.twoStepEnrollment() || !this.canCancelEnrollment());
-
   onDialogAction(value: string) {
     if (value === "enroll") {
       this.enrollToken();
@@ -105,7 +114,9 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
     });
   }
 
-  private canCancelEnrollment(): boolean {
+  // Cancel deletes the incomplete token, Close keeps it for later. Only one of them is offered, so
+  // a user who may delete does not leave a token behind that they cannot finish.
+  protected canCancelEnrollment(): boolean {
     return !this.data.rollover && this.authService.actionAllowed("delete");
   }
 

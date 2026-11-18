@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, signal } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -45,6 +45,7 @@ import { lastValueFrom } from "rxjs";
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPushComponent) }]
 })
 export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
+  wizard = input<boolean>(false);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
@@ -153,7 +154,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
       data: {
         enrollmentResponse,
         showCancelButton: canCancel,
-        showCloseButton: true,
+        wizard: this.wizard(),
         cancelConfirmationMessage: $localize`:@@token.whenCancelingRolloutToken:When canceling the rollout the token will be deleted even when the QR code was scanned.`
       },
       configOverride: { disableClose: true }

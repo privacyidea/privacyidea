@@ -62,6 +62,8 @@ export class TokenEnrollmentDataComponent {
   enrolledInputData = input.required<EnrollmentResponseDetail>();
   enrollmentParameters = input.required<EnrollTokenArguments>();
   tokenType = input.required<string>();
+  /** Leaves out the QR code's text and the regenerate button, for the reduced layout of the wizard. */
+  compact = input<boolean>(false);
   enrollmentResponseChange = output<EnrollmentResponse>();
   closeBlockedReasonChange = output<string>();
 
@@ -98,7 +100,7 @@ export class TokenEnrollmentDataComponent {
   // would only ever produce an error.
   protected readonly isVerifyPending = computed(() => this.enrolledData()?.rollout_state === "verify");
   showRegenerateButton = computed(
-    () => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()) && !this.isVerifyPending()
+    () => !this.compact() && !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()) && !this.isVerifyPending()
   );
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())

@@ -67,9 +67,8 @@ export class CertificateDataComponent {
   fromEnrollment = input<boolean>(false);
 
   /**
-   * Names what still has to be saved before the dialog may be closed, or an empty string once
-   * nothing is left. The dialog disables its close button while this is set and shows it as
-   * the button's tooltip.
+   * Names what still has to be saved, or an empty string once nothing is left. While this is
+   * set, the dialog keeps the actions that leave the page disabled.
    */
   closeBlockedReasonChange = output<string>();
 

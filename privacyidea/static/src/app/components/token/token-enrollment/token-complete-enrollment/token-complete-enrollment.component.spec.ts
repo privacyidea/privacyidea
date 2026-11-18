@@ -17,12 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
@@ -174,6 +177,8 @@ describe("TokenCompleteEnrollmentComponent", () => {
       await TestBed.configureTestingModule({
         imports: [TokenCompleteEnrollmentComponent],
         providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
           { provide: TokenService, useClass: MockTokenService },
           { provide: ContentService, useClass: MockContentService },
           { provide: AuthService, useClass: MockAuthService },
@@ -191,33 +196,46 @@ describe("TokenCompleteEnrollmentComponent", () => {
     };
 
     const actionValues = () => component.dialogActions().map((action) => action.value);
+    const buttonLabels = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLElement>).map(
+        (button) => button.textContent?.trim() ?? ""
+      );
 
-    it("offers no cancel action without the delete right", async () => {
+    it("offers close instead of cancel without the delete right", async () => {
       await setup({}, false);
 
       expect(actionValues()).toEqual(["enroll"]);
-      expect(component["showCloseButton"]()).toBe(true);
+      expect(buttonLabels()).toEqual(["Close", "Enroll"]);
     });
 
-    it("offers the cancel action and drops the close button for two step enrollments", async () => {
+    it("replaces the close button with cancel when the token may be deleted", async () => {
       await setup({ response: { detail: { serial: "123", "2step_output": 1 }, type: "hotp" } }, true);
 
       expect(actionValues()).toEqual(["cancelEnrollment", "enroll"]);
-      expect(component["showCloseButton"]()).toBe(false);
-    });
-
-    it("keeps the close button for clientwait enrollments without a client part", async () => {
-      await setup({}, true);
-
-      expect(actionValues()).toEqual(["cancelEnrollment", "enroll"]);
-      expect(component["showCloseButton"]()).toBe(true);
+      expect(buttonLabels()).toEqual(["Cancel", "Enroll"]);
     });
 
     it("never offers to cancel a rollover", async () => {
       await setup({ rollover: true }, true);
 
       expect(actionValues()).toEqual(["enroll"]);
-      expect(component["showCloseButton"]()).toBe(true);
+      expect(buttonLabels()).toEqual(["Close", "Enroll"]);
+    });
+
+    it("frames the step with the post customization in the wizard", async () => {
+      await setup({ wizard: true }, true);
+      const httpMock = TestBed.inject(HttpTestingController);
+      const customizationUrl = (position: string) =>
+        environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("Top 123");
+      expect(text).toContain("Bottom");
+      httpMock.verify();
     });
 
     it("deletes the incomplete token and reports the cancellation", async () => {

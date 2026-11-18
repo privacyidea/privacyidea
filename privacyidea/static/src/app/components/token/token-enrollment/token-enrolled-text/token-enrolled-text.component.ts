@@ -44,12 +44,18 @@ export class TokenEnrolledTextComponent {
    * retrieved again. Following a link would close it, so the links are inert until then.
    */
   navigationBlocked = input<boolean>(false);
-  /** Set while the enrollment still has to be verified before the token can be used. */
-  verificationPending = input<boolean>(false);
+  /** Set while the user still has to act, for example verify the enrollment, before the token can be used. */
+  pending = input<boolean>(false);
+  /** Shows only the summary sentence, without the cards. The wizard leaves the details to its customization. */
+  summaryOnly = input<boolean>(false);
   switchRoute = output();
 
-  protected readonly showUser = computed(() => !!this.username() && !!this.userRealm() && !this.onlyAddToRealm());
-  protected readonly showRealmOnly = computed(() => !!this.userRealm() && !!this.onlyAddToRealm());
+  // Only an admin assigns the token. In self-service, the user would only see their own name.
+  private readonly isAdmin = computed(() => this.authService.role() === "admin");
+  protected readonly showUser = computed(
+    () => this.isAdmin() && !!this.username() && !!this.userRealm() && !this.onlyAddToRealm()
+  );
+  protected readonly showRealmOnly = computed(() => this.isAdmin() && !!this.userRealm() && !!this.onlyAddToRealm());
 
   tokenSelected() {
     if (this.navigationBlocked() || !this.serial()) {

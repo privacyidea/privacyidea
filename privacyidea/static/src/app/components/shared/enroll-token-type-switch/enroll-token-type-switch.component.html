@@ -81,7 +81,7 @@
     <app-enroll-paper />
   }
   @case ("push") {
-    <app-enroll-push />
+    <app-enroll-push [wizard]="wizard()" />
   }
   @case ("question") {
     <app-enroll-question />
@@ -102,9 +102,9 @@
     <app-enroll-vasco />
   }
   @case ("webauthn") {
-    <app-enroll-webauthn />
+    <app-enroll-webauthn [wizard]="wizard()" />
   }
   @case ("passkey") {
-    <app-enroll-passkey />
+    <app-enroll-passkey [wizard]="wizard()" />
   }
 }

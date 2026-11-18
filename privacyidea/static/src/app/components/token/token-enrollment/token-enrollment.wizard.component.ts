@@ -28,7 +28,6 @@ import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
-import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { environment } from "@env/environment";
@@ -118,26 +117,9 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   // The wizard keeps the inputs of the enrolled token. Its template does not create the type-specific
   // inputs anew.
   protected override readonly resetsInputsAfterEnrollment = false;
+  protected override readonly lastStepDialogComponent = TokenEnrollmentLastStepDialogWizardComponent;
 
   override descriptionRequired = computed(() => {
     return this.authService.requireDescription().includes(this.tokenType().key);
   });
-
-  override openLastStepDialog(response: EnrollmentResponse | null): void {
-    if (!response) {
-      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
-      return;
-    }
-
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: response
-    });
-
-    this.dialogService.openDialog({
-      component: TokenEnrollmentLastStepDialogWizardComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
-    });
-  }
 }

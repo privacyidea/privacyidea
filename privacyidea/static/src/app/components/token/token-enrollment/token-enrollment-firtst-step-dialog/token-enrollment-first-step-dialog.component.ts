@@ -21,19 +21,19 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
+import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogAction } from "@models/dialog";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface TokenEnrollmentFirstStepDialogData {
   enrollmentResponse: EnrollmentResponse;
   showCancelButton?: boolean;
-  showCloseButton?: boolean;
+  wizard?: boolean;
   cancelConfirmationMessage?: string;
   registrationFailed?: Signal<boolean>;
   onRetry?: () => void;
@@ -43,7 +43,7 @@ type FirstStepDialogAction = "retry" | "cancelEnrollment";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
-  imports: [DialogWrapperComponent],
+  imports: [DialogWrapperComponent, EnrollmentCustomizationFrameComponent],
   templateUrl: "./token-enrollment-first-step-dialog.component.html"
 })
 export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
@@ -51,9 +51,8 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
   EnrollmentStepResult
 > {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly Object = Object;
+  protected readonly wizard = this.data.wizard ?? false;
 
   protected readonly registrationFailed = computed(() => this.data.registrationFailed?.() ?? false);
 
@@ -76,8 +75,6 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
     }
     return actions;
   });
-
-  protected readonly showCloseButton = this.data.showCloseButton ?? true;
 
   onAction(action: FirstStepDialogAction): void {
     if (action === "retry") {
@@ -119,15 +116,5 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
       next: () => this.close(ENROLLMENT_CANCELLED),
       error: () => undefined
     });
-  }
-
-  tokenSelected(tokenSerial: string) {
-    this.dialogRef.close();
-    this.contentService.tokenSelected(tokenSerial);
-  }
-
-  containerSelected(containerSerial: string) {
-    this.dialogRef.close();
-    this.contentService.navigateContainerDetails(containerSerial);
   }
 }

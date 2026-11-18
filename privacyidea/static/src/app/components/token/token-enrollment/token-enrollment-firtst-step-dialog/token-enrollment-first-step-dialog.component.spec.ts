@@ -17,15 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogState } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { of, throwError } from "rxjs";
@@ -65,9 +69,11 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: { enrollmentResponse, ...data } },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService }
       ],
@@ -104,19 +110,14 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
       expect(buttonLabels()).toEqual(["Close"]);
     });
 
-    it("shows the cancel button when the caller allows cancelling", async () => {
+    it("replaces the close button with cancel when the caller allows cancelling", async () => {
       await setup({ showCancelButton: true });
-      expect(buttonLabels()).toEqual(["Close", "Cancel"]);
-    });
-
-    it("hides the close button when the caller replaces it with cancel", async () => {
-      await setup({ showCancelButton: true, showCloseButton: false });
       expect(buttonLabels()).toEqual(["Cancel"]);
     });
 
     it("offers retry only once an attempt has failed", async () => {
       const registrationFailed = signal(false);
-      await setup({ showCancelButton: true, showCloseButton: false, registrationFailed, onRetry: jest.fn() });
+      await setup({ showCancelButton: true, registrationFailed, onRetry: jest.fn() });
       expect(buttonLabels()).toEqual(["Cancel"]);
 
       registrationFailed.set(true);
@@ -127,6 +128,31 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     it("does not offer retry without a retry handler", async () => {
       await setup({ showCancelButton: true, registrationFailed: signal(true) });
       expect(buttonLabels()).not.toContain("Retry");
+    });
+  });
+
+  describe("wizard", () => {
+    const customizationUrl = (position: string) =>
+      environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+
+    it("frames the step with the post customization", async () => {
+      await setup({ wizard: true });
+      const httpMock = TestBed.inject(HttpTestingController);
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("Top PIPU0001");
+      expect(text).toContain("Bottom");
+      expect(buttonLabels()).toEqual(["Close"]);
+      httpMock.verify();
+    });
+
+    it("loads no customization outside the wizard", async () => {
+      await setup();
+      TestBed.inject(HttpTestingController).verify();
     });
   });
 

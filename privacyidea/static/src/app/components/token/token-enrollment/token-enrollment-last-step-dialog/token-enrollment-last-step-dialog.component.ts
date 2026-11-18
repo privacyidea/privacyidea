@@ -18,49 +18,29 @@
  **/
 
 import { Component, computed, inject, signal, Signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
-import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
-  standalone: true,
-  imports: [
-    DialogWrapperComponent,
-    MatIconModule,
-    MatButtonModule,
-    TokenEnrollmentDataComponent,
-    TokenEnrolledTextComponent
-  ]
+  imports: [DialogWrapperComponent, TokenEnrollmentDataComponent, TokenEnrolledTextComponent]
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly Object = Object;
   protected readonly serial = this.data.response?.detail?.serial ?? "";
   protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
-  protected readonly qrCode =
-    this.data.response?.detail.googleurl?.img ??
-    this.data.response?.detail.motpurl?.img ??
-    this.data.response?.detail.otpkey?.img ??
-    this.data.response?.detail.tiqrenroll?.img ??
-    "";
-  protected readonly url =
-    this.data.response?.detail?.googleurl?.value ??
-    this.data.response?.detail?.motpurl?.value ??
-    this.data.response?.detail?.otpkey?.value ??
-    this.data.response?.detail?.tiqrenroll?.value ??
-    "";
   protected readonly rollover = this.data.rollover ?? false;
 
+  /**
+   * Names the enrollment data that is shown only once and still has to be saved. Leaving the page
+   * loses it, so the links and the actions that navigate away wait for it. Closing keeps it: the
+   * reopen button shows this dialog again.
+   */
   protected readonly closeBlockedReason = signal("");
 
   title: Signal<string> = computed(() =>
@@ -76,10 +56,6 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     });
   }
 
-  showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
-  }
-
   onCloseBlockedReasonChange(reason: string): void {
     this.closeBlockedReason.set(reason);
   }
@@ -89,8 +65,8 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   }
 
   onSwitchRoute() {
-    // Following a link closes the dialog, so it has to respect the same block as the close
-    // button: the enrollment data is shown exactly once and would be lost with the dialog.
+    // Following a link closes the dialog and leaves the page, which would lose the enrollment data
+    // that is shown only once.
     if (this.closeBlockedReason()) {
       return;
     }

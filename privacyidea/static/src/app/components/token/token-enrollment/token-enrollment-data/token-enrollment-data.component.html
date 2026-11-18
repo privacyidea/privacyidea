@@ -27,7 +27,7 @@
       width="300px" />
   }
   <div class="flex-column gap-16 enrollment-data__details">
-    @if (url() && showQRCode()) {
+    @if (url() && showQRCode() && !compact()) {
       <app-qr-code-text
         [tokenType]="tokenType()"
         [url]="url()" />

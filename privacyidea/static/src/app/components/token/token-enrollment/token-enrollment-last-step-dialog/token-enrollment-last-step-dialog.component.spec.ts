@@ -16,9 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import {
   BaseApiPayloadMapper,
@@ -28,8 +31,8 @@ import {
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog.self-service.component";
 import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
@@ -78,8 +81,11 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TokenService, useClass: MockTokenService }
       ]
@@ -167,33 +173,20 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component.title()).toBe("Token Successfully Rolled Over");
   });
 
-  describe("self service", () => {
-    let selfServiceFixture: ComponentFixture<TokenEnrollmentLastStepDialogSelfServiceComponent>;
-    let dialogData: TokenEnrollmentDialogData;
+  const footerButtons = (): HTMLButtonElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
+  const footerButton = (label: string) =>
+    footerButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement | undefined;
 
-    beforeEach(async () => {
-      dialogData = createDialogData();
-      TestBed.resetTestingModule();
-      await TestBed.configureTestingModule({
-        imports: [TokenEnrollmentLastStepDialogSelfServiceComponent],
-        providers: [
-          { provide: MatDialogRef, useClass: MockMatDialogRef },
-          { provide: MAT_DIALOG_DATA, useValue: dialogData },
-          { provide: ContentService, useClass: MockContentService },
-          { provide: TokenService, useClass: MockTokenService }
-        ]
-      }).compileComponents();
+  it("keeps the close button enabled while the enrollment data still has to be saved", () => {
+    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
+    fixture.detectChanges();
 
-      selfServiceFixture = TestBed.createComponent(TokenEnrollmentLastStepDialogSelfServiceComponent);
-      selfServiceFixture.detectChanges();
-    });
+    expect(footerButton("Close")?.disabled).toBe(false);
+  });
 
-    it("should report a regenerated QR code to the opener of the dialog", () => {
-      const enrollmentData = selfServiceFixture.debugElement.query(By.css("app-token-enrollment-data"));
-      enrollmentData.triggerEventHandler("enrollmentResponseChange", regeneratedResponse);
-
-      expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
-    });
+  it("offers only the close button", () => {
+    expect(footerButtons().map((button) => button.textContent?.trim())).toEqual(["Close"]);
   });
 
   it("passes the axe accessibility checks", async () => {

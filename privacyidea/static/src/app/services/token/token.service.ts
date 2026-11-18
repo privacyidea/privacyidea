@@ -340,6 +340,7 @@ export interface TokenEnrollmentDialogData {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
+  wizard?: boolean;
   onEnrollmentResponseChange?: (response: EnrollmentResponse) => void;
 }
 

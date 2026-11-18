@@ -20,12 +20,14 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { By } from "@angular/platform-browser";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
-import { AuthService } from "@services/auth/auth.service";
+import { environment } from "@env/environment";
+import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
@@ -205,22 +207,30 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
     const actionValues = () => component.dialogActions().map((action) => action.value);
 
-    it("offers no cancel action without the delete right", async () => {
+    const buttonLabels = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLElement>).map(
+        (button) => button.textContent?.trim() ?? ""
+      );
+
+    it("offers close instead of cancel without the delete right", async () => {
       await setup({}, false);
 
       expect(actionValues()).toEqual(["verify"]);
+      expect(buttonLabels()).toEqual(["Close", "Verify"]);
     });
 
-    it("offers the cancel action before the verify action", async () => {
+    it("replaces the close button with cancel before the verify action", async () => {
       await setup({}, true);
 
       expect(actionValues()).toEqual(["cancelEnrollment", "verify"]);
+      expect(buttonLabels()).toEqual(["Cancel", "Verify"]);
     });
 
     it("never offers to cancel a rollover", async () => {
       await setup({ rollover: true }, true);
 
       expect(actionValues()).toEqual(["verify"]);
+      expect(buttonLabels()).toEqual(["Close", "Verify"]);
     });
 
     it("deletes the unverified token and reports the cancellation", async () => {
@@ -230,6 +240,65 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
       expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
       expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+  });
+
+  describe("context", () => {
+    const setupContext = async (role: "admin" | "user", wizard = false) => {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [TokenVerifyEnrollmentComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: TokenService, useClass: MockTokenService },
+          { provide: ContentService, useClass: MockContentService },
+          { provide: AuthService, useClass: MockAuthService },
+          { provide: MatDialogRef, useValue: dialogRefSpy },
+          {
+            provide: MAT_DIALOG_DATA,
+            useValue: { ...dialogData, wizard, enrollParameters: { data: { user: "alice", realm: "realm1" } } }
+          }
+        ],
+        schemas: [NO_ERRORS_SCHEMA]
+      }).compileComponents();
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...authService.authData(), role } as AuthData);
+      fixture = TestBed.createComponent(TokenVerifyEnrollmentComponent);
+      fixture.detectChanges();
+    };
+    const cardLabels = () =>
+      Array.from(fixture.nativeElement.querySelectorAll(".enrolled__card-label") as NodeListOf<HTMLElement>).map(
+        (label) => label.textContent?.trim()
+      );
+
+    it("shows the user and the realm to an admin", async () => {
+      await setupContext("admin");
+      expect(cardLabels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("leaves out the user and the realm in self-service", async () => {
+      await setupContext("user");
+      expect(cardLabels()).toEqual(["Token"]);
+    });
+
+    it("frames the step with the summary and the post customization in the wizard", async () => {
+      await setupContext("user", true);
+      const httpMock = TestBed.inject(HttpTestingController);
+      const customizationUrl = (position: string) =>
+        environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("The token was enrolled.");
+      expect(text).toContain("Top 123");
+      expect(text).toContain("Bottom");
+      expect(cardLabels()).toEqual([]);
+      expect(text).toContain("Close");
+      httpMock.verify();
     });
   });
 

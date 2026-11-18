@@ -251,9 +251,7 @@ describe("EnrollWebauthnComponent", () => {
     });
 
     expect(result).toBeNull();
-    expect(notification.warning).toHaveBeenCalledWith(
-      "Enrollment response or its detail is missing for finalization."
-    );
+    expect(notification.warning).toHaveBeenCalledWith("Enrollment response or its detail is missing for finalization.");
   });
 
   it("should return null when credential creation throws and close dialog", async () => {
@@ -352,24 +350,27 @@ describe("EnrollWebauthnComponent", () => {
     };
 
     const dialogData = () => dialogServiceMock.openDialog.mock.calls[0][0].data;
+    const dialogConfig = () => dialogServiceMock.openDialog.mock.calls[0][0].configOverride;
 
-    it("replaces the close button with cancel when deletion is allowed", async () => {
+    it("offers cancel when deletion is allowed", async () => {
       authService.actionAllowed.mockImplementation((action: string) => action === "delete");
 
       const { pending } = await startPendingRegistration();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, showCloseButton: false }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, wizard: false }));
+      expect(dialogConfig()).toEqual({ disableClose: true });
 
       component.stepOneDialogRef?.close();
       await pending;
     });
 
-    it("keeps the close button without the delete right", async () => {
+    it("offers no cancel without the delete right", async () => {
       authService.actionAllowed.mockReturnValue(false);
 
       const { pending } = await startPendingRegistration();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false, showCloseButton: true }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false }));
+      expect(dialogConfig()).toEqual({ disableClose: false });
 
       component.stepOneDialogRef?.close();
       await pending;

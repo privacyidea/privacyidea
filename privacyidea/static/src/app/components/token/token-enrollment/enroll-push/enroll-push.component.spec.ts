@@ -312,7 +312,7 @@ describe("EnrollPushComponent", () => {
       expect(dialogData()).toEqual(
         expect.objectContaining({
           showCancelButton: true,
-          showCloseButton: true,
+          wizard: false,
           cancelConfirmationMessage: expect.stringContaining("QR code")
         })
       );
@@ -326,7 +326,18 @@ describe("EnrollPushComponent", () => {
 
       const { pending } = await startPendingRollout();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false, showCloseButton: true }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false }));
+
+      component.firstStepDialogRef?.close();
+      await pending;
+    });
+
+    it("tells the dialog that it belongs to the wizard", async () => {
+      fixture.componentRef.setInput("wizard", true);
+
+      const { pending } = await startPendingRollout();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ wizard: true }));
 
       component.firstStepDialogRef?.close();
       await pending;

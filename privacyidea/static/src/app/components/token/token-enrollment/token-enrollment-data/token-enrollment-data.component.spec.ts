@@ -121,6 +121,20 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component.showRegenerateButton()).toBe(true);
   });
 
+  it("should leave out the QR code text and the regenerate button in the compact layout", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "enrolled",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.componentRef.setInput("compact", true);
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(false);
+    expect(fixture.nativeElement.querySelector("app-qr-code-text")).toBeNull();
+    expect(fixture.nativeElement.querySelector("img.enrollment-data__qr")).not.toBeNull();
+  });
+
   it("should adopt regenerate button text to token type", () => {
     fixture.componentRef.setInput("tokenType", "spass");
     fixture.detectChanges();
