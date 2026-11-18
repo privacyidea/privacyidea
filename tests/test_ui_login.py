@@ -14,14 +14,17 @@ from contextlib import contextmanager
 from flask import Response
 from flask_babel import refresh
 
-from privacyidea.app import create_app
+import privacyidea
+from privacyidea.app import CSP, create_app
+from privacyidea.config import TestingConfig
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies, delete_policy
 from privacyidea.lib.utils import to_unicode, get_version_number
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, save_config_timestamp
-from .base import MyTestCase, MyApiTestCase
+from privacyidea.webui.login import CSP_NONCE_PLACEHOLDER
+from .base import MyTestCase, MyApiTestCase, OverrideConfigTestCase
 
 
 class AlternativeWebUI(MyTestCase):
@@ -661,8 +664,8 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertIn('<meta name="pi-script-root" content="">', body)
 
     def test_serve_locale_carries_no_inline_script(self):
-        """The served shell stays free of inline scripts: the app's CSP allows only
-        script-src 'self', with no nonce and no script hashes."""
+        """The server adds no inline script of its own to the served shell: the script root
+        goes into a meta tag, which the CSP does not have to allow."""
         index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
                      '</head><body></body></html>')
         with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
@@ -672,6 +675,21 @@ class NewUIRoutingTestCase(MyTestCase):
                 result = _serve_locale("en")
         body = to_unicode(result.get_data())
         self.assertNotIn("<script>", body)
+
+    def test_serve_locale_empties_the_csp_nonce_placeholder_without_csp(self):
+        """Without PI_ENABLE_CSP there is no nonce: the placeholder becomes empty, so Angular puts
+        no nonce on the style elements of the components."""
+        index_html = (f'<html><head><style nonce="{CSP_NONCE_PLACEHOLDER}">html{{}}</style></head>'
+                      f'<body><app-root ngCspNonce="{CSP_NONCE_PLACEHOLDER}"></app-root></body></html>')
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+              mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        body = to_unicode(result.get_data())
+        self.assertNotIn(CSP_NONCE_PLACEHOLDER, body)
+        self.assertIn('<style nonce="">', body)
+        self.assertIn('<app-root ngCspNonce="">', body)
 
     def test_serve_locale_escapes_the_script_root(self):
         """A mount point containing markup characters cannot break out of the meta tag."""
@@ -864,3 +882,82 @@ class NewUIRoutingTestCase(MyTestCase):
                 for bad_locale in ["unknown", "de/../fr", "DE", "EN", "zh_hant"]:
                     result = _serve_locale(bad_locale)
                     self.assertIsNone(result, f"Expected None for locale {bad_locale!r}")
+
+
+class NewUIContentSecurityPolicyTestCase(OverrideConfigTestCase):
+    """The WebUI with PI_ENABLE_CSP: its inline style and script and the style elements of its
+    components carry the nonce of the CSP header of the same response."""
+
+    class Config(TestingConfig):
+        PI_ENABLE_CSP = True
+        PI_FORCE_HTTPS = False
+
+    # The index.html as the Angular build writes it when src/index.html has the ngCspNonce attribute
+    built_index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
+                        f'<style nonce="{CSP_NONCE_PLACEHOLDER}">html{{color:black}}</style>'
+                        f'<script nonce="{CSP_NONCE_PLACEHOLDER}">(() => {{}})();</script>'
+                        '<link rel="stylesheet" href="styles.css" media="print" ngcspmedia="all">'
+                        f'</head><body><app-root ngcspnonce="{CSP_NONCE_PLACEHOLDER}"></app-root></body></html>')
+
+    def _get_index(self, path: str) -> Response:
+        """Request *path* from a browser while the static folder holds a built English WebUI."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            browser_dir = os.path.join(static_folder, "dist", "privacyidea-webui", "browser", "en")
+            os.makedirs(browser_dir)
+            with open(os.path.join(browser_dir, "index.html"), "w", encoding="utf-8") as index_file:
+                index_file.write(self.built_index_html)
+            original_static_folder = self.app.static_folder
+            self.app.static_folder = static_folder
+            try:
+                with self.app.test_request_context(path, method="GET", headers={"Accept": "text/html"}):
+                    response = self.app.full_dispatch_request()
+            finally:
+                self.app.static_folder = original_static_folder
+        self.assertEqual(200, response.status_code)
+        return response
+
+    @staticmethod
+    def _nonces_of_directives(response: Response) -> dict[str, list[str]]:
+        nonces = {}
+        for directive in response.headers["Content-Security-Policy"].split(";"):
+            name, *sources = directive.split()
+            nonces[name] = [source[len("'nonce-"):-1] for source in sources if source.startswith("'nonce-")]
+        return nonces
+
+    def _assert_index_carries_the_nonce_of_the_header(self, response: Response) -> str:
+        nonces = self._nonces_of_directives(response)
+        self.assertEqual(1, len(nonces["script-src"]))
+        nonce = nonces["script-src"][0]
+        self.assertEqual([nonce], nonces["style-src"])
+        self.assertEqual([], nonces["default-src"])
+        body = to_unicode(response.get_data())
+        self.assertNotIn(CSP_NONCE_PLACEHOLDER, body)
+        self.assertIn(f'<style nonce="{nonce}">', body)
+        self.assertIn(f'<script nonce="{nonce}">', body)
+        self.assertIn(f'<app-root ngcspnonce="{nonce}">', body)
+        return nonce
+
+    def test_locale_route_serves_the_nonce_of_the_csp_header(self):
+        self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+
+    def test_spa_fallback_serves_the_nonce_of_the_csp_header(self):
+        """A deep link reaches the WebUI through the 404 handler, which also gets the nonce of the request."""
+        self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/tokens"))
+
+    def test_each_response_gets_a_new_nonce(self):
+        first_nonce = self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+        second_nonce = self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+        self.assertNotEqual(first_nonce, second_nonce)
+
+    def test_csp_keeps_the_style_hashes_of_the_legacy_webui(self):
+        response = self._get_index("/app/v2/en/")
+        style_sources = [directive for directive in response.headers["Content-Security-Policy"].split(";")
+                         if directive.split()[0] == "style-src"][0].split()
+        for source in CSP["style-src"]:
+            self.assertIn(source, style_sources)
+
+    def test_webui_source_index_carries_the_nonce_placeholder(self):
+        """The Angular build copies the nonce of <app-root> to the inline elements, and the server replaces the
+        placeholder. Both only work if src/index.html uses the placeholder that the server replaces."""
+        source_index = pathlib.Path(privacyidea.__file__).parent / "static" / "src" / "index.html"
+        self.assertIn(f'<app-root ngCspNonce="{CSP_NONCE_PLACEHOLDER}">', source_index.read_text(encoding="utf-8"))

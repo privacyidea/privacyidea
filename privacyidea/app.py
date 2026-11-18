@@ -107,6 +107,8 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 # remapped to the current one, see _resolve_ui_folders().
 PREVIEW_STATIC_FOLDER = "static_new"
 
+# The style hashes allow the inline styles of the legacy WebUI. The WebUI allows its inline styles
+# and scripts with the nonce of CSP_NONCE_DIRECTIVES instead.
 CSP = {
     'default-src': [
         '\'self\'',
@@ -142,6 +144,9 @@ CSP = {
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
     ]
 }
+# Talisman adds a new nonce for each request to these directives. The WebUI puts it on the inline style
+# and script of its index.html and on the style elements that Angular adds at runtime, see _serve_locale().
+CSP_NONCE_DIRECTIVES = ['script-src', 'style-src']
 
 migrate = Migrate()
 babel = Babel()
@@ -623,7 +628,8 @@ def create_app(config_name="development",
 
     # CSP with Talisman
     if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+        Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
+                 force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
                  session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
         if app.config.get(ConfigKey.VERBOSE):
             print("Enabling CSP with Talisman")
@@ -746,7 +752,8 @@ def create_docker_app():
 
     # CSP with Talisman
     if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+        Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
+                 force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
                  session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
         if app.debug:
             sys.stderr.write("Enabling CSP with Talisman")
