@@ -2136,6 +2136,34 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
         g.request_data["type"] = tokentype
 
     action = f"enroll{tokentype.upper()}"
+
+    # The rights on an existing token are checked before the enroll right of its type, so that the type of the token
+    # is not revealed to a caller without rights on it
+    if existing_token:
+        enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
+        token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
+        if role == ROLE.USER:
+            # A user continues the enrollment of, or rolls over, only a token they own
+            token_owner = existing_token.user
+            if not user_is_owner(request.User, token_owner):
+                log.info(f"The user is not the owner of the token {serial}.")
+                raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+            allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                                          user=token_owner.login,
+                                                          resolver=token_owner.resolver,
+                                                          realm=token_owner.realm,
+                                                          scope=role,
+                                                          user_object=token_owner).allowed()
+        else:
+            # The existing token is matched like for the other token actions: by its owner or one of its realms
+            allowed = check_token_action_allowed(g, token_action, serial,
+                                                 UserAttributes(role=role, adminuser=adminuser,
+                                                                adminrealm=adminrealm))
+        if not allowed:
+            log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
+                     f"token {serial}.")
+            raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+
     init_allowed = Match.generic(g, action=action,
                                  user=username,
                                  resolver=resolver,
@@ -2150,30 +2178,6 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
     if not existing_token:
         return True
 
-    enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
-    token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
-    if role == ROLE.USER:
-        # A user continues the enrollment of, or rolls over, only a token they own
-        token_owner = existing_token.user
-        if not user_is_owner(request.User, token_owner):
-            log.info(f"The user is not the owner of the token {serial}.")
-            raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
-        allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
-                                                      user=token_owner.login,
-                                                      resolver=token_owner.resolver,
-                                                      realm=token_owner.realm,
-                                                      scope=role,
-                                                      user_object=token_owner).allowed()
-    else:
-        # The existing token is matched like for the other token actions: by its owner or one of its realms
-        allowed = check_token_action_allowed(g, token_action, serial,
-                                             UserAttributes(role=role, adminuser=adminuser, adminrealm=adminrealm))
-    if not allowed:
-        log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
-                 f"token {serial}.")
-        raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
-
-    # Only after the rights checks, so that the type of the token is not revealed to a caller without rights on it
     if requested_type and requested_type != tokentype:
         log.info(f"The requested type {requested_type} differs from the type {tokentype} of the existing token "
                  f"{serial}.")
