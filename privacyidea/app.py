@@ -763,7 +763,7 @@ def create_docker_app():
     _check_config(app)
 
     if _enable_csp(app) and app.debug:
-        sys.stderr.write("Enabling CSP with Talisman")
+        sys.stderr.write("Enabling CSP with Talisman\n")
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG
