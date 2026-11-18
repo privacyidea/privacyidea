@@ -27,12 +27,17 @@ export async function openPage(page: Page, path: string): Promise<void> {
   await settleContent(page);
 }
 
-// Waits until the page that is loaded has drawn its content, then makes it wear the emulated theme. Loading indicators
-// come and go with the data; a page measured while one shows is not the settled page.
+// Waits until the page that is loaded has drawn its content, then makes it wear the emulated theme.
 export async function settleContent(page: Page): Promise<void> {
-  await expect(page.locator("mat-spinner, mat-progress-spinner, mat-progress-bar")).toHaveCount(0, { timeout: 15_000 });
+  await waitForData(page);
   await settle(page);
   await forceTheme(page);
+}
+
+// Waits until the loading indicators are gone. They come and go with the data; a page measured while one shows is not
+// the settled page.
+export async function waitForData(page: Page): Promise<void> {
+  await expect(page.locator("mat-spinner, mat-progress-spinner, mat-progress-bar")).toHaveCount(0, { timeout: 15_000 });
 }
 
 // How far the page itself scrolls sideways, in CSS px.

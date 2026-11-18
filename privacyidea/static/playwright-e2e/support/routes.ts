@@ -89,6 +89,19 @@ export const OTHER_PAGES: PageRoute[] = [
 
 export const ALL_PAGES: PageRoute[] = [...TABLE_PAGES, ...OTHER_PAGES];
 
+// The pages of the self-service user (see support/self-service.ts).
+export const SELF_PAGES: PageRoute[] = [
+  { name: "self tokens", path: "tokens" },
+  { name: "self token enrollment", path: "tokens/enrollment" },
+  { name: "self assign token", path: "tokens/assign-token" },
+  { name: "self containers", path: "containers" },
+  { name: "self container create", path: "containers/create" },
+  { name: "self user", path: "users" },
+  { name: "self audit", path: "logs/audit" },
+  { name: "self authentication log", path: "logs/authentication-log" },
+  { name: "self news", path: "news" }
+];
+
 // Browser zoom as Chrome applies it on a 1920x1080 screen: the CSS viewport shrinks by the zoom factor.
 export const ZOOMS = [1, 1.25, 1.5, 2] as const;
 export const SCREEN = { width: 1920, height: 1080 } as const;

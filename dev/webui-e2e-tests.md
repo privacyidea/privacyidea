@@ -23,13 +23,14 @@ login session (`playwright-e2e/.auth/`) are ignored by git.
 | `E2E_USER`                        | `admin`                                                   |
 | `E2E_PASS`                        | `admin`                                                   |
 | `E2E_SELF_USER` / `E2E_SELF_PASS` | a self-service user for `self-service.spec.ts` (optional) |
+| `E2E_CSP`                         | not set; set it if the instance runs with `PI_ENABLE_CSP` |
 | `E2E_WORKERS`                     | `8`, the number of pages tested side by side              |
 
 The browser is Chromium (`npx playwright install chromium`). The instance should hold some data: tests on empty
 tables skip their row-dependent checks rather than fail.
 
-The suite is for local use for now: no CI pipeline runs it automatically, neither GitHub Actions nor any other
-server. To run it against an instance other than the local `ng serve`, point `BASE_URL` at its WebUI
+The suite is for local use for now. Only `csp.spec.ts` runs in CI (see below). To run the suite against an instance
+other than the local `ng serve`, point `BASE_URL` at its WebUI
 (`https://<instance>/app/v2/`). With `CI` set and no `BASE_URL`, the run stops instead of testing localhost. The
 tests that force loading, error and empty states intercept the API both behind the `/proxy/` prefix of `ng serve` and
 at the root of an instance that serves the WebUI and the API from one origin.
@@ -75,9 +76,37 @@ at the root of an instance that serves the WebUI and the API from one origin.
   header position.
 - `playwright-e2e/self-service.spec.ts` - the self-service pages, with `E2E_SELF_USER` / `E2E_SELF_PASS`; skipped
   without them.
+- `playwright-e2e/csp.spec.ts` - the Content Security Policy, with `E2E_CSP` on an instance with
+  `PI_ENABLE_CSP = True`; skipped without `E2E_CSP`. See below.
 
 The page lists the specs iterate over are in `playwright-e2e/support/routes.ts`; a new page has to be added there to be
 covered.
+
+## The Content Security Policy check
+
+With `PI_ENABLE_CSP = True`, the server sends a Content Security Policy. It allows an inline style or script only with
+the nonce of the response. `csp.spec.ts` loads the login page, every admin page and every self-service page. A test
+fails in these cases:
+
+- The policy of the response has no nonce in `script-src` or `style-src`.
+- The browser blocked an inline style or script (a `securitypolicyviolation` event).
+- A stylesheet of the page does not apply to the screen.
+
+With `E2E_CSP`, the self-service user is required. A run without it fails instead of skipping these pages.
+
+The workflow `.github/workflows/webui-csp.yml` runs this spec every night on `master`. It builds the WebUI and sets up
+privacyIDEA with SQLite, an administrator and the users of `tests/testdata/passwords`. If the scheduled run fails, the
+workflow opens or updates the GitHub issue "Nightly WebUI CSP check failed on master". The artifact `webui-csp-report`
+of the run holds the Playwright report and the server logs. You can also start the workflow by hand (workflow
+dispatch). A pull request that changes the workflow or the spec runs it as well.
+
+To run the spec locally, start privacyIDEA with `PI_ENABLE_CSP = True`, `PI_FORCE_HTTPS = False` and the built WebUI.
+`ng serve` does not work for this check, because it serves its own `index.html` without the policy.
+
+```
+E2E_CSP=1 BASE_URL=http://127.0.0.1:5000/app/v2/ E2E_SELF_USER=<user> E2E_SELF_PASS=<password> \
+  npx playwright test --config playwright-e2e/playwright.config.ts playwright-e2e/csp.spec.ts
+```
 
 The theme of a run is the emulated colour scheme. The app applies the theme stored with the user ahead of
 `prefers-color-scheme`, so `openPage` (and every spec that navigates by itself) calls `forceTheme`, which puts the

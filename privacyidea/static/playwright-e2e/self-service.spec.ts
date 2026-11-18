@@ -20,21 +20,10 @@
 import { expect, selfTest as test, SELF_PASS, SELF_USER } from "./support/self-service";
 import { expectNoNewViolations } from "./support/axe";
 import { settleContent, sideways } from "./support/helpers";
+import { SELF_PAGES } from "./support/routes";
 import { Page } from "@playwright/test";
 
-// The pages of the self-service user. Needs E2E_SELF_USER / E2E_SELF_PASS (see support/self-service.ts).
-const SELF_PAGES = [
-  { name: "self tokens", path: "tokens" },
-  { name: "self token enrollment", path: "tokens/enrollment" },
-  { name: "self assign token", path: "tokens/assign-token" },
-  { name: "self containers", path: "containers" },
-  { name: "self container create", path: "containers/create" },
-  { name: "self user", path: "users" },
-  { name: "self audit", path: "logs/audit" },
-  { name: "self authentication log", path: "logs/authentication-log" },
-  { name: "self news", path: "news" }
-];
-
+// Needs E2E_SELF_USER / E2E_SELF_PASS (see support/self-service.ts).
 test.use({ reducedMotion: "reduce", viewport: { width: 1920, height: 1080 } });
 
 test.beforeEach(() => {
