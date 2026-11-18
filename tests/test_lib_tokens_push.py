@@ -2700,12 +2700,13 @@ class PushTokenTestCase(MyTestCase):
         enroll_policies = PushTokenClass.get_class_info(key="policy")[SCOPE.ENROLL]
         self.assertTrue(PushAction.KEY_ALGORITHMS in enroll_policies, f"{PushAction.KEY_ALGORITHMS} is not defined")
         definition = enroll_policies[PushAction.KEY_ALGORITHMS]
-        # A text field, so the admin can write the algorithms in the order of his preference
+        # A multi-select that keeps the order in which the admin selects the values
         self.assertEqual("str", definition.get("type"))
-        self.assertFalse(definition.get("multiple"), definition)
-        self.assertNotIn("value", definition)
-        self.assertIn(PushKeyAlgorithm.RSA_4096, definition["desc"])
-        self.assertIn(PushKeyAlgorithm.SECP256R1, definition["desc"])
+        self.assertTrue(definition.get("multiple"), definition)
+        self.assertTrue(definition.get("ordered"), definition)
+        self.assertEqual(["secp256r1", "rsa_4096"], definition.get("value"))
+        self.assertIn("preferred in the selected order", definition["desc"])
+        self.assertIn("Older apps need rsa_4096", definition["desc"])
         self.assertEqual("PUSH", definition.get("group"))
 
 

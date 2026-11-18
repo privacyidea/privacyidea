@@ -1401,20 +1401,17 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
             g.policies = {}
             req.all_data = {"type": "push"}
             pushtoken_add_config(req, "init")
-            allowed = g.policies.get(PushAction.KEY_ALGORITHMS) or ""
-            self.assertIn(PushKeyAlgorithm.RSA_4096, allowed)
-            self.assertNotIn(PushKeyAlgorithm.SECP256R1, allowed)
+            self.assertEqual([PushKeyAlgorithm.RSA_4096.value], list(g.policies.get(PushAction.KEY_ALGORITHMS)))
 
-            # Both values
+            # Both values, in the order of the policy value
             set_policy(name="push_keys", scope=SCOPE.ENROLL,
                        action=f"{PushAction.KEY_ALGORITHMS}={PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
             g.policy_object = PolicyClass()
             g.policies = {}
             req.all_data = {"type": "push"}
             pushtoken_add_config(req, "init")
-            allowed = g.policies.get(PushAction.KEY_ALGORITHMS) or ""
-            self.assertIn(PushKeyAlgorithm.RSA_4096, allowed)
-            self.assertIn(PushKeyAlgorithm.SECP256R1, allowed)
+            self.assertEqual([PushKeyAlgorithm.RSA_4096.value, PushKeyAlgorithm.SECP256R1.value],
+                             list(g.policies.get(PushAction.KEY_ALGORITHMS)))
 
             # The request can not inject an algorithm the policy does not allow
             delete_policy("push_keys")
@@ -1456,36 +1453,55 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.User = User()
         rsa = PushKeyAlgorithm.RSA_4096.value
         ec = PushKeyAlgorithm.SECP256R1.value
+
+        def key_algorithms() -> list:
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            pushtoken_add_config(req, "init")
+            return list(g.policies.get(PushAction.KEY_ALGORITHMS))
+
         try:
             set_policy(name="push_keys_base", scope=SCOPE.ENROLL,
                        action=f"{PushAction.FIREBASE_CONFIG}=fb-config-keys,"
                               f"{PushAction.REGISTRATION_URL}=https://pi.example.org/ttype/push")
 
-            # The preferred algorithm comes first
+            # The admin sets the preference order with the order of the policy value
             set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}={ec} {rsa}")
-            g.policy_object = PolicyClass()
-            g.policies = {}
-            req.all_data = {"type": "push"}
-            pushtoken_add_config(req, "init")
-            self.assertEqual([ec, rsa], list(g.policies.get(PushAction.KEY_ALGORITHMS)))
-
-            # The reverse order is kept as well
+            self.assertEqual([ec, rsa], key_algorithms())
             set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec}")
-            g.policy_object = PolicyClass()
-            g.policies = {}
-            req.all_data = {"type": "push"}
-            pushtoken_add_config(req, "init")
-            self.assertEqual([rsa, ec], list(g.policies.get(PushAction.KEY_ALGORITHMS)))
+            self.assertEqual([rsa, ec], key_algorithms())
 
-            # Two matching policies of the same priority contradict each other in the order
+            # A value given twice keeps its first position
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec} {rsa}")
+            self.assertEqual([rsa, ec], key_algorithms())
+
+            # The values of policies with different priorities are merged, the higher priority first
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={ec}")
+            set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=2,
+                       action=f"{PushAction.KEY_ALGORITHMS}={rsa}")
+            self.assertEqual([ec, rsa], key_algorithms())
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, priority=2,
+                       action=f"{PushAction.KEY_ALGORITHMS}={ec}")
+            set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={rsa}")
+            self.assertEqual([rsa, ec], key_algorithms())
+
+            # Two policies of the same highest priority with the same list do not contradict each other
             set_policy(name="push_keys", scope=SCOPE.ENROLL, priority=1,
                        action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec}")
             set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec}")
+            self.assertEqual([rsa, ec], key_algorithms())
+
+            # Two policies of the same highest priority with different lists contradict each other
+            set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=1,
                        action=f"{PushAction.KEY_ALGORITHMS}={ec} {rsa}")
-            g.policy_object = PolicyClass()
-            g.policies = {}
-            req.all_data = {"type": "push"}
-            self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+            self.assertRaises(PolicyError, key_algorithms)
+            set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={ec}")
+            self.assertRaises(PolicyError, key_algorithms)
         finally:
             delete_policies(["push_keys", "push_keys2", "push_keys_base"])
 

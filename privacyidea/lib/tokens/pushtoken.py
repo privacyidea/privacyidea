@@ -781,14 +781,12 @@ class PushTokenClass(TokenClass):
                            },
                            PushAction.KEY_ALGORITHMS: {
                                'type': 'str',
-                               'desc': _("The key algorithms the smartphone may use for the push token, separated by "
-                                         "spaces, the preferred one first, for example 'secp256r1 rsa_4096'. "
-                                         "Allowed values: rsa_4096, secp256r1. Without this policy only rsa_4096 is "
-                                         "allowed. The app uses the first algorithm in this order that it supports. "
-                                         "ECDSA keys (secp256r1) need a privacyIDEA Authenticator app version that "
-                                         "supports them. If rsa_4096 is not allowed, older apps can not enroll a "
-                                         "push token."),
-                               'group': "PUSH"
+                               'desc': _("Key algorithms the app may use for push tokens, preferred in the "
+                                         "selected order. Older apps need rsa_4096."),
+                               'group': "PUSH",
+                               'multiple': True,
+                               'ordered': True,
+                               'value': [PushKeyAlgorithm.SECP256R1.value, PushKeyAlgorithm.RSA_4096.value]
                            }
                        },
                        SCOPE.AUTH: {

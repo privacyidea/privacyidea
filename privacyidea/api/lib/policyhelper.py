@@ -156,32 +156,38 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
 
 def _get_push_key_algorithms(g, user: User) -> list[str]:
     """
-    Read the enrollment policy push_key_algorithms. The order of the policy value is
-    the order of preference, so it is kept: the policies in the order of their priority,
-    within a policy the order of its value, duplicates are dropped. Two matching policies
-    of the highest priority that list the algorithms differently contradict each other.
+    Read the enrollment policy push_key_algorithms. The order of the policy value is the
+    preference of the admin, a value given twice keeps its first position. The values of
+    matching policies with different priorities are merged, the higher priority first.
 
     :param g: The request-local context with the policy object
     :param user: The user the token is enrolled for
-    :return: The ordered list of allowed key algorithms, only rsa_4096 without a policy
-    :raises PolicyError: On contradicting policies or an unknown value
+    :return: The allowed key algorithms in the order of preference, only rsa_4096 without a policy
+    :raises PolicyError: On an unknown value or if two matching policies of the highest
+        priority define different lists
     """
     match = Match.user(g, scope=SCOPE.ENROLL, action=PushAction.KEY_ALGORITHMS, user_object=user)
+    # The policies are sorted by priority, the highest priority first
     policies = match.policies(write_to_audit_log=False)
-    if policies:
-        highest_priority = policies[0]["priority"]
-        orders = {tuple(dict.fromkeys(str(policy["action"].get(PushAction.KEY_ALGORITHMS, "")).split()))
-                  for policy in policies if policy["priority"] == highest_priority}
-        if len(orders) > 1:
-            names = [policy["name"] for policy in policies if policy["priority"] == highest_priority]
-            raise PolicyError(f"Contradicting {PushAction.KEY_ALGORITHMS} policies: {names!r}")
-    # The keys keep the insertion order: priority first, then the order in the policy value
-    key_algorithms = list(match.action_values(unique=False))
-    known_algorithms = [algorithm.value for algorithm in PushKeyAlgorithm]
-    unknown_algorithms = set(key_algorithms) - set(known_algorithms)
-    if unknown_algorithms:
-        raise PolicyError(f"Unknown value in the enrollment policy {PushAction.KEY_ALGORITHMS}: "
-                          f"{', '.join(sorted(unknown_algorithms))}")
+    if not policies:
+        return [PushKeyAlgorithm.RSA_4096.value]
+    known_algorithms = {algorithm.value for algorithm in PushKeyAlgorithm}
+    highest_priority = policies[0]["priority"]
+    highest_priority_lists = {}
+    key_algorithms = []
+    for policy in policies:
+        policy_algorithms = list(dict.fromkeys(str(policy["action"].get(PushAction.KEY_ALGORITHMS, "")).split()))
+        unknown_algorithms = [algorithm for algorithm in policy_algorithms if algorithm not in known_algorithms]
+        if unknown_algorithms:
+            raise PolicyError(f"Unknown value in the enrollment policy {PushAction.KEY_ALGORITHMS}: "
+                              f"{', '.join(unknown_algorithms)}")
+        if policy["priority"] == highest_priority:
+            highest_priority_lists[policy["name"]] = policy_algorithms
+        key_algorithms.extend(algorithm for algorithm in policy_algorithms if algorithm not in key_algorithms)
+    if len({tuple(value) for value in highest_priority_lists.values()}) > 1:
+        raise PolicyError(f"There are policies with conflicting actions for {PushAction.KEY_ALGORITHMS}: "
+                          f"{sorted(highest_priority_lists)!r}")
+    g.audit_object.add_policy([policy["name"] for policy in policies])
     return key_algorithms or [PushKeyAlgorithm.RSA_4096.value]
 
 

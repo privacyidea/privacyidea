@@ -870,6 +870,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 detail = res.json["detail"]
                 serial = detail["serial"]
                 transaction_id = detail["transaction_id"]
+                # The QR code lists the algorithms in the order of the policy value
                 self.assertIn(f"key_algorithm={PushKeyAlgorithm.RSA_4096}%2C{PushKeyAlgorithm.SECP256R1}",
                               detail["link"])
                 self.assertEqual([SERVER_ENROLLMENT_CAPABILITIES_JSON],
@@ -3525,6 +3526,7 @@ class PushKeyAlgorithmTestCase(PushTokenTestMixin, MyApiTestCase):
     def test_04_policy_with_both_algorithms_accepts_an_rsa_smartphone_key(self):
         self._set_push_policy(f"{PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
         detail = self._init_push_token()
+        # The QR code lists the algorithms in the order of the policy value
         self.assertEqual([f"{PushKeyAlgorithm.RSA_4096},{PushKeyAlgorithm.SECP256R1}"],
                          self._query(detail["pushurl"]["value"]).get("key_algorithm"))
 
@@ -3569,13 +3571,13 @@ class PushKeyAlgorithmTestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, res.status_code, res.json)
             definitions = res.json["result"]["value"]
         self.assertTrue(PushAction.KEY_ALGORITHMS in definitions, f"{PushAction.KEY_ALGORITHMS} is not defined")
-        # A text field, so the admin can write the algorithms in the order of his preference
+        # A multi-select that keeps the order in which the admin selects the values
         definition = definitions[PushAction.KEY_ALGORITHMS]
         self.assertEqual("str", definition["type"])
-        self.assertFalse(definition.get("multiple"), definition)
-        self.assertNotIn("value", definition)
-        self.assertIn(PushKeyAlgorithm.RSA_4096, definition["desc"])
-        self.assertIn(PushKeyAlgorithm.SECP256R1, definition["desc"])
+        self.assertTrue(definition.get("multiple"), definition)
+        self.assertTrue(definition.get("ordered"), definition)
+        self.assertEqual([PushKeyAlgorithm.SECP256R1, PushKeyAlgorithm.RSA_4096], definition.get("value"))
+        self.assertIn("selected order", definition["desc"])
 
     def test_08_enrollment_url_announces_what_the_server_can(self):
         # The capabilities say what the server can, independent of what the policy wants
@@ -3641,7 +3643,7 @@ class PushKeyAlgorithmTestCase(PushTokenTestMixin, MyApiTestCase):
         self.assertEqual("secp256r1", server_public_key.curve.name)
         self.assertEqual(PushKeyAlgorithm.SECP256R1, token.get_tokeninfo("key_algorithm"))
 
-    def test_12_qr_lists_the_key_algorithms_in_policy_order(self):
+    def test_12_qr_lists_the_key_algorithms_in_the_policy_order(self):
         rsa_key = PushKeyAlgorithm.RSA_4096.value
         ec_key = PushKeyAlgorithm.SECP256R1.value
         for policy_value, expected in [(f"{ec_key} {rsa_key}", [f"{ec_key},{rsa_key}"]),
