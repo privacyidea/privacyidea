@@ -33,13 +33,15 @@ class PushDeclineReason(StrEnum):
 class PushCapability(StrEnum):
     """Optional push features this server version supports, advertised to the
     smartphone in every challenge so a newer app knows which fields it may add
-    to its signed answer. An absent capability means the app falls back to
-    legacy behaviour. Adding a feature is appending a member.
+    to its signed answer, or in the enrollment URL for what the server can do
+    at the enrollment (``key_algorithm``). An absent capability means the app
+    falls back to legacy behaviour. Adding a feature is appending a member.
 
     Members are ``str``, so they serialise, compare and interpolate as their
     value without ``.value``.
     """
     DECLINE_REASON = "decline_reason"
+    KEY_ALGORITHM = "key_algorithm"
 
 
 class PushAction:
@@ -59,6 +61,16 @@ class PushAction:
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"
     USE_PIA_SCHEME = "push_use_pia_scheme"
     CHALLENGE_TEXT = "push_challenge_text"
+    KEY_ALGORITHMS = "push_key_algorithms"
+
+
+class PushKeyAlgorithm(StrEnum):
+    """Key algorithms a push token may use for the smartphone and the server key pair.
+    RSA 4096 is the default, ECDSA on secp256r1 is offered only when an enrollment
+    policy allows it.
+    """
+    RSA_4096 = "rsa_4096"
+    SECP256R1 = "secp256r1"
 
 
 class PushAllowPolling:

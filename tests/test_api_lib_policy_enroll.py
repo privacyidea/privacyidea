@@ -25,7 +25,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE)
+from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies, PolicyClass, SCOPE)
 from privacyidea.lib.realm import delete_realm
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
@@ -1382,6 +1382,112 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("push_pol")
         delete_policy("push_pol2")
         delete_policy("pia_scheme")
+
+    def test_22a_push_key_algorithms(self):
+        from privacyidea.lib.tokens.push_types import PushAction, PushKeyAlgorithm
+        g.logged_in_user = {"username": "admin", "realm": "", "role": "admin"}
+        env = EnvironBuilder(method='POST', data={}, headers={}).get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        try:
+            set_policy(name="push_keys_base", scope=SCOPE.ENROLL,
+                       action=f"{PushAction.FIREBASE_CONFIG}=fb-config-keys,"
+                              f"{PushAction.REGISTRATION_URL}=https://pi.example.org/ttype/push")
+
+            # Without a policy only RSA is allowed
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            pushtoken_add_config(req, "init")
+            allowed = g.policies.get(PushAction.KEY_ALGORITHMS) or ""
+            self.assertIn(PushKeyAlgorithm.RSA_4096, allowed)
+            self.assertNotIn(PushKeyAlgorithm.SECP256R1, allowed)
+
+            # Both values
+            set_policy(name="push_keys", scope=SCOPE.ENROLL,
+                       action=f"{PushAction.KEY_ALGORITHMS}={PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            pushtoken_add_config(req, "init")
+            allowed = g.policies.get(PushAction.KEY_ALGORITHMS) or ""
+            self.assertIn(PushKeyAlgorithm.RSA_4096, allowed)
+            self.assertIn(PushKeyAlgorithm.SECP256R1, allowed)
+
+            # The request can not inject an algorithm the policy does not allow
+            delete_policy("push_keys")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push", PushAction.KEY_ALGORITHMS: PushKeyAlgorithm.SECP256R1}
+            pushtoken_add_config(req, "init")
+            self.assertNotIn(PushKeyAlgorithm.SECP256R1, g.policies.get(PushAction.KEY_ALGORITHMS) or "")
+        finally:
+            delete_policies(["push_keys", "push_keys_base"])
+
+    def test_22b_push_key_algorithms_rejects_an_unknown_value(self):
+        from privacyidea.lib.tokens.push_types import PushAction
+        g.logged_in_user = {"username": "admin", "realm": "", "role": "admin"}
+        env = EnvironBuilder(method='POST', data={}, headers={}).get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        try:
+            set_policy(name="push_keys_base", scope=SCOPE.ENROLL,
+                       action=f"{PushAction.FIREBASE_CONFIG}=fb-config-keys,"
+                              f"{PushAction.REGISTRATION_URL}=https://pi.example.org/ttype/push")
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}=ed25519")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+        finally:
+            delete_policies(["push_keys", "push_keys_base"])
+
+    def test_22c_push_key_algorithms_keep_the_policy_order(self):
+        from privacyidea.lib.tokens.push_types import PushAction, PushKeyAlgorithm
+        g.logged_in_user = {"username": "admin", "realm": "", "role": "admin"}
+        env = EnvironBuilder(method='POST', data={}, headers={}).get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User()
+        rsa = PushKeyAlgorithm.RSA_4096.value
+        ec = PushKeyAlgorithm.SECP256R1.value
+        try:
+            set_policy(name="push_keys_base", scope=SCOPE.ENROLL,
+                       action=f"{PushAction.FIREBASE_CONFIG}=fb-config-keys,"
+                              f"{PushAction.REGISTRATION_URL}=https://pi.example.org/ttype/push")
+
+            # The preferred algorithm comes first
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}={ec} {rsa}")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            pushtoken_add_config(req, "init")
+            self.assertEqual([ec, rsa], list(g.policies.get(PushAction.KEY_ALGORITHMS)))
+
+            # The reverse order is kept as well
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec}")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            pushtoken_add_config(req, "init")
+            self.assertEqual([rsa, ec], list(g.policies.get(PushAction.KEY_ALGORITHMS)))
+
+            # Two matching policies of the same priority contradict each other in the order
+            set_policy(name="push_keys", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={rsa} {ec}")
+            set_policy(name="push_keys2", scope=SCOPE.ENROLL, priority=1,
+                       action=f"{PushAction.KEY_ALGORITHMS}={ec} {rsa}")
+            g.policy_object = PolicyClass()
+            g.policies = {}
+            req.all_data = {"type": "push"}
+            self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
+        finally:
+            delete_policies(["push_keys", "push_keys2", "push_keys_base"])
 
     def test_24_push_wait_policy(self):
 

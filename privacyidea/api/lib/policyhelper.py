@@ -34,7 +34,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
-from privacyidea.lib.tokens.push_types import PushAction
+from privacyidea.lib.tokens.push_types import PushAction, PushKeyAlgorithm
 from privacyidea.lib.token import get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -147,7 +147,42 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     use_pia_scheme = Match.user(g, scope=SCOPE.ENROLL, action=PushAction.USE_PIA_SCHEME,
                                 user_object=user).allowed()
     params[PushAction.USE_PIA_SCHEME] = use_pia_scheme
+
+    # The key algorithms the smartphone may use, only RSA 4096 without a policy.
+    # The value is always overwritten, so the request can not inject an algorithm.
+    params[PushAction.KEY_ALGORITHMS] = _get_push_key_algorithms(g, user)
     return params
+
+
+def _get_push_key_algorithms(g, user: User) -> list[str]:
+    """
+    Read the enrollment policy push_key_algorithms. The order of the policy value is
+    the order of preference, so it is kept: the policies in the order of their priority,
+    within a policy the order of its value, duplicates are dropped. Two matching policies
+    of the highest priority that list the algorithms differently contradict each other.
+
+    :param g: The request-local context with the policy object
+    :param user: The user the token is enrolled for
+    :return: The ordered list of allowed key algorithms, only rsa_4096 without a policy
+    :raises PolicyError: On contradicting policies or an unknown value
+    """
+    match = Match.user(g, scope=SCOPE.ENROLL, action=PushAction.KEY_ALGORITHMS, user_object=user)
+    policies = match.policies(write_to_audit_log=False)
+    if policies:
+        highest_priority = policies[0]["priority"]
+        orders = {tuple(dict.fromkeys(str(policy["action"].get(PushAction.KEY_ALGORITHMS, "")).split()))
+                  for policy in policies if policy["priority"] == highest_priority}
+        if len(orders) > 1:
+            names = [policy["name"] for policy in policies if policy["priority"] == highest_priority]
+            raise PolicyError(f"Contradicting {PushAction.KEY_ALGORITHMS} policies: {names!r}")
+    # The keys keep the insertion order: priority first, then the order in the policy value
+    key_algorithms = list(match.action_values(unique=False))
+    known_algorithms = [algorithm.value for algorithm in PushKeyAlgorithm]
+    unknown_algorithms = set(key_algorithms) - set(known_algorithms)
+    if unknown_algorithms:
+        raise PolicyError(f"Unknown value in the enrollment policy {PushAction.KEY_ALGORITHMS}: "
+                          f"{', '.join(sorted(unknown_algorithms))}")
+    return key_algorithms or [PushKeyAlgorithm.RSA_4096.value]
 
 
 def get_token_user_attributes(serial: str):

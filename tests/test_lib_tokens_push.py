@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPrivateKey
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from flask import Request
 from google.oauth2 import service_account
 from pytz import utc
@@ -31,13 +30,13 @@ from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, delete_policies, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import (get_tokens, remove_token, init_token, import_tokens,
                                    create_challenge)
 from privacyidea.lib.tokenclass import ChallengeSession
-from privacyidea.lib.tokens.push_types import PushMode, PushCapability
+from privacyidea.lib.tokens.push_types import PushMode, PushCapability, PushKeyAlgorithm
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               DEFAULT_CHALLENGE_TEXT, PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
@@ -55,6 +54,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
 from .base import MyTestCase, FakeAudit, FakeFlaskG
+from .push_key_utils import SmartphoneKey, ServerKey, load_server_public_key, verify_b32_signature
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -78,11 +78,10 @@ def _verify_push_payload_signatures(push_payload):
         sign_string += f"|{push_payload['require_presence']}"
 
     token = get_tokens(serial=push_payload["serial"])[0]
-    pem_public_key = token.get_tokeninfo(PUBLIC_KEY_SERVER)
-    public_key = load_pem_public_key(to_bytes(pem_public_key), backend=default_backend())
+    # RSA or EC, depending on the key the server created for this token
+    public_key = load_server_public_key(token.get_tokeninfo(PUBLIC_KEY_SERVER))
     # If signature does not match it will raise InvalidSignature exception
-    public_key.verify(b32decode(push_payload["signature"]), sign_string.encode("utf8"),
-                      padding.PKCS1v15(), hashes.SHA256())
+    verify_b32_signature(public_key, push_payload["signature"], sign_string.encode("utf8"))
 
     # The capabilities advertisement travels as a JSON string and carries its own
     # detached signature over the canonical form of {capabilities, nonce}, built
@@ -90,8 +89,7 @@ def _verify_push_payload_signatures(push_payload):
     capabilities = json.loads(push_payload["capabilities"])
     capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities,
                                              "nonce": push_payload["nonce"]})
-    public_key.verify(b32decode(push_payload["capabilities_signature"]),
-                      capabilities_sign_input, padding.PKCS1v15(), hashes.SHA256())
+    verify_b32_signature(public_key, push_payload["capabilities_signature"], capabilities_sign_input)
 
 
 def _check_firebase_params(request):
@@ -127,25 +125,36 @@ class PushTokenTestCase(MyTestCase):
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
     smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
 
-    def _create_push_token(self):
+    smartphone_key = SmartphoneKey(smartphone_private_key)
+    server_key = ServerKey(server_private_key)
+    ec_smartphone_key = SmartphoneKey.ec()
+    ec_server_key = ServerKey.ec()
+
+    def _create_push_token(self, smartphone_key: SmartphoneKey = None, server_key: ServerKey = None):
+        smartphone_key = smartphone_key or self.smartphone_key
+        server_key = server_key or self.server_key
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
         token.write_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
-        token.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
+        token.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, smartphone_key.public_key_urlsafe)
         token.write_tokeninfo("firebase_token", "firebaseT")
-        token.write_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
-        token.write_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
+        token.write_tokeninfo(PUBLIC_KEY_SERVER, server_key.public_key_pem)
+        token.write_tokeninfo(PRIVATE_KEY_SERVER, server_key.private_key_pem, "password")
         token.remove_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
 
-    def _poll_request(self, serial):
+    def _remove_token_on_cleanup(self, serial: str) -> None:
+        """Remove the token even if the test fails, so it does not leak into later tests."""
+        self.addCleanup(lambda: get_tokens(serial=serial) and remove_token(serial))
+
+    def _poll_request(self, serial, smartphone_key: SmartphoneKey = None):
         """Build the signed request the smartphone sends to poll for challenges."""
+        smartphone_key = smartphone_key or self.smartphone_key
         timestamp = datetime.now(UTC).isoformat()
-        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode(),
-                                                     padding.PKCS1v15(), hashes.SHA256())
+        signature = smartphone_key.sign(f"{serial}|{timestamp}")
         request = Request(EnvironBuilder(method="GET", headers={}).get_environ())
         request.all_data = {"serial": serial, "timestamp": timestamp, "signature": b32encode(signature)}
         return request
@@ -771,7 +780,15 @@ class PushTokenTestCase(MyTestCase):
     def test_04_api_authenticate_smartphone(self):
         # Test the /validate/check endpoints and the smartphone endpoint /ttype/push
         # for authentication
+        self._check_authenticate_smartphone(self.smartphone_key, self.server_key)
 
+    @responses.activate
+    def test_04a_api_authenticate_smartphone_with_ec_keys(self):
+        # The same flow with an ECDSA P-256 key pair on both sides: the server signs the
+        # challenge sent via firebase with ECDSA and verifies the smartphone's ECDSA answer
+        self._check_authenticate_smartphone(self.ec_smartphone_key, self.ec_server_key)
+
+    def _check_authenticate_smartphone(self, smartphone_key: SmartphoneKey, server_key: ServerKey):
         # Create rolled out push token
         self.setUp_user_realms()
         # create FireBase Service and policies
@@ -779,8 +796,9 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         # create push token
-        tokenobj = self._create_push_token()
+        tokenobj = self._create_push_token(smartphone_key, server_key)
         serial = tokenobj.get_serial()
+        self._remove_token_on_cleanup(serial)
         # set PIN
         tokenobj.set_pin("pushpin")
         tokenobj.add_user(User("cornelius", self.realm1))
@@ -845,16 +863,10 @@ class PushTokenTestCase(MyTestCase):
         # This is what the smartphone answers.
         # create the signature:
         sign_data = f"{challenge!s}|{tokenobj.token.serial!s}"
-        signature = b32encode_and_unicode(
-            self.smartphone_private_key.sign(sign_data.encode("utf-8"),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256()))
+        signature = smartphone_key.sign_b32(sign_data)
         # Try an invalid signature first
         wrong_sign_data = f"{challenge}|{tokenobj.token.serial[1:]}"
-        wrong_signature = b32encode_and_unicode(
-            self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256()))
+        wrong_signature = smartphone_key.sign_b32(wrong_sign_data)
         # Signed the wrong data
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
@@ -869,10 +881,7 @@ class PushTokenTestCase(MyTestCase):
         # Correct signature for the wrong challenge should result in failure
         wrong_challenge = b32encode_and_unicode(geturandom())
         wrong_sign_data = f"{wrong_challenge}|{tokenobj.token.serial}"
-        wrong_signature = b32encode_and_unicode(
-            self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
-                                             padding.PKCS1v15(),
-                                             hashes.SHA256()))
+        wrong_signature = smartphone_key.sign_b32(wrong_sign_data)
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
@@ -884,14 +893,12 @@ class PushTokenTestCase(MyTestCase):
             self.assertFalse(res.json['result']['value'])
 
         # Correct signature, wrong private key
-        wrong_key = rsa.generate_private_key(public_exponent=65537,
-                                             key_size=4096,
-                                             backend=default_backend())
+        if isinstance(smartphone_key.private_key, rsa.RSAPrivateKey):
+            wrong_key = SmartphoneKey.rsa()
+        else:
+            wrong_key = SmartphoneKey.ec()
         wrong_sign_data = f"{challenge}|{tokenobj.token.serial}"
-        wrong_signature = b32encode_and_unicode(
-            wrong_key.sign(wrong_sign_data.encode("utf-8"),
-                           padding.PKCS1v15(),
-                           hashes.SHA256()))
+        wrong_signature = wrong_key.sign_b32(wrong_sign_data)
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": tokenobj.token.serial,
@@ -2622,6 +2629,84 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push_text")
         delete_policy("push_config")
         delete_smsgateway(self.firebase_config_name)
+
+    def test_25_build_smartphone_data_signs_with_ecdsa_for_an_ec_server_key(self):
+        token = self._create_push_token(self.ec_smartphone_key, self.ec_server_key)
+        self._remove_token_on_cleanup(token.get_serial())
+        nonce = "ECNONCE7Q2KX4M"
+        smartphone_data = _build_smartphone_data(token, nonce, REGISTRATION_URL,
+                                                 self.ec_server_key.private_key_pem, options={})
+        public_key = load_server_public_key(self.ec_server_key.public_key_pem)
+
+        sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
+        verify_b32_signature(public_key, smartphone_data["signature"], sign_string)
+        capabilities_input = rfc8785.dumps({"capabilities": json.loads(smartphone_data["capabilities"]),
+                                            "nonce": nonce})
+        verify_b32_signature(public_key, smartphone_data["capabilities_signature"], capabilities_input)
+
+        # The signature is bound to the signed data
+        self.assertRaises(InvalidSignature, verify_b32_signature, public_key,
+                          smartphone_data["signature"], sign_string + "|tampered")
+
+    def test_26_poll_with_an_ec_smartphone_key_returns_ecdsa_signed_challenges(self):
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policies, ["push_config"])
+        token = self._create_push_token(self.ec_smartphone_key, self.ec_server_key)
+        self._remove_token_on_cleanup(token.get_serial())
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial, self.ec_smartphone_key), g)
+        challenges = res[1]["result"]["value"]
+        self.assertEqual(1, len(challenges), res)
+        _verify_push_payload_signatures(challenges[0])
+
+        # A poll signed by another EC key is refused
+        self.assertRaisesRegex(PrivacyIDEAError, "Could not verify signature!", PushTokenClass.api_endpoint,
+                               self._poll_request(serial, SmartphoneKey.ec()), g)
+
+    def test_27_firebase_token_update_with_an_ec_smartphone_key(self):
+        g = FakeFlaskG()
+        token = self._create_push_token(self.ec_smartphone_key, self.ec_server_key)
+        serial = token.get_serial()
+        self._remove_token_on_cleanup(serial)
+        req_data = {"new_fb_token": "fbtoken-after-ec-update",
+                    "serial": serial,
+                    "timestamp": datetime.now(tz=utc).isoformat()}
+        sign_string = "{new_fb_token}|{serial}|{timestamp}".format(**req_data)
+
+        # signed with a different EC key
+        req = Request(EnvironBuilder(method="POST", headers={}).get_environ())
+        req.all_data = dict(req_data, signature=SmartphoneKey.ec().sign_b32(sign_string))
+        self.assertRaisesRegex(PrivacyIDEAError, "Could not verify signature!",
+                               PushTokenClass.api_endpoint, req, g)
+
+        req = Request(EnvironBuilder(method="POST", headers={}).get_environ())
+        req.all_data = dict(req_data, signature=self.ec_smartphone_key.sign_b32(sign_string))
+        res = PushTokenClass.api_endpoint(req, g)
+        self.assertTrue(res[1]["result"]["value"], res)
+        self.assertEqual("fbtoken-after-ec-update", token.get_tokeninfo("firebase_token"))
+
+    def test_28_enrollment_policy_offers_the_key_algorithms(self):
+        enroll_policies = PushTokenClass.get_class_info(key="policy")[SCOPE.ENROLL]
+        self.assertTrue(PushAction.KEY_ALGORITHMS in enroll_policies, f"{PushAction.KEY_ALGORITHMS} is not defined")
+        definition = enroll_policies[PushAction.KEY_ALGORITHMS]
+        # A text field, so the admin can write the algorithms in the order of his preference
+        self.assertEqual("str", definition.get("type"))
+        self.assertFalse(definition.get("multiple"), definition)
+        self.assertNotIn("value", definition)
+        self.assertIn(PushKeyAlgorithm.RSA_4096, definition["desc"])
+        self.assertIn(PushKeyAlgorithm.SECP256R1, definition["desc"])
+        self.assertEqual("PUSH", definition.get("group"))
 
 
 class PushCapabilitiesTestCase(MyTestCase):

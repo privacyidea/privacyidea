@@ -42,11 +42,11 @@ from typing import Any, TYPE_CHECKING
 from urllib.parse import quote
 
 import rfc8785
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from dateutil.parser import isoparse
 from flask import request as flask_request
 from sqlalchemy.orm.exc import StaleDataError
@@ -61,7 +61,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import geturandom, generate_keypair
+from privacyidea.lib.crypto import geturandom, generate_keypair, generate_keypair_ecc, ecc_key_pair_to_b64url_str
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
@@ -81,7 +81,7 @@ from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMo
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
                                                PushAction, PushAllowPolling,
-                                               PushDeclineReason, PushCapability,
+                                               PushDeclineReason, PushCapability, PushKeyAlgorithm,
                                                CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
@@ -103,6 +103,10 @@ DEFAULT_MOBILE_TEXT_CODE_TO_PHONE = lazy_gettext("Enter the code to log in")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
+# The key algorithms the smartphone may use, stored in enrollment step 1 (space separated)
+KEY_ALGORITHMS = "key_algorithms"
+# The key algorithm of the smartphone and the server key pair, stored in enrollment step 2
+KEY_ALGORITHM = "key_algorithm"
 POLLING_ALLOWED = "polling_allowed"
 POLL_INTERVAL = 1.0
 
@@ -194,12 +198,22 @@ def _submit_push_message(gateway, identifier, device_token, payload):
 # This is a one-way, additive advertisement: the fields are appended to the
 # challenge and older apps ignore what they do not know, so it needs no payload
 # version bump. It is deliberately a detached second signature to keep the main
-# signature byte-identical for those apps. The app does not yet report its own
-# capabilities back, so the server cannot tailor the payload per token; folding
-# this into a single signed payload with two-way negotiation is future work.
+# signature byte-identical for those apps. In enrollment step 2 a newer app reports
+# its own capabilities, but the server only reads them to name the app's key algorithms
+# in an error message and does not store them, so it cannot tailor the payload per
+# token; folding this into a single signed payload with two-way negotiation is future work.
 SERVER_PUSH_CAPABILITIES = {PushCapability.DECLINE_REASON: True}
 # The advertised set is invariant, so serialise it once for the wire field.
 SERVER_PUSH_CAPABILITIES_JSON = json.dumps(SERVER_PUSH_CAPABILITIES)
+
+# What this server can do when a push token is enrolled, sent in every enrollment URL
+# (parameter "capabilities") as canonical JSON (RFC 8785). It says what the server can,
+# not what the policy wants: the policy goes into the parameter "key_algorithm". The
+# order of the values carries no preference. Only enrollment capabilities belong here,
+# everything after the enrollment is advertised in the signed challenge (above).
+SERVER_ENROLLMENT_CAPABILITIES = {PushCapability.KEY_ALGORITHM: {"values": [algorithm.value
+                                                                            for algorithm in PushKeyAlgorithm]}}
+SERVER_ENROLLMENT_CAPABILITIES_JSON = rfc8785.dumps(SERVER_ENROLLMENT_CAPABILITIES).decode()
 
 # Seconds an answered challenge stays redeemable after the smartphone answered.
 # The challenge validity is the window the smartphone has to answer; the
@@ -483,10 +497,7 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                                                      None, default_backend(),
                                                      unsafe_skip_rsa_key_validation=True)
 
-    # Sign the data with PKCS1 padding. Not all Androids support PSS padding.
-    signature = private_key.sign(sign_string.encode("utf8"),
-                                 padding.PKCS1v15(),
-                                 hashes.SHA256())
+    signature = _sign(private_key, sign_string.encode("utf8"))
     smartphone_data["signature"] = b32encode_and_unicode(signature)
 
     # Advertise the optional features this server understands so a newer app knows which fields it may add to its
@@ -495,9 +506,7 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
     # challenge, over canonical JSON (RFC 8785 / JCS) that the app re-canonicalises from the parsed structure.
     smartphone_data["capabilities"] = SERVER_PUSH_CAPABILITIES_JSON
     capabilities_sign_input = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": challenge})
-    capabilities_signature = private_key.sign(capabilities_sign_input,
-                                              padding.PKCS1v15(),
-                                              hashes.SHA256())
+    capabilities_signature = _sign(private_key, capabilities_sign_input)
     smartphone_data["capabilities_signature"] = b32encode_and_unicode(capabilities_signature)
     return smartphone_data
 
@@ -517,6 +526,98 @@ def _load_public_key(pubkey_pem: str) -> Any:
                  "-----END PUBLIC KEY-----"
 
     return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
+
+
+def _sign(private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey, data: bytes) -> bytes:
+    """
+    Sign the data with the server key of a push token.
+    RSA keys sign with PKCS1 padding (not all Androids support PSS padding), EC keys with
+    DER encoded ECDSA. Both use SHA-256.
+
+    :param private_key: The private key of the server
+    :param data: The data to sign
+    :return: The signature
+    """
+    if isinstance(private_key, rsa.RSAPrivateKey):
+        return private_key.sign(data, padding.PKCS1v15(), hashes.SHA256())
+    if isinstance(private_key, ec.EllipticCurvePrivateKey):
+        return private_key.sign(data, ec.ECDSA(hashes.SHA256()))
+    raise TypeError(f"Unsupported private key type {type(private_key).__name__}")
+
+
+def _verify(public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey, signature: bytes, data: bytes) -> None:
+    """
+    Verify a signature of the smartphone: PKCS1v15 for RSA keys, DER encoded ECDSA for EC keys,
+    SHA-256 for both.
+
+    :param public_key: The public key of the smartphone
+    :param signature: The signature to check
+    :param data: The signed data
+    :raises InvalidSignature: If the signature does not match the data or the key type is not supported
+    """
+    if isinstance(public_key, rsa.RSAPublicKey):
+        public_key.verify(signature, data, padding.PKCS1v15(), hashes.SHA256())
+    elif isinstance(public_key, ec.EllipticCurvePublicKey):
+        public_key.verify(signature, data, ec.ECDSA(hashes.SHA256()))
+    else:
+        raise InvalidSignature(f"Unsupported public key type {type(public_key).__name__}")
+
+
+def _get_key_algorithm(public_key: Any) -> PushKeyAlgorithm:
+    """
+    Determine the push key algorithm of a public key sent by the smartphone.
+    Any RSA key length is accepted as rsa_4096 like before.
+
+    :param public_key: The loaded public key
+    :return: The key algorithm
+    :raises ParameterError: If the key is neither RSA nor EC on the curve secp256r1
+    """
+    if isinstance(public_key, rsa.RSAPublicKey):
+        return PushKeyAlgorithm.RSA_4096
+    if isinstance(public_key, ec.EllipticCurvePublicKey) and isinstance(public_key.curve, ec.SECP256R1):
+        return PushKeyAlgorithm.SECP256R1
+    raise ParameterError("Unsupported public key type. Only RSA and ECDSA keys on the curve secp256r1 are supported.")
+
+
+def _get_allowed_key_algorithms(value: list | str | None) -> list[str]:
+    """
+    Return the allowed key algorithms from the policy parameter (list) or the tokeninfo
+    (space separated string). Without a value only RSA 4096 is allowed, which also covers
+    tokens enrolled before the policy existed.
+
+    :param value: The allowed key algorithms as list or space separated string
+    :return: The list of allowed key algorithms
+    """
+    if isinstance(value, str):
+        value = value.split()
+    return list(value) if value else [PushKeyAlgorithm.RSA_4096.value]
+
+
+def _get_smartphone_key_algorithms(capabilities: Any) -> list[str] | None:
+    """
+    Read the key algorithms the smartphone reports in enrollment step 2. Only the object
+    form ``{"key_algorithm": {"values": [...]}}`` (sent by apps that found "capabilities"
+    in the enrollment URL) carries them. The value is read defensively: anything else, like
+    the name array of older apps, unreadable JSON or unexpected types, gives None and never
+    an error. Unknown algorithm names are returned as they are.
+
+    :param capabilities: The parameter "capabilities" of enrollment step 2, a JSON string or already decoded
+    :return: The key algorithms of the smartphone or None if it did not report any
+    """
+    if isinstance(capabilities, (str, bytes)):
+        try:
+            capabilities = json.loads(capabilities)
+        except (ValueError, TypeError):
+            return None
+    if not isinstance(capabilities, dict):
+        return None
+    key_algorithm = capabilities.get(PushCapability.KEY_ALGORITHM)
+    if not isinstance(key_algorithm, dict):
+        return None
+    values = key_algorithm.get("values")
+    if not isinstance(values, list) or not values or not all(isinstance(value, str) for value in values):
+        return None
+    return values
 
 
 def _log_challenge_answer(g: Any, transaction_id: str, status: str, reason: str | None = None) -> None:
@@ -583,7 +684,7 @@ class PushTokenClass(TokenClass):
     # sets on a single token to deny it polling, so it stays free-form token info.
     owned_tokeninfo_keys = frozenset({"enrollment_credential", "firebase_token",
                                       PRIVATE_KEY_SERVER, PUBLIC_KEY_SERVER, PUBLIC_KEY_SMARTPHONE,
-                                      PushAction.FIREBASE_CONFIG})
+                                      KEY_ALGORITHMS, KEY_ALGORITHM, PushAction.FIREBASE_CONFIG})
 
     def __init__(self, db_token: Token):
         TokenClass.__init__(self, db_token)
@@ -677,6 +778,17 @@ class PushTokenClass(TokenClass):
                                'desc': _("Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
                                          "to open the privacyIDEA app."),
                                'group': "PUSH",
+                           },
+                           PushAction.KEY_ALGORITHMS: {
+                               'type': 'str',
+                               'desc': _("The key algorithms the smartphone may use for the push token, separated by "
+                                         "spaces, the preferred one first, for example 'secp256r1 rsa_4096'. "
+                                         "Allowed values: rsa_4096, secp256r1. Without this policy only rsa_4096 is "
+                                         "allowed. The app uses the first algorithm in this order that it supports. "
+                                         "ECDSA keys (secp256r1) need a privacyIDEA Authenticator app version that "
+                                         "supports them. If rsa_4096 is not allowed, older apps can not enroll a "
+                                         "push token."),
+                               'group': "PUSH"
                            }
                        },
                        SCOPE.AUTH: {
@@ -802,6 +914,13 @@ class PushTokenClass(TokenClass):
             - ``serial``
             - ``fbtoken``
             - ``pubkey``
+            - ``enrollment_credential``
+            - ``capabilities`` (optional, only read to name the key algorithms of the app in an
+              error message, it is not stored)
+
+            The key type of ``pubkey`` must be allowed by the enrollment policy ``push_key_algorithms``,
+            otherwise a ``ParameterError`` is raised, which the API answers with the HTTP status 400.
+            The token then stays in the state ``clientwait``.
 
         :param param: dict of initialization parameters
         :type param: dict
@@ -819,15 +938,43 @@ class PushTokenClass(TokenClass):
             enrollment_credential = get_required(upd_param, "enrollment_credential")
             if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
+            # Check the key of the smartphone before the token leaves the state 'clientwait',
+            # so an updated app can still finish the enrollment after a failure.
+            try:
+                smartphone_public_key = _load_public_key(upd_param.get("pubkey"))
+            except (ValueError, TypeError, UnsupportedAlgorithm) as e:
+                log.debug(f"Could not load the public key of the smartphone: {e}")
+                raise ParameterError("Invalid public key of the smartphone.")
+            key_algorithm = _get_key_algorithm(smartphone_public_key)
+            allowed_key_algorithms = _get_allowed_key_algorithms(self.get_tokeninfo(KEY_ALGORITHMS))
+            # The capabilities of the app are only read for the log and the error message, not stored
+            smartphone_key_algorithms = _get_smartphone_key_algorithms(upd_param.get("capabilities"))
+            log.debug(f"The smartphone reports the key algorithms {smartphone_key_algorithms}.")
+            if key_algorithm not in allowed_key_algorithms:
+                if key_algorithm == PushKeyAlgorithm.RSA_4096:
+                    message = f"This enrollment requires one of the key algorithms {', '.join(allowed_key_algorithms)}"
+                    if smartphone_key_algorithms:
+                        message += (", but the privacyIDEA Authenticator app supports only "
+                                    f"{', '.join(smartphone_key_algorithms)}")
+                    raise ParameterError(f"{message}. Please update the privacyIDEA Authenticator app "
+                                         "and scan the QR code again.")
+                raise ParameterError(f"The key algorithm {key_algorithm} is not allowed for this enrollment.")
             self.remove_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
             self.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
             self.write_tokeninfo("firebase_token", upd_param.get("fbtoken"))
-            # create a keypair for the server side.
-            pub_key, priv_key = generate_keypair(4096)
+            # create a keypair for the server side of the same type as the smartphone key.
+            if key_algorithm == PushKeyAlgorithm.SECP256R1:
+                ecc_keys = generate_keypair_ecc(PushKeyAlgorithm.SECP256R1)
+                pem_keys = ecc_key_pair_to_b64url_str(public_key=ecc_keys.public_key,
+                                                      private_key=ecc_keys.private_key)
+                pub_key, priv_key = pem_keys.public_key, pem_keys.private_key
+            else:
+                pub_key, priv_key = generate_keypair(4096)
             self.write_tokeninfo(PUBLIC_KEY_SERVER, pub_key)
             self.write_tokeninfo(PRIVATE_KEY_SERVER, priv_key, "password")
+            self.write_tokeninfo(KEY_ALGORITHM, key_algorithm)
 
         elif "genkey" in upd_param:
             # We are in step 1:
@@ -835,6 +982,9 @@ class PushTokenClass(TokenClass):
             self.write_tokeninfo("enrollment_credential", geturandom(20, hex=True))
             # We also store the Firebase config, that was used during the enrollment.
             self.write_tokeninfo(PushAction.FIREBASE_CONFIG, param.get(PushAction.FIREBASE_CONFIG))
+            # and the key algorithms the enrollment policy allows for the smartphone
+            self.write_tokeninfo(KEY_ALGORITHMS,
+                                 " ".join(_get_allowed_key_algorithms(param.get(PushAction.KEY_ALGORITHMS))))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
 
@@ -880,6 +1030,13 @@ class PushTokenClass(TokenClass):
             extra_data["serial"] = self.get_serial()
             extra_data["sslverify"] = sslverify
             extra_data["poll_only"] = push_gateway_identifier == POLL_ONLY
+            # Tell the smartphone what this server can do at the enrollment
+            extra_data["capabilities"] = SERVER_ENROLLMENT_CAPABILITIES_JSON
+            # The key algorithms the policy wants, in the order of preference. Only when the policy
+            # wants anything else than only RSA 4096, an app without the parameter uses RSA 4096.
+            key_algorithms = _get_allowed_key_algorithms(policy_params.get(PushAction.KEY_ALGORITHMS))
+            if key_algorithms != [PushKeyAlgorithm.RSA_4096.value]:
+                extra_data[KEY_ALGORITHM] = ",".join(key_algorithms)
 
             # enforce App pin
             if params.get(PolicyAction.FORCE_APP_PIN):
@@ -911,6 +1068,9 @@ class PushTokenClass(TokenClass):
         elif self.token.rollout_state == RolloutState.ENROLLED:
             # in the second enrollment step we return the public key of the server to the smartphone.
             pubkey = strip_pem_headers(self.get_tokeninfo(PUBLIC_KEY_SERVER))
+            if self.get_tokeninfo(KEY_ALGORITHM) == PushKeyAlgorithm.SECP256R1:
+                # ECDSA is new in the app, so its key is sent without any whitespace
+                pubkey = "".join(pubkey.split())
             response_detail["public_key"] = pubkey
 
         return response_detail
@@ -1031,10 +1191,7 @@ class PushTokenClass(TokenClass):
                 if presence_answer:
                     sign_data += f"|{presence_answer}"
                 try:
-                    public_key.verify(b32decode(signature),
-                                      sign_data.encode("utf8"),
-                                      padding.PKCS1v15(),
-                                      hashes.SHA256())
+                    _verify(public_key, b32decode(signature), sign_data.encode("utf8"))
                     log.debug(f"Found matching challenge {challenge}.")
                     result = True
                     signature_verified = True
@@ -1152,10 +1309,7 @@ class PushTokenClass(TokenClass):
             token = get_one_token(serial=serial, tokentype=cls.get_class_type())
             public_key = _load_public_key(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{new_fb_token}|{serial}|{timestamp}".format(**request_data)
-            public_key.verify(b32decode(signature),
-                              sign_data.encode("utf8"),
-                              padding.PKCS1v15(),
-                              hashes.SHA256())
+            _verify(public_key, b32decode(signature), sign_data.encode("utf8"))
             # If the timestamp and signature are valid, we update the token
             token.write_tokeninfo('firebase_token', request_data['new_fb_token'])
             return True, {}
@@ -1312,10 +1466,7 @@ class PushTokenClass(TokenClass):
                     raise PolicyError('Polling not allowed!')
             public_key = _load_public_key(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
             sign_data = "{serial}|{timestamp}".format(**request_data)
-            public_key.verify(b32decode(signature),
-                              sign_data.encode("utf8"),
-                              padding.PKCS1v15(),
-                              hashes.SHA256())
+            _verify(public_key, b32decode(signature), sign_data.encode("utf8"))
             # The signature was valid now check for an open challenge
             # we need the private server key to sign the smartphone data
             private_key = token.get_tokeninfo(PRIVATE_KEY_SERVER)
@@ -1377,8 +1528,20 @@ class PushTokenClass(TokenClass):
               Host: https://yourprivacyideaserver
 
               serial=<token serial>
+              enrollment_credential=<credential from the enrollment URL>
               fbtoken=<Firebase token>
               pubkey=<public key>
+              capabilities=<capabilities of the app>   (optional)
+
+          ``capabilities`` is the JSON object form of the capabilities of the app, for example
+          ``{"decline_reason":true,"key_algorithm":{"values":["rsa_4096","secp256r1"]}}``, if the enrollment
+          URL contained the parameter ``capabilities``. Older apps send the array of capability names
+          (``["decline_reason"]``) or no ``capabilities`` at all. The server reads it only to name the key
+          algorithms of the app in an error message and does not store it.
+
+          If the key type of ``pubkey`` is not allowed by the enrollment policy ``push_key_algorithms``,
+          the server answers with the HTTP status 400 and the token stays in the state ``clientwait``,
+          so the user can scan the same QR code again with an updated app.
 
         - It is also used when the smartphone sends the signed response
           to the challenge during authentication. The following parameters are accepted:
@@ -1855,6 +2018,8 @@ class PushTokenClass(TokenClass):
         token.write_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
         token.write_tokeninfo(PushAction.FIREBASE_CONFIG, push_params.get(PushAction.FIREBASE_CONFIG))
+        token.write_tokeninfo(KEY_ALGORITHMS,
+                              " ".join(_get_allowed_key_algorithms(push_params.get(PushAction.KEY_ALGORITHMS))))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 

@@ -1,18 +1,21 @@
 # SPDX-FileCopyrightText: 2020 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
+import json
 import logging
 import threading
 import time
-from base64 import b32encode
+from base64 import b32encode, b64decode
+from urllib.parse import parse_qs, parse_qsl, urlsplit
 
 from unittest import mock
 from flask import Flask
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from sqlalchemy.orm.exc import StaleDataError
+import rfc8785
 from testfixtures import LogCapture
 
 from privacyidea.lib.cache import ChallengeDTO
@@ -25,7 +28,7 @@ from privacyidea.models.conditional_access_policy import (BlockList, Conditional
                                                           ConditionalAccessPolicyCounterType, UserLockState)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_policies
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
@@ -34,7 +37,7 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
 from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.push_types import PushDeclineReason
+from privacyidea.lib.tokens.push_types import PushDeclineReason, PushKeyAlgorithm
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
                                               DEFAULT_CHALLENGE_TEXT, PushMode, PushTokenClass)
 from privacyidea.lib.user import User
@@ -46,12 +49,16 @@ from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase, force_expire_challenges
+from .push_key_utils import (SmartphoneKey, sign_data as sign_push_data, load_server_public_key,
+                             load_public_key_from_detail, verify_b32_signature)
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
 DICT_FILE = "tests/testdata/dictionary"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
 CLIENT_FILE = "tests/testdata/google-services.json"
+# What a server of this version can do at enrollment, sent as "capabilities" in every enrollment URL
+SERVER_ENROLLMENT_CAPABILITIES_JSON = '{"key_algorithm":{"values":["rsa_4096","secp256r1"]}}'
 FB_CONFIG_VALS = {
     FirebaseConfig.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
@@ -77,7 +84,7 @@ class _PushSmartphoneAnswer(threading.Thread):
         push_wait times out)
     """
 
-    def __init__(self, app: Flask, private_key: rsa.RSAPrivateKey, serial: str,
+    def __init__(self, app: Flask, private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey, serial: str,
                  mode: str = "accept", decline_reason: str | None = None) -> None:
         super().__init__()
         self.app = app
@@ -93,8 +100,7 @@ class _PushSmartphoneAnswer(threading.Thread):
         nonce = None
         for _ in range(50):
             timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
-            poll_sig = self.private_key.sign(f"{self.serial}|{timestamp}".encode(),
-                                             padding.PKCS1v15(), hashes.SHA256())
+            poll_sig = sign_push_data(self.private_key, f"{self.serial}|{timestamp}".encode())
             with self.app.test_request_context('/ttype/push', method='GET',
                                                query_string={"serial": self.serial,
                                                              "timestamp": timestamp,
@@ -121,7 +127,7 @@ class _PushSmartphoneAnswer(threading.Thread):
         elif self.mode == "fail":
             # Sign data the server will not reconstruct, so the signature check fails
             sign_data = f"{nonce}|{self.serial}_wrong"
-        answer_sig = self.private_key.sign(sign_data.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+        answer_sig = sign_push_data(self.private_key, sign_data.encode("utf8"))
         data = {"serial": self.serial, "signature": b32encode(answer_sig)}
         if self.mode == "decline":
             data["decline"] = "1"
@@ -159,6 +165,7 @@ class PushTokenTestMixin:
         format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
     smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_key = SmartphoneKey(smartphone_private_key)
     serial_push = "PIPU001"
 
     def _enroll_push_token(self) -> None:
@@ -847,6 +854,49 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(serial)
         delete_realm("ldaprealm")
         delete_resolver("catchall")
+
+    @ldap3mock.activate
+    def test_10c_multichallenge_enrollment_offers_the_allowed_key_algorithm(self):
+        # The enrollment via /validate/check reads push_key_algorithms like /token/init does
+        self._setup_multichallenge_push_enrollment()
+        serial = None
+        try:
+            set_policy("pol_push_keys", scope=SCOPE.ENROLL,
+                       action=f"{PushAction.KEY_ALGORITHMS}={PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "alice", "pass": "alicepw"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                detail = res.json["detail"]
+                serial = detail["serial"]
+                transaction_id = detail["transaction_id"]
+                self.assertIn(f"key_algorithm={PushKeyAlgorithm.RSA_4096}%2C{PushKeyAlgorithm.SECP256R1}",
+                              detail["link"])
+                self.assertEqual([SERVER_ENROLLMENT_CAPABILITIES_JSON],
+                                 parse_qs(urlsplit(detail["link"]).query).get("capabilities"))
+
+            token = get_one_token(serial=serial)
+            self.assertIn(PushKeyAlgorithm.SECP256R1, token.get_tokeninfo("key_algorithms") or "")
+
+            ec_smartphone_key = SmartphoneKey.ec()
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"enrollment_credential": token.get_tokeninfo(
+                                                         "enrollment_credential"),
+                                                     "serial": serial,
+                                                     "pubkey": ec_smartphone_key.public_key_urlsafe,
+                                                     "fbtoken": "fbtoken-multichallenge"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(PushKeyAlgorithm.SECP256R1, get_one_token(serial=serial).get_tokeninfo("key_algorithm"))
+
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "alice", "transaction_id": transaction_id,
+                                                     "pass": ""}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.json["result"]["value"], res.json)
+        finally:
+            delete_policies(["pol_push_keys"])
+            self._teardown_multichallenge_push_enrollment(serial)
 
     def test_15_push_with_require_presence(self):
         self.setUp_user_realms()
@@ -2842,8 +2892,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
 
     def _sign(self, data: str) -> bytes:
         """Sign ``data`` with the smartphone key and return the b32-encoded signature."""
-        signature = self.smartphone_private_key.sign(data.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
-        return b32encode(signature)
+        return b32encode(self.smartphone_key.sign(data))
 
     def _post_decline(self, nonce: str, sign_suffix: str, request_data: dict) -> dict:
         """POST a decline to /ttype/push. ``sign_suffix`` is appended to the signed
@@ -3263,3 +3312,346 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
+
+
+class PushKeyAlgorithmTestCase(PushTokenTestMixin, MyApiTestCase):
+    """
+    The enrollment policy push_key_algorithms decides whether a push token may use an
+    ECDSA P-256 key pair instead of RSA 4096. The server key follows the type of the
+    smartphone key, signatures in both directions use the same algorithm.
+    """
+    ec_smartphone_key = SmartphoneKey.ec()
+    serial_push = "PIPU7K3Q"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+
+    def _set_push_policy(self, key_algorithms: str | None = None) -> None:
+        action = (f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                  f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                  f"{PushAction.TTL}={TTL}")
+        if key_algorithms is not None:
+            action += f",{PushAction.KEY_ALGORITHMS}={key_algorithms}"
+        set_policy("push_key_config", scope=SCOPE.ENROLL, action=action)
+
+    def tearDown(self):
+        if get_tokens(serial=self.serial_push):
+            remove_token(self.serial_push)
+        delete_policies(["push_key_config"])
+        super().tearDown()
+
+    def _init_push_token(self) -> dict:
+        """Enrollment step 1: return the detail with the QR URL and the enrollment credential."""
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": "selfservice", "realm": self.realm1,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["detail"]
+
+    def _finish_enrollment(self, enrollment_credential: str, smartphone_key: SmartphoneKey,
+                           extra_fields: dict | None = None):
+        """
+        Enrollment step 2 as the smartphone performs it, returns the response.
+        The extra fields (for example the capabilities of the app) are sent along.
+        """
+        data = {"enrollment_credential": enrollment_credential,
+                "serial": self.serial_push,
+                "pubkey": smartphone_key.public_key_urlsafe,
+                "fbtoken": "fbtoken-initial"}
+        data.update(extra_fields or {})
+        with self.app.test_request_context('/ttype/push', method='POST', data=data):
+            return self.app.full_dispatch_request()
+
+    def _enroll(self, smartphone_key: SmartphoneKey) -> dict:
+        detail = self._init_push_token()
+        res = self._finish_enrollment(detail["enrollment_credential"], smartphone_key)
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["detail"]
+
+    def _trigger_challenge(self) -> str:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["detail"]["transaction_id"]
+
+    def _poll(self, smartphone_key: SmartphoneKey) -> list:
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
+        signature = smartphone_key.sign_b32(f"{self.serial_push}|{timestamp}")
+        with self.app.test_request_context('/ttype/push', method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["result"]["value"]
+
+    def _answer(self, nonce: str, smartphone_key: SmartphoneKey, decline: bool = False) -> dict:
+        sign_string = f"{nonce}|{self.serial_push}"
+        data = {"serial": self.serial_push, "nonce": nonce}
+        if decline:
+            sign_string += "|decline"
+            data["decline"] = "1"
+        data["signature"] = smartphone_key.sign_b32(sign_string)
+        with self.app.test_request_context('/ttype/push', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json
+
+    def _finalize(self, transaction_id: str) -> dict:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json
+
+    def _assert_server_signatures(self, smartphone_data: dict) -> None:
+        """Verify the challenge and the capabilities signature with the token's server key."""
+        public_key = load_server_public_key(get_one_token(serial=self.serial_push).get_tokeninfo("public_key_server"))
+        sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**smartphone_data)
+        verify_b32_signature(public_key, smartphone_data["signature"], sign_string)
+        capabilities_input = rfc8785.dumps({"capabilities": json.loads(smartphone_data["capabilities"]),
+                                            "nonce": smartphone_data["nonce"]})
+        verify_b32_signature(public_key, smartphone_data["capabilities_signature"], capabilities_input)
+
+    def _authenticate(self, smartphone_key: SmartphoneKey) -> None:
+        """Trigger a challenge, poll it, check the server signatures, accept it and finalize."""
+        transaction_id = self._trigger_challenge()
+        challenges = self._poll(smartphone_key)
+        self.assertEqual(1, len(challenges), challenges)
+        self._assert_server_signatures(challenges[0])
+        self.assertTrue(self._answer(challenges[0]["nonce"], smartphone_key)["result"]["value"])
+        result = self._finalize(transaction_id)["result"]
+        self.assertTrue(result["value"], result)
+        self.assertEqual(AUTH_RESPONSE.ACCEPT, result["authentication"])
+
+    @staticmethod
+    def _query(url: str) -> dict:
+        """The query parameters of the enrollment URL, each with the list of its values."""
+        return parse_qs(urlsplit(url).query)
+
+    def test_01_default_policy_url_is_the_old_url_plus_capabilities(self):
+        self._set_push_policy()
+        detail = self._init_push_token()
+        url = detail["pushurl"]["value"]
+        query = self._query(url)
+        self.assertNotIn("key_algorithm", query)
+        self.assertEqual(["1"], query["v"])
+        self.assertEqual([SERVER_ENROLLMENT_CAPABILITIES_JSON], query["capabilities"])
+
+        # Without the capabilities the URL has the parameters of an older server in the same order
+        parameter_names = [name for name, _ in parse_qsl(urlsplit(url).query) if name != "capabilities"]
+        self.assertEqual(["url", "ttl", "issuer", "enrollment_credential", "v", "serial", "sslverify", "poll_only"],
+                         parameter_names)
+
+        res = self._finish_enrollment(detail["enrollment_credential"], self.smartphone_key)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertIsInstance(load_public_key_from_detail(res.json["detail"]["public_key"]), RSAPublicKey)
+        token = get_one_token(serial=self.serial_push)
+        self.assertIsInstance(load_server_public_key(token.get_tokeninfo("public_key_server")), RSAPublicKey)
+        self.assertEqual(PushKeyAlgorithm.RSA_4096, token.get_tokeninfo("key_algorithm"))
+
+    def test_02_ec_policy_and_ec_smartphone_key_create_an_ecdsa_token(self):
+        self._set_push_policy(PushKeyAlgorithm.SECP256R1)
+        detail = self._init_push_token()
+        url = detail["pushurl"]["value"]
+        self.assertIn(f"key_algorithm={PushKeyAlgorithm.SECP256R1}", url)
+        self.assertIn("v=1", url)
+
+        res = self._finish_enrollment(detail["enrollment_credential"], self.ec_smartphone_key)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, res.json["detail"]["rollout_state"])
+
+        # The smartphone gets the server key as base64 SubjectPublicKeyInfo without PEM headers
+        public_key_b64 = res.json["detail"]["public_key"]
+        self.assertNotIn("-----", public_key_b64)
+        self.assertNotIn("\n", public_key_b64)
+        detail_public_key = load_public_key_from_detail(public_key_b64)
+        self.assertIsInstance(detail_public_key, ec.EllipticCurvePublicKey)
+        self.assertEqual("secp256r1", detail_public_key.curve.name)
+        self.assertEqual(b64decode(public_key_b64),
+                         detail_public_key.public_bytes(serialization.Encoding.DER,
+                                                        serialization.PublicFormat.SubjectPublicKeyInfo))
+
+        token = get_one_token(serial=self.serial_push)
+        server_public_key = load_server_public_key(token.get_tokeninfo("public_key_server"))
+        self.assertIsInstance(server_public_key, ec.EllipticCurvePublicKey)
+        self.assertEqual("secp256r1", server_public_key.curve.name)
+        self.assertEqual(detail_public_key.public_numbers(), server_public_key.public_numbers())
+        self.assertEqual(PushKeyAlgorithm.SECP256R1, token.get_tokeninfo("key_algorithm"))
+
+        # Authenticate: the server signs with ECDSA and accepts the ECDSA answer
+        self._authenticate(self.ec_smartphone_key)
+
+        # Decline a second challenge
+        transaction_id = self._trigger_challenge()
+        challenges = self._poll(self.ec_smartphone_key)
+        self.assertEqual(1, len(challenges), challenges)
+        self.assertTrue(self._answer(challenges[0]["nonce"], self.ec_smartphone_key, decline=True)["result"]["value"])
+        with self.app.test_request_context('/validate/polltransaction', method='GET',
+                                           query_string={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual("declined", res.json["detail"]["challenge_status"], res.json)
+
+        # Update the firebase token with an ECDSA signature
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
+        signature = self.ec_smartphone_key.sign_b32(f"fbtoken-rotated|{self.serial_push}|{timestamp}")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"new_fb_token": "fbtoken-rotated", "serial": self.serial_push,
+                                                 "timestamp": timestamp, "signature": signature}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"], res.json)
+        self.assertEqual("fbtoken-rotated", get_one_token(serial=self.serial_push).get_tokeninfo("firebase_token"))
+
+    def test_03_existing_rsa_token_keeps_working_after_the_policy_switches_to_ec(self):
+        self._set_push_policy()
+        self._enroll(self.smartphone_key)
+        # A token enrolled before the policy existed has no allowed key algorithms stored
+        token = get_one_token(serial=self.serial_push)
+        token.remove_tokeninfo("key_algorithms")
+        token.remove_tokeninfo("key_algorithm")
+
+        self._set_push_policy(PushKeyAlgorithm.SECP256R1)
+        self._authenticate(self.smartphone_key)
+        token = get_one_token(serial=self.serial_push)
+        self.assertIsInstance(load_server_public_key(token.get_tokeninfo("public_key_server")), RSAPublicKey)
+
+    def test_04_policy_with_both_algorithms_accepts_an_rsa_smartphone_key(self):
+        self._set_push_policy(f"{PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
+        detail = self._init_push_token()
+        self.assertEqual([f"{PushKeyAlgorithm.RSA_4096},{PushKeyAlgorithm.SECP256R1}"],
+                         self._query(detail["pushurl"]["value"]).get("key_algorithm"))
+
+        # An app that cannot create an EC key falls back to RSA
+        res = self._finish_enrollment(detail["enrollment_credential"], self.smartphone_key)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertIsInstance(load_public_key_from_detail(res.json["detail"]["public_key"]), RSAPublicKey)
+        token = get_one_token(serial=self.serial_push)
+        self.assertIsInstance(load_server_public_key(token.get_tokeninfo("public_key_server")), RSAPublicKey)
+        self._authenticate(self.smartphone_key)
+
+    def test_05_ec_only_policy_rejects_an_rsa_smartphone_key_with_an_update_hint(self):
+        self._set_push_policy(PushKeyAlgorithm.SECP256R1)
+        detail = self._init_push_token()
+
+        res = self._finish_enrollment(detail["enrollment_credential"], self.smartphone_key)
+        self.assertEqual(400, res.status_code, res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("privacyIDEA Authenticator", message)
+        self.assertIn("update", message.lower())
+        self.assertIn("scan the qr code again", message.lower())
+
+        # The token can still be finished by an updated app
+        token = get_one_token(serial=self.serial_push)
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        self.assertEqual(detail["enrollment_credential"], token.get_tokeninfo("enrollment_credential"))
+
+    def test_06_ec_key_on_another_curve_is_rejected(self):
+        self._set_push_policy(f"{PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
+        detail = self._init_push_token()
+
+        res = self._finish_enrollment(detail["enrollment_credential"], SmartphoneKey.ec(ec.SECP384R1()))
+        self.assertEqual(400, res.status_code, res.json)
+        token = get_one_token(serial=self.serial_push)
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        self.assertEqual(detail["enrollment_credential"], token.get_tokeninfo("enrollment_credential"))
+
+    def test_07_policy_definitions_contain_the_key_algorithms(self):
+        with self.app.test_request_context(f'/policy/defs/{SCOPE.ENROLL}', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            definitions = res.json["result"]["value"]
+        self.assertTrue(PushAction.KEY_ALGORITHMS in definitions, f"{PushAction.KEY_ALGORITHMS} is not defined")
+        # A text field, so the admin can write the algorithms in the order of his preference
+        definition = definitions[PushAction.KEY_ALGORITHMS]
+        self.assertEqual("str", definition["type"])
+        self.assertFalse(definition.get("multiple"), definition)
+        self.assertNotIn("value", definition)
+        self.assertIn(PushKeyAlgorithm.RSA_4096, definition["desc"])
+        self.assertIn(PushKeyAlgorithm.SECP256R1, definition["desc"])
+
+    def test_08_enrollment_url_announces_what_the_server_can(self):
+        # The capabilities say what the server can, independent of what the policy wants
+        self._set_push_policy(PushKeyAlgorithm.SECP256R1)
+        query = self._query(self._init_push_token()["pushurl"]["value"])
+        self.assertEqual([SERVER_ENROLLMENT_CAPABILITIES_JSON], query["capabilities"])
+        self.assertEqual([PushKeyAlgorithm.SECP256R1], query["key_algorithm"])
+        self.assertEqual(["1"], query["v"])
+
+    def test_09_disallowed_key_names_the_algorithms_of_the_app(self):
+        self._set_push_policy(PushKeyAlgorithm.SECP256R1)
+        detail = self._init_push_token()
+
+        # A new app answers a QR code with capabilities with the object form of its own capabilities
+        app_capabilities = '{"decline_reason":true,"key_algorithm":{"values":["rsa_4096"]}}'
+        res = self._finish_enrollment(detail["enrollment_credential"], self.smartphone_key,
+                                      {"capabilities": app_capabilities})
+        self.assertEqual(400, res.status_code, res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn(PushKeyAlgorithm.SECP256R1, message)
+        self.assertIn(PushKeyAlgorithm.RSA_4096, message)
+
+        # No server key is created, the token can still be finished
+        token = get_one_token(serial=self.serial_push)
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        self.assertEqual(detail["enrollment_credential"], token.get_tokeninfo("enrollment_credential"))
+        self.assertFalse(token.get_tokeninfo("public_key_server"))
+
+    def test_10_step2_capabilities_of_all_app_generations_are_accepted(self):
+        # The server reads the capabilities of the app defensively, nothing in them leads to an error
+        self._set_push_policy(f"{PushKeyAlgorithm.RSA_4096} {PushKeyAlgorithm.SECP256R1}")
+        for app, extra_fields in [("4.7.x without capabilities", {}),
+                                  ("4.8.x with the name array", {"capabilities": '["decline_reason"]'}),
+                                  ("unreadable", {"capabilities": "not json"}),
+                                  ("array of other types", {"capabilities": "[1, {}]"}),
+                                  ("object with unknown entries",
+                                   {"capabilities": '{"foo":{"values":[1]},"key_algorithm":"x"}'})]:
+            with self.subTest(app=app):
+                try:
+                    detail = self._init_push_token()
+                    res = self._finish_enrollment(detail["enrollment_credential"], self.smartphone_key,
+                                                  extra_fields)
+                    self.assertEqual(200, res.status_code, res.json)
+                    token = get_one_token(serial=self.serial_push)
+                    self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+                    self.assertEqual(PushKeyAlgorithm.RSA_4096, token.get_tokeninfo("key_algorithm"))
+                finally:
+                    remove_token(self.serial_push)
+
+    def test_11_new_app_fulfils_the_wish(self):
+        self._set_push_policy(f"{PushKeyAlgorithm.SECP256R1} {PushKeyAlgorithm.RSA_4096}")
+        detail = self._init_push_token()
+
+        app_capabilities = '{"decline_reason":true,"key_algorithm":{"values":["rsa_4096","secp256r1"]}}'
+        res = self._finish_enrollment(detail["enrollment_credential"], self.ec_smartphone_key,
+                                      {"capabilities": app_capabilities})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertIsInstance(load_public_key_from_detail(res.json["detail"]["public_key"]),
+                              ec.EllipticCurvePublicKey)
+        token = get_one_token(serial=self.serial_push)
+        server_public_key = load_server_public_key(token.get_tokeninfo("public_key_server"))
+        self.assertIsInstance(server_public_key, ec.EllipticCurvePublicKey)
+        self.assertEqual("secp256r1", server_public_key.curve.name)
+        self.assertEqual(PushKeyAlgorithm.SECP256R1, token.get_tokeninfo("key_algorithm"))
+
+    def test_12_qr_lists_the_key_algorithms_in_policy_order(self):
+        rsa_key = PushKeyAlgorithm.RSA_4096.value
+        ec_key = PushKeyAlgorithm.SECP256R1.value
+        for policy_value, expected in [(f"{ec_key} {rsa_key}", [f"{ec_key},{rsa_key}"]),
+                                       (f"{rsa_key} {ec_key}", [f"{rsa_key},{ec_key}"]),
+                                       (ec_key, [ec_key]),
+                                       (None, None)]:
+            with self.subTest(policy=policy_value):
+                self._set_push_policy(policy_value)
+                try:
+                    url = self._init_push_token()["pushurl"]["value"]
+                    self.assertEqual(expected, self._query(url).get("key_algorithm"), url)
+                finally:
+                    remove_token(self.serial_push)
