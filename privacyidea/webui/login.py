@@ -70,6 +70,11 @@ LOCALE_COOKIE_NAME = "pi_ui_locale"
 # Keep the name in sync with scriptRoot() in the WebUI's core/locale.ts.
 SCRIPT_ROOT_META_NAME = "pi-script-root"
 
+# Placeholder for the CSP nonce in the ngCspNonce attribute of <app-root> in the WebUI's src/index.html.
+# Angular reads it at runtime for the <style> elements of the components. The build also copies it to the
+# nonce attribute of the <script> elements, which the CSP allows by 'self' anyway. Keep the value in sync.
+CSP_NONCE_PLACEHOLDER = "PRIVACYIDEA_CSP_NONCE"
+
 # Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale
 _LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
 
@@ -363,9 +368,11 @@ def _serve_locale(locale: str) -> Response | None:
     with open(index_file, encoding="utf-8") as f:
         content = f.read()
     content = content.replace('<base href="/', f'<base href="{script_root}/', 1)
-    # A meta tag rather than an inline script: the app's CSP allows only
-    # script-src 'self', so an inline script would be blocked and the frontend
-    # would fall back to an empty prefix on exactly the mounts this supports.
+    # Talisman makes a new nonce for each request if PI_ENABLE_CSP is set. Without the CSP the placeholder
+    # becomes empty, and Angular then puts no nonce on the <style> elements of the components.
+    content = content.replace(CSP_NONCE_PLACEHOLDER, getattr(request, "csp_nonce", ""))
+    # A meta tag rather than an inline script: the meta tag holds only data, so the
+    # CSP does not have to allow it.
     content = content.replace(
         "</head>",
         f'<meta name="{SCRIPT_ROOT_META_NAME}" content="{escape(script_root)}"></head>',

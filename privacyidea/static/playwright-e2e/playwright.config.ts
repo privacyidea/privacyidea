@@ -23,12 +23,13 @@ import { BASE_URL } from "./support/env";
 import { ADMIN_STATE_FILE } from "./support/session";
 
 // Runs against an already running WebUI and its backend: the local `ng serve` by default, or the instance BASE_URL
-// names (required when CI is set). No CI pipeline runs the suite yet.
+// names (required when CI is set). Only csp.spec.ts runs in CI, in the nightly workflow webui-csp.yml.
 // The suite only reads: it logs in, visits pages, types into filters and opens menus, never saves.
 //
 //   BASE_URL   default https://localhost:4200/app/v2/
 //   E2E_USER   default admin
 //   E2E_PASS   default admin
+//   E2E_CSP    set when the instance runs with PI_ENABLE_CSP = True (csp.spec.ts)
 // Playwright empties its output directory when a run starts, which would wipe the artifacts of a run in progress next
 // to it; each run writes to a directory of its own, and global-setup removes all but the newest few. The id is an
 // environment variable so that the workers, which load this file again, agree with the process that started them.
