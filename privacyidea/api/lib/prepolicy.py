@@ -1013,14 +1013,13 @@ def twostep_enrollment_activation(request=None, action=None):
     """
     user_object = request.User
     serial = get_optional(request.all_data, "serial")
-    token_type = get_optional(request.all_data, "type", default="hotp")
+    # check_token_init runs before and writes the type of an existing token to the request data
+    token_type = get_optional(request.all_data, "type", default="hotp").lower()
     token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
         if len(tokensobject_list) == 1:
             token = tokensobject_list[0]
-            token_type = token.get_tokentype()
-    token_type = token_type.lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
     # In any case, the policy's user attribute is matched against the
@@ -1067,13 +1066,8 @@ def twostep_enrollment_parameters(request=None, action=None):
 
     This policy function is used to decorate the ``/token/init`` endpoint.
     """
-    serial = get_optional(request.all_data, "serial")
-    token_type = get_optional(request.all_data, "type", default="hotp")
-    if serial:
-        tokensobject_list = get_tokens(serial=serial)
-        if len(tokensobject_list) == 1:
-            token_type = tokensobject_list[0].token.tokentype
-    token_type = token_type.lower()
+    # check_token_init runs before and writes the type of an existing token to the request data
+    token_type = get_optional(request.all_data, "type", default="hotp").lower()
     # Differentiate between an admin enrolling a token for the
     # user and a user self-enrolling a token.
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
@@ -1132,8 +1126,6 @@ def verify_enrollment(request=None, action=None):
     r = token.verify_enrollment(verify)
     log.info(f"Result of enrollment verification for token {serial!s}: {r!s}")
     if r:
-        # TODO: we need to add the tokentype here or the second init_token() call fails
-        request.all_data.update(type=token.get_tokentype())
         token.token.rollout_state = RolloutState.ENROLLED
         token.token.save()  # todo evaluate
     else:
@@ -2089,11 +2081,18 @@ def check_token_upload(request=None, action=None):
     return True
 
 
-def check_token_init(request=None, action=None):
+def check_token_init(request: Request | None = None, action: str | None = None) -> bool:
     """
     This decorator function takes the request and verifies
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
+
+    It determines the type of the token that the request acts on and writes it to the request data, so that the
+    following pre-policies, the request data conditions of the policies and init_token() use the same type. Hence, it
+    has to run before all other pre-policies.
+    For the serial of an existing token, this is the type of that token: init_token() does not change the type of a
+    token, so the request continues the enrollment of, or rolls over, a token of that type. For a new token, it is
+    the requested type or the default type hotp.
 
     If the request carries the serial of a token that already exists, init_token() updates that token instead
     of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
@@ -2102,11 +2101,14 @@ def check_token_init(request=None, action=None):
     additionally requires the token_rollover action. The existing token is matched against its owner or one of its
     realms, like for the other token actions, rather than against the realm passed in the request; a token in a
     pending enrollment state is matched the same way with the enrollment action. A user only continues the
-    enrollment of, or rolls over, a token they own.
+    enrollment of, or rolls over, a token they own. For a token of another user, the user gets the same error in every
+    rollout state.
 
-    :param request:
-    :param action:
-    :return: True or an Exception is raised
+    :param request: The token init request
+    :param action: Not used, part of the pre-policy signature
+    :return: True
+    :raises ParameterError: If the requested type differs from the type of the existing token
+    :raises PolicyError: If the caller is not allowed to enroll or roll over the token
     """
     ERROR = {"user": "User actions are defined, you are not allowed to "
                      "enroll this token type!",
@@ -2117,8 +2119,47 @@ def check_token_init(request=None, action=None):
     params = request.all_data
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
-    tokentype = params.get("type", "HOTP")
-    action = f"enroll{tokentype.upper()!s}"
+
+    # Pin the token type for all following checks: an existing token keeps its type, a new one gets the requested
+    # type or hotp
+    serial = get_optional(params, "serial")
+    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
+    requested_type = (get_optional(params, "type") or "").lower()
+    tokentype = existing_token.get_tokentype().lower() if existing_token else requested_type or "hotp"
+    params["type"] = tokentype
+    if g.get("request_data") is not None:
+        g.request_data["type"] = tokentype
+
+    action = f"enroll{tokentype.upper()}"
+
+    # The rights on an existing token are checked before the enroll right of its type, so that the type of the token
+    # is not revealed to a caller without rights on it
+    if existing_token:
+        enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
+        token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
+        if role == ROLE.USER:
+            # A user continues the enrollment of, or rolls over, only a token they own. For a token of another user,
+            # the error is the same in every rollout state.
+            token_owner = existing_token.user
+            if not user_is_owner(request.User, token_owner):
+                log.info(f"The user is not the owner of the token {serial}.")
+                raise PolicyError(ERROR.get(role))
+            allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                                          user=token_owner.login,
+                                                          resolver=token_owner.resolver,
+                                                          realm=token_owner.realm,
+                                                          scope=role,
+                                                          user_object=token_owner).allowed()
+        else:
+            # The existing token is matched like for the other token actions: by its owner or one of its realms
+            allowed = check_token_action_allowed(g, token_action, serial,
+                                                 UserAttributes(role=role, adminuser=adminuser,
+                                                                adminrealm=adminrealm))
+        if not allowed:
+            log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
+                     f"token {serial}.")
+            raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+
     init_allowed = Match.generic(g, action=action,
                                  user=username,
                                  resolver=resolver,
@@ -2130,33 +2171,15 @@ def check_token_init(request=None, action=None):
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
 
-    serial = get_optional(params, "serial")
-    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
     if not existing_token:
         return True
 
-    enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
-    token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
-    if role == ROLE.USER:
-        # A user continues the enrollment of, or rolls over, only a token they own
-        token_owner = existing_token.user
-        if not user_is_owner(request.User, token_owner):
-            log.info(f"The user is not the owner of the token {serial}.")
-            raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
-        allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
-                                                      user=token_owner.login,
-                                                      resolver=token_owner.resolver,
-                                                      realm=token_owner.realm,
-                                                      scope=role,
-                                                      user_object=token_owner).allowed()
-    else:
-        # The existing token is matched like for the other token actions: by its owner or one of its realms
-        allowed = check_token_action_allowed(g, token_action, serial,
-                                             UserAttributes(role=role, adminuser=adminuser, adminrealm=adminrealm))
-    if not allowed:
-        log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
-                 f"token {serial}.")
-        raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+    if requested_type and requested_type != tokentype:
+        log.info(f"The requested type {requested_type} differs from the type {tokentype} of the existing token "
+                 f"{serial}.")
+        raise ParameterError(
+            _("Token {serial} already exists with type {token_type}. Can not initialize it with type "
+              "{requested_type}.").format(serial=serial, token_type=tokentype, requested_type=requested_type))
     return True
 
 
@@ -2262,8 +2285,9 @@ def api_key_required(request=None, action=None):
             g.logged_in_user = {"username": r.get("username", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
-        except (AttributeError, jwt.DecodeError):
-            # PyJWT 1.3.0 raises AttributeError, PyJWT 1.6.4 raises DecodeError.
+        except (AttributeError, jwt.InvalidTokenError):
+            # PyJWT 1.3.0 raises AttributeError, newer versions raise a subclass of InvalidTokenError
+            # (e.g. DecodeError or ExpiredSignatureError).
             raise PolicyError("No valid API key was passed.")
 
         role = g.logged_in_user.get("role")
@@ -2825,6 +2849,11 @@ def fido2_enroll(request, action):
     # does not match.
     request.all_data[PasskeyAction.AllowedAuthenticatorDeviceTypes] = get_policy_value_set(
         PasskeyAction.AllowedAuthenticatorDeviceTypes, scope=SCOPE.ENROLL, user=user_object)
+
+    # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf. Always set, so that only the policy
+    # decides and not a parameter of the request.
+    request.all_data[PasskeyAction.DisablePrf] = Match.user(g, scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf,
+                                                            user_object=user_object).any()
 
     if request and hasattr(request, "environ"):
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')

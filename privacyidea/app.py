@@ -35,7 +35,7 @@ import sys
 import time
 import uuid
 from pathlib import Path, PurePath
-from typing import IO, Any
+from typing import IO, Any, NamedTuple
 
 import click
 import flask_migrate.cli
@@ -107,6 +107,9 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 # remapped to the current one, see _resolve_ui_folders().
 PREVIEW_STATIC_FOLDER = "static_new"
 
+# The style hashes allow the inline styles of the legacy WebUI. The WebUI allows its styles with the
+# nonce of CSP_NONCE_DIRECTIVES instead. script-src allows no inline script: the build of the WebUI
+# writes none, because it does not inline the critical CSS (inlineCritical in angular.json).
 CSP = {
     'default-src': [
         '\'self\'',
@@ -142,6 +145,9 @@ CSP = {
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
     ]
 }
+# Talisman adds a new nonce for each request to these directives. Angular puts it on the style elements
+# that it adds for the components at runtime, see _serve_locale().
+CSP_NONCE_DIRECTIVES = ['style-src']
 
 migrate = Migrate()
 babel = Babel()
@@ -176,6 +182,22 @@ class PrivacyIDEARequest(Request):
     The request class of both application factories.
     """
     form_data_parser_class = UrlencodedSizeLimitFormDataParser
+
+
+def _enable_csp(app: Flask) -> bool:
+    """
+    Add the Content Security Policy and the other headers of Talisman to each response, if PI_ENABLE_CSP is set.
+
+    Both application factories call this, so that the package and the Docker image send the same policy.
+
+    :return: True if the policy is on
+    """
+    if not app.config.get(ConfigKey.ENABLE_CSP, False):
+        return False
+    Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
+             force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+             session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+    return True
 
 
 def _register_spa_fallback(app: Flask) -> None:
@@ -502,22 +524,42 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+class SchemaState(NamedTuple):
+    """The schema state of a database: whether it has a schema revision stamp, and whether it holds the tables."""
+    stamped: bool
+    has_tables: bool
+
+
+def get_schema_state() -> SchemaState:
+    """
+    Read the schema state of the database of the current app. The token table stands for the tables of privacyIDEA.
+    """
+    with db.engine.connect() as connection:
+        stamped = bool(MigrationContext.configure(connection).get_current_heads())
+        has_tables = sa.inspect(connection).has_table("token")
+    return SchemaState(stamped=stamped, has_tables=has_tables)
+
+
+# What to do with a database that holds the tables of privacyIDEA but no schema revision stamp.
+TABLES_WITHOUT_STAMP_HINTS = (
+    "If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+    "stamp the database with 'pi-manage db stamp head'.",
+    "If an older version created the tables, stamp the database with the newest revision of that version. "
+    "The upgrade documentation lists the revisions of the versions before 3.10.",
+    "Then update the database with 'pi-manage db upgrade'.")
+
+
 def _check_revision_stamp() -> None:
     """
     Raise a ClickException if the database has no schema revision stamp. The migrations cannot tell which of them
     such a database needs: run from the first revision, they would rename and recreate the tables of a current schema.
     """
-    with db.engine.connect() as connection:
-        if MigrationContext.configure(connection).get_current_heads():
-            return
-        has_tables = sa.inspect(connection).has_table("token")
+    schema_state = get_schema_state()
+    if schema_state.stamped:
+        return
     database = db.engine.url.render_as_string(hide_password=True)
-    if has_tables:
-        hints = ["If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
-                 "stamp the database with 'pi-manage db stamp head'.",
-                 "If an older version created the tables, stamp the database with the newest revision of that "
-                 "version. The upgrade documentation lists the revisions of the versions before 3.10.",
-                 "Then run the upgrade again."]
+    if schema_state.has_tables:
+        hints = list(TABLES_WITHOUT_STAMP_HINTS)
     else:
         hints = ["If the database is empty, create the tables with 'pi-manage setup create_tables'."]
     raise click.ClickException("\n  ".join([f"The database {database} has no schema revision stamp, so the "
@@ -601,12 +643,8 @@ def create_app(config_name="development",
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.config.get(ConfigKey.VERBOSE):
-            print("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.config.get(ConfigKey.VERBOSE):
+        print("Enabling CSP with Talisman")
 
     # Setup logging
     if config_name == "docker":
@@ -724,12 +762,8 @@ def create_docker_app():
     # And then we check if we have a minimal viable config
     _check_config(app)
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.debug:
-            sys.stderr.write("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.debug:
+        sys.stderr.write("Enabling CSP with Talisman\n")
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG

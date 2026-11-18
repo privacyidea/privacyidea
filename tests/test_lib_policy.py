@@ -310,6 +310,24 @@ class PolicyTestCase(MyTestCase):
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, time="Monday: 12-18")
         self.assertEqual("Invalid time format 'Monday: 12-18'!", exception.exception.message)
 
+        # The node match compares the node names exactly, wildcards and negations would apply on no node
+        for pinode in ["*", "!invalid_node", "-invalid_node"]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode=pinode)
+            self.assertIn("Wildcards and negations are not supported for privacyIDEA Nodes",
+                          exception.exception.message)
+
+        # The user agent match compares the plain name of the user agent
+        for user_agents in ["*", "!PAM", "privacyidea-cp/1.0", "privacyIDEA CP", ["PAM", "PA*"], ["PAM, !PAM"]]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, user_agents=user_agents)
+            self.assertIn("Invalid User-Agents", exception.exception.message)
+        # Values that are not strings are rejected instead of failing with an internal error
+        for kwargs in [{"pinode": [1]}, {"user_agents": ["PAM", 123]}]:
+            with self.assertRaises(ParameterError):
+                set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, **kwargs)
+        self.assertEqual([], get_policies(name="invalid"))
+
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
         self.assertEqual(len(d1), 1)
@@ -2729,6 +2747,60 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual({f"-{PolicyAction.POLICYWRITE}": True}, get_policies(name="imported")[0].get("action"))
         delete_policy("imported")
 
+    def test_52f_import_continues_after_a_rejected_policy(self):
+        # Each policy of the file is imported on its own. A rejected policy does not stop the import of the others,
+        # and the error names the rejected and the imported policies.
+        action = {PolicyAction.ENABLE: True}
+        exported = export_policies([
+            {"name": "import_first", "scope": SCOPE.ADMIN, "action": action},
+            {"name": "import_rejected", "scope": SCOPE.ADMIN, "action": action, "user_agents": ["privacyidea-cp/1.0"]},
+            {"name": "import_last", "scope": SCOPE.ADMIN, "action": action}])
+        with self.assertRaises(ParameterError) as exception:
+            import_policies(exported)
+        self.assertIn('"import_rejected" (ERR905: Invalid User-Agents', exception.exception.message)
+        self.assertIn("Successfully imported: ['import_first', 'import_last']", exception.exception.message)
+        self.assertEqual(1, len(get_policies(name="import_first")))
+        self.assertEqual(1, len(get_policies(name="import_last")))
+        self.assertEqual([], get_policies(name="import_rejected"))
+        delete_policy("import_first")
+        delete_policy("import_last")
+
+    def test_52g_import_values_with_commas(self):
+        # The exported values with several entries are imported as they were exported
+        policy = {"name": "import_lists", "scope": SCOPE.ADMIN,
+                  "action": {PolicyAction.ENABLE: True, PolicyAction.DISABLE: True},
+                  "user": ["user1", "user2"], "client": ["10.0.0.1", "10.0.0.2"],
+                  "time": "Mon-Fri: 08:00-16:30, Sat: 10-12", "user_agents": ["PAM", "privacyidea-cp"]}
+        self.assertEqual(1, import_policies(export_policies([policy])))
+        imported = get_policies(name="import_lists")[0]
+        self.assertEqual({PolicyAction.ENABLE: True, PolicyAction.DISABLE: True}, imported.get("action"))
+        self.assertEqual(["user1", "user2"], imported.get("user"))
+        self.assertEqual(["10.0.0.1", "10.0.0.2"], imported.get("client"))
+        self.assertEqual("Mon-Fri: 08:00-16:30, Sat: 10-12", imported.get("time"))
+        self.assertEqual(["PAM", "privacyidea-cp"], imported.get("user_agents"))
+        delete_policy("import_lists")
+
+    def test_52h_import_values_with_hash_and_line_break(self):
+        # A "#" or a line break in a value is exported in triple quotes, so the import reads the whole value and the
+        # keys after it
+        email_text = "Your OTP #1: https://example.com/#/login"
+        policies = [{"name": "import_hash", "scope": SCOPE.AUTH, "action": {EMAILACTION.EMAILTEXT: email_text},
+                     "description": "First line\nSecond line # no comment", "priority": 7},
+                    {"name": "import_after", "scope": SCOPE.ADMIN, "action": {PolicyAction.ENABLE: True}}]
+        self.assertEqual(2, import_policies(export_policies(policies)))
+        imported = get_policies(name="import_hash")[0]
+        self.assertEqual({EMAILACTION.EMAILTEXT: email_text}, imported.get("action"))
+        self.assertEqual(7, imported.get("priority"))
+        self.assertEqual(1, len(get_policies(name="import_after")))
+        delete_policy("import_hash")
+        delete_policy("import_after")
+
+        # A value with both kinds of triple quotes can not be quoted and is written as it is, with a warning
+        with self.assertLogs("privacyidea.lib.policy", level="WARNING") as logs:
+            exported = export_policies([{"name": "quotes", "description": "\"\"\" ''' #"}])
+        self.assertIn("description = \"\"\" ''' #\n", exported)
+        self.assertIn("contains both kinds of triple quotes", logs.output[0])
+
     def test_53_set_policy_validate_realms(self):
         """
         This test checks that the realm parameter is evaluated correctly in the set_policy function
@@ -2806,14 +2878,31 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=node_name1)
 
         # Valid list
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "", "*", node_name2])
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "", node_name2])
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"{node_name1}, {node_name2}")
 
         # node is None
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=None)
 
-        # Use wildcard and negations
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -{node_name1}, !{node_name2}")
+        # The node match compares the node names exactly, so set_policy rejects wildcards and negations
+        for pinode in ["*", [node_name1, "*"], f"{node_name1}*", f"-{node_name1}", f"*, !{node_name2}"]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy(name="test", scope=SCOPE.ADMIN, pinode=pinode)
+            self.assertIn("Wildcards and negations are not supported for privacyIDEA Nodes",
+                          exception.exception.message)
+
+        # Empty values and None in a list are dropped, values that are not strings are rejected
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, None, " ", node_name2])
+        self.assertEqual(f"{node_name1}, {node_name2}", Policy.query.filter_by(name="test").first().pinode)
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[None])
+        self.assertEqual("", Policy.query.filter_by(name="test").first().pinode)
+        # A list entry with commas is split like the stored value
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[f"{node_name1}, {node_name2}"])
+        self.assertEqual(f"{node_name1}, {node_name2}", Policy.query.filter_by(name="test").first().pinode)
+        with self.assertRaises(ParameterError) as exception:
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[f"{node_name1}, -{node_name2}"])
+        self.assertIn("Wildcards and negations are not supported for privacyIDEA Nodes", exception.exception.message)
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, pinode=[node_name1, 1])
 
         # Invalid data type
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={node_name1, node_name2})
@@ -2826,7 +2915,7 @@ class PolicyTestCase(MyTestCase):
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
         self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[" undefined_node ", node_name1, "invalid "])
         self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
 
         db.session.delete(node1)
@@ -2882,6 +2971,27 @@ class PolicyTestCase(MyTestCase):
         pol = P.list_policies(name="policy-empty-ua")
         self.assertEqual(1, len(pol))
         self.assertFalse(pol[0].get("user_agents"))
+
+        # set_policy stores the cleaned user agents, without empty entries, None and surrounding spaces
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents=[" PAM ", None, "", "privacyidea-cp"])
+        self.assertEqual("PAM, privacyidea-cp", Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents="PAM, , privacyidea-cp ,")
+        self.assertEqual("PAM, privacyidea-cp", Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
+        # A list entry with commas is split like the stored value, so each name in it still matches
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents=["PAM, privacyidea-cp", "simpleSAMLphp"])
+        self.assertEqual("PAM, privacyidea-cp, simpleSAMLphp",
+                         Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
+        for user_agent in ["PAM", "privacyidea-cp", "simpleSAMLphp"]:
+            self.assertIn("policy-empty-ua", [policy["name"] for policy in
+                                              P.list_policies(scope=SCOPE.AUTH, user_agent=user_agent)], user_agent)
+
+        # A leading "-" is part of the name, as in the user agent of a request, and is no exclusion
+        set_policy(name="policy-empty-ua", scope=SCOPE.AUTH, user_agents="-PAM")
+        self.assertEqual("-PAM", Policy.query.filter_by(name="policy-empty-ua").first().user_agents)
+        self.assertIn("policy-empty-ua",
+                      [policy["name"] for policy in P.list_policies(scope=SCOPE.AUTH, user_agent="-PAM")])
+        self.assertNotIn("policy-empty-ua",
+                         [policy["name"] for policy in P.list_policies(scope=SCOPE.AUTH, user_agent="privacyidea-cp")])
 
         delete_policy("policy-empty-ua")
         delete_policy("policy-cp")

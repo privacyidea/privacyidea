@@ -54,7 +54,7 @@ export const CONFIRMATION_POLLING_TIMEOUT_MS = 5 * 60 * 1000;
 let nextChallengeMessageId = 0;
 
 /**
- * Token types that the server can not check by the OTP value alone, so "Verify OTP Value" never gives a result for
+ * Token types that the server can not check by the OTP value alone, so "Test OTP Only" never gives a result for
  * them. A Simple Pass token has no OTP value and accepts every value. Push, questionnaire, indexed secret, 4 eyes,
  * certificate and SSH key tokens have no OTP check of their own. OCRA and TiQR tokens need the challenge. U2F tokens
  * are deprecated and refuse every authentication. Challenge-response tokens are tested with "Trigger Challenge".
@@ -110,7 +110,7 @@ export class TestOtpPinActionComponent {
   private readonly testTokenButton = viewChild("testTokenButton", { read: ElementRef<HTMLButtonElement> });
   protected readonly challengeMessageId = `test-otp-pin-challenge-message-${nextChallengeMessageId++}`;
   tokenType = input<string>("");
-  showVerifyOtpValue = computed(() => !TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK.has(this.tokenType()));
+  showTestOtpOnly = computed(() => !TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK.has(this.tokenType()));
   hide = signal(true);
   otpOrPinToTest = signal("");
   otpOrPinForm = form(this.otpOrPinToTest);
@@ -157,7 +157,7 @@ export class TestOtpPinActionComponent {
     });
   }
 
-  verifyOTPValue(): void {
+  testOtpOnly(): void {
     this.validateService.testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest(), "1").subscribe({
       next: (response) =>
         this.evaluateCheckResponse(response, {

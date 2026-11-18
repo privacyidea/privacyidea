@@ -137,7 +137,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.enrolledDialogData.set({
       response: enrollmentResponse,
       enrollParameters: enrollmentArgs,
-      tokenType: this.tokenService.selectedTokenType().key,
+      tokenType: enrollmentArgs.data.type,
       rollover: true,
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });

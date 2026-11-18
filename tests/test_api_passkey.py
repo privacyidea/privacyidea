@@ -36,6 +36,7 @@ from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError, ResolverError
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
@@ -2911,6 +2912,86 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
         assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.ENROLLMENT_FAIL],
                                   transaction_id=transaction_id)
+
+    def test_51_token_init_saves_client_registration_values(self):
+        """
+        The WebUI sends the transports of the authenticator and whether the prf extension is enabled as JSON in the
+        second enrollment request. The token info contains them together with the registration details.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        self.addCleanup(remove_token, serial)
+        data = {
+            "attestationObject": self.registration_attestation,
+            "clientDataJSON": self.registration_client_data,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
+            "authenticatorAttachment": self.authenticator_attachment,
+            "transports": ["usb", "nfc"],
+            "prf": {"enabled": True},
+            "transaction_id": detail["transaction_id"],
+            "type": "passkey",
+            "user": self.user.login,
+            "realm": self.user.realm,
+            "serial": serial
+        }
+        with self.app.test_request_context('/token/init', method='POST', json=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self._assert_result_value_true(res.json)
+
+        token = get_one_token(serial=serial)
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertEqual("nfc,usb", token.get_tokeninfo(FIDO2TokenInfo.TRANSPORTS))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_ENABLED))
+        self.assertEqual("cross-platform", token.get_tokeninfo(FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT))
+        self.assertEqual("packed", token.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_FORMAT))
+        self.assertEqual(self.expected_origin, token.get_tokeninfo(FIDO2TokenInfo.ORIGIN))
+        self.assertEqual("True", token.get_tokeninfo(FIDO2TokenInfo.PRF_REQUESTED))
+
+    def _passkey_registration_of_token_init(self, data: dict) -> dict:
+        """
+        Starts a passkey enrollment with /token/init and returns the registration options. The token is removed at
+        the end of the test.
+        """
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "passkey", "user": self.user.login,
+                                                 "realm": self.user.realm, **data},
+                                           headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.addCleanup(remove_token, res.json["detail"]["serial"])
+        return res.json["detail"]["passkey_registration"]
+
+    def test_52_token_init_policy_disables_prf_request(self):
+        """
+        The enrollment policy passkey_disable_prf removes the prf extension from the registration options. Only the
+        policy decides: a request parameter of the same name has no effect.
+        """
+        passkey_registration = self._passkey_registration_of_token_init({PasskeyAction.DisablePrf: "1"})
+        self.assertEqual({"prf": {}}, passkey_registration["extensions"])
+
+        self.set_policy_with_cleanup("passkey_no_prf", scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf)
+        passkey_registration = self._passkey_registration_of_token_init({PasskeyAction.DisablePrf: "0"})
+        self.assertNotIn("extensions", passkey_registration)
+
+    def test_53_enroll_via_multichallenge_policy_disables_prf_request(self):
+        """
+        The enrollment policy passkey_disable_prf also applies to the passkey enrollment via multichallenge.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.addCleanup(remove_token, spass_token.get_serial())
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=PASSKEY")
+        self.set_policy_with_cleanup("passkey_no_prf", scope=SCOPE.ENROLL, action=PasskeyAction.DisablePrf)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.user.login, "pass": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        detail = res.json["detail"]
+        self.addCleanup(remove_token, detail["serial"])
+        self.assertEqual("passkey", detail["type"], res.json)
+        self.assertNotIn("extensions", detail["multi_challenge"][0]["passkey_registration"])
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

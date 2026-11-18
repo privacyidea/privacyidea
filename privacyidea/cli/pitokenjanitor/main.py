@@ -19,7 +19,7 @@
 
 import click
 
-from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup, get_version
+from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup
 from privacyidea.cli.pitokenjanitor.utils.deprecated import deprecated
 from privacyidea.cli.pitokenjanitor.utils.findcontainer import findcontainer
 from privacyidea.cli.pitokenjanitor.utils.findcustomattributes import findcustomattributes
@@ -36,16 +36,8 @@ CONTEXT_SETTINGS = dict(
 
 
 @click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
-             add_default_commands=False, add_version_option=False,
+             add_default_commands=False,
              epilog='Check out our docs at https://privacyidea.readthedocs.io/ for more details')
-@click.option(
-    "--version",
-    help="Show the version information",
-    expose_value=False,
-    callback=get_version,
-    is_flag=True,
-    is_eager=True,
-)
 def cli():
     """
 \b

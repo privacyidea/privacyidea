@@ -43,11 +43,17 @@ class NoPluginsFlaskGroup(FlaskGroup):
     """
 
     def __init__(self, *args, **kwargs):
+        # The version option of Flask does not show the privacyIDEA version, so we add our own
+        add_version_option = kwargs.pop("add_version_option", True)
+        super().__init__(*args, add_version_option=False, **kwargs)
         # Hide the app option, we already hardcode the app in the CLI
-        super().__init__(*args, **kwargs)
         for param in self.params:
             if param.name == "app":
                 self.params.remove(param)
+        if add_version_option:
+            self.params.append(click.Option(["--version"], help="Show the version information",
+                                            expose_value=False, callback=get_version, is_flag=True,
+                                            is_eager=True))
 
     def _load_plugin_commands(self):
         pass

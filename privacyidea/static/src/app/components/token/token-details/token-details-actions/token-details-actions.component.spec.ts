@@ -104,12 +104,6 @@ describe("TokenDetailsActionsComponent", () => {
       expect(component["hasAnyAction"]).toBe(true);
     });
 
-    it("returns true when rollout_state is verify", () => {
-      component.tokenType = signal("webauthn");
-      fixture.componentRef.setInput("token", { rollout_state: "verify" } as TokenDetails);
-      expect(component["hasAnyAction"]).toBe(true);
-    });
-
     it("returns true for webauthn when setpin action is allowed", () => {
       component.tokenType = signal("webauthn");
       fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
@@ -127,7 +121,7 @@ describe("TokenDetailsActionsComponent", () => {
       expect(component["hasAnyAction"]).toBe(true);
     });
 
-    it("returns false for webauthn when no actions are allowed and not in verify state", () => {
+    it("returns false for webauthn when no actions are allowed", () => {
       component.tokenType = signal("webauthn");
       fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
       const authService = TestBed.inject(AuthService);

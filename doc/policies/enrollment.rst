@@ -981,6 +981,26 @@ This policy does not affect passkeys that are already enrolled. To also refuse t
 
 .. versionadded:: 3.14
 
+.. _policy_passkey_disable_prf:
+
+passkey_disable_prf
+~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this policy is set, privacyIDEA does not request the WebAuthn extension ``prf`` (pseudo-random function) during
+the passkey enrollment. By default, privacyIDEA requests it, so that a client application can derive a secret from
+the passkey at login. See :ref:`passkey_prf` for details.
+
+Some authenticators only create this secret if the registration requests it. Passkeys that are enrolled while the
+policy is set possibly do not support the PRF later. To add the secret, enroll the passkey again without the policy.
+
+The policy applies to the enrollment with ``/token/init`` and to the enrollment with
+:ref:`policy_enroll_via_multichallenge`. It only changes the registration options that privacyIDEA sends. A client
+application can still request the extension itself.
+
+.. versionadded:: 3.14.1
+
 .. _policy_webauthn_enroll_req:
 
 webauthn_req
