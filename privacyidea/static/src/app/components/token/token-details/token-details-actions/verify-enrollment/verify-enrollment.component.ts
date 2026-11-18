@@ -24,10 +24,11 @@ import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 
 @Component({
   selector: "app-verify-enrollment",
-  imports: [MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
+  imports: [DetailsCardComponent, MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
   templateUrl: "./verify-enrollment.component.html"
 })
 export class VerifyEnrollmentComponent {

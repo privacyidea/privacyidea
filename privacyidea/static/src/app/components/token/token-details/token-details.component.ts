@@ -82,6 +82,7 @@ import { TokenDetailsMachineComponent } from "./token-details-machine/token-deta
 import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
+import { VerifyEnrollmentComponent } from "./token-details-actions/verify-enrollment/verify-enrollment.component";
 import {
   SshMachineAssignDialogData,
   TokenSshMachineAssignDialogComponent
@@ -95,6 +96,7 @@ import {
     TokenDetailsUserComponent,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
+    VerifyEnrollmentComponent,
     TokenDetailsStatusComponent,
     TokenDetailsCountersComponent,
     TokenDetailsAssignmentsComponent,
@@ -132,6 +134,12 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     tokenTypes.filter((t) => t.rollover === true).map((t) => t.key)
   );
   protected readonly tokenTypeKey = computed(() => this.tokenType() as TokenTypeKey);
+  // The server checks the right to enroll the token's type for the verification
+  protected readonly showVerifyEnrollment = computed(
+    () =>
+      this.tokenDetails().rollout_state === "verify" &&
+      this.authService.actionAllowed(`enroll${this.tokenType().toUpperCase()}` as PolicyAction)
+  );
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;

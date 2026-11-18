@@ -68,6 +68,12 @@
   }
 }
 
+// Full width above the grid, outside it, so that it does not count as the top row the panel width is fitted to.
+.details-verify-card {
+  display: block;
+  margin-top: 8px;
+}
+
 .details-grid {
   @include table.details-cards-flex;
   margin-top: 8px;
