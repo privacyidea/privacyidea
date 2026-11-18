@@ -2094,7 +2094,8 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
     or the SCOPE USER.
 
     It determines the type of the token that the request acts on and writes it to the request data, so that the
-    following pre-policies and init_token() use the same type. Hence, it has to run before all other pre-policies.
+    following pre-policies, the request data conditions of the policies and init_token() use the same type. Hence, it
+    has to run before all other pre-policies.
     For the serial of an existing token, this is the type of that token: init_token() does not change the type of a
     token, so the request continues the enrollment of, or rolls over, a token of that type. For a new token, it is
     the requested type or the default type hotp.
@@ -2131,6 +2132,8 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
     requested_type = (get_optional(params, "type") or "").lower()
     tokentype = existing_token.get_tokentype().lower() if existing_token else requested_type or "hotp"
     params["type"] = tokentype
+    if g.get("request_data") is not None:
+        g.request_data["type"] = tokentype
 
     action = f"enroll{tokentype.upper()}"
     init_allowed = Match.generic(g, action=action,

@@ -5922,6 +5922,16 @@ class APITokenInitTypeTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(self.chosen_key, self._stored_key())
 
+    def test_request_data_conditions_see_the_type_of_the_token(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP",
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "totp", True,
+                                "raise_error")])
+        token = self._init_totp(RolloutState.VERIFY_PENDING)
+
+        res = self._init_request({"serial": self.serial, "verify": token.get_otp()[2]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=self.serial).rollout_state)
+
     def test_the_second_step_of_a_two_step_enrollment_needs_no_type(self):
         set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP, totp_2step=allow")
         res = self._init_request({"serial": self.serial, "type": "totp", "2stepinit": 1, "genkey": 1})
