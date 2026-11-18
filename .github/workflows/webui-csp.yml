@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/notify-nightly-failure
+      - uses: $/.github/actions/notify-nightly-failure
         with:
           title: Nightly WebUI CSP check failed on master
           body: |
