@@ -46,6 +46,10 @@
       </div>
     }
 
+    @if (showVerifyEnrollment()) {
+      <app-verify-enrollment class="details-verify-card" />
+    }
+
     <div class="details-grid">
       <app-token-details-status
         [tokenDetails]="tokenDetails()"

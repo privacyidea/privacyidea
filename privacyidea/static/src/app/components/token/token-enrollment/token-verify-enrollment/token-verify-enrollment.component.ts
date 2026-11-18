@@ -57,10 +57,10 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly responseDetails = this.data.response?.detail;
-  protected readonly tokenType = this.data.response?.type ?? "hotp";
   protected readonly verifyMessage = this.responseDetails?.verify?.message ?? "";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   protected readonly enrollData: TokenEnrollmentData | null = this.enrollParameters?.data;
+  protected readonly tokenType: string = this.enrollData?.type ?? this.data.tokenType;
 
   verifyOTP_value = signal<string>("");
   verifyOTPForm = form(this.verifyOTP_value, (f) => {
@@ -111,12 +111,11 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   }
 
   verifyOTP() {
-    const verifyData: TokenEnrollmentData = {
-      serial: this.responseDetails?.serial,
-      type: this.tokenService.selectedTokenType().key,
-      verify: this.verifyOTP_value()
-    };
-    this.tokenService.verifyToken(verifyData).subscribe({
+    const tokenSerial = this.responseDetails?.serial;
+    if (!tokenSerial) {
+      return;
+    }
+    this.tokenService.verifyToken(tokenSerial, this.verifyOTP_value()).subscribe({
       next: (response) => {
         if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
           this.dialogRef.close(response as unknown as EnrollmentResponse);

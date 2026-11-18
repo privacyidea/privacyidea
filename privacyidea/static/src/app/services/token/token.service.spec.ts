@@ -1270,6 +1270,18 @@ describe("TokenService", () => {
   });
 
   describe("verifyToken()", () => {
+    it("POSTs only the serial and the OTP value to /init", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.verifyToken("TOTP1", "123456").subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}init`,
+        { serial: "TOTP1", verify: "123456" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
     it("notifies on error", (done) => {
       const boom = new HttpErrorResponse({
         error: { result: { error: { message: "vt" } } },
@@ -1277,7 +1289,7 @@ describe("TokenService", () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.verifyToken({} as unknown as TokenEnrollmentData).subscribe({
+      tokenService.verifyToken("ABC123", "123456").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");

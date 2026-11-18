@@ -540,6 +540,22 @@ describe("TokenEnrollmentComponent", () => {
         );
       });
 
+      it("passes the enrolled token type to the dialogs, not the selected one", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "email" },
+          mapper: jest.fn().mockReturnValue({ type: "email" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        });
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIEM0001", rollout_state: "enrolled" } })
+        );
+
+        await component.enrollToken();
+
+        expect(component.enrolledDialogData()?.tokenType).toBe("email");
+      });
+
       it("Strategy with showEnrollDataInLastStep true keeps the enroll data in the last step dialog", async () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({

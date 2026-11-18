@@ -19,6 +19,7 @@ from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, REMOTE_USER, delete_policy, delete_policies
 from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
@@ -29,6 +30,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Audit, Realm, NodeName, db
 from . import ldap3mock, smtpmock
 from .base import MyApiTestCase, OverrideConfigTestCase, PWFILE as PASSWORDS_FILE, PWFILE2 as PASSWD_FILE
@@ -2462,7 +2464,8 @@ class RemoteUserAccountTestCase(MyApiTestCase):
     ``mixedrealm`` (the default realm) = resolver1 (``tests/testdata/passwords``, priority 1) + reso3
     (``tests/testdata/passwd``, priority 2). ``adminrealm`` = resolver1 and is the ``SUPERUSER_REALM`` of the
     testing configuration. ``systemrealm`` = reso3. ``cornelius`` exists in both files as different entries,
-    ``selfservice`` only in resolver1 and ``daemon`` only in reso3. No request sends a password.
+    ``selfservice`` only in resolver1 and ``daemon`` only in reso3. Only the password logins of test_07 send a
+    password.
     """
 
     def setUp(self) -> None:
@@ -2557,4 +2560,25 @@ class RemoteUserAccountTestCase(MyApiTestCase):
         with self.app.test_request_context("/", method="GET", environ_base={"REMOTE_USER": "selfservice"}):
             res = self.app.full_dispatch_request()
         self.assertEqual(200, res.status_code)
+
+    def test_07_policy_error_uses_the_password_login(self):
+        # The condition of the remote_user policy reads a userinfo key that the user store does not have. The login
+        # does not use REMOTE_USER and checks the password, and the log file gets the error.
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}",
+                   conditions=[(ConditionSection.USERINFO, "no_such_key", PrimaryComparators.EQUALS, "x", True,
+                                ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.assertEqual("", self._config_remote_user("cornelius"))
+        cases = [({"username": "cornelius"}, 401),
+                 ({"username": "cornelius", "password": "wrong"}, 401),
+                 ({"username": "cornelius", "password": "test"}, 200)]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with self.assertLogs("privacyidea.api.auth", level="ERROR") as captured_logs:
+                    status, value = self._remote_user_auth("cornelius", data)
+                self.assertEqual(expected, status)
+                self.assertTrue(any(f"'{PolicyAction.REMOTE_USER}'" in line for line in captured_logs.output),
+                                captured_logs.output)
+                if expected == 200:
+                    self.assertEqual(("user", "mixedrealm"), (value["role"], value["realm"]))
 

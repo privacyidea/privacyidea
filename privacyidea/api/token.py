@@ -163,10 +163,10 @@ overall policy concept.
 
 
 @token_blueprint.route('/init', methods=['POST'])
+@prepolicy(check_token_init, request)
 @prepolicy(check_max_token_realm, request)
 @prepolicy(require_description, request)
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_ca_connector, request)
 @prepolicy(init_ca_template, request)
@@ -206,8 +206,11 @@ def init():
 
     Requires authentication. Authorization is gated by the
     ``enroll<TOKENTYPE>`` policy in the calling principal's scope
-    (admin or user); a request without an explicit ``type`` defaults
-    to ``HOTP`` and is therefore checked against ``enrollHOTP``.
+    (admin or user). For the serial of an existing token, the type of
+    that token is used and a different ``type`` in the request is
+    rejected. Otherwise, a request without an explicit ``type``
+    defaults to ``HOTP`` and is therefore checked against
+    ``enrollHOTP``.
 
     For user callers, the ``user`` / ``realm`` / ``resolver`` fields
     are bound to the calling user before the view runs; a regular
