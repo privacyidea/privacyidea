@@ -151,6 +151,15 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(dialogRefSpy.close).toHaveBeenCalled();
   });
 
+  it("does not send a verify request without the serial of the enrolled token", () => {
+    (component as unknown as { responseDetails: undefined }).responseDetails = undefined;
+    mockTokenService.verifyToken.mockClear();
+    component.verifyOTP_value.set("123456");
+    component.onDialogAction("verify");
+    expect(mockTokenService.verifyToken).not.toHaveBeenCalled();
+    expect(dialogRefSpy.close).not.toHaveBeenCalled();
+  });
+
   it("should not close dialog if rollout_state is not enrolled", () => {
     mockTokenService.verifyToken = jest.fn().mockReturnValue(
       of({
