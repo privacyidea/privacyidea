@@ -2107,7 +2107,8 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
     additionally requires the token_rollover action. The existing token is matched against its owner or one of its
     realms, like for the other token actions, rather than against the realm passed in the request; a token in a
     pending enrollment state is matched the same way with the enrollment action. A user only continues the
-    enrollment of, or rolls over, a token they own.
+    enrollment of, or rolls over, a token they own. For a token of another user, the user gets the same error in every
+    rollout state.
 
     :param request: The token init request
     :param action: Not used, part of the pre-policy signature
@@ -2143,11 +2144,12 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
         enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
         token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
         if role == ROLE.USER:
-            # A user continues the enrollment of, or rolls over, only a token they own
+            # A user continues the enrollment of, or rolls over, only a token they own. For a token of another user,
+            # the error is the same in every rollout state.
             token_owner = existing_token.user
             if not user_is_owner(request.User, token_owner):
                 log.info(f"The user is not the owner of the token {serial}.")
-                raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+                raise PolicyError(ERROR.get(role))
             allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
                                                           user=token_owner.login,
                                                           resolver=token_owner.resolver,

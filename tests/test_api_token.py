@@ -5903,14 +5903,11 @@ class APITokenInitTypeTestCase(MyApiTestCase):
         self.setUp_user_realm2()
         rollover_error = "You are not allowed to roll over this token!"
 
-        # A user who does not own the token
-        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP, token_rollover")
-        self._assert_refused_for_every_type(RolloutState.VERIFY_PENDING, self.user_enroll_error)
-        self._assert_refused_for_every_type(RolloutState.ENROLLED, rollover_error)
-
-        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP, token_rollover")
-        self._assert_refused_for_every_type(RolloutState.VERIFY_PENDING, self.user_enroll_error)
-        self._assert_refused_for_every_type(RolloutState.ENROLLED, rollover_error)
+        # A user who does not own the token gets the same error for every type and every rollout state
+        for enroll_action in ["enrollHOTP", "enrollTOTP"]:
+            set_policy("type_user", scope=SCOPE.USER, action=f"{enroll_action}, token_rollover")
+            for rollout_state in [RolloutState.CLIENTWAIT, RolloutState.VERIFY_PENDING, RolloutState.ENROLLED]:
+                self._assert_refused_for_every_type(rollout_state, self.user_enroll_error)
         delete_policy("type_user")
 
         # An admin with rights only in another realm than the one of the token
