@@ -82,8 +82,42 @@ export class TokenDetailsInfoComponent {
   editedInfoBefore: WritableSignal<Record<string, string>> = signal<Record<string, string>>({});
   protected authService: AuthServiceInterface = inject(AuthService);
 
+  /** Push tokens created before the key algorithm was stored always used RSA 4096 */
+  private static readonly KEY_ALGORITHM_KEY = "key_algorithm";
+  private static readonly DEFAULT_KEY_ALGORITHM = "rsa_4096";
+
+  private readonly keyAlgorithmLabels: Record<string, string> = {
+    rsa_4096: $localize`:@@token.keyAlgorithm.rsa4096:RSA 4096`,
+    secp256r1: $localize`:@@token.keyAlgorithm.secp256r1:ECDSA P-256`
+  };
+
+  isPushToken(): boolean {
+    return this.detailData?.().find((d) => d.keyMap.key === "tokentype")?.value === "push";
+  }
+
+  /**
+   * Whether the entry is only shown, not stored: a push token without a stored key algorithm. Such an entry
+   * is neither edited, deleted nor sent when saving.
+   */
+  isSynthesizedKey(key: string, info: Record<string, string>): boolean {
+    return key === TokenDetailsInfoComponent.KEY_ALGORITHM_KEY && this.isPushToken() && !(key in info);
+  }
+
   visibleInfoKeys(value: Record<string, string>): string[] {
-    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
+    const keys = Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
+    if (this.isPushToken() && !keys.includes(TokenDetailsInfoComponent.KEY_ALGORITHM_KEY)) {
+      keys.push(TokenDetailsInfoComponent.KEY_ALGORITHM_KEY);
+    }
+    return keys;
+  }
+
+  /** The value of an info entry as shown, with a readable key algorithm and the default for old push tokens */
+  displayInfoValue(key: string, info: Record<string, string>): string {
+    if (key !== TokenDetailsInfoComponent.KEY_ALGORITHM_KEY || !this.isPushToken()) {
+      return info[key];
+    }
+    const raw = info[key] ?? TokenDetailsInfoComponent.DEFAULT_KEY_ALGORITHM;
+    return this.keyAlgorithmLabels[raw] ?? raw;
   }
 
   asInfoMap(value: unknown): Record<string, string> {

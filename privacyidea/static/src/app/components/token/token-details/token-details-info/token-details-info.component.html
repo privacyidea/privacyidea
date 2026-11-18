@@ -39,7 +39,7 @@
       @for (key of visibleInfoKeys(info); track key) {
         <dt class="info-key">{{ key }}:</dt>
         <dd class="info-value">
-          @if (isEditingInfo() && (isInfoKeyEditable(key) || isInfoKeyDeletable(key))) {
+          @if (isEditingInfo() && !isSynthesizedKey(key, info) && (isInfoKeyEditable(key) || isInfoKeyDeletable(key))) {
             <div class="info-edit-row">
               @if (isInfoKeyEditable(key)) {
                 <mat-form-field
@@ -51,7 +51,7 @@
                     rows="1"></textarea>
                 </mat-form-field>
               } @else {
-                <span class="info-value-readonly">{{ info[key] }}</span>
+                <span class="info-value-readonly">{{ displayInfoValue(key, info) }}</span>
               }
               @if (isInfoKeyDeletable(key)) {
                 <button
@@ -64,7 +64,7 @@
               }
             </div>
           } @else {
-            <span>{{ info[key] }}</span>
+            <span>{{ displayInfoValue(key, info) }}</span>
           }
         </dd>
       }

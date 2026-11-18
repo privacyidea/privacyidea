@@ -195,4 +195,36 @@ describe("TokenDetailsInfoComponent", () => {
     expect(component.isEditingInfo()).toBe(true);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
+
+  describe("key algorithm of push tokens", () => {
+    const render = (tokentype: string, info: Record<string, string>): Record<string, string> => {
+      component.detailData.set([makeDetailEl("tokentype", tokentype)]);
+      component.infoData.set([makeInfoEl(info)] as unknown as EditableElement[]);
+      fixture.detectChanges();
+      const grid: HTMLElement = fixture.nativeElement.querySelector("dl.info-grid");
+      const keys = Array.from(grid.querySelectorAll("dt")).map((e) => (e.textContent ?? "").trim());
+      const values = Array.from(grid.querySelectorAll("dd")).map((e) => (e.textContent ?? "").trim());
+      return Object.fromEntries(keys.map((k, i) => [k, values[i]]));
+    };
+
+    it("shows RSA 4096 for a push token without a key_algorithm entry", () => {
+      const shown = render("push", { firebase_token: "fb", public_key_smartphone: "pk" });
+      expect(shown["key_algorithm:"]).toBe("RSA 4096");
+    });
+
+    it("shows ECDSA P-256 for a push token with key_algorithm secp256r1", () => {
+      const shown = render("push", { key_algorithm: "secp256r1" });
+      expect(shown["key_algorithm:"]).toBe("ECDSA P-256");
+    });
+
+    it("shows RSA 4096 for a push token with key_algorithm rsa_4096", () => {
+      const shown = render("push", { key_algorithm: "rsa_4096" });
+      expect(shown["key_algorithm:"]).toBe("RSA 4096");
+    });
+
+    it("shows no key_algorithm entry for a hotp token without the field", () => {
+      const shown = render("hotp", { hashlib: "sha1" });
+      expect(Object.keys(shown)).not.toContain("key_algorithm:");
+    });
+  });
 });
