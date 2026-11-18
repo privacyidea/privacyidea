@@ -1132,8 +1132,6 @@ def verify_enrollment(request=None, action=None):
     r = token.verify_enrollment(verify)
     log.info(f"Result of enrollment verification for token {serial!s}: {r!s}")
     if r:
-        # TODO: we need to add the tokentype here or the second init_token() call fails
-        request.all_data.update(type=token.get_tokentype())
         token.token.rollout_state = RolloutState.ENROLLED
         token.token.save()  # todo evaluate
     else:
@@ -2089,11 +2087,17 @@ def check_token_upload(request=None, action=None):
     return True
 
 
-def check_token_init(request=None, action=None):
+def check_token_init(request: Request | None = None, action: str | None = None) -> bool:
     """
     This decorator function takes the request and verifies
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
+
+    It determines the type of the token that the request acts on and writes it to the request data, so that the
+    following pre-policies and init_token() use the same type. Hence, it has to run before all other pre-policies.
+    For the serial of an existing token, this is the type of that token: init_token() does not change the type of a
+    token, so the request continues the enrollment of, or rolls over, a token of that type. For a new token, it is
+    the requested type or the default type hotp.
 
     If the request carries the serial of a token that already exists, init_token() updates that token instead
     of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
@@ -2104,9 +2108,11 @@ def check_token_init(request=None, action=None):
     pending enrollment state is matched the same way with the enrollment action. A user only continues the
     enrollment of, or rolls over, a token they own.
 
-    :param request:
-    :param action:
-    :return: True or an Exception is raised
+    :param request: The token init request
+    :param action: Not used, part of the pre-policy signature
+    :return: True
+    :raises ParameterError: If the requested type differs from the type of the existing token
+    :raises PolicyError: If the caller is not allowed to enroll or roll over the token
     """
     ERROR = {"user": "User actions are defined, you are not allowed to "
                      "enroll this token type!",
@@ -2117,8 +2123,16 @@ def check_token_init(request=None, action=None):
     params = request.all_data
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
-    tokentype = params.get("type", "HOTP")
-    action = f"enroll{tokentype.upper()!s}"
+
+    # Pin the token type for all following checks: an existing token keeps its type, a new one gets the requested
+    # type or hotp
+    serial = get_optional(params, "serial")
+    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
+    requested_type = (get_optional(params, "type") or "").lower()
+    tokentype = existing_token.get_tokentype().lower() if existing_token else requested_type or "hotp"
+    params["type"] = tokentype
+
+    action = f"enroll{tokentype.upper()}"
     init_allowed = Match.generic(g, action=action,
                                  user=username,
                                  resolver=resolver,
@@ -2130,8 +2144,6 @@ def check_token_init(request=None, action=None):
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
 
-    serial = get_optional(params, "serial")
-    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
     if not existing_token:
         return True
 
@@ -2157,6 +2169,14 @@ def check_token_init(request=None, action=None):
         log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
                  f"token {serial}.")
         raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+
+    # Only after the rights checks, so that the type of the token is not revealed to a caller without rights on it
+    if requested_type and requested_type != tokentype:
+        log.info(f"The requested type {requested_type} differs from the type {tokentype} of the existing token "
+                 f"{serial}.")
+        raise ParameterError(
+            _("Token {serial} already exists with type {token_type}. Can not initialize it with type "
+              "{requested_type}.").format(serial=serial, token_type=tokentype, requested_type=requested_type))
     return True
 
 

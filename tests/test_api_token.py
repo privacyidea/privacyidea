@@ -51,7 +51,8 @@ from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, get_policies, set_policy
+from privacyidea.lib.policy import (SCOPE, PolicyClass, delete_policies, delete_policy, enable_policy,
+                                   get_policies, set_policy)
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
@@ -5790,6 +5791,158 @@ class APITokenRolloverRightTestCase(MyApiTestCase):
 
         delete_policy("rollover_realm2")
         remove_token(self.serial)
+
+
+class APITokenInitTypeTestCase(MyApiTestCase):
+    """
+    POST /token/init checks the enrollment right of the type of an existing token, not the type the request names.
+    """
+    serial = "TYPE6351"
+    original_key = "3132333435363738393031323334353637383930"
+    chosen_key = "4142434445464748494a4142434445464748494a"
+    user_enroll_error = "User actions are defined, you are not allowed to enroll this token type!"
+    admin_enroll_error = "Admin actions are defined, but you are not allowed to enroll this token type!"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        self.addCleanup(delete_policies, ["type_user", "type_admin", "type_description"])
+        self.addCleanup(self._remove_token, self.serial)
+
+    @staticmethod
+    def _remove_token(serial: str):
+        if token_exist(serial):
+            remove_token(serial)
+
+    def _init_totp(self, rollout_state: str, owner: str = "selfservice") -> TokenClass:
+        token = init_token({"serial": self.serial, "type": "totp", "otpkey": self.original_key},
+                           user=User(owner, self.realm1))
+        token.token.rollout_state = rollout_state
+        token.token.save()
+        return token
+
+    def _init_request(self, data: dict, auth_token: str | None = None) -> Response:
+        with self.app.test_request_context('/token/init',
+                                           method="POST",
+                                           data=data,
+                                           headers={'Authorization': auth_token or self.at_user}):
+            return self.app.full_dispatch_request()
+
+    def _assert_refused(self, res: Response, message: str):
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(message, res.json["result"]["error"]["message"])
+
+    def _stored_key(self) -> str:
+        return get_one_token(serial=self.serial).token.get_otpkey().getKey().decode("utf-8")
+
+    def test_a_new_token_without_type_is_checked_as_hotp(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP")
+        self._assert_refused(self._init_request({"genkey": 1}), self.user_enroll_error)
+
+        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP")
+        res = self._init_request({"genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        serial = res.json["detail"]["serial"]
+        self.addCleanup(self._remove_token, serial)
+        self.assertEqual("hotp", get_one_token(serial=serial).get_tokentype())
+
+    def test_a_new_token_with_a_chosen_serial_uses_the_requested_type(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP")
+        res = self._init_request({"serial": self.serial, "type": "TOTP", "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("totp", get_one_token(serial=self.serial).get_tokentype())
+
+    def test_the_verification_is_checked_against_the_type_of_the_token(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP")
+        token = self._init_totp(RolloutState.VERIFY_PENDING)
+        res = self._init_request({"serial": self.serial, "verify": token.get_otp()[2]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=self.serial).rollout_state)
+        remove_token(self.serial)
+
+        # The right to enroll another type does not allow to verify the token
+        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP")
+        token = self._init_totp(RolloutState.VERIFY_PENDING)
+        res = self._init_request({"serial": self.serial, "verify": token.get_otp()[2]})
+        self._assert_refused(res, self.user_enroll_error)
+        self.assertEqual(RolloutState.VERIFY_PENDING, get_one_token(serial=self.serial).rollout_state)
+
+    def test_a_type_different_from_the_existing_token_is_rejected(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP, enrollTOTP, token_rollover")
+        for rollout_state, data in [(RolloutState.VERIFY_PENDING, {"verify": "123456"}),
+                                    (RolloutState.ENROLLED, {"otpkey": self.chosen_key})]:
+            self._init_totp(rollout_state)
+            res = self._init_request({"serial": self.serial, "type": "hotp", **data})
+            self.assertEqual(400, res.status_code, f"{rollout_state} -> {res.json}")
+            self.assertEqual(f"ERR905: Token {self.serial} already exists with type totp. Can not initialize it "
+                             f"with type hotp.", res.json["result"]["error"]["message"])
+            self.assertEqual(rollout_state, get_one_token(serial=self.serial).rollout_state)
+            self.assertEqual(self.original_key, self._stored_key())
+            remove_token(self.serial)
+
+    def test_a_different_type_is_not_revealed_to_a_caller_without_rights_on_the_token(self):
+        self.setUp_user_realm2()
+        self._init_totp(RolloutState.ENROLLED, owner="cornelius")
+        data = {"serial": self.serial, "type": "hotp", "otpkey": self.chosen_key}
+
+        # The user may enroll and roll over both types, but does not own the token
+        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP, enrollTOTP, token_rollover")
+        self._assert_refused(self._init_request(data), "You are not allowed to roll over this token!")
+        delete_policy("type_user")
+
+        # The admin may enroll and roll over both types, but only in another realm than the one of the token
+        set_policy("type_admin", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, token_rollover",
+                   realm=self.realm2)
+        self._assert_refused(self._init_request(data, auth_token=self.at), self.admin_enroll_error)
+        self.assertEqual(self.original_key, self._stored_key())
+
+    def test_the_rollover_is_checked_against_the_type_of_the_token(self):
+        self._init_totp(RolloutState.ENROLLED)
+        set_policy("type_user", scope=SCOPE.USER, action="enrollHOTP, token_rollover")
+        res = self._init_request({"serial": self.serial, "otpkey": self.chosen_key})
+        self._assert_refused(res, self.user_enroll_error)
+        self.assertEqual(self.original_key, self._stored_key())
+
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP, token_rollover")
+        res = self._init_request({"serial": self.serial, "otpkey": self.chosen_key})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.chosen_key, self._stored_key())
+
+    def test_the_following_pre_policies_use_the_type_of_the_token(self):
+        self._init_totp(RolloutState.ENROLLED)
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP, token_rollover")
+        set_policy("type_description", scope=SCOPE.ENROLL, action=f"{PolicyAction.REQUIRE_DESCRIPTION}=totp")
+
+        res = self._init_request({"serial": self.serial, "otpkey": self.chosen_key})
+        self._assert_refused(res, "Description required for totp token.")
+        self.assertEqual(self.original_key, self._stored_key())
+
+        res = self._init_request({"serial": self.serial, "otpkey": self.chosen_key, "description": "rolled over"})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.chosen_key, self._stored_key())
+
+    def test_the_second_step_of_a_two_step_enrollment_needs_no_type(self):
+        set_policy("type_user", scope=SCOPE.USER, action="enrollTOTP, totp_2step=allow")
+        res = self._init_request({"serial": self.serial, "type": "totp", "2stepinit": 1, "genkey": 1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=self.serial).rollout_state)
+
+        res = self._init_request({"serial": self.serial, "otpkey": "aaaaaaaaaaaaaaaa"})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=self.serial).rollout_state)
+
+    def test_an_admin_verification_is_checked_against_the_type_of_the_token(self):
+        set_policy("type_admin", scope=SCOPE.ADMIN, action="enrollHOTP")
+        token = self._init_totp(RolloutState.VERIFY_PENDING)
+        res = self._init_request({"serial": self.serial, "verify": token.get_otp()[2]}, auth_token=self.at)
+        self._assert_refused(res, self.admin_enroll_error)
+        self.assertEqual(RolloutState.VERIFY_PENDING, get_one_token(serial=self.serial).rollout_state)
+
+        set_policy("type_admin", scope=SCOPE.ADMIN, action="enrollTOTP")
+        res = self._init_request({"serial": self.serial, "verify": token.get_otp()[2]}, auth_token=self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=self.serial).rollout_state)
 
 
 class APITokenInfoWriteTestCase(MyApiTestCase):

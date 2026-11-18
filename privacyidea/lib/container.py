@@ -829,10 +829,10 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             # Pre-policy checks
             # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
             try:
+                check_token_init(request, None)
                 check_max_token_realm(request, None)
                 require_description(request, None)
                 check_max_token_user(request, None)
-                check_token_init(request, None)
                 init_tokenlabel(request, None)
                 enroll_pin(request, None)
                 twostep_enrollment_activation(request, None)
