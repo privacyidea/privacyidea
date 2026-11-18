@@ -720,7 +720,8 @@ Configuration
 -------------
 
 The *Configuration* menu contains the general :ref:`system_config` (*System*), the :ref:`token_config` (*Tokentypes*),
-the machines and machine resolvers (*Machines*, see :ref:`machines`) and the :ref:`periodic_tasks` (*Periodic Tasks*).
+the machines (*Machines*), the machine resolvers (*Machine Resolver*, see :ref:`machines`) and the :ref:`periodic_tasks`
+(*Periodic Tasks*).
 
 .. figure:: ../configuration/images/system-config.png
    :width: 500

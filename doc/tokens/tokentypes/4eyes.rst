@@ -40,8 +40,8 @@ The three blocks separated by the separator ``|`` are checked, if they match tok
 in the realms *example* and *helpdesk*.
 
 The separator is set during enrollment (one character; the WebUI suggests
-``|``, the API default is a blank). The example uses a blank; with ``|`` the
-password is ``pin123456|secret789434|key098123``.
+``|``, the API default is a blank). With a blank as the separator, the
+password is ``pin123456 secret789434 key098123``.
 
 The response looks like this in case of success::
 

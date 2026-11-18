@@ -80,7 +80,7 @@ Token settings
 .. index:: maxfail, failcount, token description, count window
 
 You can change the following token settings in the *Counters*, *Description* and *Information* cards of the token
-details.
+details. *Fail Count* and its reset button are in the *Status* card.
 
 **Max Count and Fail Count**
 
@@ -166,6 +166,7 @@ Resync Token
 
 In the *Sync* card of the token details, the administrator can enter two consecutive
 OTP values in *Current OTP* and *Next OTP* and click *Resync Token* to resynchronize the token if it was out of sync.
+Passkeys and WebAuthn tokens have no *Sync* card.
 
 .. _test_token:
 
@@ -185,7 +186,7 @@ In the *Test* card, the administrator can check whether a token works:
   response is then entered and checked with *Send Response*. It requires the admin right
   :ref:`policy_triggerchallenge`.
 
-For passkeys, *Test Passkey* replaces these buttons.
+For passkeys, *Test Passkey* replaces these buttons. WebAuthn tokens have no *Test* card.
 
 Set token realm
 ---------------

@@ -11,8 +11,9 @@ several actions on the user.
 
    *User Details.*
 
-At the top of the page, *Edit* changes the attributes of the user (see `Edit user`_) and *Delete* deletes the user from
-the user store after a confirmation (admin policy action :ref:`policy_deleteuser`).
+If the resolver of the user is editable, *Edit* at the top of the page changes the attributes of the user (see
+`Edit user`_) and *Delete* deletes the user from the user store after a confirmation (admin policy action
+:ref:`policy_deleteuser`).
 
 The *Attributes* card lists the attributes the resolver returns for the user. Next to it, the *Custom Attributes* card
 shows the additional user attributes (see :ref:`user_attributes`), the *Internal Attributes* card the attributes
