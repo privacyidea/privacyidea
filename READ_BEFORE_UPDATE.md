@@ -13,7 +13,7 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
-* **Failed passkey and WebAuthn answers are logged as `CHALLENGE_ANSWERED_FAIL`.** With 3.14 they were logged as
+* **Failed passkey and WebAuthn answers are logged as `CHALLENGE_ANSWERED_FAIL`.** Before, they were logged as
   `MFA_FAIL`, which means a correct first factor and a failed second one, although no first factor is checked for them.
   A conditional-access policy that counts `MFA_FAIL` no longer counts these failures, among them policies created from
   the *MFA Brute-Force* template. Count `CHALLENGE_ANSWERED_FAIL` in a policy that should.
@@ -41,7 +41,10 @@
 * **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
   returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
   as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
-  with its next resolver. The authentication log records `USER_STORE_UNAVAILABLE`.
+  with its next resolver. The authentication log records `USER_STORE_UNAVAILABLE`. An HTTP resolver treats only a
+  `404` or a successful response that matches its *Special Error Handling* as an unknown user. Every other error status
+  and every response that is not JSON is an error. **Make sure that your HTTP resolvers answer an unknown user with
+  `404`** or with a response that matches *Special Error Handling*.
 
 * **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
@@ -134,7 +137,7 @@
 
 * **More event handlers fail the request when they fail.** The schema update sets *Abort on error* for the existing
   **request mangler** and **response mangler** handlers and for the **Script** handlers that are configured to raise an
-  error, also where the option was cleared in 3.14. With 3.14 it was only set for **Federation** handlers. A request
+  error, also where the option was cleared in 3.14. Before, it was only set for **Federation** handlers. A request
   mangler changes the parameters the endpoint works with and a response mangler the response the client receives, so
   the request must not go on without them, and *raise error* makes the script decide whether the request may go on. New
   request mangler and response mangler bindings start with the option enabled. Clear the option after the update for a
@@ -148,7 +151,7 @@
   names more groups than its match pattern has. **Check the audit entries of your manglers** after the update: one with
   such an error in its configuration never changed anything and now fails every request it matches.
 
-* **The token event handler and the command line tools write every token info entry again.** With 3.14 the
+* **The token event handler and the command line tools write every token info entry again.** Before, the
   *set tokeninfo*, *increase tokeninfo* and *delete tokeninfo* actions of the token event handler,
   `pi-tokenjanitor find ... set_tokeninfo` / `remove_tokeninfo`, `privacyidea-token-janitor` and
   `privacyidea-get-unused-tokens mark` skipped the entries a token type maintains itself, e.g. `next_pin_change`. They
@@ -156,11 +159,11 @@
 
 * **Request mangler with *reset user* and a `user@realm` login name** — The login name is split according to the
   Split@Sign setting and the user is looked up in that realm, unless the client sent a `realm` parameter or a handler
-  set one; a login name without a realm stays in the realm of the original request. With 3.14 the user was looked up in
+  set one; a login name without a realm stays in the realm of the original request. Before, the user was looked up in
   the realm of the original request.
 
 * **Webhook tags `{serial}` and `{token_serial}` name the token of the event.** With *replace* enabled they are taken
-  from the request, the response or the audit entry, and are empty if the event has no token. With 3.14 they named all
+  from the request, the response or the audit entry, and are empty if the event has no token. Before, they named all
   tokens of the user if the request did not name a serial.
 
 * **Event conditions `challenge_session` and `challenge_expired` need a challenge.** A definition with one of them
@@ -173,7 +176,7 @@
   the serial of a token that already exists matches the admin or user policy against that token - its owner or one of
   its realms, as for the other token actions - not against a realm passed in the request. This applies to the
   `token_rollover` action and, for the second request of an enrollment, e.g. of a two-step or a FIDO2 enrollment, to the
-  `enroll<TOKENTYPE>` action. With 3.14 the rollover was only matched against the realm of the token's owner, and the
+  `enroll<TOKENTYPE>` action. Before, the rollover was only matched against the realm of the token's owner, and the
   second request of an enrollment not against the token. A user can only name a token they own.
 
 * **`/validate/check` with `otponly=1` checks the token like any other authentication.** This is the *test OTP*
@@ -202,7 +205,7 @@
 
 * **Updating an existing policy keeps the fields that are not sent.** `POST /policy/<name>` and
   `pi-manage config policy create` with the name of an existing policy keep the stored value of every field the request
-  leaves out, e.g. a disabled policy stays disabled and its priority and description are kept. With 3.14 these fields
+  leaves out, e.g. a disabled policy stays disabled and its priority and description are kept. Before, these fields
   were reset and the policy was enabled again. A script that relies on leaving a field out to reset it has to send the
   value.
 
@@ -224,8 +227,8 @@
   enrollment requests fail.
 
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
-  because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
-  it exited with status 0.
+  because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. Before, it
+  exited with status 0.
 
 * **`pi-manage setup encrypt_enckey -o` creates the file readable only by its owner.** A new output file gets the
   permissions `0600`. Before, it got the default permissions of the system, for example `0644`. If you run the command
@@ -257,6 +260,11 @@
   Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
   realm, resolver and user work as before.
 
+* **The dashboard panels *Certificate Health*, *Resolver Timing* and *Notification Delivery* require `configread`.**
+  Their endpoints `GET /system/health/...` check the admin action `configread`, and the WebUI shows these panels only
+  to administrators with this action. Before, every administrator saw them. If you use admin policies, grant
+  `configread` to the administrators who use these panels.
+
 * **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
   owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
   matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
@@ -269,13 +277,13 @@
   a template, the enrollment policies are checked for each token as for a single token enrollment: against the user
   and the realm the token gets, not against the user of the container. A token without *Assign to user* gets neither a
   user nor a realm, so an administrator whose admin policies are restricted to certain realms can no longer create it
-  from a template. As before, such a token is skipped and the reason is only written to the log: the container is
-  created with the remaining tokens. **Review the container templates your realm administrators use** and select
-  *Assign to user* for the tokens they need to create.
+  from a template. Such a token is skipped, and the container is created with the remaining tokens. The response of
+  `POST /container/init` lists each skipped token in `tokens_not_created`, and the WebUI shows them. **Review the
+  container templates your realm administrators use** and select *Assign to user* for the tokens they need to create.
 
 * **Container conditions of PIN change and resync policies are checked against the container of the token.** The
   policies `change_pin_on_first_use`, `change_pin_every`, `change_pin_via_validate` and `resync_via_multichallenge`
-  now compare a `container` or `container_info` condition with the container that holds the token. Before 3.14.1,
+  now compare a `container` or `container_info` condition with the container that holds the token. Before,
   these conditions never got container data, so the *Handle Missing Data* option alone decided whether the policy
   applied. For a token without a container, the option still decides. **Check these policies for container
   conditions.** For example, a policy with *Condition is true* no longer applies to tokens in a container that does
@@ -288,7 +296,7 @@
   ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
   and the log names the policy and the resolver.
 
-* **`date_within_last` does not match a date in the future.** Before 3.14.1, a condition with `date_within_last`
+* **`date_within_last` does not match a date in the future.** Before, a condition with `date_within_last`
   matched every date in the future, and `!date_within_last` matched none. Now a date in the future is not within the
   past duration. A negative duration such as `-1d` is an error. A policy with such a condition fails the request with
   "Invalid comparison". An event handler condition with it is always false. **Check the conditions with
@@ -312,6 +320,12 @@
   `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED` no longer counts these requests. This includes policies created from the
   *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
   `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
+
+* **A conditional access policy resets its count only on a successful login that its conditions cover.** For example,
+  a login to the WebUI no longer resets a policy for `/validate/check` with *Reset the count on a successful login*.
+  Before, this applied only to the count mode `PER_REQUEST`. In the count mode `PER_ATTEMPT`, every successful login of
+  the user reset the count. Such a policy can now reach its thresholds sooner. Check the `PER_ATTEMPT` policies that
+  have conditions and reset on a successful login.
 
 * **The PIN change via `/validate/check`** (policy `change_pin_via_validate`) has the checks of any other
   authentication. Each of its two challenges can be answered once, and only while it is valid. The token has to be
@@ -345,10 +359,11 @@
 
 * **Two-step enrollment for every token rollover.** If a `hotp_2step` or `totp_2step` policy has the value `force`,
   every rollover of an enrolled token uses the two-step enrollment. This applies to each request to `/token/init` for
-  such a token, with or without the `rollover` parameter. The rollover in the WebUI does not change, because the
-  WebUI always sends the `rollover` parameter. If a script rolls over such tokens through the API, make sure that it
-  sends the client component in a second request. The server refuses a request that sends its own key (`otpkey`) for
-  such a token, as for a new token.
+  such a token, with or without the `rollover` parameter. The policy is matched for the owner of the token. Before, an
+  admin policy for a realm, resolver or user did not apply to a request that names only the serial of the token. The
+  rollover in the WebUI sends such a request, so under such a policy it now uses the two-step enrollment as well. If a
+  script rolls over such tokens through the API, make sure that it sends the client component in a second request.
+  The server refuses a request that sends its own key (`otpkey`) for such a token, as for a new token.
 
 * **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
   for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
