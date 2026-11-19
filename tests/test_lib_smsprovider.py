@@ -9,6 +9,7 @@ This test file tests the modules:
 import json
 import os
 
+import unittest
 from unittest import mock
 import responses
 from sqlalchemy import select
@@ -371,8 +372,9 @@ class SmtpSMSTestCase(MyTestCase):
             log.assert_any_call("submitting message 'Hello' to 4912345678")
 
 
+@unittest.skipIf(os.name == "nt", "The test scripts are shell scripts")
 class ScriptSMSTestCase(MyTestCase):
-    directory = f"{os.getcwd()!s}/tests/testdata/scripts/"
+    directory =f"{os.getcwd()!s}/tests/testdata/scripts/"
 
     def test_01_fail_no_script(self):
         # The script does not exist

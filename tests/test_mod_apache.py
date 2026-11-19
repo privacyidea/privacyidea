@@ -1,14 +1,19 @@
 """
 This test tests the authmodules/Apache2/privacyidea_apache.py
 """
-from .base import MyTestCase
-from authmodules.apache2.privacyidea_apache import (OK, UNAUTHORIZED,
+import pytest
+
+# The Apache authentication module logs to the syslog, which does not exist on Windows
+pytest.importorskip("syslog", reason="The Apache authentication module needs the syslog module (Linux only)")
+
+from .base import MyTestCase  # noqa: E402
+from authmodules.apache2.privacyidea_apache import (OK, UNAUTHORIZED,  # noqa: E402
                                                     check_password,
                                                     ROUNDS, SALT_SIZE)
-import responses
-import json
-from . import redismock
-import passlib.hash
+import responses  # noqa: E402
+import json  # noqa: E402
+from . import redismock  # noqa: E402
+import passlib.hash  # noqa: E402
 
 
 SUCCESS_BODY = {"detail": {"message": "matching 1 tokens",

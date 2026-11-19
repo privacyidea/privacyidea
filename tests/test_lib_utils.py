@@ -2,6 +2,8 @@
 This tests the package lib.utils
 """
 import binascii
+import select
+import socket
 from dataclasses import dataclass, field
 from datetime import timedelta, datetime
 
@@ -40,6 +42,7 @@ from privacyidea.lib.utils import (parse_timelimit,
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
 from privacyidea.lib.utils import check_module_allowed
+from privacyidea.lib.utils.compat import SelectPoll, make_pyrad_work_without_poll
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from .base import MyTestCase, OverrideConfigTestCase
 
@@ -439,7 +442,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(td, timedelta(hours=-3))
 
     def test_14_convert_timestamp_to_utc(self):
-        d = datetime.now(tz=gettz('America/New York'))
+        d = datetime.now(tz=gettz('America/New_York'))
         d_utc = convert_timestamp_to_utc(d)
         self.assertGreater(d_utc, d.replace(tzinfo=None))
 
@@ -1495,3 +1498,62 @@ class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):
         for k, v in data.items():
             res = get_computer_name_from_user_agent(k)
             self.assertEqual(v, res)
+
+
+class ReloadDbTestCase(MyTestCase):
+    """reload_db compares the config cache timestamp with the timestamp stored in the database"""
+
+    @staticmethod
+    def _db_ts(value):
+        return mock.Mock(Value=str(value))
+
+    def test_01_reload_db(self):
+        now = datetime.now()
+        epoch = int(now.timestamp())
+        # no cache timestamp or no database timestamp: the values are not initialized, reload
+        self.assertTrue(privacyidea_utils.reload_db(None, self._db_ts(epoch)))
+        self.assertTrue(privacyidea_utils.reload_db(now, None))
+        # the database is newer than the cache (or as new, we only compare whole seconds): reload
+        self.assertTrue(privacyidea_utils.reload_db(now, self._db_ts(epoch + 10)))
+        self.assertTrue(privacyidea_utils.reload_db(now, self._db_ts(epoch)))
+        # the cache is newer than the database: nothing to do
+        self.assertFalse(privacyidea_utils.reload_db(now, self._db_ts(epoch - 10)))
+        # an old style database timestamp ("2016-...") always triggers a reload
+        self.assertTrue(privacyidea_utils.reload_db(now, self._db_ts("2016-01-01 00:00:00")))
+
+
+class SelectPollTestCase(MyTestCase):
+    """The replacement of select.poll() for the RADIUS client of pyrad, for platforms without it (Windows)"""
+
+    def test_01_poll(self):
+        poll = SelectPoll()
+        reader, writer = socket.socketpair()
+        self.addCleanup(reader.close)
+        self.addCleanup(writer.close)
+        poll.register(reader, SelectPoll.POLLIN)
+        # nothing to read: the timeout passes and the list is empty
+        self.assertEqual([], poll.poll(10))
+        writer.send(b"hello")
+        self.assertEqual([(reader.fileno(), SelectPoll.POLLIN)], poll.poll(1000))
+        poll.unregister(reader)
+        self.assertEqual([], poll.poll(10))
+        # like select.poll(), unregistering something that is not registered is an error
+        self.assertRaises(KeyError, poll.unregister, reader)
+
+    def test_02_pyrad_gets_poll_only_if_needed(self):
+        import pyrad.client
+        original = pyrad.client.select
+        # The original is put back, whatever happens in this test
+        with mock.patch.object(pyrad.client, "select", original):
+            # Nothing happens if there is a select.poll()
+            with mock.patch("privacyidea.lib.utils.compat.select", mock.Mock(poll=mock.Mock())):
+                make_pyrad_work_without_poll()
+            self.assertIs(original, pyrad.client.select)
+            # Without it, the select module of pyrad gets one
+            with mock.patch("privacyidea.lib.utils.compat.select", mock.Mock(spec=["select"])):
+                make_pyrad_work_without_poll()
+            self.assertIsNot(original, pyrad.client.select)
+            self.assertIsInstance(pyrad.client.select.poll(), SelectPoll)
+            self.assertEqual(SelectPoll.POLLIN, pyrad.client.select.POLLIN)
+            # everything else still comes from the select module
+            self.assertIs(select.select, pyrad.client.select.select)

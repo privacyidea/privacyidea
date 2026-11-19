@@ -26,7 +26,8 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-basedir = "/".join(basedir.split("/")[:-1]) + "/"
+# The directory above the package, always with forward slashes and a trailing slash, also on Windows
+basedir = os.path.dirname(basedir).replace(os.sep, "/").rstrip("/") + "/"
 
 pubtest_key = b"""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0stF+PVh/qR7I82ywgDW

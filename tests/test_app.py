@@ -209,6 +209,28 @@ class AppTestCase(unittest.TestCase):
         self.assertFalse(existing_logger.disabled)
 
 
+class PortablePathsTestCase(unittest.TestCase):
+    """The default paths must not depend on the working directory or the path separator of the platform"""
+
+    def test_01_basedir(self):
+        from privacyidea.config import basedir
+        # The directory above the package with forward slashes and a trailing slash on every platform
+        self.assertTrue(basedir.endswith("/"), basedir)
+        self.assertNotIn("\\", basedir)
+        self.assertTrue(os.path.samefile(basedir, dirname), basedir)
+        # The default paths of the config classes are built from it and have to exist
+        self.assertTrue(os.path.isfile(TestingConfig.PI_ENCFILE), TestingConfig.PI_ENCFILE)
+        self.assertTrue(os.path.isfile(TestingConfig.PI_AUDIT_KEY_PRIVATE), TestingConfig.PI_AUDIT_KEY_PRIVATE)
+        self.assertTrue(os.path.isfile(TestingConfig.PI_AUDIT_KEY_PUBLIC), TestingConfig.PI_AUDIT_KEY_PUBLIC)
+
+    def test_02_migration_directory(self):
+        # pi-manage finds the migration scripts independent of the working directory
+        app = create_app(config_name="testing", config_file="", silent=True)
+        directory = app.extensions["migrate"].directory
+        self.assertTrue(os.path.isabs(directory), directory)
+        self.assertTrue(os.path.isfile(os.path.join(directory, "env.py")), directory)
+
+
 class HashConfigTestCase(unittest.TestCase):
     """
     Both factories refuse to start with an unusable PI_HASH_ALGO_LIST or PI_HASH_ALGO_PARAMS.

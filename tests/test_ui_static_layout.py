@@ -164,7 +164,9 @@ class PreviewConfigRemapTestCase(MyTestCase):
         """An appliance writes the absolute path of the installed package into pi.cfg."""
         with self.assertLogs("privacyidea.app", level="WARNING"):
             app = self._resolved("/opt/privacyidea/lib/privacyidea/static_new/")
-        self.assertEqual("/opt/privacyidea/lib/privacyidea/static", app.static_folder)
+        # On Windows the path has a drive letter and backslashes
+        self.assertEqual("/opt/privacyidea/lib/privacyidea/static",
+                         os.path.splitdrive(app.static_folder)[1].replace(os.sep, "/"))
 
     def test_the_static_folder_alone_is_remapped(self):
         """Only the first of the two documented lines is enough to break an installation."""

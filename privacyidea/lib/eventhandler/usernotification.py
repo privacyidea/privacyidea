@@ -555,11 +555,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 random = get_alphanum_str(16)
                 filename = filename.format(random=random, **tags).lstrip(os.path.sep)
                 outfile = os.path.normpath(os.path.join(spooldir, filename))
-                if not outfile.startswith(spooldir):
+                # normpath() uses the path separator of the platform, so the spool directory has to as well
+                if not outfile.startswith(spooldir.replace("/", os.path.sep)):
                     log.error(f'Cannot write outside of spooldir {spooldir}!')
                 else:
                     try:
-                        with open(outfile, "w") as f:
+                        with open(outfile, "w", encoding="utf-8") as f:
                             f.write(body)
                     except Exception as err:
                         log.error(f"Failed to write notification file: {err}")

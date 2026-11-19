@@ -14,6 +14,9 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import os
+import unittest
+
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver
 from tests.base import MyTestCase, PWFILE
@@ -30,6 +33,7 @@ class PasswdResolverTest(MyTestCase):
                   "desc.fileName": "The name of the file"}
         self.resolver.loadConfig(config)
 
+    @unittest.skipUnless(os.path.isfile("/etc/passwd"), "The default file /etc/passwd does not exist")
     def test_01_load_config_with_empty_file_name(self):
         # Create a resolver with an empty filename will use the filename /etc/passwd
         resolver = IdResolver()

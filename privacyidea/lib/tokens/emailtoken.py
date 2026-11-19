@@ -412,7 +412,7 @@ class EmailTokenClass(HotpTokenClass):
         if message.startswith("file:"):
             # We read the template from the file.
             try:
-                with open(message[5:]) as f:
+                with open(message[5:], encoding="utf-8") as f:
                     message = f.read()
                     mimetype = "html"
             except Exception as e:  # pragma: no cover

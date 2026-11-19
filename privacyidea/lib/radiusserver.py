@@ -49,10 +49,14 @@ from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
+from privacyidea.lib.utils.compat import make_pyrad_work_without_poll
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
 log = logging.getLogger(__name__)
+
+# The RADIUS client of pyrad needs select.poll(), which does not exist on Windows
+make_pyrad_work_without_poll()
 
 
 class RADIUSServer:

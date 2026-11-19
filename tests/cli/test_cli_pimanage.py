@@ -50,7 +50,7 @@ from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
-                                      get_resolver_list)
+                                      get_resolver_list, get_resolver_object)
 from privacyidea.lib.clients import create_client
 from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
                                 Realm, RememberedDevice)
@@ -81,6 +81,11 @@ def _deleted_row_counts(table_name: str) -> Iterator[list[int]]:
         yield deleted_row_counts
     finally:
         sa.event.remove(sa.engine.Engine, "after_cursor_execute", record)
+
+
+def _member_name(path: pathlib.Path) -> str:
+    """The name of a file as a member of a tar archive: forward slashes, no drive letter, no leading slash"""
+    return os.path.splitdrive(path.as_posix())[1].lstrip("/")
 
 
 class PIManageAdminTestCase(CliTestCase):
@@ -168,7 +173,8 @@ class PIManageAuditTestCase(CliTestCase):
         # An audit table in a database of its own, configured as PI_AUDIT_SQL_URI.
         import unittest.mock as mock
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
+        # Windows does not remove a database file that is still open
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_dir:
             audit_uri = f"sqlite:///{tmp_dir}/audit.sqlite"
             audit_engine = sa.create_engine(audit_uri)
             Audit.__table__.create(audit_engine)
@@ -456,9 +462,9 @@ class PIManageBackupTestCase(CliTestCase):
         import unittest.mock as mock
 
         sql_file_path = live_pi_cfg.parent / f"dbdump-20240101-1200{dump_suffix}"
-        cfg_rel = str(live_pi_cfg).lstrip("/")
-        sql_rel = str(sql_file_path).lstrip("/")
-        enckey_rel = str(live_pi_cfg.parent / "enckey").lstrip("/")
+        cfg_rel = _member_name(live_pi_cfg)
+        sql_rel = _member_name(sql_file_path)
+        enckey_rel = _member_name(live_pi_cfg.parent / "enckey")
 
         def make_member(name):
             m = mock.MagicMock()
@@ -1149,11 +1155,11 @@ class PIManageBackupTestCase(CliTestCase):
             dump_content = b"-- sql dump placeholder\n"
             archive_file = tmp / "backup.tgz"
             with tarfile.open(archive_file, "w:gz") as archive:
-                config_link = tarfile.TarInfo(str(restore_dir / "pi.cfg").lstrip("/"))
+                config_link = tarfile.TarInfo(_member_name(restore_dir / "pi.cfg"))
                 config_link.type = tarfile.SYMTYPE
                 config_link.linkname = "../outside/pi.cfg"
                 archive.addfile(config_link)
-                dump_member = tarfile.TarInfo(str(dump_file).lstrip("/"))
+                dump_member = tarfile.TarInfo(_member_name(dump_file))
                 dump_member.size = len(dump_content)
                 archive.addfile(dump_member, io.BytesIO(dump_content))
 
@@ -1161,7 +1167,9 @@ class PIManageBackupTestCase(CliTestCase):
             result = runner.invoke(pi_manage, ["backup", "restore", str(archive_file)])
 
             self.assertEqual(2, result.exit_code, result.output)
-            self.assertIn(f"The config file {restore_dir / 'pi.cfg'} in the backup file cannot be read.",
+            # The restore names the file by its name in the archive with a slash in front
+            restored_config = pathlib.Path("/" + _member_name(restore_dir / "pi.cfg"))
+            self.assertIn(f"The config file {restored_config} in the backup file cannot be read.",
                           result.output, result.output)
             self.assertFalse(os.path.lexists(restore_dir / "pi.cfg"), "the link was extracted despite the refusal")
             self.assertFalse(dump_file.exists(), "the dump was extracted despite the refusal")
@@ -1188,7 +1196,8 @@ class PIManageBackupTestCase(CliTestCase):
                 result = runner.invoke(pi_manage, ["backup", "restore", "ignored.tgz"])
 
             self.assertEqual(2, result.exit_code, result.output)
-            self.assertIn(f"The config file {live_pi_cfg} in the backup file cannot be read: ",
+            archived_config_path = pathlib.Path("/" + _member_name(live_pi_cfg))
+            self.assertIn(f"The config file {archived_config_path} in the backup file cannot be read: ",
                           result.output, result.output)
             self.assertEqual(live_config, live_pi_cfg.read_text())
             self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
@@ -1273,6 +1282,42 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertEqual(dump_bytes, seen["stdin"])
             # A successful restore consumes the extracted dump.
             self.assertFalse(sqlfile.exists())
+
+
+class PIManageResolverTestCase(CliTestCase):
+    def test_01_create_internal_resolver(self):
+        # The internal resolver stores its users in the token database. Whatever the platform specific form
+        # of the database URI is (e.g. "sqlite:///C:/dir/pi.sqlite" on Windows), the resolver has to use this
+        # database.
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "resolver", "create_internal", "internalres"])
+        self.assertEqual(0, result.exit_code, result)
+        try:
+            resolver = get_resolver_object("internalres")
+            self.assertTrue(resolver.editable)
+            uid = resolver.add_user({"username": "internaluser", "givenname": "Internal", "surname": "User",
+                                     "password": "secret"})
+            self.assertEqual(str(uid), resolver.getUserId("internaluser"))
+            resolver.delete_user(uid)
+        finally:
+            delete_resolver("internalres")
+            sa.Table("users_internalres", sa.MetaData()).drop(db.engine, checkfirst=True)
+
+
+def test_running_as_root_without_geteuid():
+    # There is no os.geteuid on Windows
+    from privacyidea.cli.pimanage.backup import _running_as_root
+    with mock.patch("privacyidea.cli.pimanage.backup.os", spec=[]):
+        assert _running_as_root() is False
+
+
+def test_running_as_root_with_geteuid():
+    from privacyidea.cli.pimanage.backup import _running_as_root
+    with mock.patch("privacyidea.cli.pimanage.backup.os") as fake_os:
+        fake_os.geteuid.return_value = 0
+        assert _running_as_root() is True
+        fake_os.geteuid.return_value = 1000
+        assert _running_as_root() is False
 
 
 class PIManageRealmTestCase(CliTestCase):
@@ -1454,7 +1499,11 @@ class TestPIManageSetupClass:
         assert f"Encryption key written to {enckey}" in result.stdout
         key = enckey.read_bytes()
         assert len(key) == 96
-        assert enckey.stat().st_mode & 0o777 == 0o400
+        if os.name == "nt":
+            # Windows only knows a read only flag
+            assert not os.access(enckey, os.W_OK)
+        else:
+            assert enckey.stat().st_mode & 0o777 == 0o400
 
         result = create_enckey()
         assert result.returncode == 1, result.stderr
@@ -1477,7 +1526,7 @@ class TestPIManageSetupClass:
                 gpg.list_keys.return_value = existing_keys
                 gpg.gen_key_input.return_value = self.GPG_KEY_INPUT
                 result = runner.invoke(pi_manage, ["setup", "create_pgp_keys", *arguments])
-        gpg_class.assert_called_once_with(gnupghome=str(gpg_home))
+        gpg_class.assert_called_once_with(gnupghome=gpg_home.as_posix())
         return result, gpg
 
     def test_04_create_pgp_keys_generates_a_key_without_passphrase(self, app, tmp_path):

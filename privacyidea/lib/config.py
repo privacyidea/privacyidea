@@ -108,8 +108,9 @@ class SharedConfigClass:
         """
         from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
+        # "<=": the clock of Windows can tick only every 15.6 ms, so "now" can equal the timestamp of the last reload
         if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=check_reload_config) < datetime.datetime.now():
+                seconds=check_reload_config) <= datetime.datetime.now():
             stmt = select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)
             db_ts = db.session.scalars(stmt).first()
             if reload_db(self.timestamp, db_ts):

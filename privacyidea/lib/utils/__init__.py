@@ -1013,7 +1013,9 @@ def reload_db(timestamp, db_ts):
     """
     internal_timestamp = ''
     if timestamp:
-        internal_timestamp = timestamp.strftime("%s")
+        # strftime("%s") is a glibc extension and raises a ValueError on Windows. It converts the local time
+        # with mktime(), which is exactly what time.mktime() does.
+        internal_timestamp = str(int(time.mktime(timestamp.timetuple())))
     rdb = False
     # Reason to reload
     if db_ts and db_ts.Value.startswith("2016-"):

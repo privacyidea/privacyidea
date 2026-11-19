@@ -41,6 +41,12 @@ SQLITE = "sqlite"
 MYSQL = "mysql"
 POSTGRESQL = "postgresql"
 
+
+def _running_as_root() -> bool:
+    """Whether the process runs as root. ``os.geteuid`` does not exist on Windows, there is no root there."""
+    return hasattr(os, "geteuid") and os.geteuid() == 0
+
+
 # Backup implementation per SQLAlchemy backend name (the part of the URI before
 # the "+"), so every driver of a supported engine is recognised.
 BACKEND_FAMILIES = {
@@ -140,7 +146,7 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
 
     # set correct owner, if possible
-    if os.geteuid() == 0:
+    if _running_as_root():
         enc_file_stat = enc_file.stat()
         shutil.chown(directory, user=enc_file_stat.st_uid, group=enc_file_stat.st_gid)
 
@@ -694,6 +700,6 @@ def _write_mysql_defaults(defaults_file: pathlib.Path, url: URL) -> None:
         sql_defaults.write(f)
     defaults_file.chmod(0o600)
     # set correct owner, if possible
-    if os.geteuid() == 0:
+    if _running_as_root():
         dir_stat = defaults_file.parent.stat()
         shutil.chown(defaults_file, dir_stat.st_uid, dir_stat.st_gid)

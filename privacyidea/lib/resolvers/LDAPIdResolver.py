@@ -86,6 +86,10 @@ elif os.path.isfile("/etc/ssl/certs/ca-certificates.crt"):
     DEFAULT_CA_FILE = "/etc/ssl/certs/ca-certificates.crt"
 elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
     DEFAULT_CA_FILE = "/etc/ssl/certs/ca-bundle.crt"
+elif os.name == "nt":
+    # There are no CA bundle files on Windows. Without a CA file, ldap3 verifies against the certificate store
+    # of the system.
+    DEFAULT_CA_FILE = None
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 

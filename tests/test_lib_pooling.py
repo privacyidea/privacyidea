@@ -8,6 +8,7 @@ and the teardown contract its consumers depend on - the SQL audit module, the SQ
 module and the SQL resolver, each of which disposes an engine of its own but leaves a shared
 one alone.
 """
+import os
 import shutil
 import tempfile
 
@@ -37,7 +38,8 @@ class EngineHolders:
         a query, so that its session really holds a connection to hand back.
         """
         work_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, work_dir)
+        # Windows does not remove a database file that is still open
+        self.addCleanup(shutil.rmtree, work_dir, ignore_errors=os.name == "nt")
         shutil.copy("tests/testdata/testuser.sqlite", f"{work_dir}/testuser.sqlite")
         resolver = SQLResolver().loadConfig({"Driver": "sqlite",
                                              "Server": f"/{work_dir}",

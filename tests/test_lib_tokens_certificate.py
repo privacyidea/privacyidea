@@ -4,6 +4,7 @@
 This test file tests the lib.tokens.certificatetoken
 """
 import base64
+import pathlib
 import unittest
 
 from unittest import mock
@@ -337,10 +338,11 @@ class CertificateTokenTestCase(MyTestCase):
             r = verify_certificate_path(x509.load_pem_x509_certificate(BOGUS_ATTESTATION.encode()),
                                         ["tests/testdata/attestation"])
             self.assertFalse(r)
+        # The path is logged with the path separator of the platform
         log_capture.check(("privacyidea.lib.tokens.certificatetoken",
                            "INFO",
                            "Can not verify attestation certificate against chain "
-                           "in tests/testdata/attestation/yubico.pem"))
+                           f"in {pathlib.Path('tests/testdata/attestation/yubico.pem')}"))
         # TODO: Check verification with a broken chain (need to construct one)
 
     def test_01_create_token_from_certificate(self):
