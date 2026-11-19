@@ -52,6 +52,14 @@
   without the parameter all tokens as before. The same applies to `container_realm` on `GET /container/`. Scripts that
   send `tokenrealm=*` to mean "all tokens" must omit the parameter.
 
+* **A new enrollment policy action `push_key_algorithms` lets push tokens use ECDSA keys.** Push tokens can now use
+  keys on the curve P-256 (`secp256r1`) in addition to RSA 4096 (`rsa_4096`). The default stays `rsa_4096`, so without
+  the policy nothing changes and existing push tokens keep their RSA keys. If you allow `secp256r1`, be aware that a
+  node of an older version that handles the second enrollment step creates a broken token, so allow it only after all
+  privacyIDEA nodes run 3.15. A push token with an ECDSA key cannot be exported to an older privacyIDEA version.
+  `secp256r1` requires a privacyIDEA Authenticator that supports ECDSA push tokens. If the policy allows only
+  `secp256r1`, older apps cannot enroll.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

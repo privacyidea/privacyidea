@@ -84,7 +84,7 @@ Older apps send the array of capability names or no ``capabilities`` at all.
 
 The server responds with its public key for this token.
 
-.. _push_key_algorithms_section:
+.. _push_key_algorithms:
 
 Key algorithms
 ~~~~~~~~~~~~~~
@@ -92,23 +92,17 @@ Key algorithms
 .. versionadded:: 3.15
 
 By default, push tokens use RSA keys with 4096 bits. With the enrollment policy
-:ref:`policy_push_key_algorithms` an administrator can additionally allow ECDSA keys on the
-curve P-256 (``secp256r1``). The selected order is the preference: the server offers the allowed algorithms in
-the order in which they are stored in the policy. In the new WebUI this is the order of the clicks, the value
-checked first is preferred, and a value is moved to the end by deselecting and checking it again. The old WebUI
-saves the values in the order of the list. If two matching policies of the same highest priority define different
-lists, the enrollment fails with a policy error. Existing push tokens keep their RSA keys.
-The use of ECDSA requires a privacyIDEA Authenticator version that supports ECDSA push tokens.
-An app that cannot create an ECDSA key takes the next entry of the list.
+:ref:`policy_push_key_algorithms` you can additionally allow ECDSA keys on the curve P-256 (``secp256r1``).
+The server offers the allowed algorithms in the order in which they are stored in the policy, and the smartphone
+app uses the first algorithm it supports.
 
 The server decides the key type of its own key pair by the type of the public key of the smartphone and checks
-it against the allowed key algorithms of the policy. The server reads the capabilities the app sends in step 2
-only to name the key algorithms of the app in an error message. It does not store them.
+it against the allowed key algorithms of the policy. The server reads the capabilities the app sends in the second
+enrollment step only to name the key algorithms of the app in an error message. It does not store them.
 
-.. note:: The enrollment URL of a server of this version differs from the URL of an older server, even with the
-   default policy, because it contains ``capabilities``. Older apps ignore unknown parameters in the URL and use
-   RSA. This was verified live for the privacyIDEA Authenticator 4.8.1 and 4.7.5. For the versions 4.0 to 4.6 it was
-   only verified by reading the code, and for versions before 4.0 it is unknown.
+.. note:: The enrollment URL of a privacyIDEA server of this version differs from the URL of an older server, even
+   with the default policy, because it contains ``capabilities``. Older apps ignore unknown parameters in the URL
+   and use RSA.
 
 The two key types differ in the following places:
 
@@ -120,7 +114,7 @@ The two key types differ in the following places:
      - RSA 4096 (default)
      - ECDSA P-256
    * - Enrollment URL (step 1)
-     - Always ``capabilities`` (what the server can), no parameter ``key_algorithm`` if the policy allows only
+     - Always ``capabilities`` (what the server can do), no parameter ``key_algorithm`` if the policy allows only
        ``rsa_4096``
      - Always ``capabilities``, and ``key_algorithm`` as a comma separated list in the order of preference,
        for example ``secp256r1,rsa_4096``
@@ -139,16 +133,10 @@ The two key types differ in the following places:
 
 The signed messages are the same for both key types.
 
-If the policy does not allow the key type that the smartphone sends, the server answers the second
-enrollment step with the HTTP status 400. The error message names the allowed key algorithms and, if the app
-reported them, the key algorithms of the app. It asks the user to update the privacyIDEA Authenticator and the
-token stays in the state ``clientwait``. Delete the failed token in the app before scanning the QR code again.
-This happens if the policy contains only ``secp256r1`` and an older app sends an RSA key. The privacyIDEA
-Authenticator versions 4.7.0 to 4.7.5 show only "Status code: 400" instead of this text. The policy
-``hide_specific_error_message_for_ttype`` suppresses the text for every app.
-
-.. warning:: Allow ``secp256r1`` only after all privacyIDEA nodes run a version that supports ECDSA push tokens.
-   A node of an older version that handles the second enrollment step would create a broken token.
+If the policy does not allow the key type that the smartphone sends, the server answers the second enrollment step
+with the HTTP status 400. The error message names the allowed key algorithms and, if the app reported them, the
+key algorithms of the app, and asks to update the app. The token keeps waiting for the enrollment (state
+``clientwait``).
 
 .. warning:: A push token with an ECDSA key cannot be exported to an older privacyIDEA version.
 
