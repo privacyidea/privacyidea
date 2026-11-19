@@ -97,7 +97,7 @@ describe("TokenEnrolledTextComponent", () => {
 
     component.tokenSelected();
 
-    expect(confirmLeave).toHaveBeenCalled();
+    expect(confirmLeave).toHaveBeenCalledWith("token");
     expect(switchRouteSpy).toHaveBeenCalled();
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
@@ -235,7 +235,7 @@ describe("TokenEnrolledTextComponent", () => {
       expect(icon()).toBe("check_circle");
       expect(summary().classList).not.toContain("enrolled__summary--pending");
 
-      fixture.componentRef.setInput("pending", true);
+      fixture.componentRef.setInput("state", "verify");
       fixture.detectChanges();
       expect(icon()).toBe("pending");
       expect(summary().classList).toContain("enrolled__summary--pending");
@@ -245,12 +245,22 @@ describe("TokenEnrolledTextComponent", () => {
       fixture.componentRef.setInput("username", "alice");
       fixture.componentRef.setInput("userRealm", "realm1");
       fixture.componentRef.setInput("rollover", true);
-      fixture.componentRef.setInput("pending", true);
+      fixture.componentRef.setInput("state", "verify");
       fixture.detectChanges();
       const summary = (fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement).textContent;
-      expect(summary?.trim()).toContain("The token was enrolled.");
+      expect(summary?.trim()).toContain(
+        "The token was enrolled, but it still has to be verified before it can be used."
+      );
       expect(summary).not.toContain("successfully");
       expect(labels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("shows a pending summary while the enrollment is not complete", () => {
+      fixture.componentRef.setInput("state", "incomplete");
+      fixture.detectChanges();
+      const summary = fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement;
+      expect(summary.textContent).toContain("The token was created, but its enrollment is not complete yet.");
+      expect(summary.classList).toContain("enrolled__summary--pending");
     });
 
     it("shows only the summary in summary-only mode", () => {

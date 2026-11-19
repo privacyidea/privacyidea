@@ -28,8 +28,14 @@
       >{{ pending() ? "pending" : "check_circle" }}</mat-icon
     >
     <span>
-      @if (pending()) {
-        <ng-container i18n="@@token.enrolledSummaryVerificationPending">The token was enrolled.</ng-container>
+      @if (state() === "verify") {
+        <ng-container i18n="@@token.enrolledSummaryVerificationRequired"
+          >The token was enrolled, but it still has to be verified before it can be used.</ng-container
+        >
+      } @else if (state() === "incomplete") {
+        <ng-container i18n="@@token.enrolledSummaryIncomplete"
+          >The token was created, but its enrollment is not complete yet.</ng-container
+        >
       } @else if (rollover()) {
         <ng-container i18n="@@token.enrolledSummaryRollover">The token has been successfully rolled over.</ng-container>
       } @else if (showUser()) {

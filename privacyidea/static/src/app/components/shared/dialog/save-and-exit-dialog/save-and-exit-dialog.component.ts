@@ -26,6 +26,7 @@ export interface SaveAndExitDialogData {
   message?: string;
   saveButtonText?: string;
   discardButtonText?: string;
+  cancelButtonText?: string;
   allowSaveExit: boolean;
   saveExitDisabled: boolean;
 }

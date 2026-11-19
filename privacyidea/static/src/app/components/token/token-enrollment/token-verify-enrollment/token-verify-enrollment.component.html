@@ -33,19 +33,13 @@
     [userRealm]="enrollData?.realm"
     [onlyAddToRealm]="enrollData?.onlyAddToRealm"
     [rollover]="data.rollover ?? false"
-    [pending]="true"
+    state="verify"
     [summaryOnly]="wizard"
-    (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
+    [confirmLeave]="confirmLeave"></app-token-enrolled-text>
 
   <app-enrollment-customization-frame
     [enabled]="wizard"
     [enrollmentDetail]="responseDetails">
-    <span
-      class="margin-bottom-16"
-      i18n="@@token.howeverActivate"
-      >However, to activate your token you still need to verify the enrollment.</span
-    >
-
     @if (data.showEnrollData !== false && data.response) {
       <app-token-enrollment-data
         (enrollmentResponseChange)="onEnrollmentResponseChange($event)"

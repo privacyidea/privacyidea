@@ -17,10 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, Signal } from "@angular/core";
-import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
+import { confirmLeaveIncompleteStep } from "@components/token/token-enrollment/leave-incomplete-enrollment";
+import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
 import {
   ENROLLMENT_CANCELLED,
@@ -32,6 +34,8 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 export interface TokenEnrollmentFirstStepDialogData {
   enrollmentResponse: EnrollmentResponse;
+  // The enrollment request, for the user and realm in the header.
+  enrollmentData?: TokenEnrollmentData;
   showCancelButton?: boolean;
   wizard?: boolean;
   cancelConfirmationMessage?: string;
@@ -43,7 +47,7 @@ type FirstStepDialogAction = "retry" | "cancelEnrollment";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
-  imports: [DialogWrapperComponent, EnrollmentCustomizationFrameComponent],
+  imports: [DialogWrapperComponent, EnrollmentCustomizationFrameComponent, TokenEnrolledTextComponent],
   templateUrl: "./token-enrollment-first-step-dialog.component.html"
 })
 export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
@@ -53,6 +57,14 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly wizard = this.data.wizard ?? false;
+  // A link leaves like Close; where Cancel replaces Close, it asks what happens to the token.
+  protected readonly confirmLeave = confirmLeaveIncompleteStep({
+    dialogService: this.dialogService,
+    tokenService: this.tokenService,
+    serial: () => this.data.enrollmentResponse.detail?.serial,
+    canCancel: () => !!this.data.showCancelButton,
+    close: (result) => this.dialogRef.close(result)
+  });
 
   protected readonly registrationFailed = computed(() => this.data.registrationFailed?.() ?? false);
 

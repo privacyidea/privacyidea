@@ -24,16 +24,20 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 
-import { of } from "rxjs";
+import { lastValueFrom, of } from "rxjs";
 import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
 import { axe } from "@testing/axe";
 
@@ -182,6 +186,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
           { provide: TokenService, useClass: MockTokenService },
           { provide: ContentService, useClass: MockContentService },
           { provide: AuthService, useClass: MockAuthService },
+          { provide: DialogService, useClass: MockDialogService },
           { provide: MatDialogRef, useValue: dialogRefSpy },
           { provide: MAT_DIALOG_DATA, useValue: { ...dialogData, ...data } }
         ],
@@ -196,6 +201,71 @@ describe("TokenCompleteEnrollmentComponent", () => {
     };
 
     const actionValues = () => component.dialogActions().map((action) => action.value);
+
+    describe("leaving through a link", () => {
+      const answer = (result: string | undefined) => {
+        const confirmationRef = new MockMatDialogRef();
+        confirmationRef.afterClosed.mockReturnValue(of(result));
+        (TestBed.inject(DialogService) as unknown as MockDialogService).openDialog.mockReturnValue(confirmationRef);
+      };
+      const confirmLeave = (link: EnrolledTextLink = "token") => lastValueFrom(component["confirmLeave"](link));
+
+      it("shows the header with the incomplete summary and the cards", async () => {
+        await setup(
+          { enrollParameters: { data: { type: "hotp", twoStepInit: true, user: "alice", realm: "realm1" } } },
+          false
+        );
+        const text = fixture.nativeElement.textContent as string;
+        expect(text).toContain("The token was created, but its enrollment is not complete yet.");
+        expect(text).toContain("alice");
+      });
+
+      it("leaves like Close while only Close is offered", async () => {
+        await setup({}, false);
+
+        expect(await confirmLeave()).toBe(true);
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(undefined);
+        expect((TestBed.inject(DialogService) as unknown as MockDialogService).openDialog).not.toHaveBeenCalled();
+      });
+
+      it("deletes the token and stays on the enrollment page when its own link was followed", async () => {
+        await setup({}, true);
+        answer("discard");
+
+        expect(await confirmLeave("token")).toBe(false);
+
+        expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+      });
+
+      it("deletes the token and follows a link to another page", async () => {
+        await setup({}, true);
+        answer("discard");
+
+        expect(await confirmLeave("user")).toBe(true);
+
+        expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+      });
+
+      it("keeps the token when the user chooses to while only Cancel is offered", async () => {
+        await setup({}, true);
+        answer("save-exit");
+
+        expect(await confirmLeave()).toBe(true);
+
+        expect(mockTokenService.cancelEnrollment).not.toHaveBeenCalled();
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(undefined);
+      });
+
+      it("stays when the user cancels while only Cancel is offered", async () => {
+        await setup({}, true);
+        answer(undefined);
+
+        expect(await confirmLeave()).toBe(false);
+        expect(mockTokenService.cancelEnrollment).not.toHaveBeenCalled();
+      });
+    });
     const buttonLabels = (): string[] =>
       Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLElement>).map(
         (button) => button.textContent?.trim() ?? ""

@@ -227,6 +227,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse: webauthnEnrollmentResponse,
+        enrollmentData: webauthnEnrollmentData,
         showCancelButton: canCancel,
         wizard: this.wizard(),
         registrationFailed: this.registrationFailed.asReadonly(),

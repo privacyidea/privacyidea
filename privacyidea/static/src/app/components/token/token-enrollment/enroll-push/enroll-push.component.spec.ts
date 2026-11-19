@@ -343,6 +343,23 @@ describe("EnrollPushComponent", () => {
       await pending;
     });
 
+    it("passes the enrollment request to the dialog for its header", async () => {
+      tokenService.enrollToken.mockReturnValue(of(makeInitResp("S-D")));
+      tokenService.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")));
+      const enrollmentData = { type: "push", user: "alice", realm: "realm1" } as TokenEnrollmentData;
+      const initResponse = await lastValueFrom(
+        tokenService.enrollToken(component.buildEnrollmentArgs(enrollmentData)!)
+      );
+
+      const pending = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentData);
+      await Promise.resolve();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ enrollmentData }));
+
+      component.firstStepDialogRef?.close();
+      await pending;
+    });
+
     it("never offers to cancel a rollover", async () => {
       authService.actionAllowed.mockImplementation((action: string) => action === "delete");
       tokenService.enrollToken.mockReturnValue(of(makeInitResp("S-R")));

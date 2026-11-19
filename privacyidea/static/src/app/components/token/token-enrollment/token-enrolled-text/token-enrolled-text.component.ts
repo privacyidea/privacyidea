@@ -24,6 +24,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { Observable, of } from "rxjs";
 
+export type EnrolledTextLink = "token" | "container" | "user" | "realm";
+
 @Component({
   selector: "app-token-enrolled-text",
   imports: [MatIconModule],
@@ -41,9 +43,9 @@ export class TokenEnrolledTextComponent {
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
   // Asked before a link closes the surrounding dialog; the link is only followed on true.
-  confirmLeave = input<() => Observable<boolean>>();
-  // Set while the user still has to act, e.g. verify the enrollment, before the token can be used.
-  pending = input<boolean>(false);
+  confirmLeave = input<(link: EnrolledTextLink) => Observable<boolean>>();
+  // "verify" and "incomplete" while the user still has to act before the token can be used.
+  state = input<"done" | "verify" | "incomplete">("done");
   // Only the summary sentence, without the cards.
   summaryOnly = input<boolean>(false);
   switchRoute = output();
@@ -53,6 +55,7 @@ export class TokenEnrolledTextComponent {
   protected readonly showUser = computed(
     () => this.isAdmin() && !!this.username() && !!this.userRealm() && !this.onlyAddToRealm()
   );
+  protected readonly pending = computed(() => this.state() !== "done");
   protected readonly showRealmOnly = computed(() => this.isAdmin() && !!this.userRealm() && !!this.onlyAddToRealm());
 
   tokenSelected() {
@@ -60,7 +63,7 @@ export class TokenEnrolledTextComponent {
     if (!serial) {
       return;
     }
-    this.leave(() => this.contentService.tokenSelected(serial));
+    this.leave("token", () => this.contentService.tokenSelected(serial));
   }
 
   natigateContainerDetails() {
@@ -68,7 +71,7 @@ export class TokenEnrolledTextComponent {
     if (!containerSerial) {
       return;
     }
-    this.leave(() => this.contentService.navigateContainerDetails(containerSerial));
+    this.leave("container", () => this.contentService.navigateContainerDetails(containerSerial));
   }
 
   navigateUserDetails() {
@@ -77,16 +80,16 @@ export class TokenEnrolledTextComponent {
     if (!username || !userRealm) {
       return;
     }
-    this.leave(() => this.contentService.userSelected(username, userRealm));
+    this.leave("user", () => this.contentService.userSelected(username, userRealm));
   }
 
   navigateRealms() {
-    this.leave(() => this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS));
+    this.leave("realm", () => this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS));
   }
 
-  private leave(navigate: () => void): void {
+  private leave(link: EnrolledTextLink, navigate: () => void): void {
     const confirmLeave = this.confirmLeave();
-    (confirmLeave ? confirmLeave() : of(true)).subscribe((confirmed) => {
+    (confirmLeave ? confirmLeave(link) : of(true)).subscribe((confirmed) => {
       if (confirmed) {
         this.switchRoute.emit();
         navigate();

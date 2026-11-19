@@ -24,6 +24,8 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
+import { confirmLeaveIncompleteStep } from "@components/token/token-enrollment/leave-incomplete-enrollment";
+import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import {
   ENROLLMENT_CANCELLED,
@@ -33,6 +35,7 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -40,6 +43,7 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   imports: [
     DialogWrapperComponent,
     EnrollmentCustomizationFrameComponent,
+    TokenEnrolledTextComponent,
     MatFormField,
     MatHint,
     MatInput,
@@ -56,8 +60,17 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly enrollDetails = this.data.response?.detail;
+  // A link leaves like Close; where Cancel replaces Close, it asks what happens to the token.
+  protected readonly confirmLeave = confirmLeaveIncompleteStep({
+    dialogService: this.dialogService,
+    tokenService: this.tokenService,
+    serial: () => this.enrollDetails?.serial,
+    canCancel: () => this.canCancelEnrollment(),
+    close: (result) => this.dialogRef.close(result)
+  });
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   // The enrollment response has no type, so the type comes from the enrollment request
   protected readonly tokenType: string = this.enrollParameters?.data?.type ?? this.data.tokenType;

@@ -26,15 +26,20 @@
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close">
+  <app-token-enrolled-text
+    [serial]="enrollDetails?.serial"
+    [containerSerial]="enrollParameters.data.containerSerial"
+    [username]="enrollParameters.data.user"
+    [userRealm]="enrollParameters.data.realm"
+    [onlyAddToRealm]="enrollParameters.data.onlyAddToRealm"
+    [rollover]="data.rollover ?? false"
+    state="incomplete"
+    [summaryOnly]="wizard"
+    [confirmLeave]="confirmLeave"></app-token-enrolled-text>
+
   <app-enrollment-customization-frame
     [enabled]="wizard"
     [enrollmentDetail]="enrollDetails">
-    <span
-      class="margin-bottom-16"
-      i18n="@@token.yourTokenSerial"
-      >Your token with serial {{ enrollDetails?.serial }} is not completely enrolled, yet.</span
-    >
-
     @if (data.response) {
       <app-token-enrollment-data
         (enrollmentResponseChange)="onEnrollmentResponseChange($event)"

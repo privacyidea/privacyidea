@@ -80,15 +80,15 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
     if (!initResponse) {
       return null;
     }
-    return this.awaitRolloutState(initResponse, 5000, enrollmentData?.rollover ?? false);
+    return this.awaitRolloutState(initResponse, 5000, enrollmentData);
   }
 
   private async awaitRolloutState(
     initResponse: EnrollmentResponse,
     initDelay: number,
-    rollover: boolean
+    enrollmentData?: TokenEnrollmentData
   ): Promise<EnrollmentStepResult> {
-    const dialogRef = this._openStepOneDialog(initResponse, rollover);
+    const dialogRef = this._openStepOneDialog(initResponse, enrollmentData);
     this.firstStepDialogRef = dialogRef;
     const dialogClosed = lastValueFrom(dialogRef.afterClosed());
 
@@ -135,24 +135,25 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
 
   private _openStepOneDialog(
     enrollmentResponse: EnrollmentResponse,
-    rollover: boolean
+    enrollmentData?: TokenEnrollmentData
   ): MatDialogRef<
     AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
     EnrollmentStepResult
   > {
-    const canCancel = !rollover && this.authService.actionAllowed("delete");
+    const canCancel = !enrollmentData?.rollover && this.authService.actionAllowed("delete");
 
     this.reopenDialog.set(async () => {
       if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
         return null;
       }
-      return this.awaitRolloutState(enrollmentResponse, 0, rollover);
+      return this.awaitRolloutState(enrollmentResponse, 0, enrollmentData);
     });
 
     return this.dialogService.openDialog({
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse,
+        enrollmentData,
         showCancelButton: canCancel,
         wizard: this.wizard(),
         cancelConfirmationMessage: $localize`:@@token.whenCancelingRolloutToken:When canceling the rollout the token will be deleted even when the QR code was scanned.`

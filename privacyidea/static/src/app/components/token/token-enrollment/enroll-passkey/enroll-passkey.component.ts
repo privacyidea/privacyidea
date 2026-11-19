@@ -164,6 +164,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse,
+        enrollmentData: enrollmentInitData,
         showCancelButton: canCancel,
         wizard: this.wizard(),
         registrationFailed: this.registrationFailed.asReadonly(),

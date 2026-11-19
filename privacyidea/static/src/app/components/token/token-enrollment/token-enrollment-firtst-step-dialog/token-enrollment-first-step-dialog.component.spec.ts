@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogState } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
@@ -32,7 +33,7 @@ import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { of, throwError } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
@@ -128,6 +129,68 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     it("does not offer retry without a retry handler", async () => {
       await setup({ showCancelButton: true, registrationFailed: signal(true) });
       expect(buttonLabels()).not.toContain("Retry");
+    });
+  });
+
+  describe("header and leaving through a link", () => {
+    const answer = (result: string | undefined) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(result));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
+    const confirmLeave = (link: EnrolledTextLink = "token") => lastValueFrom(component["confirmLeave"](link));
+
+    it("shows the incomplete summary with the user of the enrollment", async () => {
+      await setup({ enrollmentData: { type: "push", user: "alice", realm: "realm1" } });
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("The token was created, but its enrollment is not complete yet.");
+      expect(text).toContain("alice");
+      expect(text).not.toContain("is not completely enrolled, yet");
+    });
+
+    it("leaves like Close while only Close is offered", async () => {
+      await setup();
+
+      expect(await confirmLeave()).toBe(true);
+      expect(dialogRefMock.close).toHaveBeenCalledWith(undefined);
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("deletes the token and stays on the enrollment page when its own link was followed", async () => {
+      await setup({ showCancelButton: true });
+      answer("discard");
+
+      expect(await confirmLeave("token")).toBe(false);
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
+      expect(dialogRefMock.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("deletes the token and follows a link to another page", async () => {
+      await setup({ showCancelButton: true });
+      answer("discard");
+
+      expect(await confirmLeave("user")).toBe(true);
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
+      expect(dialogRefMock.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("keeps the token when the user chooses to while only Cancel is offered", async () => {
+      await setup({ showCancelButton: true });
+      answer("save-exit");
+
+      expect(await confirmLeave()).toBe(true);
+
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalledWith(undefined);
+    });
+
+    it("stays when the user cancels while only Cancel is offered", async () => {
+      await setup({ showCancelButton: true });
+      answer(undefined);
+
+      expect(await confirmLeave()).toBe(false);
     });
   });
 
