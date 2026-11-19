@@ -35,12 +35,12 @@ describe("CertificateDataComponent", () => {
   let fixture: ComponentFixture<CertificateDataComponent>;
   let notificationService: MockNotificationService;
 
-  let blockedReasons: string[];
+  let unsavedData: string[];
   let closeConfirmations: string[];
   let downloads: { fileName: string; blob: Blob }[];
   let revokedUrls: string[];
 
-  const lastReason = () => blockedReasons.at(-1);
+  const lastUnsaved = () => unsavedData.at(-1);
 
   const setInputs = (inputs: Record<string, string | boolean>) => {
     Object.entries(inputs).forEach(([name, value]) => fixture.componentRef.setInput(name, value));
@@ -69,7 +69,7 @@ describe("CertificateDataComponent", () => {
       .find((copyButton) => copyButton.copyText() === PASSPHRASE)!;
 
   beforeEach(async () => {
-    blockedReasons = [];
+    unsavedData = [];
     closeConfirmations = [];
     downloads = [];
     revokedUrls = [];
@@ -103,7 +103,7 @@ describe("CertificateDataComponent", () => {
 
     fixture = TestBed.createComponent(CertificateDataComponent);
     component = fixture.componentInstance;
-    component.closeBlockedReasonChange.subscribe((reason) => blockedReasons.push(reason));
+    component.unsavedDataChange.subscribe((unsaved) => unsavedData.push(unsaved));
     component.closeConfirmationChange.subscribe((message) => closeConfirmations.push(message));
   });
 
@@ -117,39 +117,39 @@ describe("CertificateDataComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  describe("close guard", () => {
-    it("does not block closing when there is nothing to save", () => {
+  describe("unsaved data", () => {
+    it("reports nothing when there is nothing to save", () => {
       setInputs({ serial: "CRT0001", rolloutState: "enrolled" });
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
-    it("blocks closing until the certificate has been downloaded", () => {
+    it("reports the certificate until it has been downloaded", () => {
       setInputs({ serial: "CRT0001", certificate: CERTIFICATE });
-      expect(lastReason()).toBe("Download the certificate.");
+      expect(lastUnsaved()).toBe("Download the certificate.");
 
       component.downloadCertificate();
       fixture.detectChanges();
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
-    it("blocks closing until the PKCS#12 container has been downloaded", () => {
+    it("reports the PKCS#12 container until it has been downloaded", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12 });
-      expect(lastReason()).toBe("Download the PKCS#12 file.");
+      expect(lastUnsaved()).toBe("Download the PKCS#12 file.");
 
       component.downloadPkcs12();
       fixture.detectChanges();
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
-    it("blocks closing until the passphrase has been revealed", () => {
+    it("reports the passphrase until it has been revealed", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12, pkcs12Password: PASSPHRASE });
       component.downloadPkcs12();
       fixture.detectChanges();
-      expect(lastReason()).toBe("Show or copy the passphrase.");
+      expect(lastUnsaved()).toBe("Show or copy the passphrase.");
 
       fixture.debugElement.query(By.css(".password-toggle")).nativeElement.click();
       fixture.detectChanges();
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
     it("accepts copying the passphrase instead of revealing it", () => {
@@ -159,7 +159,7 @@ describe("CertificateDataComponent", () => {
 
       passwordCopyButton().onCopy();
       fixture.detectChanges();
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
     it("keeps the passphrase acknowledged after hiding it again", () => {
@@ -170,7 +170,7 @@ describe("CertificateDataComponent", () => {
       fixture.detectChanges();
 
       expect(component["passwordVisible"]()).toBe(false);
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
     it("lists every outstanding step and drops each one as it is done", () => {
@@ -180,24 +180,24 @@ describe("CertificateDataComponent", () => {
         pkcs12: PKCS12,
         pkcs12Password: PASSPHRASE
       });
-      expect(lastReason()).toBe("Download the certificate.\nDownload the PKCS#12 file.\nShow or copy the passphrase.");
+      expect(lastUnsaved()).toBe("Download the certificate. Download the PKCS#12 file. Show or copy the passphrase.");
 
       component.downloadCertificate();
       fixture.detectChanges();
-      expect(lastReason()).toBe("Download the PKCS#12 file.\nShow or copy the passphrase.");
+      expect(lastUnsaved()).toBe("Download the PKCS#12 file. Show or copy the passphrase.");
 
       component.acknowledgePassword();
       fixture.detectChanges();
-      expect(lastReason()).toBe("Download the PKCS#12 file.");
+      expect(lastUnsaved()).toBe("Download the PKCS#12 file.");
 
       component.downloadPkcs12();
       fixture.detectChanges();
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
 
-    it("stops blocking on a PKCS#12 container that cannot be decoded", () => {
+    it("stops reporting a PKCS#12 container that cannot be decoded", () => {
       setInputs({ serial: "CRT0001", pkcs12: "not base64!!" });
-      expect(lastReason()).toBe("Download the PKCS#12 file.");
+      expect(lastUnsaved()).toBe("Download the PKCS#12 file.");
 
       component.downloadPkcs12();
       fixture.detectChanges();
@@ -206,7 +206,7 @@ describe("CertificateDataComponent", () => {
       expect(notificationService.error).toHaveBeenCalledWith(
         "The PKCS#12 container of this token is damaged and cannot be downloaded."
       );
-      expect(lastReason()).toBe("");
+      expect(lastUnsaved()).toBe("");
     });
   });
 
@@ -222,7 +222,7 @@ describe("CertificateDataComponent", () => {
 
     it("does not ask for files that stay available in the token details", () => {
       setInputs({ serial: "CRT0001", certificate: CERTIFICATE, pkcs12: PKCS12 });
-      expect(lastReason()).not.toBe("");
+      expect(lastUnsaved()).not.toBe("");
       expect(closeConfirmations.at(-1)).toBe("");
     });
   });

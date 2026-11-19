@@ -40,8 +40,10 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
   protected readonly rollover = this.data.rollover ?? false;
 
-  // Set while closing would lose data that exists nowhere else.
+  // What closing would leave unsaved, so the dialog asks first; empty closes right away.
   private readonly closeConfirmation = signal("");
+  // Title of the question asked while closeConfirmation is set.
+  protected readonly closeConfirmationTitle = $localize`:@@token.passphraseNotSaved:Passphrase Not Saved`;
   // The links in the header ask the same way as Close.
   protected readonly confirmLeave = () => this.confirmClose();
 
@@ -73,7 +75,7 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     });
   }
 
-  private confirmClose(): Observable<boolean> {
+  protected confirmClose(confirmLabel = $localize`:@@common.close:Close`): Observable<boolean> {
     const message = this.closeConfirmation();
     if (!message) {
       return of(true);
@@ -82,9 +84,9 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
       .openDialog({
         component: MessageConfirmationDialogComponent,
         data: {
-          title: $localize`:@@token.passphraseNotSaved:Passphrase Not Saved`,
+          title: this.closeConfirmationTitle,
           message,
-          confirmAction: { label: $localize`:@@common.close:Close`, value: true, type: "destruct" }
+          confirmAction: { label: confirmLabel, value: true, type: "destruct" }
         }
       })
       .afterClosed()

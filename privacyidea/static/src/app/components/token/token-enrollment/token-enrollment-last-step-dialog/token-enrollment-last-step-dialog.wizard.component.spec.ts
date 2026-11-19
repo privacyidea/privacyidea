@@ -27,11 +27,14 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { axe } from "@testing/axe";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
 
 describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
@@ -73,6 +76,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: dialogData() },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: TokenService, useClass: MockTokenService }
       ]
     }).compileComponents();
@@ -141,18 +145,78 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
-  it("enables logout only once nothing is left to save", async () => {
-    await setup();
-    await flushCustomization();
-    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
-    fixture.detectChanges();
-    expect(footerButton("Logout")?.disabled).toBe(true);
+  describe("unsaved data", () => {
+    const unsaved = "Download the PKCS#12 file.";
+    let dialogService: MockDialogService;
 
-    component["onCloseBlockedReasonChange"]("");
-    fixture.detectChanges();
-    footerButton("Logout")?.click();
+    const answerConfirmation = (confirmed: boolean) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(confirmed));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
 
-    expect(authService.logout).toHaveBeenCalled();
+    beforeEach(async () => {
+      await setup(true);
+      await flushCustomization();
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    });
+
+    it("keeps logout and create container enabled", () => {
+      component.onCloseConfirmationChange(unsaved);
+      fixture.detectChanges();
+
+      expect(footerButtons().every((button) => !button.disabled)).toBe(true);
+    });
+
+    it("logs out right away when nothing is left to save", () => {
+      footerButton("Logout")?.click();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(authService.logout).toHaveBeenCalled();
+    });
+
+    it("asks before logging out and stays when not confirmed", () => {
+      component.onCloseConfirmationChange(unsaved);
+      answerConfirmation(false);
+
+      footerButton("Logout")?.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: "Enrollment Data Not Saved",
+            message: unsaved,
+            confirmAction: expect.objectContaining({ label: "Logout" })
+          })
+        })
+      );
+      expect(authService.logout).not.toHaveBeenCalled();
+    });
+
+    it("logs out once confirmed", () => {
+      component.onCloseConfirmationChange(unsaved);
+      answerConfirmation(true);
+
+      footerButton("Logout")?.click();
+
+      expect(authService.logout).toHaveBeenCalled();
+    });
+
+    it("asks before opening the container wizard", () => {
+      const navigate = jest.spyOn(TestBed.inject(Router), "navigate").mockResolvedValue(true);
+      component.onCloseConfirmationChange(unsaved);
+      answerConfirmation(false);
+
+      footerButton("Create Container")?.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ confirmAction: expect.objectContaining({ label: "Create Container" }) })
+        })
+      );
+      expect(navigate).not.toHaveBeenCalled();
+      expect(component["dialogRef"].close).not.toHaveBeenCalled();
+    });
   });
 
   it("closes the dialog and opens the container wizard on create container", async () => {

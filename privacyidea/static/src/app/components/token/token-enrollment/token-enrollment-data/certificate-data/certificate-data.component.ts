@@ -66,8 +66,8 @@ export class CertificateDataComponent {
    */
   fromEnrollment = input<boolean>(false);
 
-  // What still has to be saved; the actions that leave the page wait for it.
-  closeBlockedReasonChange = output<string>();
+  // What has not been downloaded or saved yet; the wizard asks before it leaves.
+  unsavedDataChange = output<string>();
   // What closing would lose for good, so the dialog asks first. Only the passphrase; the files stay in the details.
   closeConfirmationChange = output<string>();
 
@@ -81,13 +81,12 @@ export class CertificateDataComponent {
   private readonly passwordAcknowledged = signal(false);
   private readonly certificateDownloaded = signal(false);
   private readonly pkcs12Downloaded = signal(false);
-  // A container whose base64 does not decode holds nothing to rescue, so it must not be able
-  // to lock the user inside the dialog.
+  // A container whose base64 does not decode holds nothing to rescue, so it is not asked for.
   private readonly pkcs12Unusable = signal(false);
 
   protected readonly maskedPassword = computed(() => "\u2022".repeat(this.pkcs12Password().length));
 
-  protected readonly closeBlockedReason = computed(() => {
+  protected readonly unsavedData = computed(() => {
     const pending: string[] = [];
     if (this.certificate() && !this.certificateDownloaded()) {
       pending.push($localize`:@@token.pendingCertificateDownload:Download the certificate.`);
@@ -101,7 +100,7 @@ export class CertificateDataComponent {
     if (pending.length === 0) {
       return "";
     }
-    return pending.join("\n");
+    return pending.join(" ");
   });
 
   protected readonly closeConfirmation = computed(() =>
@@ -111,7 +110,7 @@ export class CertificateDataComponent {
   );
 
   constructor() {
-    effect(() => this.closeBlockedReasonChange.emit(this.closeBlockedReason()));
+    effect(() => this.unsavedDataChange.emit(this.unsavedData()));
     effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
   }
 

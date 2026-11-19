@@ -65,7 +65,7 @@ export class TokenEnrollmentDataComponent {
   // Without the QR code's text and the regenerate button, for the wizard.
   compact = input<boolean>(false);
   enrollmentResponseChange = output<EnrollmentResponse>();
-  closeBlockedReasonChange = output<string>();
+  unsavedDataChange = output<string>();
   closeConfirmationChange = output<string>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());

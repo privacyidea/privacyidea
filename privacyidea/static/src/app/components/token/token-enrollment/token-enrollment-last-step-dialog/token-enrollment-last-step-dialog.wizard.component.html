@@ -32,7 +32,7 @@
     [enrollmentDetail]="data.response?.detail">
     @if (data.showEnrollData !== false && data.response) {
       <app-token-enrollment-data
-        (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"
+        (unsavedDataChange)="onCloseConfirmationChange($event)"
         [compact]="true"
         [enrolledInputData]="data.response.detail"
         [enrollmentParameters]="data.enrollParameters"

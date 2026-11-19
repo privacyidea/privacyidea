@@ -64,7 +64,7 @@
     }
     @if (isCertificate()) {
       <app-certificate-data
-        (closeBlockedReasonChange)="closeBlockedReasonChange.emit($event)"
+        (unsavedDataChange)="unsavedDataChange.emit($event)"
         (closeConfirmationChange)="closeConfirmationChange.emit($event)"
         [certificate]="certificate()"
         [fromEnrollment]="true"

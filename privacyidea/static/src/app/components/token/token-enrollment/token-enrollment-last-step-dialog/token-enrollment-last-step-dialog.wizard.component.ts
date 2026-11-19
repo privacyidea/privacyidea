@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -43,28 +43,24 @@ type WizardLastStepAction = "create_container" | "logout";
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
-  // What still has to be saved; the actions that leave the page wait for it.
-  protected readonly closeBlockedReason = signal("");
+  protected override readonly closeConfirmationTitle = $localize`:@@token.enrollmentDataNotSaved:Enrollment Data Not Saved`;
 
   // The only ways on: the dialog cannot be closed, and Logout tells the user that they are done.
   protected readonly actions = computed<DialogAction<WizardLastStepAction>[]>(() => {
-    const blocked = !!this.closeBlockedReason();
     const actions: DialogAction<WizardLastStepAction>[] = [];
     if (this.authService.containerWizard().enabled) {
       actions.push({
         type: "auxiliary",
         label: $localize`:@@common.createContainer:Create Container`,
         value: "create_container",
-        className: "button-width-m",
-        disabled: blocked
+        className: "button-width-m"
       });
     }
     actions.push({
       type: "auxiliary",
       label: $localize`:@@common.logout:Logout`,
       value: "logout",
-      primary: true,
-      disabled: blocked
+      primary: true
     });
     return actions;
   });
@@ -73,16 +69,18 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     // Escape and a backdrop click do nothing: only the actions leave the wizard.
   }
 
-  onCloseBlockedReasonChange(reason: string): void {
-    this.closeBlockedReason.set(reason);
-  }
-
   onAction(action: WizardLastStepAction): void {
-    if (action === "create_container") {
-      this.dialogRef.close();
-      this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
-      return;
-    }
-    this.authService.logout();
+    const label = this.actions().find((candidate) => candidate.value === action)?.label;
+    this.confirmClose(label).subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      if (action === "create_container") {
+        this.dialogRef.close();
+        this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
+        return;
+      }
+      this.authService.logout();
+    });
   }
 }
