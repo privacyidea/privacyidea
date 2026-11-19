@@ -2089,6 +2089,20 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["config", "policy", "enable", "nosuchpolicy"])
         self.assertIn("Could not enable policy", result.output, result.output)
 
+    def test_03b_unknown_names_exit_with_status_1(self) -> None:
+        # The commands report an unknown realm, policy or event and exit with status 1
+        runner = self.app.test_cli_runner()
+        commands = [["config", "realm", "set_default", "nosuchrealm"]]
+        for command_name in ("enable", "disable", "delete"):
+            commands.append(["config", "policy", command_name, "nosuchpolicy"])
+            commands.append(["config", "event", command_name, "987654"])
+        for command in commands:
+            with self.subTest(command=command):
+                result = runner.invoke(pi_manage, command)
+                self.assertEqual(1, result.exit_code, result.output)
+                self.assertIsInstance(result.exception, SystemExit, result.exception)
+                self.assertIn("Could not", result.output, result.output)
+
     def test_04_event_list(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["config", "event", "list"])
