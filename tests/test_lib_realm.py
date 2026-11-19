@@ -3,6 +3,7 @@ This test file tests the lib.resolvers.py
 
 The lib.resolvers.py only depends on the database model.
 """
+import copy
 import uuid
 from unittest import mock
 
@@ -368,3 +369,48 @@ class ResolverTestCase(MyTestCase):
         delete_conditional_access_policy(excludes_id)
         delete_conditional_access_policy(restricted_id)
         delete_resolver(self.resolvername1)
+
+    def test_31_import_clears_default_of_imported_realm(self):
+        # Importing a realm with "default": false takes away its default, also without --replace, so that a
+        # repeated import of the same data leads to the same configuration.
+        realm = "realm-imp-default"
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": "/etc/passwd"})
+        self.addCleanup(delete_resolver, self.resolvername1)
+        set_realm(realm, [{"name": self.resolvername1}])
+        self.addCleanup(lambda: realm_is_defined(realm) and delete_realm(realm))
+        set_default_realm(realm)
+        self.assertEqual(realm, get_default_realm())
+
+        import_realms({realm: {"default": False, "resolver": [
+            {"priority": None, "name": self.resolvername1, "type": "passwdresolver", "node": ""}]}})
+
+        self.assertFalse(get_default_realm(), "the imported realm is still the default realm")
+        self.assertFalse(get_realms(realm)[realm]["default"])
+        self.assertEqual([self.resolvername1], [r["name"] for r in get_realms(realm)[realm]["resolver"]])
+
+    def test_32_resolver_with_node_none_stays_in_realm(self):
+        realm = "realm-node-none"
+        resolver = "resolver-node-none"
+        save_resolver({"resolver": resolver, "type": "passwdresolver", "fileName": "/etc/passwd"})
+        self.addCleanup(delete_resolver, resolver)
+        self.assertEqual(([resolver], []), set_realm(realm, [{"name": resolver}]))
+        self.addCleanup(lambda: realm_is_defined(realm) and delete_realm(realm))
+
+        def resolver_entries() -> list[dict]:
+            return get_realms(realm)[realm]["resolver"]
+
+        self.assertEqual(([resolver], []), set_realm(realm, [{"name": resolver, "node": None, "priority": 7}]))
+        entries = resolver_entries()
+        self.assertEqual([resolver], [r["name"] for r in entries], entries)
+        self.assertEqual(7, entries[0]["priority"], entries)
+        self.assertFalse(entries[0]["node"], entries)
+
+        data = copy.deepcopy(export_realms(realm))
+        for entry in data[realm]["resolver"]:
+            entry["node"] = None
+            entry["priority"] = 3
+        import_realms(data)
+        entries = resolver_entries()
+        self.assertEqual([resolver], [r["name"] for r in entries], entries)
+        self.assertEqual(3, entries[0]["priority"], entries)
+        self.assertFalse(entries[0]["node"], entries)

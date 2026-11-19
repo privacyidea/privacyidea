@@ -387,7 +387,9 @@ def set_realm(realm, resolvers=None):
         if db_resolver:
             try:
                 new_resolver_realm = ResolverRealm(db_resolver.id, db_realm.id,
-                                                   node_uuid=str(reso.get('node', '')),
+                                                   # the node may be None (an export from Oracle, which stores
+                                                   # '' as NULL), and str(None) would be the unknown node 'None'
+                                                   node_uuid=str(reso.get('node') or ''),
                                                    priority=reso.get('priority'))
                 db.session.add(new_resolver_realm)
                 added.append(reso_name)
@@ -419,7 +421,7 @@ def export_realms(name=None):
 
 
 @register_import('realm')
-def import_realms(data, name=None):
+def import_realms(data: dict, name: str | None = None) -> None:
     """
     Import given realm configurations
 
@@ -433,8 +435,12 @@ def import_realms(data, name=None):
         if name and name != realm:
             continue
         added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
-        if is_true(r_config['default']):
+        if is_true(r_config.get('default')):
             set_default_realm(realm)
+        elif get_default_realm() == realm:
+            # The imported realm is not the default realm, so it loses its default, which set_realm() may also
+            # have given it as the first realm. A repeated import of the same data thus gives the same result.
+            set_default_realm(None)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
 
