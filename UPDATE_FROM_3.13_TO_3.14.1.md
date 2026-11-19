@@ -502,7 +502,8 @@ refuses such a policy.
 
 #### Tokens of a deleted resolver are listed on every node (3.14.0, changed in 3.14.1)
 
-- **Affects you if:** you deleted resolvers, or removed them from all realms, while they still owned tokens.
+- **Affects you if:** you deleted resolvers, or removed them from all realms, while they still owned tokens, or you
+  have tokens whose user assignment names no resolver.
 - **Do after the update:** unassign or delete these tokens. The token janitors find them as orphaned, for example
   with `pi-tokenjanitor find --orphaned true list`.
 
@@ -510,9 +511,6 @@ The token lists left out a token whose owner belongs to a resolver in no realm, 
 resolver. The WebUI, the API and the token janitors did not find it, so nobody deleted it, but the subscription
 counted it. Such a token belongs to no node, so it is now listed on every node. Its user shows as
 `**resolver error**`.
-
-With node-specific resolvers, a token whose owner has a resolver in no realm is now also listed on every node. Before,
-only the nodes of the realm of the owner listed it.
 
 #### Two-step enrollment applies to every token rollover (3.14.1)
 
@@ -748,11 +746,16 @@ the realm of the original request.
 
 #### Event conditions `challenge_session` and `challenge_expired` need a challenge (3.14.1)
 
-- **Affects you if:** an event definition uses `challenge_session` or `challenge_expired`.
-- **Do:** to act on a declined push in `push_wait` mode, use the condition `result_authentication` `DECLINED`.
+- **Affects you if:** you have event handlers.
+- **Do:** if a definition uses `challenge_session` or `challenge_expired` to act on a declined push in `push_wait`
+  mode, use the condition `result_authentication` `DECLINED` instead.
 
-Such a definition fires only if exactly one challenge of the token matches the request. Without a challenge, it does
-not fire. Examples are a normal successful login, and a successful answer, which removes the challenge.
+A definition with `challenge_session` or `challenge_expired` fires only if exactly one challenge of the token matches
+the request. Without a challenge, it does not fire. Examples are a normal successful login, and a successful answer,
+which removes the challenge.
+
+Definitions without these conditions now also fire if more than one open challenge of the token matches the request.
+Before, they did not fire in this case.
 
 #### The `rollout_state` of enrolled tokens is `enrolled` (3.14.0)
 
@@ -907,6 +910,8 @@ affected.
 - The banner goes to stderr, so the output of `--action listuser` and `--action export` no longer starts with it.
 - `--action export --csv` writes the time step of a TOTP token as a sixth column.
 - In the output of `pi-tokenjanitor find ... list`, `realms` is a list.
+- `pi-tokenjanitor findcontainer ... set_realm` also reports a realm named `deleted`. Before, it left such a realm
+  out.
 
 #### `pi-manage setup create_tables` stops on an existing database (3.14.1)
 
@@ -962,9 +967,12 @@ entries, for example a third with an id increment of 3. On Galera, the audit tab
 - **Affects you if:** a custom cron job runs `pi-manage config authcache cleanup` without `--minutes`.
 - **Do:** nothing. To keep the behavior of 3.13, pass `--minutes 480`.
 
-Without `--minutes`, the command now deletes the entries that no active `auth_cache` policy accepts any more. If no
-such policy exists, it deletes all entries. Before, it deleted the entries older than 480 minutes. So with a policy
-interval above 8 hours, the entries now stay longer. A negative `--minutes` is refused.
+Without `--minutes`, the command now deletes the entries that no active `auth_cache` policy accepts any more. These
+are the entries that were not used for longer than the longest idle limit of the active policies. The idle limit of a
+policy is its interval, or for a value like `4h/5m` the shorter of the two intervals. If no such policy exists, the
+command deletes all entries. Before, it deleted the entries that were not used for 480 minutes. So the entries now
+stay longer if the longest idle limit is above 8 hours, and go sooner if it is below. A negative `--minutes` is
+refused.
 
 #### `privacyidea-pip-update -f` runs the schema update (3.14.0, changed in 3.14.1)
 
@@ -1024,7 +1032,7 @@ Without this change, privacyIDEA works, but it writes shortened serial lists.
 
 #### Audit entries are always shortened to fit their column (3.14.0)
 
-- **Affects you if:** you set `PI_AUDIT_SQL_TRUNCATE` or `PI_AUDIT_SQL_COLUMN_LENGTH`.
+- **Affects you if:** you did not set `PI_AUDIT_SQL_TRUNCATE = True`, or you set `PI_AUDIT_SQL_COLUMN_LENGTH`.
 - **Do:** nothing. privacyIDEA ignores `PI_AUDIT_SQL_TRUNCATE`.
 
 privacyIDEA shortens a value that is longer than its audit column, for example a long user name or user agent, and
@@ -1069,7 +1077,8 @@ names the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)
 
 The server and `pi-manage` stop at start if a setting names an unknown algorithm or parameter. They also stop for a
 parameter of an algorithm that is not in the list, and if PassLib adjusts a value. So the schema update stops as well.
-Before, a wrong setting failed only when the server made or checked a hash.
+Before, a wrong setting failed only when the server made or checked a hash, and PassLib adjusted a value without an
+error. So a setting that worked with 3.13 can now stop the server.
 
 #### Entra ID resolvers apply their TLS settings to the sign-in (3.14.1)
 
@@ -1174,8 +1183,8 @@ no longer go into the cache, and the cache no longer answers them:
 The update does not remove the entries that 3.13 wrote. They stay valid until they expire or you clear the cache. With
 `PI_REDIS_CACHE_AUTH`, the entries expire after the interval of the policy that wrote them.
 
-`passthru` to a RADIUS server still caches what the remote server accepted. Keep the interval short in this
-combination.
+`passthru` to a RADIUS server still caches what the remote server accepted. For the interval of the policy, the replay
+protection of the remote system does not apply. Keep the interval short in this combination.
 
 #### New Redis caches (3.14.0)
 
@@ -1185,8 +1194,9 @@ combination.
 - `PI_REDIS_CACHE_CHALLENGES`: the challenges. Logins that are open during a later update can need a new start.
 - `PI_REDIS_CACHE_USERS`: the user store lookups. The `CACHE_TIMEOUT` of a resolver still limits how fast
   privacyIDEA sees a change of a user, because this cache of each process comes first.
-- `PI_REDIS_CACHE_AUTH`: the entries of the `auth_cache` policy. The `authcache` table stays empty, and
-  `pi-manage config authcache cleanup` has nothing to do.
+- `PI_REDIS_CACHE_AUTH`: the entries of the `auth_cache` policy. They expire in Redis. An entry that is written
+  while Redis can not be reached goes to the `authcache` table, and the entries that are already in the table stay
+  there. So run `pi-manage config authcache cleanup` regularly also with this cache.
 - `PI_REDIS_CACHE_HEALTH`: the certificate health results of the dashboard panel.
 
 See the "Redis cache" section of the documentation.
@@ -1258,14 +1268,22 @@ items means 3.13. These changes apply only to installations that run 3.14.0:
     policy that counts `MFA_FAIL`, for example from the *MFA Brute-Force* template, no longer counts them. To count
     them, add `CHALLENGE_ANSWERED_FAIL` to the policy.
   - An authentication that succeeds or triggers a challenge but then gets an error response is logged as
-    `POST_AUTHENTICATION_FAIL`, not `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED`. Policies from the *Per-User Rate Limit*
-    and *Per-IP Rate Limit (Distinct Accounts)* templates no longer count these requests. To count them, add
-    `POST_AUTHENTICATION_FAIL` to the policy.
+    `POST_AUTHENTICATION_FAIL`, not `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED`. A conditional access policy that counts
+    `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED` no longer counts these requests. Examples are the policies from the
+    *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count them, add
+    `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
   - A request whose PIN matched but for which no token got a challenge is logged as `CHALLENGE_TRIGGER_FAIL`, not
     `CHALLENGE_TRIGGERED`. At `/validate/triggerchallenge`, such a request is no longer logged as `NO_TOKEN`, and a
-    user whose tokens are all unusable is logged as `NO_USABLE_TOKEN`. Policies from the templates *Per-User
-    Failed-Attempt Rate Limit* and *Per-IP Failed-Attempt Rate Limit (Distinct Accounts)* do not track
-    `CHALLENGE_TRIGGER_FAIL`. To count these requests, add it to the *Tracked Event Types* of the policy.
+    user whose tokens are all unusable is logged as `NO_USABLE_TOKEN`. A conditional access policy counts these
+    requests only if `CHALLENGE_TRIGGER_FAIL` is one of its *Tracked Event Types*. So a policy that tracks
+    `CHALLENGE_TRIGGERED` or `NO_TOKEN` no longer counts them. Examples are the policies from the templates *Per-User
+    Failed-Attempt Rate Limit* and *Per-IP Failed-Attempt Rate Limit (Distinct Accounts)*. To count these requests,
+    add `CHALLENGE_TRIGGER_FAIL` to the *Tracked Event Types* of the policy.
+  - The steps of a PIN change via `/validate/check` (`change_pin_via_validate`) are logged as follows. The login that
+    starts the PIN change is logged as `CHALLENGE_TRIGGERED`, or as `CHALLENGE_CONTINUED` if it answers a challenge.
+    The new PIN is logged as `CHALLENGE_CONTINUED`, and its confirmation as `LOGIN_SUCCESS`. A refused answer is
+    logged with the event type and the reason of its failure, for example `CHALLENGE_ANSWERED_FAIL` with
+    `CHALLENGE_WRONG_RESPONSE` for a confirmation that does not match the new PIN.
   - A conditional access policy with *Reset the count on a successful login* resets its count only on a successful
     login that its conditions cover. Before, any successful login of the user reset a policy in the count mode
     `PER_ATTEMPT`. Check these policies.
@@ -1279,8 +1297,6 @@ items means 3.13. These changes apply only to installations that run 3.14.0:
     `pi-tokenjanitor find ... set_tokeninfo` and `remove_tokeninfo`, `privacyidea-token-janitor` and
     `privacyidea-get-unused-tokens mark`. Only the token info endpoints of the API refuse the entries that a token
     type maintains.
-  - Event definitions without `challenge_session` or `challenge_expired` fire again for tokens with more than one open
-    challenge.
   - With *replace*, the webhook tags `{serial}` and `{token_serial}` named all tokens of the user if the request named
     no serial. Now they name the token of the event.
   - *Reset user* with a login name of the form `user@realm` looked the user up in the realm of the original request.
@@ -1289,5 +1305,7 @@ items means 3.13. These changes apply only to installations that run 3.14.0:
   - Every administrator saw the health panels of the dashboard. Now they need `configread`.
   - A rollover was matched only against the realm of the owner of the token, and the second request of an enrollment
     not against the token. Now both are matched against the stored token.
+- **Token lists:** With node-specific resolvers, a token whose owner has a resolver in no realm was listed only on the
+  nodes that serve the realm of the owner. Now it is listed on every node.
 - **Client IP:** privacyIDEA skipped an X-Forwarded-For entry that is not an IP address. Now such an entry ends the
   proxy path.
