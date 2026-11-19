@@ -62,10 +62,11 @@ export class TokenEnrollmentDataComponent {
   enrolledInputData = input.required<EnrollmentResponseDetail>();
   enrollmentParameters = input.required<EnrollTokenArguments>();
   tokenType = input.required<string>();
-  /** Leaves out the QR code's text and the regenerate button, for the reduced layout of the wizard. */
+  // Without the QR code's text and the regenerate button, for the wizard.
   compact = input<boolean>(false);
   enrollmentResponseChange = output<EnrollmentResponse>();
   closeBlockedReasonChange = output<string>();
+  closeConfirmationChange = output<string>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");

@@ -25,6 +25,7 @@ import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { of } from "rxjs";
 import { TokenEnrolledTextComponent } from "./token-enrolled-text.component";
 
 describe("TokenEnrolledTextComponent", () => {
@@ -64,13 +65,13 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
-  it("should not navigate while navigation is blocked", () => {
+  it("follows no link while leaving is not confirmed", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("serial", "SERIAL123");
     fixture.componentRef.setInput("containerSerial", "CONT123");
     fixture.componentRef.setInput("username", "alice");
     fixture.componentRef.setInput("userRealm", "realm1");
-    fixture.componentRef.setInput("navigationBlocked", true);
+    fixture.componentRef.setInput("confirmLeave", () => of(false));
     fixture.detectChanges();
     component.switchRoute.subscribe(switchRouteSpy);
 
@@ -84,6 +85,21 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
     expect(mockContentService.userSelected).not.toHaveBeenCalled();
     expect(mockContentService.router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("follows the link once leaving is confirmed", () => {
+    const switchRouteSpy = jest.fn();
+    const confirmLeave = jest.fn(() => of(true));
+    fixture.componentRef.setInput("serial", "SERIAL123");
+    fixture.componentRef.setInput("confirmLeave", confirmLeave);
+    fixture.detectChanges();
+    component.switchRoute.subscribe(switchRouteSpy);
+
+    component.tokenSelected();
+
+    expect(confirmLeave).toHaveBeenCalled();
+    expect(switchRouteSpy).toHaveBeenCalled();
+    expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
   it("should do nothing if serial is not set", () => {

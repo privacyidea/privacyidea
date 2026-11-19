@@ -62,8 +62,6 @@
         <a
           class="enrolled__card-value"
           role="button"
-          [class.link-inert]="navigationBlocked()"
-          [attr.aria-disabled]="navigationBlocked()"
           tabindex="0"
           (click)="tokenSelected()"
           (keydown.enter)="tokenSelected()"
@@ -87,8 +85,6 @@
           <a
             class="enrolled__card-value"
             role="button"
-            [class.link-inert]="navigationBlocked()"
-            [attr.aria-disabled]="navigationBlocked()"
             tabindex="0"
             (click)="natigateContainerDetails()"
             (keydown.enter)="natigateContainerDetails()"
@@ -114,8 +110,6 @@
             <a
               class="enrolled__card-value"
               role="button"
-              [class.link-inert]="navigationBlocked()"
-              [attr.aria-disabled]="navigationBlocked()"
               tabindex="0"
               (click)="navigateUserDetails()"
               (keydown.enter)="navigateUserDetails()"
@@ -143,8 +137,6 @@
           <a
             class="enrolled__card-value"
             role="button"
-            [class.link-inert]="navigationBlocked()"
-            [attr.aria-disabled]="navigationBlocked()"
             tabindex="0"
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"

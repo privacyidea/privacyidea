@@ -132,8 +132,13 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
   it("cannot be closed", async () => {
     await setup();
     await flushCustomization();
+    const dialogRef = component["dialogRef"] as unknown as MockMatDialogRef<unknown>;
 
-    expect(component["dialogRef"].disableClose).toBe(true);
+    dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    dialogRef.fireBackdropClick();
+
+    expect(dialogRef.disableClose).toBe(true);
+    expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
   it("enables logout only once nothing is left to save", async () => {

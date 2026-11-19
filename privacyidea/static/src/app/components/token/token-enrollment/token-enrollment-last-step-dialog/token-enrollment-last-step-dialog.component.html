@@ -18,12 +18,14 @@
 -->
 <app-dialog-wrapper
   width="l"
+  [handleCloseExternally]="true"
+  (wrapperClose)="attemptClose()"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
   title="{{ title() }}">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
-    [navigationBlocked]="!!closeBlockedReason()"
+    [confirmLeave]="confirmLeave"
     [containerSerial]="containerSerial"
     [onlyAddToRealm]="data.enrollParameters.data.onlyAddToRealm"
     [rollover]="rollover"
@@ -33,7 +35,7 @@
 
   @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
-      (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"
+      (closeConfirmationChange)="onCloseConfirmationChange($event)"
       (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="data.response.detail"
       [enrollmentParameters]="data.enrollParameters"

@@ -23,6 +23,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponse,
@@ -32,6 +33,8 @@ import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.s
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { axe } from "@testing/axe";
 
@@ -87,6 +90,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: TokenService, useClass: MockTokenService }
       ]
     }).compileComponents();
@@ -113,14 +117,6 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     component.onSwitchRoute();
 
     expect(component["dialogRef"].close).toHaveBeenCalled();
-  });
-
-  it("should keep the dialog open on a route switch while closing is blocked", () => {
-    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
-
-    component.onSwitchRoute();
-
-    expect(component["dialogRef"].close).not.toHaveBeenCalled();
   });
 
   it("should render the enrollment data when showEnrollData is not set", () => {
@@ -178,8 +174,8 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
   const footerButton = (label: string) =>
     footerButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement | undefined;
 
-  it("keeps the close button enabled while the enrollment data still has to be saved", () => {
-    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
+  it("keeps the close button enabled while the passphrase is not saved", () => {
+    component.onCloseConfirmationChange("The passphrase is shown only once.");
     fixture.detectChanges();
 
     expect(footerButton("Close")?.disabled).toBe(false);
@@ -187,6 +183,81 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
 
   it("offers only the close button", () => {
     expect(footerButtons().map((button) => button.textContent?.trim())).toEqual(["Close"]);
+  });
+
+  describe("closing", () => {
+    const passphraseWarning = "The passphrase is shown only once.";
+    let dialogRef: MockMatDialogRef<unknown>;
+    let dialogService: MockDialogService;
+
+    beforeEach(() => {
+      dialogRef = component["dialogRef"] as unknown as MockMatDialogRef<unknown>;
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    });
+
+    const answerConfirmation = (confirmed: boolean) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(confirmed));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
+
+    it("closes right away when nothing would be lost", () => {
+      footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("stays open when closing without the passphrase is not confirmed", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+
+      footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ message: passphraseWarning }) })
+      );
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it("closes once closing without the passphrase is confirmed", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(true);
+
+      footerButton("Close")?.click();
+
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("lets a link in the header ask the same way before it leaves", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+      const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+
+      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+
+      expect(dialogService.openDialog).toHaveBeenCalled();
+      expect(contentService.tokenSelected).not.toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+
+      answerConfirmation(true);
+      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+
+      expect(contentService.tokenSelected).toHaveBeenCalledWith("1234567890");
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("lets Escape and a backdrop click ask the same way", () => {
+      expect(dialogRef.disableClose).toBe(true);
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+
+      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      dialogRef.fireBackdropClick();
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
   });
 
   it("passes the axe accessibility checks", async () => {

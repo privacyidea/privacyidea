@@ -36,6 +36,7 @@ describe("CertificateDataComponent", () => {
   let notificationService: MockNotificationService;
 
   let blockedReasons: string[];
+  let closeConfirmations: string[];
   let downloads: { fileName: string; blob: Blob }[];
   let revokedUrls: string[];
 
@@ -69,6 +70,7 @@ describe("CertificateDataComponent", () => {
 
   beforeEach(async () => {
     blockedReasons = [];
+    closeConfirmations = [];
     downloads = [];
     revokedUrls = [];
 
@@ -102,6 +104,7 @@ describe("CertificateDataComponent", () => {
     fixture = TestBed.createComponent(CertificateDataComponent);
     component = fixture.componentInstance;
     component.closeBlockedReasonChange.subscribe((reason) => blockedReasons.push(reason));
+    component.closeConfirmationChange.subscribe((message) => closeConfirmations.push(message));
   });
 
   afterEach(() => {
@@ -204,6 +207,23 @@ describe("CertificateDataComponent", () => {
         "The PKCS#12 container of this token is damaged and cannot be downloaded."
       );
       expect(lastReason()).toBe("");
+    });
+  });
+
+  describe("close confirmation", () => {
+    it("asks before closing only while the passphrase has not been taken note of", () => {
+      setInputs({ serial: "CRT0001", pkcs12: PKCS12, pkcs12Password: PASSPHRASE });
+      expect(closeConfirmations.at(-1)).toContain("shown only once");
+
+      passwordCopyButton().onCopy();
+      fixture.detectChanges();
+      expect(closeConfirmations.at(-1)).toBe("");
+    });
+
+    it("does not ask for files that stay available in the token details", () => {
+      setInputs({ serial: "CRT0001", certificate: CERTIFICATE, pkcs12: PKCS12 });
+      expect(lastReason()).not.toBe("");
+      expect(closeConfirmations.at(-1)).toBe("");
     });
   });
 

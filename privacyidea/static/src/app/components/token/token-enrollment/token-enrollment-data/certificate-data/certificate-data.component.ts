@@ -66,11 +66,10 @@ export class CertificateDataComponent {
    */
   fromEnrollment = input<boolean>(false);
 
-  /**
-   * Names what still has to be saved, or an empty string once nothing is left. While this is
-   * set, the dialog keeps the actions that leave the page disabled.
-   */
+  // What still has to be saved; the actions that leave the page wait for it.
   closeBlockedReasonChange = output<string>();
+  // What closing would lose for good, so the dialog asks first. Only the passphrase; the files stay in the details.
+  closeConfirmationChange = output<string>();
 
   protected readonly isPending = computed(() => this.rolloutState() === "pending");
   protected readonly isDenied = computed(() => this.rolloutState() === "denied");
@@ -105,8 +104,15 @@ export class CertificateDataComponent {
     return pending.join("\n");
   });
 
+  protected readonly closeConfirmation = computed(() =>
+    this.pkcs12Password() && !this.passwordAcknowledged()
+      ? $localize`:@@token.closeLosesPassphrase:The passphrase of the PKCS#12 container is shown only once. If you close this dialog now, it cannot be retrieved again.`
+      : ""
+  );
+
   constructor() {
     effect(() => this.closeBlockedReasonChange.emit(this.closeBlockedReason()));
+    effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
   }
 
   /** Accessible name of the icon-only toggle button. */

@@ -21,9 +21,12 @@ import { Component, computed, inject, signal, Signal } from "@angular/core";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { map, Observable, of } from "rxjs";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -32,16 +35,15 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly serial = this.data.response?.detail?.serial ?? "";
   protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
   protected readonly rollover = this.data.rollover ?? false;
 
-  /**
-   * Names the enrollment data that is shown only once and still has to be saved. Leaving the page
-   * loses it, so the links and the actions that navigate away wait for it. Closing keeps it: the
-   * reopen button shows this dialog again.
-   */
-  protected readonly closeBlockedReason = signal("");
+  // Set while closing would lose data that exists nowhere else.
+  private readonly closeConfirmation = signal("");
+  // The links in the header ask the same way as Close.
+  protected readonly confirmLeave = () => this.confirmClose();
 
   title: Signal<string> = computed(() =>
     this.rollover
@@ -54,10 +56,43 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
+    this.dialogRef.disableClose = true;
+    this.dialogRef.backdropClick().subscribe(() => this.attemptClose());
+    this.dialogRef.keydownEvents().subscribe((event) => {
+      if (event.key === "Escape") {
+        this.attemptClose();
+      }
+    });
   }
 
-  onCloseBlockedReasonChange(reason: string): void {
-    this.closeBlockedReason.set(reason);
+  protected attemptClose(): void {
+    this.confirmClose().subscribe((confirmed) => {
+      if (confirmed) {
+        this.dialogRef.close();
+      }
+    });
+  }
+
+  private confirmClose(): Observable<boolean> {
+    const message = this.closeConfirmation();
+    if (!message) {
+      return of(true);
+    }
+    return this.dialogService
+      .openDialog({
+        component: MessageConfirmationDialogComponent,
+        data: {
+          title: $localize`:@@token.passphraseNotSaved:Passphrase Not Saved`,
+          message,
+          confirmAction: { label: $localize`:@@common.close:Close`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .pipe(map((confirmed) => !!confirmed));
+  }
+
+  onCloseConfirmationChange(message: string): void {
+    this.closeConfirmation.set(message);
   }
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {
@@ -65,11 +100,6 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   }
 
   onSwitchRoute() {
-    // Following a link closes the dialog and leaves the page, which would lose the enrollment data
-    // that is shown only once.
-    if (this.closeBlockedReason()) {
-      return;
-    }
     this.dialogRef.close();
   }
 }
