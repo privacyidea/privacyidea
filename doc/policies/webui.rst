@@ -285,7 +285,8 @@ Create the files::
     static/public/customize/token-enrollment.wizard.post.top.html
     static/public/customize/token-enrollment.wizard.post.bottom.html
 
-to display the contents in the first step (pre) or in the second step (post).
+to display the contents on the enrollment form (pre) or in every dialog that follows the
+enrollment, from intermediate steps such as verification to the final result (post).
 The previous WebUI reads the files ``token.enroll.pre.top.html``,
 ``token.enroll.pre.bottom.html``, ``token.enroll.post.top.html`` and
 ``token.enroll.post.bottom.html`` from ``static_old/customize/views/includes/``
