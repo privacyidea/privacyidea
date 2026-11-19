@@ -2,6 +2,10 @@
 
 ## Update from 3.14 to 3.14.1
 
+If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)
+instead of this section and the section "Update from 3.13 to 3.14". It holds the notes of both sections, sorted by
+topic.
+
 * **Passkey and WebAuthn logins now apply the token's own limits** — A login answered with a credential ID is checked
   like every other authentication: a revoked or disabled token, or one outside its validity period, over its
   failcounter or past its authentication counter limits, is refused, and a successful login increases the token's
