@@ -508,7 +508,7 @@ class ConfigTestCase(MyTestCase):
 
         # The other settings of these token types keep the type they are written with
         set_privacyidea_config("yubico.id", "client-id")
-        self.assertEqual("", db.session.query(Config).filter_by(Key="yubico.id").one().Type)
+        self.assert_empty_string(db.session.query(Config).filter_by(Key="yubico.id").one().Type)
         delete_privacyidea_config("yubico.id")
 
     def test_18_plain_token_password_setting_is_censored_in_export(self):
