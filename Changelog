@@ -191,8 +191,8 @@ Version 3.14.1
     values again. `POST /smtpserver/<identifier>` keeps the stored values of the fields that the request does not
     send. HTTP, Keycloak and Entra ID resolvers ignore a request configuration without an endpoint (#6086)
   * An SMTP server uses its stored password only with the host, port, user name and TLS setting that it was saved
-    with. A request that sends the censored placeholder with changed values fails, also in `pi-manage config import`
-    (#3544)
+    with. A RADIUS server uses its stored secret only with the host and port that it was saved with. A request that
+    sends the censored placeholder with changed values fails, also in `pi-manage config import` (#3544)
   * `POST /smtpserver/<identifier>` and `pi-manage config import` check the port, the timeout, the server URL and the
     sender of an SMTP server. The identifier of an SMTP or RADIUS server can not contain `/`, `\` or control
     characters. The test email reports SMTP, network and TLS errors with a readable message (#3544)

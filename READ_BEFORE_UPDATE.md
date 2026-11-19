@@ -246,6 +246,12 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **A stored SMTP password or RADIUS secret is used only with the settings it was saved with.** A request that sends
+  the placeholder `__CENSORED__` instead of the password keeps the stored value only if it does not change the server
+  and the port, for SMTP also the user name and the TLS setting. Otherwise, the request fails. This applies to saving
+  a server, to the test request and to `pi-manage config import`. To change these settings, send the password or the
+  secret again, also in the WebUI.
+
 * **The audit log download contains the realms that both audit policies grant** — The audit log download
   (`GET /audit/<file>.csv`) contains the entries of the realms that both the `auditlog_download` and the `auditlog`
   policies of an administrator grant, plus the entries the administrator caused. An administrator with
