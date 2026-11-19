@@ -31,6 +31,7 @@ import { EnrollmentSecretComponent } from "@components/token/token-enrollment/to
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { QrCodeTextComponent } from "@components/token/token-enrollment/token-enrollment-data/qr-code-text/qr-code-text.component";
+import { SavedValues } from "@components/token/token-enrollment/token-enrollment-data/saved-values";
 import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,
@@ -108,10 +109,12 @@ export class TokenEnrollmentDataComponent {
   protected readonly passwordLabel = $localize`:@@common.password:Password`;
   protected readonly passwordHint = $localize`:@@token.passwordOnce:Save the password now. It is shown here only once and cannot be retrieved again.`;
 
-  // Each flag resets when a regeneration replaces the value it belongs to.
-  private readonly registrationCodeSaved = linkedSignal({ source: this.registrationCode, computation: () => false });
-  private readonly passwordSaved = linkedSignal({ source: this.password, computation: () => false });
-  private readonly otpValuesPrinted = linkedSignal({ source: this.otpValues, computation: () => false });
+  // Revealed or copied secrets and printed OTP values.
+  private readonly saved = new SavedValues();
+  private readonly otpValuesKey = computed(() => `otps:${JSON.stringify(this.otpValues())}`);
+  private readonly registrationCodeSaved = computed(() => this.saved.has(`registration:${this.registrationCode()}`));
+  private readonly passwordSaved = computed(() => this.saved.has(`password:${this.password()}`));
+  private readonly otpValuesPrinted = computed(() => this.saved.has(this.otpValuesKey()));
   private readonly certificateUnsaved = signal("");
   private readonly certificateCloseConfirmation = signal("");
 
@@ -167,20 +170,28 @@ export class TokenEnrollmentDataComponent {
   regenerating = signal(false);
 
   constructor() {
-    effect(() => this.unsavedDataChange.emit(this.unsavedData()));
-    effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
+    // Also reported again for another token with the same message, since a dialog that pages between tokens records it
+    // per token.
+    effect(() => {
+      this.serial();
+      this.unsavedDataChange.emit(this.unsavedData());
+    });
+    effect(() => {
+      this.serial();
+      this.closeConfirmationChange.emit(this.closeConfirmation());
+    });
   }
 
   onRegistrationCodeSaved(): void {
-    this.registrationCodeSaved.set(true);
+    this.saved.add(`registration:${this.registrationCode()}`);
   }
 
   onPasswordSaved(): void {
-    this.passwordSaved.set(true);
+    this.saved.add(`password:${this.password()}`);
   }
 
   onOtpValuesPrinted(): void {
-    this.otpValuesPrinted.set(true);
+    this.saved.add(this.otpValuesKey());
   }
 
   onCertificateUnsavedChange(unsaved: string): void {

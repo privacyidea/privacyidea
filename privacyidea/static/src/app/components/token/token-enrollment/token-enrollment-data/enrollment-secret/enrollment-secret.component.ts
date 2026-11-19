@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, output, signal } from "@angular/core";
+import { Component, computed, input, linkedSignal, output } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
@@ -35,7 +35,8 @@ export class EnrollmentSecretComponent {
   // Emitted when the secret is revealed or copied.
   saved = output<void>();
 
-  protected readonly visible = signal(false);
+  // Masked again whenever another secret is shown in the same place.
+  protected readonly visible = linkedSignal({ source: this.value, computation: () => false });
   protected readonly masked = computed(() => "•".repeat(this.value().length));
   protected readonly toggleLabel = computed(() =>
     this.visible()

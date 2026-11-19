@@ -33,6 +33,9 @@ import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { of } from "rxjs";
 import { MockTokenService } from "@testing/mock-services";
 import { axe } from "@testing/axe";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 const dialogClose = jest.fn();
 const dialogRefMock = { close: dialogClose };
@@ -65,7 +68,8 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: threeTokens },
         { provide: ContentService, useClass: MockContentService },
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -296,6 +300,119 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
     component.finish();
     expect(dialogClose).toHaveBeenCalled();
     expect(contentService.navigateContainerDetails).toHaveBeenCalledWith("CONT-001");
+  });
+
+  describe("once-only enrollment data", () => {
+    const registrationToken = (serial: string, code: string): EnrolledTokenInfo => ({
+      serial,
+      type: "registration",
+      registrationcode: code,
+      enrollmentParameters: { data: { type: "registration", serial }, mapper: new BaseApiPayloadMapper() }
+    });
+    let dialogService: MockDialogService;
+
+    const answerConfirmation = (confirmed: boolean) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(confirmed));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
+    const reveal = () => {
+      fixture.nativeElement.querySelector(".enrollment-secret__toggle").click();
+      fixture.detectChanges();
+    };
+    const showTokens = (tokens: EnrolledTokenInfo[]) => {
+      component.enrolledTokens.set(tokens);
+      component.currentIndex.set(0);
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => {
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    });
+
+    it("leaves right away when nothing is unsaved", () => {
+      component.finish();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogClose).toHaveBeenCalled();
+    });
+
+    it("asks before going to the container and stays when not confirmed", () => {
+      showTokens([registrationToken("REG-1", "11112222")]);
+      answerConfirmation(false);
+
+      component.finish();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            title: "Enrollment Data Not Saved",
+            message: expect.stringContaining("The registration code is shown only once."),
+            confirmAction: expect.objectContaining({ label: "Go to Container" })
+          })
+        })
+      );
+      expect(dialogClose).not.toHaveBeenCalled();
+      expect(contentService.navigateContainerDetails).not.toHaveBeenCalled();
+    });
+
+    it("goes to the container once confirmed", () => {
+      showTokens([registrationToken("REG-1", "11112222")]);
+      answerConfirmation(true);
+
+      component.finish();
+
+      expect(dialogClose).toHaveBeenCalled();
+      expect(contentService.navigateContainerDetails).toHaveBeenCalledWith("CONT-001");
+    });
+
+    it("names each token whose data is unsaved", () => {
+      showTokens([registrationToken("REG-1", "11112222"), registrationToken("REG-2", "33334444")]);
+      component.next();
+      fixture.detectChanges();
+      answerConfirmation(false);
+
+      component.finish();
+
+      const message = dialogService.openDialog.mock.calls[0][0].data.message as string;
+      expect(message).toContain("REG-1: The registration code is shown only once.");
+      expect(message).toContain("REG-2: The registration code is shown only once.");
+    });
+
+    it("masks the next token's secret again and keeps what was saved while paging", () => {
+      showTokens([registrationToken("REG-1", "11112222"), registrationToken("REG-2", "33334444")]);
+      reveal();
+      component.next();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("app-enrollment-secret code").textContent).not.toContain("3333");
+
+      component.previous();
+      fixture.detectChanges();
+      component.next();
+      fixture.detectChanges();
+      answerConfirmation(false);
+
+      component.finish();
+
+      const message = dialogService.openDialog.mock.calls[0][0].data.message as string;
+      expect(message).toBe(
+        "The registration code is shown only once. If you close this dialog now, it cannot be retrieved again."
+      );
+    });
+
+    it("does not ask once every token's data is saved", () => {
+      showTokens([registrationToken("REG-1", "11112222"), registrationToken("REG-2", "33334444")]);
+      reveal();
+      component.next();
+      fixture.detectChanges();
+      reveal();
+
+      component.finish();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogClose).toHaveBeenCalled();
+    });
   });
 
   describe("tokens the template did not create", () => {

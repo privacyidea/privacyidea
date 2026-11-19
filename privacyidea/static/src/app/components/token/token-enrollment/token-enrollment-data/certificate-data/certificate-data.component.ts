@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, output } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
   MatAccordion,
@@ -29,6 +29,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { EnrollmentSecretComponent } from "@components/token/token-enrollment/token-enrollment-data/enrollment-secret/enrollment-secret.component";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { downloadBlob } from "@utils/download.utils";
+import { SavedValues } from "@components/token/token-enrollment/token-enrollment-data/saved-values";
 
 @Component({
   selector: "app-certificate-data",
@@ -79,13 +80,14 @@ export class CertificateDataComponent {
   protected readonly isDenied = computed(() => this.rolloutState() === "denied");
   protected readonly isFailed = computed(() => this.rolloutState() === "failed");
 
-  // Tracks that the passphrase was actually taken note of, either by revealing or by copying
-  // it. Toggling it hidden again does not undo that.
-  private readonly passwordAcknowledged = signal(false);
-  private readonly certificateDownloaded = signal(false);
-  private readonly pkcs12Downloaded = signal(false);
-  // A container whose base64 does not decode holds nothing to rescue, so it is not asked for.
-  private readonly pkcs12Unusable = signal(false);
+  // Downloaded files and the revealed or copied passphrase; hiding the passphrase again does not undo that.
+  private readonly saved = new SavedValues();
+  // Containers whose base64 does not decode hold nothing to rescue, so they are not asked for.
+  private readonly unusablePkcs12 = new SavedValues();
+  private readonly passwordAcknowledged = computed(() => this.saved.has(`passphrase:${this.pkcs12Password()}`));
+  private readonly certificateDownloaded = computed(() => this.saved.has(`certificate:${this.certificate()}`));
+  private readonly pkcs12Downloaded = computed(() => this.saved.has(`pkcs12:${this.pkcs12()}`));
+  private readonly pkcs12Unusable = computed(() => this.unusablePkcs12.has(this.pkcs12()));
 
   protected readonly passphraseLabel = $localize`:@@token.passphrase:Passphrase`;
   protected readonly passphraseHint = $localize`:@@token.pkcs12PasswordOnce:Save the passphrase of the PKCS#12 container now. It is shown here only once and cannot be retrieved again.`;
@@ -119,12 +121,12 @@ export class CertificateDataComponent {
   }
 
   acknowledgePassword(): void {
-    this.passwordAcknowledged.set(true);
+    this.saved.add(`passphrase:${this.pkcs12Password()}`);
   }
 
   downloadCertificate(): void {
     downloadBlob(new Blob([this.certificate()], { type: "application/x-pem-file" }), `${this.baseName()}.pem`);
-    this.certificateDownloaded.set(true);
+    this.saved.add(`certificate:${this.certificate()}`);
   }
 
   downloadPkcs12(): void {
@@ -135,11 +137,11 @@ export class CertificateDataComponent {
       this.notificationService.error(
         $localize`:@@token.failedPkcs12Download:The PKCS#12 container of this token is damaged and cannot be downloaded.`
       );
-      this.pkcs12Unusable.set(true);
+      this.unusablePkcs12.add(this.pkcs12());
       return;
     }
     downloadBlob(new Blob([binary], { type: "application/x-pkcs12" }), `${this.baseName()}.p12`);
-    this.pkcs12Downloaded.set(true);
+    this.saved.add(`pkcs12:${this.pkcs12()}`);
   }
 
   private baseName(): string {
