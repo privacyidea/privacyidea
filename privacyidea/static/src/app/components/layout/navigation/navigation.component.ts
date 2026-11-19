@@ -278,11 +278,14 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
             "blocklist_read"
           ]);
         case "external_services":
+          // Every right that opens one of the children in this section's toolbar belongs here,
+          // or the child is reachable only by typing its URL.
           return this.authService.oneActionAllowed([
             "smtpserver_read",
             "radiusserver_read",
             "privacyideaserver_read",
-            "smsgateway_read"
+            "smsgateway_read",
+            "webhook_read"
           ]);
         case "config":
           return this.authService.oneActionAllowed([

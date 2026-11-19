@@ -95,5 +95,8 @@ export const ROUTE_PATHS = {
   EXTERNAL_SERVICES_TOKENGROUPS_DETAILS: "/external-services/tokengroups/details/",
   EXTERNAL_SERVICES_SERVICE_IDS: "/external-services/service-ids",
   EXTERNAL_SERVICES_SERVICE_IDS_NEW: "/external-services/service-ids/new",
-  EXTERNAL_SERVICES_SERVICE_IDS_DETAILS: "/external-services/service-ids/details/"
+  EXTERNAL_SERVICES_SERVICE_IDS_DETAILS: "/external-services/service-ids/details/",
+  EXTERNAL_SERVICES_WEBHOOKS: "/external-services/webhooks",
+  EXTERNAL_SERVICES_WEBHOOKS_NEW: "/external-services/webhooks/new",
+  EXTERNAL_SERVICES_WEBHOOKS_DETAILS: "/external-services/webhooks/details/"
 };

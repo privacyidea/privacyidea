@@ -22,6 +22,7 @@
 #
 import functools
 import logging
+import re
 import traceback
 
 from sqlalchemy import select, delete
@@ -29,9 +30,10 @@ from sqlalchemy import select, delete
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
-from privacyidea.lib.error import HandlerAbortError
+from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.webhook import get_webhook, get_webhook_identifiers, set_webhook
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
                                 audit_column_length)
 
@@ -460,15 +462,159 @@ def export_event(name=None):
         return event_cls.events
 
 
+IMPORT_MARKER = "pi-import:webhook-from-inline-handler"
+
+
+def _free_webhook_identifier(base, handler_id):
+    """
+    Return the identifier to create the webhook under: *base*, or the next free variant of it.
+
+    :param base: the identifier the naming rule produces for this handler
+    :param handler_id: the handler being converted, for the log message
+    :return: a free identifier, or the one of our own rows that may be reused
+    """
+    existing = set(get_webhook_identifiers())
+    candidate = base
+    suffix = 1
+    while candidate in existing:
+        description = get_webhook(candidate).get("description") or ""
+        if description.startswith(IMPORT_MARKER):
+            return candidate
+        suffix += 1
+        candidate = f"{base}_{suffix}"
+
+    if candidate != base:
+        log.info(f"The webhook {base!r} already exists and was not created by a configuration "
+                 f"import, so imported WebHook handler {handler_id} gets {candidate!r} instead.")
+    return candidate
+
+
+def _inline_webhook_defect(options):
+    """
+    Return why a WebHook definition in the inline shape cannot be converted, or None.
+
+    :param options: the handler options as imported
+    :return: a short reason, or None when the definition can be converted
+    """
+    # Imported lazily: lib.event is imported by the handler modules' own dependencies, and this
+    # is the only place in it that needs the handler's content-type table.
+    from privacyidea.lib.eventhandler.webhookeventhandler import (ContentType,
+                                                                  DB_CONTENT_TYPE_MAP)
+
+    if not options.get("URL"):
+        return "it has no URL"
+    raw_content_type = options.get("content_type") or ContentType.JSON
+    if "/" not in DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type):
+        return (f"its content_type {options.get('content_type')!r} is neither "
+                f"{ContentType.JSON} nor {ContentType.URLENCODED}")
+    return None
+
+
+def _convert_inline_webhook_handler(handler_id, handler_name, options):
+    """
+    Give an imported WebHook handler a webhook object in place of its inline URL.
+
+    The e1f2a3b4c5d6 migration converts the inline shape at upgrade time, but an import is not an
+    upgrade: a configuration exported from privacyIDEA 3.14 or older re-creates the inline options
+    on an installation that has long since migrated, and no migration will ever see them. Without
+    this, such a handler would keep the shape past the release that removes it and then silently
+    stop sending.
+
+    The caller has already ruled out the definitions that cannot be converted
+    (:func:`_inline_webhook_defect`), so this always produces a webhook.
+
+    :param handler_id: the id ``set_event()`` gave the imported handler
+    :param handler_name: the name of the imported handler, which may be empty
+    :param options: the handler options as imported
+    :return: the identifier of the webhook the handler is to be linked to
+    """
+    from privacyidea.lib.eventhandler.webhookeventhandler import (ContentType,
+                                                                  DB_CONTENT_TYPE_MAP)
+
+    raw_content_type = options.get("content_type") or ContentType.JSON
+    content_type = DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type)
+
+    if handler_name:
+        base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
+    else:
+        base = f"webhook_from_handler_{handler_id}"
+    identifier = _free_webhook_identifier(base, handler_id)
+
+    # timeout=10 is the inline shape's fixed TIMEOUT, kept so the imported handler behaves
+    # exactly as it did (a webhook created by hand defaults to 3).
+    set_webhook(identifier,
+                url=options["URL"],
+                description=f"{IMPORT_MARKER} - created from the inline options of WebHook "
+                            f"event handler {handler_id} (#5751)",
+                http_method="POST",
+                content_type=content_type,
+                auth_type="none",
+                verify_tls=True,
+                timeout=10)
+    return identifier
+
+
 @register_import('event')
-def import_event(data, name=None):
-    """Import policy configuration"""
+def import_event(data, name=None, skip_invalid=False):
+    """
+    Import event handler configuration.
+
+    Each definition is imported independently. A WebHook definition still in the pre-3.15 inline
+    shape is converted to a webhook object on the way in - the migration that does this at upgrade
+    time has already run on this installation and will not run again, so an export taken from an
+    older release would otherwise bring the shape back past the release that removes it.
+
+    :param data: the exported event handler definitions
+    :param name: import only the definition of this name (default: import all)
+    :param skip_invalid: If True, a WebHook definition that cannot be converted because it sends
+        nothing as it stands - no ``URL``, or a ``content_type`` that is neither JSON nor
+        urlencoded - is skipped instead of failing the import. Without it such a definition is
+        reported at the end, the way an unimportable policy is, so that a configuration that
+        cannot be restored faithfully does not look like one that was.
+    """
     log.debug(f'Import event config: {data!s}')
-    for res_data in data:
-        if name and name != res_data.get('name'):
+    skipped = []
+    failed = {}
+    for entry in data:
+        if name and name != entry.get('name'):
             continue
-        # condition is apparently not used anymore
-        del res_data["condition"]
+        res_data = {key: value for key, value in entry.items() if key != "condition"}
+        options = res_data.get("options") or {}
+        inline_webhook = (res_data.get("handlermodule") == "WebHook"
+                          and not options.get("webhook"))
+        if inline_webhook:
+            defect = _inline_webhook_defect(options)
+            if defect:
+                handler_name = res_data.get("name")
+                if not skip_invalid:
+                    failed[handler_name] = defect
+                    continue
+                log.warning(f'Skipping the import of WebHook event handler "{handler_name}": '
+                            f'{defect}, so it sends nothing and cannot be given a webhook. '
+                            f'Correct it in the exported configuration and import again.')
+                skipped.append(handler_name)
+                continue
+
         rid = set_event(**res_data)
+
+        if inline_webhook:
+            identifier = _convert_inline_webhook_handler(rid, res_data.get("name"), options)
+            db.session.add(EventHandlerOption(
+                eventhandler_id=rid, Key="webhook", Value=identifier,
+                Description="Added by the configuration import: links this WebHook handler to "
+                            "the webhook created from its inline options (#5751)"))
+            save_config_timestamp()
+            db.session.commit()
+            log.info(f"Imported WebHook handler {rid} was converted to the webhook "
+                     f"{identifier!r}.")
+
         log.info('Import of event "{!s}" finished,'
                  ' id: {!s}'.format(res_data['name'], rid))
+
+    if skipped:
+        log.warning(f"Skipped WebHook event handlers that send nothing as they stand: {skipped}")
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({reason})' for n, reason in failed.items())
+        raise ConfigAdminError(f"Could not import the following WebHook event handlers: "
+                               f"{failure_summary}.")

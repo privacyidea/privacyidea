@@ -37,13 +37,14 @@
 </mat-form-field>
 
 <div class="flex-column gap-16">
-  @for (optionName of Object.keys(actionOptions()); track optionName) {
+  @for (optionName of orderedOptionNames(); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
         @if (actionOptions()[optionName].type === "bool") {
           <mat-checkbox
             (change)="setOption(optionName, $event.checked)"
             [checked]="!!selectedOptions()[optionName]"
+            [disabled]="!!actionOptions()[optionName].readonly"
             class="margin-0">
             {{ optionName }}
           </mat-checkbox>
@@ -56,7 +57,13 @@
             <mat-label>
               {{ optionName }}
             </mat-label>
-            @if (actionOptions()[optionName].value) {
+            @if (actionOptions()[optionName].readonly) {
+              <input
+                [value]="readonlyDisplayValue(optionName)"
+                disabled
+                matInput
+                type="text" />
+            } @else if (actionOptions()[optionName].value) {
               <mat-select
                 (openedChange)="$event === false && markOptionTouched(optionName)"
                 (selectionChange)="setOption(optionName, $event.value); markOptionTouched(optionName)"

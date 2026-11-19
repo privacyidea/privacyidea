@@ -1,3 +1,21 @@
+Version 3.15dev1
+
+  Features:
+  * Webhooks are first-class configuration objects. A webhook owns its endpoint - URL, HTTP method, authentication
+    (basic, a static header or mTLS with an optionally encrypted client key), static headers, TLS verification and CA
+    bundle, proxy and timeout - and is managed under External Services -> Webhooks or through the new `/webhook` API,
+    gated by the `webhook_read` and `webhook_write` policies. Passwords, client key passwords and headers marked as
+    secret are stored encrypted. The WebHook event handler and the WEBHOOK action of a conditional access policy now
+    select a webhook and contribute only the payload, so several of them can share one endpoint and a URL that changes
+    or a credential that is rotated is edited in one place. Existing WebHook event handlers are converted on upgrade and
+    keep working; their inline `URL` and `content_type` options are deprecated and will be removed in 3.16 (#5751)
+  * An optional outbound request guard refuses a webhook aimed at the privacyIDEA server itself or at its network.
+    `PI_OUTBOUND_GUARD` is `off` by default, `warn` logs what it would refuse without changing delivery, and
+    `enforce` blocks the request and stops following redirects. Loopback, private, link-local - including the cloud
+    metadata address - and CGNAT ranges are refused, with exceptions configurable per CIDR or host in
+    `PI_OUTBOUND_GUARD_ALLOW`. The address the connection actually goes to is checked, so a configured or inherited
+    proxy is judged rather than the destination behind it (#5751)
+
 Version 3.14, 2026-09-30
 
   Features:

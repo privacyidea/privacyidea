@@ -94,6 +94,22 @@ export class MockEventService implements EventServiceInterface {
     add_token_info: {
       key: { type: "str", desc: "The key to add the token info under." },
       value: { type: "str", desc: "The value to add to the token info." }
+    },
+    // The shape of the WebHook handler: two frozen options mirroring the selected webhook, and an
+    // explicit order. Written in the alphabetical order the API really delivers (Flask serialises
+    // with sort_keys), so a test cannot pass on a declaration order the WebUI never sees.
+    post_webhook: {
+      URL: { type: "str", desc: "Where it posts.", readonly: true, fromWebhook: "url", order: 2 },
+      content_type: {
+        type: "str",
+        desc: "The MIME type.",
+        readonly: true,
+        fromWebhook: "content_type",
+        order: 3
+      },
+      data: { type: "text", desc: "The body.", order: 4 },
+      replace: { type: "bool", desc: "Substitute placeholders.", order: 5 },
+      webhook: { type: "str", desc: "The webhook to post to.", value: ["siem"], order: 1, required: true }
     }
   }));
 

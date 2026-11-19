@@ -83,6 +83,7 @@ export interface ContentServiceInterface {
   onExternalPrivacyIdea: Signal<boolean>;
   onExternalTokenGroups: Signal<boolean>;
   onExternalServiceIds: Signal<boolean>;
+  onExternalWebhook: Signal<boolean>;
   onApiClients: Signal<boolean>;
   onUsersResolvers: Signal<boolean>;
   onConfigurationPeriodicTasks: Signal<boolean>;
@@ -241,6 +242,12 @@ export class ContentService implements ContentServiceInterface {
       this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS) ||
       this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) ||
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
+  );
+  onExternalWebhook = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS)
   );
   onApiClients = computed(
     () =>

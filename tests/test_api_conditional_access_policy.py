@@ -476,11 +476,16 @@ class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
                              constraints["user"]["count_modes"])
         self.assertListEqual([str(CountMode.DISTINCT_USERS), str(CountMode.PER_ATTEMPT), str(CountMode.PER_REQUEST)],
                              constraints["source_ip"]["count_modes"])
+        # WEBHOOK notifies a system rather than acting on a subject, so it is offered for both targets.
+        self.assertIn(str(ConditionalAccessAction.WEBHOOK), constraints["user"]["actions"])
+        self.assertIn(str(ConditionalAccessAction.WEBHOOK), constraints["source_ip"]["actions"])
         # The per-stage action rules are served too, so the editor enforces them from one definition rather
         # than from a hand-kept copy. Only the notifications repeat.
-        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN), str(ConditionalAccessAction.EMAIL_USER)],
+        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN), str(ConditionalAccessAction.EMAIL_USER),
+                              str(ConditionalAccessAction.WEBHOOK)],
                              constraints["user"]["repeatable_actions"])
-        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)], constraints["source_ip"]["repeatable_actions"])
+        self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN), str(ConditionalAccessAction.WEBHOOK)],
+                             constraints["source_ip"]["repeatable_actions"])
         # A group is served only for the target whose actions can actually form it.
         self.assertIn([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
                       constraints["user"]["exclusive_action_groups"])

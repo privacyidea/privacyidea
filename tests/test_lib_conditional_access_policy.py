@@ -240,7 +240,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"],
                           [5], target=usr, priority=2)  # stage is not a dict
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"],
-                # actions not a list
+                          # actions not a list
                           [{"failure_threshold": 5, "actions": "notalist"}], target=usr, priority=2)
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"],
                           [{"failure_threshold": 5, "actions": [42]}], target=usr, priority=2)  # action not a dict
@@ -310,7 +310,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # No count_mode given: a user policy defaults to PER_REQUEST, a source_ip policy to DISTINCT_USERS,
         # so the stored value always states what the policy actually counts.
         user_id = create_conditional_access_policy("U", 600, ["PIN_FAIL"], [_stage()],
-                target=ConditionalAccessTarget.USER, priority=1)
+                                                   target=ConditionalAccessTarget.USER, priority=1)
         self.assertEqual(CountMode.PER_REQUEST, get_conditional_access_policy(user_id)["count_mode"])
         ip_id = create_conditional_access_policy(
             "I", 300, ["PASSWORD_FAIL"], [self._ip_stage()], target=ConditionalAccessTarget.SOURCE_IP, priority=2
@@ -379,7 +379,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # not rejected: tracking the same event type twice has no effect.
         policy_id = create_conditional_access_policy(
             "Dedup", 600, ["MFA_FAIL", "PIN_FAIL",
-                    "MFA_FAIL"], [_stage()], target=ConditionalAccessTarget.USER, priority=1
+                           "MFA_FAIL"], [_stage()], target=ConditionalAccessTarget.USER, priority=1
         )
         self.assertEqual(["MFA_FAIL", "PIN_FAIL"], get_conditional_access_policy(policy_id)["counter_types_to_track"])
 
@@ -434,7 +434,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def _create_with_action(self, action, target=ConditionalAccessTarget.USER, name="P", priority=1):
         """Create a one-stage policy carrying exactly *action*, for the action_value validation tests."""
         return create_conditional_access_policy(name, 600, ["PIN_FAIL"], [_stage(actions=[action])],
-                                     target=target, priority=priority)
+                                                target=target, priority=priority)
 
     def test_02k_lock_user_requires_a_positive_duration(self):
         # A LOCK_USER the engine could not act on must not be storable: without a duration it is skipped at
@@ -563,6 +563,52 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             self._create_with_action({"action_type": "EMAIL_ADMIN", "action_value": {**base, **extra}},
                                      name=f"Mail{index}", priority=index)
 
+    def test_02r2_webhook_action_requires_an_identifier(self):
+        # Unlike the EMAIL_* smtp_identifier, this one is not optional: a webhook action without it names no
+        # endpoint at all, so it could only ever be skipped at runtime.
+        for action_value in ({}, {"webhook": ""}, {"webhook": "   "}, {"payload": "{count}"}):
+            with self.subTest(action_value=action_value):
+                self.assertRaisesRegex(
+                    ParameterError, "'webhook'",
+                    self._create_with_action, {"action_type": "WEBHOOK", "action_value": action_value},
+                )
+        # A missing or non-object action_value cannot carry it at all, and is reported as the shape it is,
+        # the way the email validator reports one.
+        for action_value in (None, "ca-hook", 600):
+            with self.subTest(action_value=action_value):
+                self.assertRaisesRegex(
+                    ParameterError, "must be an object",
+                    self._create_with_action, {"action_type": "WEBHOOK", "action_value": action_value},
+                )
+
+    def test_02r3_webhook_action_value_vocabulary_is_checked(self):
+        self.assertRaisesRegex(
+            ParameterError, "url",
+            self._create_with_action,
+            {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "url": "https://x.example"}},
+        )
+        self.assertRaisesRegex(
+            ParameterError, "must be a string",
+            self._create_with_action, {"action_type": "WEBHOOK", "action_value": {"webhook": 5}},
+        )
+        # The identifier is not checked against the existing webhooks: one may be deleted long after the policy
+        # was written, and an unrelated edit to that policy must not become unsaveable.
+        policy_id = self._create_with_action(
+            {"action_type": "WEBHOOK", "action_value": {"webhook": "does-not-exist", "payload": "{count}"}})
+        self.assertEqual({"webhook": "does-not-exist", "payload": "{count}"},
+                         get_conditional_access_policy(policy_id)["stages"][0]["actions"][0]["action_value"])
+
+    def test_02r4_webhook_action_is_allowed_on_both_targets_and_repeats(self):
+        # It reports what tripped rather than acting on a subject, so unlike EMAIL_USER/LOCK_USER it needs
+        # nothing from the target - and a second copy reaches a second system.
+        two_hooks = [{"action_type": "WEBHOOK", "action_value": {"webhook": "siem"}},
+                     {"action_type": "WEBHOOK", "action_value": {"webhook": "chat"}}]
+        for index, target in enumerate((ConditionalAccessTarget.USER, ConditionalAccessTarget.SOURCE_IP), start=1):
+            policy_id = create_conditional_access_policy(f"Hook{index}", 600, ["PIN_FAIL"],
+                                                         [_stage(actions=two_hooks)],
+                                                         target=target, priority=index)
+            self.assertEqual(2, len(get_conditional_access_policy(policy_id)["stages"][0]["actions"]))
+
     def test_02s_update_revalidates_action_values(self):
         policy_id = self._create_with_action({"action_type": "LOCK_USER", "action_value": 600})
         self.assertRaisesRegex(
@@ -594,7 +640,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_03_list_and_order(self):
         # Listed by ascending priority number (lowest number = highest precedence).
         create_conditional_access_policy("Low", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER,
-                priority=1)
+                                         priority=1)
         create_conditional_access_policy(
             "High", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER, priority=9, enabled=False
         )
@@ -686,9 +732,9 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_05_update_validation(self):
         policy_id = create_conditional_access_policy("A", 600, ["PIN_FAIL"], [_stage(5)],
-                target=ConditionalAccessTarget.USER, priority=1)
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         create_conditional_access_policy("B", 600, ["PIN_FAIL"], [_stage(5)], target=ConditionalAccessTarget.USER,
-                priority=2)
+                                         priority=2)
         # name collision with another policy
         self.assertRaises(ParameterError, update_conditional_access_policy, policy_id, name="B")
         # invalid values are rejected without changing anything
@@ -737,7 +783,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         )
         covered = set().union(*_ACTIONS_BY_TARGET.values())
         self.assertSetEqual(set(ConditionalAccessAction), covered,
-                "a ConditionalAccessAction is not assignable to any target")
+                            "a ConditionalAccessAction is not assignable to any target")
 
     def test_08b_action_value_validators_are_exhaustive(self):
         # Guard the manual registration in _ACTION_VALUE_VALIDATORS the way test_08 guards _ACTIONS_BY_TARGET.
@@ -798,10 +844,12 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                       constraints[ConditionalAccessTarget.SOURCE_IP.value]["actions"])
         self.assertIn(ConditionalAccessAction.LOCK_USER.value,
                       constraints[ConditionalAccessTarget.USER.value]["actions"])
-        # Only the notifications repeat, and only the pairs that can actually arise for the target are served.
-        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value, ConditionalAccessAction.EMAIL_USER.value],
+        # Only the notifications repeat, and only the ones that can actually arise for the target are served:
+        # EMAIL_USER has no user on a source-IP policy, while WEBHOOK notifies a system and arises on both.
+        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value, ConditionalAccessAction.EMAIL_USER.value,
+                              ConditionalAccessAction.WEBHOOK.value],
                              constraints[ConditionalAccessTarget.USER.value]["repeatable_actions"])
-        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value],
+        self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value, ConditionalAccessAction.WEBHOOK.value],
                              constraints[ConditionalAccessTarget.SOURCE_IP.value]["repeatable_actions"])
         self.assertIn([ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.PERMANENT_LOCK_USER.value],
                       constraints[ConditionalAccessTarget.USER.value]["exclusive_action_groups"])
@@ -831,7 +879,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertTrue(set(DEFAULT_ERROR_MESSAGES) <= set(ACTION_SEVERITY),
                         set(DEFAULT_ERROR_MESSAGES) - set(ACTION_SEVERITY))
         # And the ones that are absent are absent for the one reason: they report rather than refuse.
-        self.assertSetEqual({ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN},
+        self.assertSetEqual({ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN,
+                             ConditionalAccessAction.WEBHOOK},
                             set(ACTION_SEVERITY) - set(DEFAULT_ERROR_MESSAGES))
 
     def test_10a4_a_restriction_row_finds_its_error_message_by_shape(self):
@@ -884,7 +933,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                                  "action_value": {"recipient_group": "admins", "subject": "Alert", "body": "Body"}},
                                 {"action_type": "EMAIL_ADMIN",
                                  "action_value": {"recipient_group": "soc@example.com", "subject": "Alert",
-                                                   "body": "Body"}},
+                                                  "body": "Body"}},
                                 {"action_type": "EMAIL_USER",
                                  "action_value": {"subject": "Alert", "body": "Body"}}])],
             ConditionalAccessTarget.USER, 1,
@@ -925,7 +974,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_10g_update_rejects_a_stage_list_with_a_duplicate_action(self):
         policy_id = create_conditional_access_policy("Ok", 600, ["PIN_FAIL"], [_stage(5)],
-                                                      ConditionalAccessTarget.USER, 1)
+                                                     ConditionalAccessTarget.USER, 1)
         self.assertRaisesRegex(
             ParameterError, "Duplicate action",
             update_conditional_access_policy, policy_id,
@@ -939,7 +988,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # only submitted stages are judged, which is why the check lives in _validate_stages rather than beside
         # _validate_target_actions, which deliberately re-reads the stored stages.
         policy = ConditionalAccessPolicy(name="Legacy", time_window_seconds=600, priority=1,
-                               target=ConditionalAccessTarget.USER.value, counter_types_to_track=["PIN_FAIL"])
+                                         target=ConditionalAccessTarget.USER.value, counter_types_to_track=["PIN_FAIL"])
         policy.stages = [ConditionalAccessPolicyStage(
             failure_threshold=5,
             actions=[ConditionalAccessStageAction(action_type="LOCK_USER", action_value=60),
@@ -955,7 +1004,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # PATCH of something else never silently rewrites it.
         policy_id = create_conditional_access_policy("NoReset", 600, ["PIN_FAIL"], [_stage()],
                                                      ConditionalAccessTarget.USER, 1,
-                                          reset_on_success=False)
+                                                     reset_on_success=False)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
         _, changed = update_conditional_access_policy(policy_id, reset_on_success=True)
         self.assertIn("reset_on_success", changed)
@@ -972,7 +1021,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                           ConditionalAccessTarget.SOURCE_IP, 1, reset_on_success=True)
         # Omitting it (or sending it off) is fine and stores the only value that target can have.
         policy_id = create_conditional_access_policy("IPNoReset", 600, ["PASSWORD_FAIL"], [_block_ip_stage()],
-                                          ConditionalAccessTarget.SOURCE_IP, 2)
+                                                     ConditionalAccessTarget.SOURCE_IP, 2)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
         self.assertRaises(ParameterError, update_conditional_access_policy, policy_id, reset_on_success=True)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
@@ -990,7 +1039,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
         # Switching back leaves it off: the admin re-enables it deliberately.
         _, changed = update_conditional_access_policy(policy_id, target=ConditionalAccessTarget.USER,
-                                           count_mode=CountMode.PER_REQUEST, stages=[_stage()])
+                                                      count_mode=CountMode.PER_REQUEST, stages=[_stage()])
         self.assertNotIn("reset_on_success", changed)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
 
@@ -998,7 +1047,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # priority must be unique across policies: a second policy reusing a
         # priority is rejected and nothing is persisted.
         create_conditional_access_policy("First", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER,
-                priority=1)
+                                         priority=1)
         self.assertRaises(
             ParameterError,
             create_conditional_access_policy,
@@ -1013,16 +1062,16 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_12_update_to_used_priority_rejected(self):
         first = create_conditional_access_policy("First", 600, ["PIN_FAIL"], [_stage()],
-                target=ConditionalAccessTarget.USER, priority=1)
+                                                 target=ConditionalAccessTarget.USER, priority=1)
         create_conditional_access_policy("Second", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER,
-                priority=2)
+                                         priority=2)
         # moving one policy onto another policy's priority collides
         self.assertRaises(ParameterError, update_conditional_access_policy, first, priority=2)
         self.assertEqual(1, get_conditional_access_policy(first)["priority"])
 
     def test_13_update_keeping_own_priority_ok(self):
         policy_id = create_conditional_access_policy("Solo", 600, ["PIN_FAIL"], [_stage()],
-                target=ConditionalAccessTarget.USER, priority=5)
+                                                     target=ConditionalAccessTarget.USER, priority=5)
         # re-passing the policy's own current priority is not a collision
         update_conditional_access_policy(policy_id, name="Solo2", priority=5)
         policy = get_conditional_access_policy(policy_id)
@@ -1037,7 +1086,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                                          target=ConditionalAccessTarget.USER, priority=1)
         # Bypass the app-level check to force the DB-constraint path (the race window).
         with mock.patch.object(
-            policy_module, "_validate_priority", side_effect=lambda priority, exclude_id=None: priority
+                policy_module, "_validate_priority", side_effect=lambda priority, exclude_id=None: priority
         ):
             self.assertRaises(
                 ParameterError,
@@ -1051,16 +1100,16 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             )
         # The session recovered from the rolled-back conflict: a normal create still works.
         create_conditional_access_policy("After", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER,
-                priority=2)
+                                         priority=2)
         self.assertListEqual(["Winner", "After"], [p["name"] for p in list_conditional_access_policies()])
 
     def test_15_update_priority_race_reported_as_parameter_error(self):
         create_conditional_access_policy("A", 600, ["PIN_FAIL"], [_stage()], target=ConditionalAccessTarget.USER,
-                priority=1)
+                                         priority=1)
         second = create_conditional_access_policy("B", 600, ["PIN_FAIL"], [_stage()],
-                target=ConditionalAccessTarget.USER, priority=2)
+                                                  target=ConditionalAccessTarget.USER, priority=2)
         with mock.patch.object(
-            policy_module, "_validate_priority", side_effect=lambda priority, exclude_id=None: priority
+                policy_module, "_validate_priority", side_effect=lambda priority, exclude_id=None: priority
         ):
             self.assertRaises(ParameterError, update_conditional_access_policy, second, priority=1)
         # Rolled back: B keeps priority 2 and the session is usable.
@@ -1245,8 +1294,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         malformed input (a bare string, a list of non-dicts, a falsy non-list) to assert it is
         rejected. Returns the new policy id."""
         return create_conditional_access_policy(name, 600, ["PIN_FAIL"], [_stage()],
-                target=ConditionalAccessTarget.USER,
-                                     priority=priority, conditions=conditions)
+                                                target=ConditionalAccessTarget.USER,
+                                                priority=priority, conditions=conditions)
 
     def test_29_conditions_round_trip(self):
         policy_id = self._create_with_conditions("Conditioned", [self._condition()])
@@ -1270,7 +1319,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_30_conditions_are_optional(self):
         policy_id = create_conditional_access_policy("Unconditioned", 600, ["PIN_FAIL"], [_stage()],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         self.assertListEqual([], get_conditional_access_policy(policy_id)["conditions"])
 
     def test_31_condition_values_are_deduplicated(self):
@@ -1391,21 +1440,21 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # No message means the rejection stays generic: nothing is surfaced unless
         # an admin wrote it.
         policy_id = create_conditional_access_policy("NoMessage", 600, ["PIN_FAIL"], stages=[_stage(5)],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
 
     def test_45_blank_stage_error_message_is_stored_as_none(self):
         for blank in ("", "   ", "\n\t"):
             policy_id = create_conditional_access_policy(f"Blank{len(blank)}", 600, ["PIN_FAIL"],
-                                              stages=[{**_stage(5), "error_message": blank}],
-                                              target=ConditionalAccessTarget.USER, priority=1)
+                                                         stages=[{**_stage(5), "error_message": blank}],
+                                                         target=ConditionalAccessTarget.USER, priority=1)
             self.assertIsNone(get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
             delete_conditional_access_policy(policy_id)
 
     def test_46_stage_error_message_is_stripped(self):
         policy_id = create_conditional_access_policy("Strip", 600, ["PIN_FAIL"],
-                                          stages=[{**_stage(5), "error_message": "  Locked.  "}],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     stages=[{**_stage(5), "error_message": "  Locked.  "}],
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         self.assertEqual("Locked.", get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
 
     def test_47_unknown_brace_expressions_are_kept_verbatim(self):
@@ -1414,8 +1463,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # braces in ordinary prose without escaping them.
         message = "Locked {} for {duration} — see {unknown} or {{escaped}}."
         policy_id = create_conditional_access_policy("Braces", 600, ["PIN_FAIL"],
-                                          stages=[{**_stage(5), "error_message": message}],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     stages=[{**_stage(5), "error_message": message}],
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         self.assertEqual(message, get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
 
     def test_48_stage_error_message_validation_errors(self):
@@ -1431,14 +1480,14 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_49_stage_error_message_at_the_length_limit_is_accepted(self):
         message = "x" * MAX_ERROR_MESSAGE_LENGTH
         policy_id = create_conditional_access_policy("AtLimit", 600, ["PIN_FAIL"],
-                                          stages=[{**_stage(5), "error_message": message}],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     stages=[{**_stage(5), "error_message": message}],
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         self.assertEqual(message, get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
 
     def test_50_update_replaces_and_clears_the_stage_error_message(self):
         policy_id = create_conditional_access_policy("Update", 600, ["PIN_FAIL"],
-                                          stages=[{**_stage(5), "error_message": "Old."}],
-                                          target=ConditionalAccessTarget.USER, priority=1)
+                                                     stages=[{**_stage(5), "error_message": "Old."}],
+                                                     target=ConditionalAccessTarget.USER, priority=1)
         update_conditional_access_policy(policy_id, stages=[{**_stage(5), "error_message": "New."}])
         self.assertEqual("New.", get_conditional_access_policy(policy_id)["stages"][0]["error_message"])
         # Stages are replaced wholesale, so omitting the message clears it.
@@ -1453,6 +1502,7 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # match - so it is reported at write time like an unknown realm or role.
         self.assertRaises(ParameterError, self._create_with_conditions,
                           "Bad endpoint", [self._condition(ConditionType.ENDPOINT, value=["/validate/unknown"])])
+
 
 class EndpointConditionChoicesTestCase(MyTestCase):
     """The ENDPOINT condition's vocabulary against the routes this app actually serves."""
