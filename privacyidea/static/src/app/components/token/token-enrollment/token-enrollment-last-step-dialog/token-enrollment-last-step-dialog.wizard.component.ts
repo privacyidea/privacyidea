@@ -43,7 +43,6 @@ type WizardLastStepAction = "create_container" | "logout";
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
-  protected override readonly closeConfirmationTitle = $localize`:@@token.enrollmentDataNotSaved:Enrollment Data Not Saved`;
 
   // The only ways on: the dialog cannot be closed, and Logout tells the user that they are done.
   protected readonly actions = computed<DialogAction<WizardLastStepAction>[]>(() => {

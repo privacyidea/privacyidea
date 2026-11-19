@@ -147,7 +147,7 @@ describe("CertificateDataComponent", () => {
       fixture.detectChanges();
       expect(lastUnsaved()).toBe("Show or copy the passphrase.");
 
-      fixture.debugElement.query(By.css(".password-toggle")).nativeElement.click();
+      fixture.debugElement.query(By.css(".enrollment-secret__toggle")).nativeElement.click();
       fixture.detectChanges();
       expect(lastUnsaved()).toBe("");
     });
@@ -165,11 +165,14 @@ describe("CertificateDataComponent", () => {
     it("keeps the passphrase acknowledged after hiding it again", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12, pkcs12Password: PASSPHRASE });
       component.downloadPkcs12();
-      component.togglePasswordVisible();
-      component.togglePasswordVisible();
+      fixture.detectChanges();
+      const toggle = fixture.debugElement.query(By.css(".enrollment-secret__toggle"))
+        .nativeElement as HTMLButtonElement;
+      toggle.click();
+      toggle.click();
       fixture.detectChanges();
 
-      expect(component["passwordVisible"]()).toBe(false);
+      expect(toggle.getAttribute("aria-label")).toBe("Show Passphrase");
       expect(lastUnsaved()).toBe("");
     });
 
@@ -291,26 +294,27 @@ describe("CertificateDataComponent", () => {
       expect(fixture.nativeElement.textContent).toContain("request to the certificate authority failed");
     });
 
-    it("masks the passphrase until it is revealed", () => {
+    it("shows the passphrase masked, with the hint to save it", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12, pkcs12Password: PASSPHRASE });
-      const passwordValue = () => fixture.debugElement.query(By.css(".certificate-password-value code")).nativeElement;
-      const toggle = fixture.debugElement.query(By.css(".password-toggle")).nativeElement as HTMLButtonElement;
 
-      expect(passwordValue().textContent).toBe("•".repeat(PASSPHRASE.length));
-      expect(toggle.getAttribute("aria-label")).toBe("Show passphrase");
+      expect(fixture.nativeElement.querySelector("app-enrollment-secret code").textContent).toBe(
+        "•".repeat(PASSPHRASE.length)
+      );
+      expect(fixture.nativeElement.textContent).toContain("Save the passphrase of the PKCS#12 container now.");
+    });
 
-      toggle.click();
-      fixture.detectChanges();
+    it("leaves out the hint when asked to", () => {
+      setInputs({ serial: "CRT0001", pkcs12: PKCS12, pkcs12Password: PASSPHRASE, saveHint: false });
 
-      expect(passwordValue().textContent).toBe(PASSPHRASE);
-      expect(toggle.getAttribute("aria-label")).toBe("Hide passphrase");
+      expect(fixture.nativeElement.querySelector("app-enrollment-secret")).toBeTruthy();
+      expect(fixture.nativeElement.textContent).not.toContain("Save the passphrase");
     });
 
     it("points to the token PIN when the container has no separate passphrase", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12, fromEnrollment: true });
 
       expect(fixture.nativeElement.textContent).toContain("passphrase of the PKCS#12 container is the token PIN");
-      expect(fixture.debugElement.query(By.css(".certificate-password-value"))).toBeNull();
+      expect(fixture.debugElement.query(By.css("app-enrollment-secret"))).toBeNull();
     });
 
     it("stays silent about the passphrase outside the enrollment response", () => {

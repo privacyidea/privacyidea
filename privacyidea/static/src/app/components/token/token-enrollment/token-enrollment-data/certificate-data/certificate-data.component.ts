@@ -26,6 +26,7 @@ import {
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { EnrollmentSecretComponent } from "@components/token/token-enrollment/token-enrollment-data/enrollment-secret/enrollment-secret.component";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { downloadBlob } from "@utils/download.utils";
 
@@ -39,7 +40,8 @@ import { downloadBlob } from "@utils/download.utils";
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
     MatIcon,
-    CopyButtonComponent
+    CopyButtonComponent,
+    EnrollmentSecretComponent
   ],
   templateUrl: "./certificate-data.component.html",
   styleUrl: "./certificate-data.component.scss"
@@ -65,6 +67,8 @@ export class CertificateDataComponent {
    * the token details cannot tell a PIN-encrypted container from one whose passphrase is lost.
    */
   fromEnrollment = input<boolean>(false);
+  // Asks to save the passphrase now; the wizard asks only when leaving.
+  saveHint = input<boolean>(true);
 
   // What has not been downloaded or saved yet; the wizard asks before it leaves.
   unsavedDataChange = output<string>();
@@ -75,7 +79,6 @@ export class CertificateDataComponent {
   protected readonly isDenied = computed(() => this.rolloutState() === "denied");
   protected readonly isFailed = computed(() => this.rolloutState() === "failed");
 
-  protected readonly passwordVisible = signal(false);
   // Tracks that the passphrase was actually taken note of, either by revealing or by copying
   // it. Toggling it hidden again does not undo that.
   private readonly passwordAcknowledged = signal(false);
@@ -84,7 +87,8 @@ export class CertificateDataComponent {
   // A container whose base64 does not decode holds nothing to rescue, so it is not asked for.
   private readonly pkcs12Unusable = signal(false);
 
-  protected readonly maskedPassword = computed(() => "\u2022".repeat(this.pkcs12Password().length));
+  protected readonly passphraseLabel = $localize`:@@token.passphrase:Passphrase`;
+  protected readonly passphraseHint = $localize`:@@token.pkcs12PasswordOnce:Save the passphrase of the PKCS#12 container now. It is shown here only once and cannot be retrieved again.`;
 
   protected readonly unsavedData = computed(() => {
     const pending: string[] = [];
@@ -112,21 +116,6 @@ export class CertificateDataComponent {
   constructor() {
     effect(() => this.unsavedDataChange.emit(this.unsavedData()));
     effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
-  }
-
-  /** Accessible name of the icon-only toggle button. */
-  protected readonly passwordToggleLabel = computed(() =>
-    this.passwordVisible()
-      ? $localize`:@@token.hidePassphrase:Hide passphrase`
-      : $localize`:@@token.showPassphrase:Show passphrase`
-  );
-
-  togglePasswordVisible(): void {
-    const visible = !this.passwordVisible();
-    this.passwordVisible.set(visible);
-    if (visible) {
-      this.acknowledgePassword();
-    }
   }
 
   acknowledgePassword(): void {

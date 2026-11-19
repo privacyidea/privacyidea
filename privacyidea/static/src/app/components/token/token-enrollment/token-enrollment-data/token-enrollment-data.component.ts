@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
@@ -25,11 +25,12 @@ import {
   EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ApplspecEnrollmentData } from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
 import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
+import { EnrollmentSecretComponent } from "@components/token/token-enrollment/token-enrollment-data/enrollment-secret/enrollment-secret.component";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { QrCodeTextComponent } from "@components/token/token-enrollment/token-enrollment-data/qr-code-text/qr-code-text.component";
-import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
 import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,
@@ -45,10 +46,10 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
     MatButton,
     MatIcon,
     CertificateDataComponent,
+    EnrollmentSecretComponent,
     OtpKeyComponent,
     OtpValuesComponent,
     QrCodeTextComponent,
-    RegistrationCodeComponent,
     TiqrEnrollUrlComponent
   ],
   standalone: true,
@@ -62,7 +63,7 @@ export class TokenEnrollmentDataComponent {
   enrolledInputData = input.required<EnrollmentResponseDetail>();
   enrollmentParameters = input.required<EnrollTokenArguments>();
   tokenType = input.required<string>();
-  // Without the QR code's text and the regenerate button, for the wizard.
+  // Without the QR code's text, the regenerate button and the hints to save secrets, for the wizard.
   compact = input<boolean>(false);
   enrollmentResponseChange = output<EnrollmentResponse>();
   unsavedDataChange = output<string>();
@@ -94,6 +95,60 @@ export class TokenEnrollmentDataComponent {
   protected readonly certificate = computed(() => (this.enrolledData()?.["certificate"] as string) ?? "");
   protected readonly pkcs12 = computed(() => (this.enrolledData()?.["pkcs12"] as string) ?? "");
   protected readonly pkcs12Password = computed(() => (this.enrolledData()?.["pkcs12_password"] as string) ?? "");
+  protected readonly registrationCode = computed(() => (this.enrolledData()?.["registrationcode"] as string) ?? "");
+  protected readonly password = computed(() => (this.enrolledData()?.["password"] as string) ?? "");
+  // A password typed in by the enrolling user is known already, so only a generated one has to be saved.
+  protected readonly passwordGenerated = computed(
+    () => !!this.password() && (this.enrollmentParameters().data as ApplspecEnrollmentData).generateOnServer !== false
+  );
+  protected readonly otpValues = computed(() => this.enrolledData()?.["otps"] ?? []);
+
+  protected readonly registrationCodeLabel = $localize`:@@token.registrationCode:Registration Code`;
+  protected readonly registrationCodeHint = $localize`:@@token.registrationCodeOnce:Save the registration code now. It is shown here only once and cannot be retrieved again.`;
+  protected readonly passwordLabel = $localize`:@@common.password:Password`;
+  protected readonly passwordHint = $localize`:@@token.passwordOnce:Save the password now. It is shown here only once and cannot be retrieved again.`;
+
+  // Each flag resets when a regeneration replaces the value it belongs to.
+  private readonly registrationCodeSaved = linkedSignal({ source: this.registrationCode, computation: () => false });
+  private readonly passwordSaved = linkedSignal({ source: this.password, computation: () => false });
+  private readonly otpValuesPrinted = linkedSignal({ source: this.otpValues, computation: () => false });
+  private readonly certificateUnsaved = signal("");
+  private readonly certificateCloseConfirmation = signal("");
+
+  private readonly registrationCodeOpen = computed(() => !!this.registrationCode() && !this.registrationCodeSaved());
+  private readonly passwordOpen = computed(() => this.passwordGenerated() && !this.passwordSaved());
+  private readonly otpValuesOpen = computed(() => Object.keys(this.otpValues()).length > 0 && !this.otpValuesPrinted());
+
+  // What has not been downloaded or saved yet; the wizard asks before it leaves.
+  private readonly unsavedData = computed(() =>
+    [
+      this.certificateUnsaved(),
+      this.registrationCodeOpen()
+        ? $localize`:@@token.pendingRegistrationCode:Show or copy the registration code.`
+        : "",
+      this.passwordOpen() ? $localize`:@@token.pendingPassword:Show or copy the password.` : "",
+      this.otpValuesOpen() ? $localize`:@@token.pendingOtpValues:Print the OTP values.` : ""
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+  // What closing would lose for good, so the dialog asks first.
+  private readonly closeConfirmation = computed(() =>
+    [
+      this.certificateCloseConfirmation(),
+      this.registrationCodeOpen()
+        ? $localize`:@@token.closeLosesRegistrationCode:The registration code is shown only once. If you close this dialog now, it cannot be retrieved again.`
+        : "",
+      this.passwordOpen()
+        ? $localize`:@@token.closeLosesPassword:The password is shown only once. If you close this dialog now, it cannot be retrieved again.`
+        : "",
+      this.otpValuesOpen()
+        ? $localize`:@@token.closeLosesOtpValues:The OTP values are shown only once. If you close this dialog now without printing them, they cannot be retrieved again.`
+        : ""
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
   // A token waiting for enrollment verification cannot be regenerated: the backend rejects any
@@ -110,6 +165,31 @@ export class TokenEnrollmentDataComponent {
   );
 
   regenerating = signal(false);
+
+  constructor() {
+    effect(() => this.unsavedDataChange.emit(this.unsavedData()));
+    effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
+  }
+
+  onRegistrationCodeSaved(): void {
+    this.registrationCodeSaved.set(true);
+  }
+
+  onPasswordSaved(): void {
+    this.passwordSaved.set(true);
+  }
+
+  onOtpValuesPrinted(): void {
+    this.otpValuesPrinted.set(true);
+  }
+
+  onCertificateUnsavedChange(unsaved: string): void {
+    this.certificateUnsaved.set(unsaved);
+  }
+
+  onCertificateCloseConfirmationChange(message: string): void {
+    this.certificateCloseConfirmation.set(message);
+  }
 
   regenerateQRCode() {
     if (this.regenerating()) {

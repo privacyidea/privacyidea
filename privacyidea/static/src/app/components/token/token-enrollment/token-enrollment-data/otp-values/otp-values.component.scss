@@ -1,6 +1,6 @@
 .otpkey-expansion {
   margin-bottom: 16px;
-  max-width: 576px;
+  max-width: var(--dialog-prose-width);
 
   mat-icon {
     overflow: visible;
@@ -20,8 +20,4 @@
   padding: 6px;
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container);
-}
-
-.max-width-600 {
-  max-width: 600px;
 }

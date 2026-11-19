@@ -50,7 +50,10 @@ describe("OtpValuesComponent", () => {
       close: jest.fn()
     };
     jest.spyOn(window, "open").mockReturnValue(mockPrintWindow as unknown as Window);
+    const printed = jest.fn();
+    component.printed.subscribe(printed);
     component.printOtps();
+    expect(printed).toHaveBeenCalled();
     expect(window.open).toHaveBeenCalledWith("", "_blank", "width=800,height=600");
     expect(mockPrintWindow.document.open).toHaveBeenCalled();
     expect(mockPrintWindow.document.write).toHaveBeenCalled();

@@ -42,8 +42,6 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
 
   // What closing would leave unsaved, so the dialog asks first; empty closes right away.
   private readonly closeConfirmation = signal("");
-  // Title of the question asked while closeConfirmation is set.
-  protected readonly closeConfirmationTitle = $localize`:@@token.passphraseNotSaved:Passphrase Not Saved`;
   // The links in the header ask the same way as Close.
   protected readonly confirmLeave = () => this.confirmClose();
 
@@ -84,7 +82,7 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
       .openDialog({
         component: MessageConfirmationDialogComponent,
         data: {
-          title: this.closeConfirmationTitle,
+          title: $localize`:@@token.enrollmentDataNotSaved:Enrollment Data Not Saved`,
           message,
           confirmAction: { label: confirmLabel, value: true, type: "destruct" }
         }
