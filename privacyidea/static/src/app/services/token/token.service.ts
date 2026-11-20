@@ -57,6 +57,7 @@ import { StringUtils } from "@utils/string.utils";
 import { tokenTypeDisplayLabel, tokenTypes } from "@utils/token.utils";
 import {
   catchError,
+  filter,
   firstValueFrom,
   forkJoin,
   Observable,
@@ -138,6 +139,8 @@ const exactMatchKeys = new Set([
   "realm"
 ]);
 const booleanKeys = new Set(["active", "assigned"]);
+// Rollout polls in a row without the token before it counts as deleted.
+const POLLS_UNTIL_TOKEN_GONE = 2;
 // `serial` is a raw LIKE (SQLite/MySQL fold case, PostgreSQL does not), the tokeninfo
 // keys and `userid` are a raw comparison (only MySQL with a _ci collation folds case).
 const caseNotes: Record<string, FilterCaseNote> = {
@@ -1348,13 +1351,19 @@ export class TokenService extends FilterableTableService implements TokenService
   pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>> {
     const { tokenSerial, initDelay } = args;
     this.tokenSerial.set(tokenSerial);
+    let missingInARow = 0;
     return timer(initDelay, 2000).pipe(
       takeUntil(this.stopPolling$),
       switchMap(() => {
         return this.getTokenDetails(this.tokenSerial());
       }),
+      // A single response without the token is skipped, so that a deletion in progress can end the polling itself.
+      filter((response: PiResponse<Tokens>) => {
+        missingInARow = response.result?.value?.tokens?.length === 0 ? missingInARow + 1 : 0;
+        return missingInARow === 0 || missingInARow >= POLLS_UNTIL_TOKEN_GONE;
+      }),
       takeWhile(
-        (response: PiResponse<Tokens>) => response.result?.value?.tokens[0].rollout_state === "clientwait",
+        (response: PiResponse<Tokens>) => response.result?.value?.tokens[0]?.rollout_state === "clientwait",
         true
       ),
       catchError((error) => {

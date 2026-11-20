@@ -34,6 +34,7 @@ import {
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { Tokens, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
 
@@ -50,6 +51,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
@@ -98,7 +100,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
       next: (pollResponse) => {
         lastPollResponse = pollResponse;
         this.pollResponse.set(pollResponse);
-        if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
+        if (pollResponse.result?.value?.tokens[0]?.rollout_state !== "clientwait") {
           dialogRef.close();
         }
       },
@@ -118,6 +120,13 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
     }
     if (pollingFailed) {
       return null;
+    }
+    if (lastPollResponse?.result?.value?.tokens.length === 0) {
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentTokenGone:The token ${initResponse.detail.serial}:serial: no longer exists. The enrollment was ended.`
+      );
+      this.reopenDialog.set(undefined);
+      return ENROLLMENT_CANCELLED;
     }
 
     const rolloutState = lastPollResponse?.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state;

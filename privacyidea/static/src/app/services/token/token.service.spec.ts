@@ -464,6 +464,52 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
+  describe("pollTokenRolloutState() without the token", () => {
+    const missing = () => MockPiResponse.fromValue({ tokens: [] } as unknown as Tokens);
+    const waiting = () => MockPiResponse.fromValue({ tokens: [{ rollout_state: "clientwait" }] } as unknown as Tokens);
+
+    const poll = async (responses: PiResponse<Tokens>[]) => {
+      jest.useFakeTimers();
+      const spy = jest.spyOn(tokenService, "getTokenDetails");
+      responses.forEach((response) => spy.mockReturnValueOnce(of(response)));
+      const emissions: PiResponse<Tokens>[] = [];
+      let completed = false;
+      const subscription = tokenService.pollTokenRolloutState({ tokenSerial: "PUSH1", initDelay: 0 }).subscribe({
+        next: (response) => emissions.push(response),
+        complete: () => (completed = true)
+      });
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+      for (let i = 1; i < responses.length; i++) {
+        jest.advanceTimersByTime(2000);
+        await Promise.resolve();
+      }
+      subscription.unsubscribe();
+      jest.useRealTimers();
+      return { emissions, completed, requests: spy.mock.calls.length };
+    };
+
+    it("skips a single response without the token and keeps polling", async () => {
+      const responses = [waiting(), missing(), waiting()];
+      const { emissions, completed, requests } = await poll(responses);
+
+      expect(requests).toBe(3);
+      expect(emissions).toEqual([responses[0], responses[2]]);
+      expect(completed).toBe(false);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
+    it("ends polling with the empty response once the token is missing twice in a row", async () => {
+      const responses = [waiting(), missing(), missing()];
+      const { emissions, completed, requests } = await poll(responses);
+
+      expect(requests).toBe(3);
+      expect(emissions).toEqual([responses[0], responses[2]]);
+      expect(completed).toBe(true);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+  });
+
   it("polls until rollout_state !== 'clientwait'", async () => {
     jest.useFakeTimers();
     const first = MockPiResponse.fromValue({ tokens: [{ rollout_state: "clientwait" }] } as unknown as Tokens);
