@@ -22,6 +22,9 @@ import { MatIconModule } from "@angular/material/icon";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { Observable, of } from "rxjs";
+
+export type EnrolledTextLink = "token" | "container" | "user" | "realm";
 
 @Component({
   selector: "app-token-enrolled-text",
@@ -39,47 +42,58 @@ export class TokenEnrolledTextComponent {
   userRealm = input<string>();
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
-  /**
-   * Set while the surrounding dialog refuses to close, because it shows data that cannot be
-   * retrieved again. Following a link would close it, so the links are inert until then.
-   */
-  navigationBlocked = input<boolean>(false);
-  /** Set while the enrollment still has to be verified before the token can be used. */
-  verificationPending = input<boolean>(false);
+  // Asked before a link closes the surrounding dialog; the link is only followed on true.
+  confirmLeave = input<(link: EnrolledTextLink) => Observable<boolean>>();
+  // "verify" and "incomplete" while the user still has to act before the token can be used.
+  state = input<"done" | "verify" | "incomplete">("done");
+  // Only the summary sentence, without the cards.
+  summaryOnly = input<boolean>(false);
   switchRoute = output();
 
-  protected readonly showUser = computed(() => !!this.username() && !!this.userRealm() && !this.onlyAddToRealm());
-  protected readonly showRealmOnly = computed(() => !!this.userRealm() && !!this.onlyAddToRealm());
+  // In self-service, the user would only see their own name.
+  private readonly isAdmin = computed(() => this.authService.role() === "admin");
+  protected readonly showUser = computed(
+    () => this.isAdmin() && !!this.username() && !!this.userRealm() && !this.onlyAddToRealm()
+  );
+  protected readonly pending = computed(() => this.state() !== "done");
+  protected readonly showRealmOnly = computed(() => this.isAdmin() && !!this.userRealm() && !!this.onlyAddToRealm());
 
   tokenSelected() {
-    if (this.navigationBlocked() || !this.serial()) {
+    const serial = this.serial();
+    if (!serial) {
       return;
     }
-    this.switchRoute.emit();
-    this.contentService.tokenSelected(this.serial() ?? "");
+    this.leave("token", () => this.contentService.tokenSelected(serial));
   }
 
   natigateContainerDetails() {
-    if (this.navigationBlocked() || !this.containerSerial()) {
+    const containerSerial = this.containerSerial();
+    if (!containerSerial) {
       return;
     }
-    this.switchRoute.emit();
-    this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
+    this.leave("container", () => this.contentService.navigateContainerDetails(containerSerial));
   }
 
   navigateUserDetails() {
-    if (this.navigationBlocked() || !this.username() || !this.userRealm()) {
+    const username = this.username();
+    const userRealm = this.userRealm();
+    if (!username || !userRealm) {
       return;
     }
-    this.switchRoute.emit();
-    this.contentService.userSelected(this.username() ?? "", this.userRealm() ?? "");
+    this.leave("user", () => this.contentService.userSelected(username, userRealm));
   }
 
   navigateRealms() {
-    if (this.navigationBlocked()) {
-      return;
-    }
-    this.switchRoute.emit();
-    this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
+    this.leave("realm", () => this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS));
+  }
+
+  private leave(link: EnrolledTextLink, navigate: () => void): void {
+    const confirmLeave = this.confirmLeave();
+    (confirmLeave ? confirmLeave(link) : of(true)).subscribe((confirmed) => {
+      if (confirmed) {
+        this.switchRoute.emit();
+        navigate();
+      }
+    });
   }
 }

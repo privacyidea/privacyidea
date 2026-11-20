@@ -24,6 +24,8 @@ import { MatFormField, MatLabel } from "@angular/material/select";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
+import { confirmLeaveIncompleteStep } from "@components/token/token-enrollment/leave-incomplete-enrollment";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import {
@@ -33,12 +35,14 @@ import {
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-verify-enrollment",
   imports: [
     DialogWrapperComponent,
+    EnrollmentCustomizationFrameComponent,
     TokenEnrollmentDataComponent,
     MatFormField,
     MatInput,
@@ -55,12 +59,23 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly responseDetails = this.data.response?.detail;
+  // A link leaves like Close; where Cancel replaces Close, it asks what happens to the token.
+  protected readonly confirmLeave = confirmLeaveIncompleteStep({
+    dialogService: this.dialogService,
+    tokenService: this.tokenService,
+    serial: () => this.responseDetails?.serial,
+    canCancel: () => this.canCancelEnrollment(),
+    close: (result) => this.dialogRef.close(result),
+    stepClosed: () => this.dialogRef.afterClosed()
+  });
   protected readonly verifyMessage = this.responseDetails?.verify?.message ?? "";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   protected readonly enrollData: TokenEnrollmentData | null = this.enrollParameters?.data;
   protected readonly tokenType: string = this.enrollData?.type ?? this.data.tokenType;
+  protected readonly wizard = this.data.wizard ?? false;
 
   verifyOTP_value = signal<string>("");
   verifyOTPForm = form(this.verifyOTP_value, (f) => {
@@ -106,7 +121,9 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
     });
   }
 
-  private canCancelEnrollment(): boolean {
+  // Cancel deletes the unverified token, Close keeps it for later. Only one of them is offered, so
+  // a user who may delete does not leave a token behind that they cannot finish.
+  protected canCancelEnrollment(): boolean {
     return !this.data.rollover && this.authService.actionAllowed("delete");
   }
 
@@ -126,9 +143,5 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {
     this.data.onEnrollmentResponseChange?.(response);
-  }
-
-  onSwitchRoute() {
-    this.dialogRef.close();
   }
 }

@@ -31,10 +31,12 @@ import { EnrollTokenBase, ReopenDialogAction } from "@components/token/token-enr
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPushComponent } from "./enroll-push.component";
 import { axe } from "@testing/axe";
@@ -72,6 +74,7 @@ describe("EnrollPushComponent", () => {
   let tokenService: jest.Mocked<MockTokenService>;
   let dialogService: MockDialogService;
   let authService: MockAuthService;
+  let notificationService: MockNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -82,7 +85,8 @@ describe("EnrollPushComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PushApiPayloadMapper, useClass: DummyPushApiPayloadMapper },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
@@ -91,6 +95,7 @@ describe("EnrollPushComponent", () => {
     tokenService = TestBed.inject(TokenService) as unknown as jest.Mocked<MockTokenService>;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     fixture.detectChanges();
   });
 
@@ -223,6 +228,28 @@ describe("EnrollPushComponent", () => {
     expect(component.pollResponse()).toBeUndefined();
   });
 
+  it("ends the enrollment as cancelled with a warning once the token no longer exists", async () => {
+    const initResp = makeInitResp("S-7");
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(
+      of({
+        result: { status: true, value: { tokens: [] as TokenDetails[], count: 0, current: 1 } }
+      } as PiResponse<Tokens, unknown>)
+    );
+
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+
+    const finalResponse = await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+
+    expect(finalResponse).toBe(ENROLLMENT_CANCELLED);
+    expect(component.reopenDialog()).toBeUndefined();
+    expect(notificationService.warning).toHaveBeenCalledWith(
+      "The token S-7 no longer exists. The enrollment was ended."
+    );
+    expect(notificationService.error).not.toHaveBeenCalled();
+  });
+
   it("reopenDialog returns null without polling again while the first step dialog is still open", async () => {
     const initResp = makeInitResp("S-5");
     tokenService.enrollToken.mockReturnValue(of(initResp));
@@ -312,7 +339,7 @@ describe("EnrollPushComponent", () => {
       expect(dialogData()).toEqual(
         expect.objectContaining({
           showCancelButton: true,
-          showCloseButton: true,
+          wizard: false,
           cancelConfirmationMessage: expect.stringContaining("QR code")
         })
       );
@@ -326,7 +353,35 @@ describe("EnrollPushComponent", () => {
 
       const { pending } = await startPendingRollout();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false, showCloseButton: true }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false }));
+
+      component.firstStepDialogRef?.close();
+      await pending;
+    });
+
+    it("tells the dialog that it belongs to the wizard", async () => {
+      fixture.componentRef.setInput("wizard", true);
+
+      const { pending } = await startPendingRollout();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ wizard: true }));
+
+      component.firstStepDialogRef?.close();
+      await pending;
+    });
+
+    it("passes the enrollment request to the dialog for its header", async () => {
+      tokenService.enrollToken.mockReturnValue(of(makeInitResp("S-D")));
+      tokenService.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")));
+      const enrollmentData = { type: "push", user: "alice", realm: "realm1" } as TokenEnrollmentData;
+      const initResponse = await lastValueFrom(
+        tokenService.enrollToken(component.buildEnrollmentArgs(enrollmentData)!)
+      );
+
+      const pending = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentData);
+      await Promise.resolve();
+
+      expect(dialogData()).toEqual(expect.objectContaining({ enrollmentData }));
 
       component.firstStepDialogRef?.close();
       await pending;

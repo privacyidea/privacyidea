@@ -34,12 +34,12 @@ https://www.youtube.com/watch?v=diAGbsiG8_A
 Customization
 -------------
 
-There are two dialog windows in the wizard. You can add your own text to them
-in HTML templates. In the WebUI, a non-empty ``*.top.html`` file replaces the
-default content on top: the heading "Enroll <type> Token" before the
-enrollment, and the message with the serial of the enrolled token after it.
-The WebUI removes scripts, ``<style>`` elements and ``style`` attributes from
-these files.
+You can add your own text to the wizard in HTML templates: on the enrollment
+form (``pre``) and in every dialog that follows the enrollment (``post``). In
+the WebUI, a non-empty ``pre.top`` file replaces the heading "Enroll <type>
+Token". The ``post`` files replace nothing: they are shown below the message
+about the state of the enrollment. The WebUI removes scripts, ``<style>``
+elements and ``style`` attributes from these files.
 
 Before the token is enrolled you can add your custom text in these two files:
 
@@ -53,8 +53,9 @@ Before the token is enrolled you can add your custom text in these two files:
     static/public/customize/token-enrollment.wizard.pre.top.html
     static/public/customize/token-enrollment.wizard.pre.bottom.html
 
-When it is enrolled and the user needs to do something (e.g. scanning the QR code),
-you can modify the text here:
+After the token is enrolled, the ``post`` files frame the content of every
+dialog, from intermediate steps such as scanning the QR code or verifying the
+token to the final result:
 
 *Previous WebUI*::
 

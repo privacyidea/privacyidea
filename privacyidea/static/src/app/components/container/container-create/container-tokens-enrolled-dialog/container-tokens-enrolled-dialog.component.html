@@ -43,6 +43,7 @@
       >Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p
     >
     <app-token-enrollment-data
+      (closeConfirmationChange)="onCloseConfirmationChange($event)"
       (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="currentToken()"
       [enrollmentParameters]="currentToken().enrollmentParameters"

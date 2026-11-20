@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import {
   MatAccordion,
@@ -35,6 +35,7 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class OtpValuesComponent {
   otpValues = input.required<string[]>();
+  printed = output<void>();
   protected readonly Object = Object;
 
   printOtps(): void {
@@ -63,6 +64,8 @@ export class OtpValuesComponent {
         `);
         printWindow.document.close();
         printWindow.focus();
+        // Counts as saved only once a print window opened, not when a popup blocker stopped it.
+        this.printed.emit();
         printWindow.print();
         printWindow.close();
       }

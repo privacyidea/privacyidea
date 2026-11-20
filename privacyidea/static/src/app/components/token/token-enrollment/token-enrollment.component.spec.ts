@@ -69,6 +69,7 @@ import {
 } from "./token-enrollment.constants";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
@@ -264,7 +265,12 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
-      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
+      tokenService.selectedTokenType.set({
+        key: "custom_plugin_type",
+        name: "Custom Type",
+        info: "",
+        text: ""
+      } as unknown as TokenType);
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -554,6 +560,28 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(component.enrolledDialogData()?.tokenType).toBe("email");
+        expect(component.enrolledDialogData()?.wizard).toBe(false);
+      });
+
+      it("tells the dialogs that they belong to the wizard and opens the wizard success dialog", async () => {
+        const wizardComponent = TestBed.createComponent(TokenEnrollmentWizardComponent).componentInstance;
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(wizardComponent, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "OATH0001", rollout_state: "enrolled" } })
+        );
+
+        await wizardComponent.enrollToken();
+
+        expect(wizardComponent.enrolledDialogData()?.wizard).toBe(true);
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({ component: TokenEnrollmentLastStepDialogWizardComponent })
+        );
       });
 
       it("Strategy with showEnrollDataInLastStep true keeps the enroll data in the last step dialog", async () => {
@@ -1223,7 +1251,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("warns when opening the last step dialog without a response", () => {
-      wizardComponent.openLastStepDialog(null);
+      wizardComponent["openLastStepDialog"](null);
       expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
     });
 

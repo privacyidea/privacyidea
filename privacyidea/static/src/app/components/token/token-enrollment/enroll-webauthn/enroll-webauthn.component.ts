@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, signal } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -52,6 +52,7 @@ import { firstValueFrom, lastValueFrom } from "rxjs";
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }]
 })
 export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentData> {
+  wizard = input<boolean>(false);
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(WebAuthnApiPayloadMapper);
   protected readonly finalizeMapper: WebAuthnFinalizeApiPayloadMapper = inject(WebAuthnFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -226,11 +227,13 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse: webauthnEnrollmentResponse,
+        enrollmentData: webauthnEnrollmentData,
         showCancelButton: canCancel,
-        showCloseButton: !canCancel,
+        wizard: this.wizard(),
         registrationFailed: this.registrationFailed.asReadonly(),
         onRetry: () => void this.attemptRegistration(args)
-      }
+      },
+      configOverride: { disableClose: canCancel }
     });
     return this.stepOneDialogRef;
   }

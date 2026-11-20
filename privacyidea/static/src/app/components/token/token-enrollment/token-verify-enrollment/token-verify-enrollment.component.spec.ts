@@ -20,25 +20,31 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { By } from "@angular/platform-browser";
+import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
-import { AuthService } from "@services/auth/auth.service";
+import { environment } from "@env/environment";
+import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of } from "rxjs";
+import { lastValueFrom, NEVER, of } from "rxjs";
 import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
 import { axe } from "@testing/axe";
 
 describe("TokenVerifyEnrollmentComponent", () => {
   let component: TokenVerifyEnrollmentComponent;
   let fixture: ComponentFixture<TokenVerifyEnrollmentComponent>;
-  let dialogRefSpy: { close: jest.Mock };
+  let dialogRefSpy: { close: jest.Mock; afterClosed: jest.Mock };
   let mockTokenService: MockTokenService;
 
   const dialogData = {
@@ -48,7 +54,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
   };
 
   beforeEach(async () => {
-    dialogRefSpy = { close: jest.fn() };
+    dialogRefSpy = { close: jest.fn(), afterClosed: jest.fn().mockReturnValue(NEVER) };
     await TestBed.configureTestingModule({
       imports: [TokenVerifyEnrollmentComponent],
       providers: [
@@ -174,15 +180,10 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });
 
-  it("should close dialog on switch route", () => {
-    component.onSwitchRoute();
-    expect(dialogRefSpy.close).toHaveBeenCalled();
-  });
-
   describe("cancelling the enrollment", () => {
     const setup = async (data: Record<string, unknown> = {}, canDelete = false) => {
       TestBed.resetTestingModule();
-      dialogRefSpy = { close: jest.fn() };
+      dialogRefSpy = { close: jest.fn(), afterClosed: jest.fn().mockReturnValue(NEVER) };
       await TestBed.configureTestingModule({
         imports: [TokenVerifyEnrollmentComponent],
         providers: [
@@ -190,6 +191,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
           { provide: TokenService, useClass: MockTokenService },
           { provide: ContentService, useClass: MockContentService },
           { provide: AuthService, useClass: MockAuthService },
+          { provide: DialogService, useClass: MockDialogService },
           { provide: MatDialogRef, useValue: dialogRefSpy },
           { provide: MAT_DIALOG_DATA, useValue: { ...dialogData, ...data } }
         ],
@@ -205,22 +207,93 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
     const actionValues = () => component.dialogActions().map((action) => action.value);
 
-    it("offers no cancel action without the delete right", async () => {
+    describe("leaving through a link", () => {
+      const answer = (result: string | undefined) => {
+        const confirmationRef = new MockMatDialogRef();
+        confirmationRef.afterClosed.mockReturnValue(of(result));
+        (TestBed.inject(DialogService) as unknown as MockDialogService).openDialog.mockReturnValue(confirmationRef);
+      };
+      const confirmLeave = (link: EnrolledTextLink = "token") => lastValueFrom(component["confirmLeave"](link));
+
+      it("shows the header with the incomplete summary and the cards", async () => {
+        await setup({ enrollParameters: { data: { user: "alice", realm: "realm1" } } }, false);
+        const text = fixture.nativeElement.textContent as string;
+        expect(text).toContain("The token was enrolled, but it still has to be verified before it can be used.");
+        expect(text).not.toContain("However, to activate");
+        expect(text).toContain("alice");
+      });
+
+      it("leaves like Close while only Close is offered", async () => {
+        await setup({}, false);
+
+        expect(await confirmLeave()).toBe(true);
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(undefined);
+        expect((TestBed.inject(DialogService) as unknown as MockDialogService).openDialog).not.toHaveBeenCalled();
+      });
+
+      it("deletes the token and stays on the enrollment page when its own link was followed", async () => {
+        await setup({}, true);
+        answer("discard");
+
+        expect(await confirmLeave("token")).toBe(false);
+
+        expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+      });
+
+      it("deletes the token and follows a link to another page", async () => {
+        await setup({}, true);
+        answer("discard");
+
+        expect(await confirmLeave("user")).toBe(true);
+
+        expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+      });
+
+      it("keeps the token when the user chooses to while only Cancel is offered", async () => {
+        await setup({}, true);
+        answer("save-exit");
+
+        expect(await confirmLeave()).toBe(true);
+
+        expect(mockTokenService.cancelEnrollment).not.toHaveBeenCalled();
+        expect(dialogRefSpy.close).toHaveBeenCalledWith(undefined);
+      });
+
+      it("stays when the user cancels while only Cancel is offered", async () => {
+        await setup({}, true);
+        answer(undefined);
+
+        expect(await confirmLeave()).toBe(false);
+        expect(mockTokenService.cancelEnrollment).not.toHaveBeenCalled();
+      });
+    });
+
+    const buttonLabels = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLElement>).map(
+        (button) => button.textContent?.trim() ?? ""
+      );
+
+    it("offers close instead of cancel without the delete right", async () => {
       await setup({}, false);
 
       expect(actionValues()).toEqual(["verify"]);
+      expect(buttonLabels()).toEqual(["Close", "Verify"]);
     });
 
-    it("offers the cancel action before the verify action", async () => {
+    it("replaces the close button with cancel before the verify action", async () => {
       await setup({}, true);
 
       expect(actionValues()).toEqual(["cancelEnrollment", "verify"]);
+      expect(buttonLabels()).toEqual(["Cancel", "Verify"]);
     });
 
     it("never offers to cancel a rollover", async () => {
       await setup({ rollover: true }, true);
 
       expect(actionValues()).toEqual(["verify"]);
+      expect(buttonLabels()).toEqual(["Close", "Verify"]);
     });
 
     it("deletes the unverified token and reports the cancellation", async () => {
@@ -230,6 +303,65 @@ describe("TokenVerifyEnrollmentComponent", () => {
 
       expect(mockTokenService.cancelEnrollment).toHaveBeenCalledWith("123");
       expect(dialogRefSpy.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+  });
+
+  describe("context", () => {
+    const setupContext = async (role: "admin" | "user", wizard = false) => {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [TokenVerifyEnrollmentComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: TokenService, useClass: MockTokenService },
+          { provide: ContentService, useClass: MockContentService },
+          { provide: AuthService, useClass: MockAuthService },
+          { provide: MatDialogRef, useValue: dialogRefSpy },
+          {
+            provide: MAT_DIALOG_DATA,
+            useValue: { ...dialogData, wizard, enrollParameters: { data: { user: "alice", realm: "realm1" } } }
+          }
+        ],
+        schemas: [NO_ERRORS_SCHEMA]
+      }).compileComponents();
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...authService.authData(), role } as AuthData);
+      fixture = TestBed.createComponent(TokenVerifyEnrollmentComponent);
+      fixture.detectChanges();
+    };
+    const cardLabels = () =>
+      Array.from(fixture.nativeElement.querySelectorAll(".enrolled__card-label") as NodeListOf<HTMLElement>).map(
+        (label) => label.textContent?.trim()
+      );
+
+    it("shows the user and the realm to an admin", async () => {
+      await setupContext("admin");
+      expect(cardLabels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("leaves out the user and the realm in self-service", async () => {
+      await setupContext("user");
+      expect(cardLabels()).toEqual(["Token"]);
+    });
+
+    it("frames the step with the summary and the post customization in the wizard", async () => {
+      await setupContext("user", true);
+      const httpMock = TestBed.inject(HttpTestingController);
+      const customizationUrl = (position: string) =>
+        environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("The token was enrolled, but it still has to be verified before it can be used.");
+      expect(text).toContain("Top 123");
+      expect(text).toContain("Bottom");
+      expect(cardLabels()).toEqual([]);
+      expect(text).toContain("Close");
+      httpMock.verify();
     });
   });
 

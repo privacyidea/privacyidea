@@ -38,7 +38,8 @@ describe("SaveAndExitDialogComponent", () => {
       allowSaveExit: true,
       saveExitDisabled: false,
       saveButtonText: "save button text",
-      discardButtonText: "discard button text"
+      discardButtonText: "discard button text",
+      cancelButtonText: "cancel button text"
     };
 
     await TestBed.configureTestingModule({
@@ -63,6 +64,11 @@ describe("SaveAndExitDialogComponent", () => {
     >;
     fixture.detectChanges();
   });
+
+  const footerLabels = (target: ComponentFixture<SaveAndExitDialogComponent>): string[] =>
+    Array.from(target.nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLElement>).map(
+      (button) => button.textContent?.trim() ?? ""
+    );
 
   it("should create", () => {
     expect(component).toBeTruthy();
@@ -100,6 +106,12 @@ describe("SaveAndExitDialogComponent", () => {
       expect(actions.find((a) => a.value === "discard")?.label).toBe("Discard");
       expect(defaultsComponent.title()).toBe("Discard Changes");
       expect(defaultsComponent.message()).toBe("You have unsaved changes. Do you want to save them before exiting?");
+      expect(footerLabels(defaultsFixture)).toContain("Cancel");
+    });
+
+    it("labels the cancel button with the given text", () => {
+      expect(footerLabels(fixture)).toContain("cancel button text");
+      expect(footerLabels(fixture)).not.toContain("Cancel");
     });
   });
 
