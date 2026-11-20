@@ -53,9 +53,11 @@ storage.
 
 import logging
 import traceback
+from dataclasses import dataclass
 
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import truncate_comma_list
+from privacyidea.models.utils import utc_now
 import datetime
 
 log = logging.getLogger(__name__)
@@ -63,6 +65,22 @@ log = logging.getLogger(__name__)
 # Audit keys whose value is a list of items, e.g. the serials of all tokens a request
 # used. They are shortened per item rather than cut at the end.
 COMMA_LIST_KEYS = frozenset(["policies", "serial", "container_serial"])
+
+
+@dataclass(frozen=True)
+class TimeInterval:
+    """
+    A time interval to filter a timestamp column of the audit log, read from an ISO 8601 time interval
+    ``start/end`` by :func:`privacyidea.lib.audit.read_time_intervals`.
+
+    :param start: The inclusive lower bound as naive UTC datetime, None for an open start
+    :param end: The upper bound as naive UTC datetime, None for an open end
+    :param end_exclusive: Whether ``end`` is compared exclusively. An end given in whole seconds includes
+        its whole second, so it is moved one second on and compared exclusively.
+    """
+    start: datetime.datetime | None
+    end: datetime.datetime | None
+    end_exclusive: bool
 
 
 class Paginate:
@@ -94,12 +112,12 @@ class Audit:  # pragma: no cover
         :param config: The web config is passed to the audit module, so that
                        the special module implementation can get its configuration.
         :type config: dict
-        :param startdate: The datetime of the beginning of the request
+        :param startdate: The datetime of the beginning of the request, naive UTC
         :type startdate: datetime.datetime
         :return: Audit object
         """
         self.name = "AuditBase"
-        self.audit_data = {'startdate': startdate or datetime.datetime.now()}
+        self.audit_data = {'startdate': startdate or utc_now()}
         self.config = config or {}
         self.private = b""
         self.public = b""

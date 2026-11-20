@@ -56,7 +56,7 @@ args=('/var/log/privacyidea/audit.log',)
 import logging
 import json
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase)
-from datetime import datetime
+from privacyidea.models.utils import utc_now, utc_isoformat
 
 
 class Audit(AuditBase):
@@ -79,10 +79,12 @@ class Audit(AuditBase):
         e.g. write the data to a file.
         """
         self.audit_data["policies"] = ",".join(self.audit_data.get("policies", []))
-        self.audit_data["timestamp"] = datetime.utcnow().isoformat()
+        # The start date is taken in UTC as well, so timestamp and duration use one clock
+        now = utc_now()
+        self.audit_data["timestamp"] = utc_isoformat(now)
         if self.audit_data.get("startdate"):
-            duration = datetime.utcnow() - self.audit_data.get("startdate")
+            duration = now - self.audit_data.get("startdate")
             self.audit_data["duration"] = f"{duration!s}"
-            self.audit_data["startdate"] = self.audit_data.get("startdate").isoformat()
+            self.audit_data["startdate"] = utc_isoformat(self.audit_data.get("startdate"))
         self.logger.info(f"{json.dumps(self.audit_data, sort_keys=True)!s}")
         self.audit_data = {}

@@ -89,7 +89,7 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.api.lib.utils import log_authentication
 from privacyidea.lib.user import User
-import datetime
+from privacyidea.models.utils import utc_now
 import threading
 
 log = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ NO_STORE_ENDPOINTS = frozenset({
 @token_blueprint.before_app_request
 def log_begin_request():
     log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
-    g.startdate = datetime.datetime.now()
+    g.startdate = utc_now()
 
 
 @token_blueprint.before_app_request

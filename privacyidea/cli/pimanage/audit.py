@@ -24,13 +24,14 @@ import click
 import yaml
 from flask import current_app
 from flask.cli import AppGroup
-from sqlalchemy import create_engine, desc, MetaData
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, desc, MetaData, not_
+from sqlalchemy.orm import sessionmaker, undefer
 
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auditmodules.sqlaudit import LogEntry
+from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, LogEntry, has_entry_version_column
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.utils import parse_timedelta
+from privacyidea.models.utils import utc_now
 
 audit_cli = AppGroup("audit", help="Manage Audit log")
 
@@ -95,9 +96,13 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     session = sessionmaker(bind=engine)()
     # create a Session
     metadata.create_all(engine)
+    # Entries marked with entry_version are written in UTC, the others in local time of the server
+    has_entry_version = has_entry_version_column(engine)
     if config:
         yml_config = yaml.safe_load(config)
         query = session.query(LogEntry)
+        if has_entry_version:
+            query = query.options(undefer(LogEntry.entry_version))
         if chunksize is None:
             audit_logs = query.all()
         else:
@@ -107,9 +112,11 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
         for log in audit_logs:
             if debug:
                 click.echo(f"investigating log entry {log.id}")
+            marked = has_entry_version and log.entry_version is not None
             for rule in yml_config:
                 age = int(rule.get("rotate"))
-                rotate_date = datetime.datetime.now() - datetime.timedelta(days=age)
+                now = utc_now() if marked else datetime.datetime.now()
+                rotate_date = now - datetime.timedelta(days=age)
 
                 match = False
                 for key in rule.keys():
@@ -153,11 +160,13 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
                 delete_matching_rows(session, LogEntry.__table__,
                                      LogEntry.id.in_(delete_list[start:start + slice_size]))
     elif age:
-        now = datetime.datetime.now() - datetime.timedelta(days=age)
-        click.echo(f"Deleting entries older than {now!s}")
-        criterion = LogEntry.date < now
+        delta = datetime.timedelta(days=age)
+        cutoff = (utc_now() - delta).replace(tzinfo=datetime.UTC)
+        click.echo(f"Deleting entries older than {cutoff!s}")
+        # Every entry that is not newer, each measured on its own clock
+        criterion = not_(SQLAudit._newer_than(delta, has_entry_version))
         if dryrun:
-            r = session.query(LogEntry).filter(criterion).count()
+            r = session.query(LogEntry.id).filter(criterion).count()
             click.echo(f"Would delete {r!s} entries.")
         else:
             r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
@@ -185,7 +194,7 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
             click.echo(f"Deleting entries smaller than {cut_id}")
             criterion = LogEntry.id < cut_id
             if dryrun:
-                r = session.query(LogEntry).filter(criterion).count()
+                r = session.query(LogEntry.id).filter(criterion).count()
                 click.echo(f"Would delete {r!s} entries.")
             else:
                 r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
