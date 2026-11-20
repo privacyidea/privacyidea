@@ -1,0 +1,108 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="clock-dial__title">{{ label() }}</div>
+<div class="clock-dial__readout">
+  <button
+    type="button"
+    class="clock-dial__part"
+    [class.clock-dial__part--active]="view() === 'hours'"
+    [attr.aria-label]="hourLabel"
+    [attr.aria-pressed]="view() === 'hours'"
+    (click)="showHours()">
+    {{ hourText() }}
+  </button>
+  <span
+    class="clock-dial__colon"
+    aria-hidden="true"
+    >:</span
+  >
+  <button
+    type="button"
+    class="clock-dial__part"
+    [class.clock-dial__part--active]="view() === 'minutes'"
+    [attr.aria-label]="minuteLabel"
+    [attr.aria-pressed]="view() === 'minutes'"
+    [disabled]="hour() === null"
+    (click)="showMinutes()">
+    {{ minuteText() }}
+  </button>
+</div>
+<div
+  #face
+  class="clock-dial__face"
+  role="slider"
+  tabindex="0"
+  aria-valuemin="0"
+  [attr.aria-label]="view() === 'hours' ? hourLabel : minuteLabel"
+  [attr.aria-valuemax]="view() === 'hours' ? 23 : 59"
+  [attr.aria-valuenow]="value()"
+  [attr.aria-valuetext]="value() === null ? null : view() === 'hours' ? hourText() : minuteText()"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointercancel)="onPointerCancel()"
+  (keydown)="onKeydown($event)">
+  <svg
+    [attr.viewBox]="'0 0 ' + size + ' ' + size"
+    aria-hidden="true">
+    <circle
+      class="clock-dial__plate"
+      [attr.cx]="center"
+      [attr.cy]="center"
+      [attr.r]="center" />
+    @if (hand(); as hand) {
+      <line
+        class="clock-dial__hand"
+        [attr.x1]="center"
+        [attr.y1]="center"
+        [attr.x2]="hand.x"
+        [attr.y2]="hand.y" />
+      <circle
+        class="clock-dial__pivot"
+        [attr.cx]="center"
+        [attr.cy]="center"
+        r="4" />
+      <circle
+        class="clock-dial__knob"
+        [attr.cx]="hand.x"
+        [attr.cy]="hand.y"
+        [attr.r]="hand.inner ? 16 : 20" />
+      @if (hand.between) {
+        <circle
+          class="clock-dial__knob-dot"
+          [attr.cx]="hand.x"
+          [attr.cy]="hand.y"
+          r="3" />
+      }
+    }
+    @for (mark of marks(); track mark.value) {
+      <text
+        class="clock-dial__mark"
+        [class.clock-dial__mark--inner]="mark.inner"
+        [class.clock-dial__mark--disabled]="mark.disabled"
+        [class.clock-dial__mark--selected]="mark.selected"
+        [attr.x]="mark.x"
+        [attr.y]="mark.y"
+        text-anchor="middle"
+        dominant-baseline="central">
+        {{ mark.text }}
+      </text>
+    }
+  </svg>
+</div>
