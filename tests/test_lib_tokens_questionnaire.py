@@ -5,11 +5,12 @@ This depends on lib.tokenclass
 
 import json
 
-from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.config import set_privacyidea_config, get_from_config
 from privacyidea.lib.token import init_token, import_tokens, get_tokens, get_one_token
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.models import Token
-from .base import MyTestCase
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, non_utc_time_zone
 
 
 class QuestionnaireTokenTestCase(MyTestCase):
@@ -242,4 +243,22 @@ class QuestionnaireTokenTestCase(MyTestCase):
         for _ in range(5):
             r = token.create_challenge()
             self.assertIn(r[1], other_questions, r[1])
+        token.delete_token()
+
+    def test_10_challenge_valid_until_carries_utc_offset(self):
+        set_privacyidea_config("question.num_answers", 3)
+        token = init_token({"type": "question",
+                            "pin": self.pin,
+                            "serial": "QUST_VALID_UNTIL",
+                            "questions": self.j_questions})
+        validity = int(get_from_config("DefaultChallengeValidityTime", 120))
+
+        with non_utc_time_zone():
+            before = utc_now()
+            success, _message, _transaction_id, reply_dict = token.create_challenge()
+
+        self.assertTrue(success)
+        self.assert_valid_until_is_utc(reply_dict["attributes"]["valid_until"], validity, before)
+
+        # Clean up
         token.delete_token()

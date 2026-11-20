@@ -53,10 +53,56 @@ be written this way too, e.g. ``authentication: =!CHALLENGE``; without the
 ``=`` the WebUI searches for the text ``!CHALLENGE``. In the previous WebUI
 every value is searched anywhere in the column, and a negation is not possible.
 
+The ``GET /audit/`` API and the CSV download also accept an ISO 8601 time
+interval in the filters ``startdate`` and ``date``. The interval has the form
+``start/end``. Each bound is an ISO 8601 timestamp, e.g.
+``startdate=2026-11-05T00:00:00Z/2026-11-05T23:59:59Z``. The readable form with
+a space before the offset, e.g. ``2026-11-05 14:30:00 +01:00``, is accepted too.
+
+Both bounds are inclusive. If the end is given in whole seconds, the whole
+second is included. If the end is only a date, it means 00:00:00 of that day.
+If a bound has no offset, it is taken as UTC. In a URL, send a ``+`` as
+``%2B``.
+
+Leave out a bound for an open end, e.g. ``start/`` or ``/end``. A ``/`` alone
+is no filter. A value without ``/`` is a text filter as before. The API returns
+HTTP 400 if an interval contains ``!`` or ``*``, if it has more than one ``/``
+or if a bound is invalid.
+
+An interval on ``startdate`` selects requests by their start. An interval on
+``date`` selects requests by their end.
+
+In the current WebUI the filter button in the header of the *Start Date* column
+opens a calendar. If you choose a first and a last day, the range runs from the
+start of the first day to the end of the last day. If you choose one day, the
+range is that day. The days are in the local time of the browser. Check *Time*
+in the calendar to choose a start time and an end time for these days. If only
+one day is chosen, the range ends at 23:59:59 of that day. *Clear Filter* in
+the calendar removes the range. The filter button of a date cell selects the
+local day of that entry.
+
+The filter text shows the range as one ``startdate`` value with the offset of
+the browser, e.g.
+``startdate: "2026-11-05 00:00:00 +01:00/2026-11-05 23:59:59 +01:00"``.
+
+Entries written by privacyIDEA 3.15 or later store ``date`` and ``startdate``
+in UTC. The API returns them with the offset ``+00:00``. The current WebUI
+shows them in the local time of the browser. Older entries keep the local time
+of the server that wrote them. The API returns them without an offset.
+
+A time interval compares older entries in the local time of the server. A text
+filter on ``date`` or ``startdate`` compares the stored value. It matches older
+entries in server time and new entries in UTC.
+
 .. versionchanged:: 3.14 ``*`` is the only wildcard. Earlier versions also
    treated a literal ``%`` as a wildcard in the audit search; now ``%`` and
    ``_`` match literally. Update any saved filters or integrations that relied
    on ``%`` to use ``*`` instead.
+
+.. versionchanged:: 3.15 New audit entries are stored in UTC. The filters
+   ``date`` and ``startdate`` of the API and the CSV download accept an ISO 8601
+   time interval. Text filters on ``date`` or ``startdate`` match new entries in
+   UTC.
 
 .. index:: Audit Log Rotate
 .. _audit_rotate:

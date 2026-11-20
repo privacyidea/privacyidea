@@ -18,7 +18,7 @@
  **/
 
 import { expectedLocalDateTime } from "@testing/expected-local-date-time";
-import { formatLocalDateTime } from "./date-format.utils";
+import { atLocalTimeIso, formatLocalDateTime } from "./date-format.utils";
 
 describe("formatLocalDateTime", () => {
   it("returns an empty string for null, undefined or empty input", () => {
@@ -95,5 +95,20 @@ describe("formatLocalDateTime", () => {
 
   it("returns the raw value for a non-date string unaffected by the offset/date-only handling", () => {
     expect(formatLocalDateTime("not-a-date")).toBe("not-a-date");
+  });
+});
+
+describe("atLocalTimeIso", () => {
+  it("sets the local wall-clock time and the given seconds on the date's local day", () => {
+    expect(atLocalTimeIso(new Date(2026, 8, 24, 13, 0), "08:30", 0)).toBe(
+      new Date(2026, 8, 24, 8, 30, 0, 0).toISOString()
+    );
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "17:15", 59)).toBe(new Date(2026, 8, 24, 17, 15, 59, 0).toISOString());
+  });
+
+  it("returns null for an empty or malformed time", () => {
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "", 0)).toBeNull();
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "25:00", 0)).toBeNull();
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "8:3", 0)).toBeNull();
   });
 });

@@ -1141,6 +1141,36 @@ mat-chip.mat-mdc-chip {
 
 .mat-calendar.auth-log-datepicker {
   border-radius: var(--border-radius);
+
+  // The audit picker puts a "Clear Filter" row above the month header, so the header needs no top spacing of its own.
+  &:has(.audit-range-clear) {
+    .mat-calendar-header {
+      padding-top: 0;
+    }
+
+    .mat-calendar-controls {
+      margin-top: 0;
+    }
+  }
+
+  // Weekday letters are column labels, not days: same size and colour as the dates but bold, as desktop calendars
+  // show them, so they read apart from the dates without fading.
+  .mat-calendar-table-header th {
+    color: var(--mat-sys-on-surface);
+    font-size: inherit;
+    font-weight: 600;
+  }
+
+  // Material repeats the month ("NOV") in the leading empty cells of the first week, or in a row of its own when the
+  // month starts too late in the week. The header above already names the month: blank the label in the cells and
+  // drop the extra row, which only adds a gap between the weekday letters and the days.
+  .mat-calendar-body-label {
+    visibility: hidden;
+  }
+
+  .mat-calendar-body tr:has(> .mat-calendar-body-label[colspan="7"]) {
+    display: none;
+  }
 }
 
 .mat-drawer-backdrop {

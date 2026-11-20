@@ -34,6 +34,7 @@ import {
   MockPiResponse
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { toFilterDisplay } from "@utils/date-format.utils";
 
 environment.proxyUrl = "/api";
 
@@ -160,6 +161,68 @@ describe("AuditService (signals & helpers)", () => {
     expect(req.request.params.get("action")).toBe("*LOGIN*");
     expect(getHeadersMock).toHaveBeenCalled();
     req.flush("test data");
+  });
+
+  it("sends the startdate interval to search and download", async () => {
+    const fromIso = "2026-09-24T22:00:00.000Z";
+    const toIso = "2026-09-25T21:59:59.000Z";
+    // The range lives in the startdate chip, written the way the range picker writes it.
+    auditService.activeFilter.set(
+      new FilterValue({ value: "action: LOGIN" }).addEntry(
+        "startdate",
+        `${toFilterDisplay(fromIso)}/${toFilterDisplay(toIso)}`
+      )
+    );
+
+    content.routeUrl.set("/logs/audit");
+    TestBed.tick();
+    const searchReq = httpMock.expectOne((req) => req.url.endsWith("/audit/"));
+    expect(searchReq.request.params.get("startdate")).toBe(`${fromIso}/${toIso}`);
+    expect(searchReq.request.params.has("start_time")).toBe(false);
+    expect(searchReq.request.params.has("end_time")).toBe(false);
+    expect(searchReq.request.params.get("action")).toBe("*LOGIN*");
+    searchReq.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
+
+    auditService.downloadCSV();
+    const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
+    dialogRef.close(true);
+    await Promise.resolve();
+
+    const downloadReq = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    expect(downloadReq.request.params.get("startdate")).toBe(`${fromIso}/${toIso}`);
+    expect(downloadReq.request.params.has("start_time")).toBe(false);
+    expect(downloadReq.request.params.has("end_time")).toBe(false);
+    expect(downloadReq.request.params.get("action")).toBe("*LOGIN*");
+    downloadReq.flush("test data");
+
+    // An open end stays empty.
+    auditService.activeFilter.set(new FilterValue().addEntry("startdate", `${toFilterDisplay(fromIso)}/`));
+    TestBed.tick();
+    const openEndReq = httpMock.expectOne((req) => req.url.endsWith("/audit/"));
+    expect(openEndReq.request.params.get("startdate")).toBe(`${fromIso}/`);
+    expect(auditService.timestampTo()).toBeNull();
+    openEndReq.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
+  });
+
+  it("a plain startdate text filter is no time range", () => {
+    auditService.activeFilter.set(new FilterValue({ value: "startdate: 2026-11-05" }));
+    expect(auditService.timestampFrom()).toBeNull();
+    expect(auditService.timestampTo()).toBeNull();
+
+    content.routeUrl.set("/logs/audit");
+    TestBed.tick();
+    const searchReq = httpMock.expectOne((req) => req.url.endsWith("/audit/"));
+    expect(searchReq.request.params.get("startdate")).toBe("*2026-11-05*");
+    searchReq.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
+  });
+
+  it("sends a typed date interval without wildcards", () => {
+    auditService.activeFilter.set(new FilterValue({ value: 'date: "2026-11-05 00:00:00 +01:00/"' }));
+    content.routeUrl.set("/logs/audit");
+    TestBed.tick();
+    const searchReq = httpMock.expectOne((req) => req.url.endsWith("/audit/"));
+    expect(searchReq.request.params.get("date")).toBe("2026-11-05 00:00:00 +01:00/");
+    searchReq.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
   });
 
   it("downloadCSV does not trigger a GET request if dialog is cancelled", () => {

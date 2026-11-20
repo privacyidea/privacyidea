@@ -17,7 +17,8 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import Token, Config
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, FakeFlaskG, FakeAudit, non_utc_time_zone
 
 PWFILE = "tests/testdata/passwords"
 
@@ -610,3 +611,21 @@ class SMSTokenTestCase(MyTestCase):
 
         db_token = Token.query.filter_by(serial=self.serial1).first()
         self.assertTrue(db_token is None, db_token)
+
+    @responses.activate
+    def test_25_challenge_valid_until_carries_utc_offset(self):
+        responses.add(responses.POST, self.SMSHttpUrl, body=self.success_body)
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        token = init_token({"type": "sms", "serial": "PISM_VALID_UNTIL",
+                            "phone": "+49 987654321", "otpkey": self.otpkey})
+        validity = token._get_sms_timeout()
+
+        with non_utc_time_zone():
+            before = utc_now()
+            success, _message, _transaction_id, reply_dict = token.create_challenge()
+
+        self.assertTrue(success)
+        self.assert_valid_until_is_utc(reply_dict["attributes"]["valid_until"], validity, before)
+
+        # Clean up
+        remove_token("PISM_VALID_UNTIL")

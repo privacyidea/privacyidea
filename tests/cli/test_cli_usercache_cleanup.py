@@ -25,11 +25,12 @@ from privacyidea.cli.tools.usercache_cleanup import delete as privacyidea_userca
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.usercache import EXPIRATION_SECONDS, delete_user_cache
 from privacyidea.models import UserCache, db
+from privacyidea.models.utils import utc_now
 
 
 def add_cache_entry(username: str, age: datetime.timedelta) -> int:
     """Add a user cache entry for ``username`` that was written ``age`` ago and return its id."""
-    timestamp = datetime.datetime.now() - age
+    timestamp = utc_now() - age
     return UserCache(username, username, "cacheresolver", f"uid-{username}", timestamp).save()
 
 

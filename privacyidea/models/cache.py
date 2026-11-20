@@ -21,14 +21,14 @@ from sqlalchemy import Sequence, Unicode, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 
 class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
     id: Mapped[int] = mapped_column(Integer, Sequence("authcache_seq"), primary_key=True)
-    first_auth: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    last_auth: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    first_auth: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now, index=True)
+    last_auth: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now, index=True)
     username: Mapped[str | None] = mapped_column(Unicode(64), default="", index=True)
     resolver: Mapped[str | None] = mapped_column(Unicode(120), default='', index=True)
     realm: Mapped[str | None] = mapped_column(Unicode(120), default='', index=True)

@@ -72,11 +72,62 @@ export function formatLocalTime(value: string | number | Date | null | undefined
 
 /**
  * Converts an ISO 8601 string to the human-readable form the authentication log's editable start_time/end_time filter
- * chips carry, e.g. "2026-06-02T10:00:00.000Z" becomes "2026-06-02 10:00:00 +00:00".
+ * chips and the halves of the audit log's startdate interval chip carry, e.g. "2026-06-02T10:00:00.000Z" becomes
+ * "2026-06-02 10:00:00 +00:00".
  *
  * Shared rather than local to the log page because anything that pre-seeds those chips - the dashboard's activity
  * widget, for one - has to write the exact form the page mirrors back out, or the page reads the chip as an edit.
  */
 export function toFilterDisplay(isoString: string): string {
   return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
+}
+
+/**
+ * Inverse of toFilterDisplay for the editable time filter chips: parses the mirrored display, plain ISO
+ * or a partial typed datetime into an ISO string, returning null for an empty or unparsable value.
+ */
+export function parseFilterTimestamp(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) {
+    return null;
+  }
+  // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
+  // then fall back to the raw text so plain ISO input still parses.
+  for (const candidate of [trimmed.replace(" ", "T").replace(/\s+(?=[+\-Z])/, ""), trimmed]) {
+    const date = new Date(candidate);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+  return null;
+}
+
+/**
+ * Inclusive bounds of the local day a date falls on, as the ISO strings the time filters expect. The
+ * logs render timestamps in the viewer's zone, so a picked or clicked day means that zone's 00:00:00 to 23:59:59.
+ */
+export function startOfLocalDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day.toISOString();
+}
+
+export function endOfLocalDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(23, 59, 59, 0);
+  return day.toISOString();
+}
+
+/**
+ * The local day a date falls on at a wall-clock time given as "HH:mm" (as formatClockTime of the clock dial gives it),
+ * with the given seconds, as an ISO string. Null when the time is empty or malformed.
+ */
+export function atLocalTimeIso(date: Date, time: string, seconds: number): string | null {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/.exec(time);
+  if (!match) {
+    return null;
+  }
+  const day = new Date(date);
+  day.setHours(Number(match[1]), Number(match[2]), seconds, 0);
+  return day.toISOString();
 }

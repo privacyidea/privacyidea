@@ -43,7 +43,7 @@ from ..api.auth import admin_required
 from ..lib.policies.actions import PolicyAction
 from flask import g
 import logging
-from ..lib.audit import search, getAudit
+from ..lib.audit import search, getAudit, read_time_intervals
 from privacyidea.lib.utils import parse_timedelta
 from ..lib.policies.helper import get_admin_audit_params
 
@@ -67,6 +67,21 @@ def search_audit():
     The :ref:`policy_auditlog_age` policy may shrink ``timelimit`` to the
     configured maximum, and :ref:`policy_hide_audit_columns` may strip
     configured columns from the response.
+
+    ``date`` and ``startdate`` of an entry are given in UTC with the offset
+    ``+00:00``. Older entries were written in the local time of the server and
+    are returned without an offset, as before.
+
+    ``startdate`` and ``date`` also take an ISO 8601 time interval
+    ``start/end``, for example
+    ``startdate=2026-11-05T00:00:00Z/2026-11-05T23:59:59Z``. Each bound is an
+    ISO 8601 timestamp, and a bound without an offset is UTC. Either bound may
+    be left empty for an open end, as in ``startdate=2026-11-05T00:00:00Z/``.
+    Both bounds are inclusive, and an end in whole seconds includes its whole
+    second. A value without ``/`` is compared as text as before. An interval
+    can not be negated with ``!`` or contain ``*``. Such a value or a bound
+    that is no valid ISO 8601 timestamp is refused with HTTP status 400. A
+    ``+`` in an offset has to be encoded as ``%2B`` in the query string.
 
     **Example request**:
 
@@ -121,13 +136,16 @@ def download_csv(csvfile=None):
     :query timelimit: only export entries newer than this. Capped by the
         :ref:`policy_auditlog_age` policy.
     :query: any audit column name as a filter key (same as for the search
-        endpoint).
-    :status 200: ``text/csv`` body containing the audit entries.
+        endpoint, including the ISO 8601 time interval of ``startdate`` and
+        ``date``).
+    :status 200: ``text/csv`` body containing the audit entries. ``date`` and
+        ``startdate`` carry the offset as in the search endpoint.
     """
     audit = getAudit(current_app.config)
     g.audit_object.log({'success': True})
     param = request.all_data
     admin_params = get_admin_audit_params()
+    read_time_intervals(param)
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
