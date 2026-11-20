@@ -37,7 +37,9 @@ class ClientApplicationTestCase(MyTestCase):
             else:
                 self.assertEqual(1, len(apps))
             for app in apps:
-                self.assertAlmostEqual(now, datetime.fromisoformat(app.get("lastseen")).replace(tzinfo=None), delta=timedelta(seconds=5))
+                self.assertAlmostEqual(now,
+                                       datetime.fromisoformat(app.get("lastseen")).replace(tzinfo=None),
+                                       delta=timedelta(seconds=5))
 
         r = get_clientapplication(group_by="ip")
         self.assertEqual(len(r), 2)

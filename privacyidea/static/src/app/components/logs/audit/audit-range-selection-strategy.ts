@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { DateAdapter } from "@angular/material/core";
 import { DateRange, DefaultMatCalendarRangeStrategy } from "@angular/material/datepicker";
 
@@ -38,8 +38,8 @@ export interface AuditDayClickInterceptor {
 export class AuditRangeSelectionStrategy extends DefaultMatCalendarRangeStrategy<Date> {
   interceptor: AuditDayClickInterceptor | null = null;
 
-  constructor(dateAdapter: DateAdapter<Date>) {
-    super(dateAdapter);
+  constructor() {
+    super(inject<DateAdapter<Date>>(DateAdapter));
   }
 
   override selectionFinished(date: Date | null, currentRange: DateRange<Date>, event?: Event): DateRange<Date> {
