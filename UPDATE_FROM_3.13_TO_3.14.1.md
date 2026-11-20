@@ -3,7 +3,8 @@
 This page lists what changes when you update from 3.13 to 3.14.1. It has four parts:
 
 1. [Every installation](#1-every-installation): the steps before, during and after the update.
-2. [Find your topics](#2-find-your-topics): a table of features. Read only the topics of the features that you use.
+2. [Find your topics](#2-find-your-topics): the features of each topic. Read only the topics of the features that you
+   use.
 3. [Changes by topic](#3-changes-by-topic): one item for each change. Each item starts with the installations it
    affects and what to do.
 4. [Already on 3.14.0](#4-already-on-3140): read this part first if you run 3.14.0.
@@ -73,20 +74,83 @@ The heading of each item names the version that brought the change. "Before" mea
 
 ## 2. Find your topics
 
-| If your installation ... | Read |
-|---|---|
-| has policies in the `admin` or `user` scope, or policies with conditions, `check_all_resolvers`, nodes or user agents | [Policies and rights](#31-policies-and-rights) |
-| uses passkey, WebAuthn, Email, SMS, RADIUS, SSH key, push, application specific password, u2f or container tokens, container templates, `passOnNoUser` or HTTP resolvers | [Tokens and authentication](#32-tokens-and-authentication) |
-| uses PIN policies (`otp_pin_*`, `otp_pin_random`, `change_pin_via_validate`, `otppin`), a PIN handler or simple pass tokens | [PINs](#33-pins) |
-| has event handlers | [Event handlers](#34-event-handlers) |
-| has scripts or integrations that call the HTTP API | [HTTP API](#35-http-api) |
-| runs `pi-manage`, the token janitors or other tools in custom scripts or custom cron jobs. The default cron jobs of the Ubuntu packages are not affected | [Command line tools](#36-command-line-tools) |
-| uses MySQL, MariaDB, Oracle, a separate audit database or more than one node, or has a database without a schema revision stamp | [Database and audit log](#37-database-and-audit-log) |
-| sets the hash settings, or uses Entra ID, resolvers with the same priority, the local CA or `PI_CHECK_RELOAD_CONFIG` | [Resolvers, connectors and configuration](#38-resolvers-connectors-and-configuration) |
-| runs behind a proxy, sets *Override Authorization Client*, or has policies or event handlers with IP conditions | [Client IP and proxies](#39-client-ip-and-proxies) |
-| uses Redis or the `auth_cache` policy | [Caches](#310-caches) |
-| uses a custom audit module, SMS provider or PIN handler | [Custom modules](#311-custom-modules) |
-| uses the preview of the new WebUI or the old WebUI, or changes the WebUI sources | [WebUI](#312-webui) |
+Each topic lists the features and setups that its items affect. Read a topic if one of them applies to your
+installation.
+
+- [3.1 Policies and rights](#31-policies-and-rights)
+  - policies in the `admin` or `user` scope
+  - policies with conditions, nodes or user agents
+  - policies with `check_all_resolvers`
+  - policies that exclude a resolver, for example `*, !ldap`
+  - `change_pin_on_first_use` or `change_pin_every` policies that name users
+  - boolean policy actions with a value other than `true` or `1`
+  - policies without actions in a scope other than `admin`, `user` and `container`
+  - WebAuthn or passkey policies for a realm, resolver or user
+  - `remote_user` policies for a realm, resolver or user
+  - policies in the `register` scope
+  - event handlers with a `date_within_last` condition
+- [3.2 Tokens and authentication](#32-tokens-and-authentication)
+  - passkey, WebAuthn, Email, SMS, RADIUS, SSH key or push tokens
+  - application specific password tokens
+  - u2f tokens, u2f actions in policies, or configuration exports that hold them
+  - container templates, or the policy `initially_add_tokens_to_container`
+  - `passOnNoUser`, HTTP resolvers, or realms with more than one resolver
+  - clients that authenticate by `serial` or by FIDO2 `credential_id`
+  - *test OTP* in the WebUI, or clients that send `otponly=1`
+  - `/validate/triggerchallenge` or `increase_failcounter_on_challenge`
+  - `auth_max_fail` or `auth_max_success`
+  - `hotp_2step` or `totp_2step` with the value `force`
+  - tokens that users mark as lost, or token event handlers on `token_lost`
+  - tokens of resolvers that you deleted or removed from all realms, or tokens whose user assignment names no
+    resolver
+  - evaluations of the audit log
+- [3.3 PINs](#33-pins)
+  - `change_pin_via_validate`
+  - `otp_pin_minlength`, `otp_pin_maxlength`, `otp_pin_contents` or `otp_pin_random`
+  - PIN handlers (`pinhandling`)
+  - simple pass tokens under an `otppin=none` policy
+- [3.4 Event handlers](#34-event-handlers)
+  - event handlers
+  - scripts that compare the `rollout_state` of tokens with an empty string
+- [3.5 HTTP API](#35-http-api)
+  - scripts, integrations or monitoring that call the HTTP API
+  - scripts that update policies with `pi-manage config policy create`
+  - searches that use `%` or `_` as wildcards, also in saved filters
+  - SMTP or RADIUS servers whose server or port you change in the WebUI
+  - `ReturnSamlAttributes` or `ReturnSamlAttributesOnFail`
+  - the new `hide_version` action
+- [3.6 Command line tools](#36-command-line-tools)
+  - `pi-manage`, the token janitors or other tools in custom scripts or custom cron jobs. The default cron jobs of
+    the Ubuntu packages are not affected.
+  - `pi-manage config export` and `pi-manage config import`
+  - `pi-manage setup encrypt_enckey -o`
+  - scripts that are no longer installed, for example `reset-privacyidea` or `getgooglecodes`
+- [3.7 Database and audit log](#37-database-and-audit-log)
+  - MySQL, MariaDB or Oracle
+  - a separate audit database (`PI_AUDIT_SQL_URI`)
+  - more than one node
+  - a database without a schema revision stamp
+  - an installation from PyPI
+  - a `pi.cfg` without `PI_AUDIT_SQL_TRUNCATE = True`, or with `PI_AUDIT_SQL_COLUMN_LENGTH`
+- [3.8 Resolvers, connectors and configuration](#38-resolvers-connectors-and-configuration)
+  - `PI_HASH_ALGO_LIST` or `PI_HASH_ALGO_PARAMS`
+  - Entra ID resolvers
+  - realms with resolvers of the same priority
+  - the local CA connector
+  - `PI_CHECK_RELOAD_CONFIG`
+  - the client list of the WebUI, or the metering of plugin traffic
+- [3.9 Client IP and proxies](#39-client-ip-and-proxies)
+  - a proxy in front of privacyIDEA, or *Override Authorization Client*
+  - policies or event handlers with IP conditions
+  - client IPs in the audit log that start with `::ffff:`
+- [3.10 Caches](#310-caches)
+  - Redis
+  - the `auth_cache` policy
+- [3.11 Custom modules](#311-custom-modules)
+  - a custom audit module, SMS provider or PIN handler
+- [3.12 WebUI](#312-webui)
+  - the preview of the new WebUI, or the old WebUI
+  - changes to the WebUI sources
 
 ## 3. Changes by topic
 
@@ -888,8 +952,8 @@ supports, a client must use the capability flags of the response, not the versio
 
 ### 3.6 Command line tools
 
-These changes affect custom scripts and custom cron jobs. The default cron jobs of the Ubuntu packages are not
-affected.
+Most of these changes affect custom scripts and custom cron jobs. The default cron jobs of the Ubuntu packages are
+not affected.
 
 #### The token janitors read `1`, `yes` and `on` as true (3.14.0, changed in 3.14.1)
 
