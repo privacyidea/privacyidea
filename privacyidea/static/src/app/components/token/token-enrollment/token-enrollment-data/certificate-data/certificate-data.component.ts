@@ -80,7 +80,7 @@ export class CertificateDataComponent {
   protected readonly isDenied = computed(() => this.rolloutState() === "denied");
   protected readonly isFailed = computed(() => this.rolloutState() === "failed");
 
-  // Downloaded files and the revealed or copied passphrase; hiding the passphrase again does not undo that.
+  // Downloaded files, the shown certificate and the revealed or copied passphrase; hiding again does not undo that.
   private readonly saved = new SavedValues();
   // Containers whose base64 does not decode hold nothing to rescue, so they are not asked for.
   private readonly unusablePkcs12 = new SavedValues();
@@ -126,6 +126,10 @@ export class CertificateDataComponent {
 
   downloadCertificate(): void {
     downloadBlob(new Blob([this.certificate()], { type: "application/x-pem-file" }), `${this.baseName()}.pem`);
+    this.saved.add(`certificate:${this.certificate()}`);
+  }
+
+  onCertificateShown(): void {
     this.saved.add(`certificate:${this.certificate()}`);
   }
 

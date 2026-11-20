@@ -90,7 +90,7 @@
 
   @if (certificate()) {
     <mat-accordion class="certificate-expansion">
-      <mat-expansion-panel>
+      <mat-expansion-panel (opened)="onCertificateShown()">
         <mat-expansion-panel-header>
           <mat-panel-title i18n="@@token.certificatePem">Certificate (PEM)</mat-panel-title>
         </mat-expansion-panel-header>

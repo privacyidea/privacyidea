@@ -132,6 +132,19 @@ describe("CertificateDataComponent", () => {
       expect(lastUnsaved()).toBe("");
     });
 
+    it("accepts showing the certificate instead of downloading it", () => {
+      setInputs({ serial: "CRT0001", certificate: CERTIFICATE });
+      expect(lastUnsaved()).toBe("Download the certificate.");
+
+      const header = fixture.debugElement.query(By.css(".certificate-expansion mat-expansion-panel-header"))
+        .nativeElement as HTMLElement;
+      header.click();
+      header.click();
+      fixture.detectChanges();
+      expect(lastUnsaved()).toBe("");
+      expect(downloads).toEqual([]);
+    });
+
     it("reports the PKCS#12 container until it has been downloaded", () => {
       setInputs({ serial: "CRT0001", pkcs12: PKCS12 });
       expect(lastUnsaved()).toBe("Download the PKCS#12 file.");
