@@ -469,7 +469,13 @@ describe("TokenEnrollmentDataComponent", () => {
       expect(unsaved.at(-1)).toBe("Print the OTP values.");
       expect(confirmations.at(-1)).toContain("The OTP values are shown only once.");
 
-      jest.spyOn(window, "open").mockReturnValue(null);
+      const printWindow = {
+        document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
+        focus: jest.fn(),
+        print: jest.fn(),
+        close: jest.fn()
+      };
+      jest.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
       fixture.nativeElement.querySelector("app-otp-values button").click();
       fixture.detectChanges();
 

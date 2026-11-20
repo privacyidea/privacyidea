@@ -39,7 +39,6 @@ export class OtpValuesComponent {
   protected readonly Object = Object;
 
   printOtps(): void {
-    this.printed.emit();
     const printContents = document.getElementById("otp-values")?.innerHTML;
     if (printContents) {
       const printWindow = window.open("", "_blank", "width=800,height=600");
@@ -65,6 +64,8 @@ export class OtpValuesComponent {
         `);
         printWindow.document.close();
         printWindow.focus();
+        // Counts as saved only once a print window opened, not when a popup blocker stopped it.
+        this.printed.emit();
         printWindow.print();
         printWindow.close();
       }
