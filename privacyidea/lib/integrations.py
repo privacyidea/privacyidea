@@ -199,8 +199,9 @@ CATALOG: tuple[Integration, ...] = (
         ptl_slug="privacyidea-nextcloud",
         github_repo="privacyidea/privacyidea-nextcloud-app",
     ),
-    # The ownCloud app sends the user-agent "ownCloud Plugin", without a version. The
-    # server reads the name "ownCloud" from it, so the "Versions" column stays empty.
+    # Older versions of the ownCloud app send the user-agent "ownCloud Plugin", newer ones
+    # send "ownCloud/<version>". The server reads the name "ownCloud" from both, but only
+    # the second form gives a version for the "Versions" column.
     Integration(
         id="owncloud",
         label="ownCloud Classic",

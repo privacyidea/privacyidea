@@ -822,16 +822,18 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertListEqual(["1.2.0"], nextcloud["versions"])
 
     def test_20_owncloud_row_matches_the_user_agent_the_app_sends(self):
-        # The ownCloud app sends "ownCloud Plugin". The server reads the name "ownCloud"
-        # without a version, which is metered against the owncloud product and marks the
-        # owncloud row.
+        # Older versions of the ownCloud app send "ownCloud Plugin", newer ones
+        # "ownCloud/<version>". The server reads the name "ownCloud" from both, which is
+        # metered against the owncloud product and marks the owncloud row. Only the
+        # second form adds a version.
         self.assertEqual("owncloud", get_metered_application("ownCloud"))
         self.assertEqual(50, APPLICATIONS["owncloud"])
-        db.session.add(ClientApplication(
-            ip="1.2.3.4",
-            clienttype="ownCloud Plugin",
-            node="localnode",
-            lastseen=datetime.now()))
+        for clienttype in ("ownCloud Plugin", "ownCloud/3.3.0"):
+            db.session.add(ClientApplication(
+                ip="1.2.3.4",
+                clienttype=clienttype,
+                node="localnode",
+                lastseen=datetime.now()))
         db.session.commit()
         self._add_subscription("owncloud", days_left=100)
 
@@ -844,7 +846,7 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         owncloud = overview["owncloud"]
         self.assertTrue(owncloud["in_use"])
         self.assertIsNotNone(owncloud["last_seen"])
-        self.assertListEqual([], owncloud["versions"])
+        self.assertListEqual(["3.3.0"], owncloud["versions"])
         self.assertEqual("valid", owncloud["subscription"])
 
 
