@@ -23,19 +23,12 @@ import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-a
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import {
-  TokenDetails,
-  TokenEnrollmentDialogData,
-  TokenService,
-  TokenServiceInterface
-} from "@services/token/token.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { Observable, lastValueFrom } from "rxjs";
 
@@ -59,7 +52,11 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   token: WritableSignal<TokenEnrollmentData | null> = signal(null);
   title = computed(() => $localize`:@@token.rolloverToken:Rollover Token ${this.token()?.serial || ""}:SERIAL:`);
   serial = signal<string | null | undefined>(null);
-  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
+  // The rollover dialog closes after the first step, the flow runs the remaining steps on its own.
+  readonly enrollmentFlow = new EnrollmentFlow({
+    successStep: () => TokenEnrollmentSuccessComponent,
+    onStepClosed: () => this.tokenService.tokenDetailResource.reload()
+  });
 
   dialogActions = signal<DialogAction<boolean>[]>([
     {
@@ -71,9 +68,6 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   ]);
 
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
-
-  // Only required if we later add the reopen rollover dialog function
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
 
   constructor() {
     super();
@@ -131,120 +125,19 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
 
-    this.enrolledDialogData.set({
-      response: enrollmentResponse,
-      enrollParameters: enrollmentArgs,
-      tokenType: enrollmentArgs.data.type,
-      rollover: true,
-      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
-    });
-
-    // Complete rollover
-    // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
-    if (strategy.onEnrollmentResponse && enrollmentResponse) {
-      const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
-      enrollmentResponse = stepResult === ENROLLMENT_CANCELLED ? null : stepResult;
-    }
-
-    // two step enrollment + handles further enrollment steps (verify + success dialog)
+    this.enrollmentFlow.start(
+      {
+        response: enrollmentResponse,
+        enrollParameters: enrollmentArgs,
+        tokenType: enrollmentArgs.data.type,
+        rollover: true
+      },
+      enrollmentResponse ? (strategy.firstStep?.(enrollmentResponse, enrollmentArgs.data) ?? null) : null
+    );
+    // The enrollment dialog takes over, so it does not open on top of the rollover form.
     this.dialogRef.close();
-    this.handleCompleteEnrollment(enrollmentResponse);
-  }
-
-  updateEnrollmentResponse(response: EnrollmentResponse): void {
-    this.enrollResponse.set(response);
-    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
-  }
-
-  handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
-    if (!this.enrolledDialogData() || !enrollmentResponse) return;
-
-    this.enrollResponse.set(enrollmentResponse);
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: enrollmentResponse
-    });
-
-    if (enrollmentResponse?.detail.rollout_state !== "clientwait") {
-      return this.handleVerifyEnrollment(enrollmentResponse);
+    if (enrollmentResponse) {
+      this.enrollmentFlow.continue(enrollmentResponse);
     }
-
-    const dialogRef = this.dialogService.openDialog({
-      component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { autoFocus: "input", disableClose: true }
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      this.tokenService.tokenDetailResource.reload();
-      if (result && result !== ENROLLMENT_CANCELLED) {
-        this.enrollResponse.set(result);
-        this.enrolledDialogData.set({
-          ...this.enrolledDialogData()!,
-          showEnrollData: false
-        });
-        this.handleVerifyEnrollment(result);
-      }
-    });
-  }
-
-  handleVerifyEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
-    if (!this.enrolledDialogData() || !enrollmentResponse) return;
-
-    this.enrollResponse.set(enrollmentResponse);
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: enrollmentResponse
-    });
-
-    if (!enrollmentResponse?.detail?.verify) {
-      // No verify required, directly open last step dialog
-      return this._handleEnrollmentResponse(enrollmentResponse);
-    }
-
-    // Open verify dialog
-    const dialogRef = this.dialogService.openDialog({
-      component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { autoFocus: "input", disableClose: true }
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      this.tokenService.tokenDetailResource.reload();
-      if (result && result !== ENROLLMENT_CANCELLED) {
-        this.enrollResponse.set(result);
-        this._handleEnrollmentResponse(result);
-      }
-    });
-  }
-
-  protected openLastStepDialog(response: EnrollmentResponse | null): void {
-    if (!response) {
-      this.notificationService.warning($localize`:@@token.noRolloverResponse:No rollover response available.`);
-      return;
-    }
-
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: response
-    });
-
-    const dialogRef = this.dialogService.openDialog({
-      component: TokenEnrollmentLastStepDialogComponent,
-      data: this.enrolledDialogData()
-    });
-
-    dialogRef.afterClosed().subscribe(() => {
-      this.tokenService.tokenDetailResource.reload();
-    });
-  }
-
-  protected _handleEnrollmentResponse(response: EnrollmentResponse): void {
-    const detail = response.detail || {};
-    const rolloutState = detail.rollout_state;
-
-    if (rolloutState === "clientwait") {
-      return;
-    }
-
-    this.openLastStepDialog(response);
   }
 }

@@ -17,52 +17,27 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<app-dialog-wrapper
-  width="l"
-  title="Verify Token Enrollment"
-  i18n-title="@@token.verifyTokenEnrollment"
-  [actions]="dialogActions()"
-  [showCloseButton]="!canCancelEnrollment()"
-  (actionTriggered)="onDialogAction($event)"
-  cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@common.close">
-  <app-token-enrolled-text
-    [serial]="responseDetails?.serial"
-    [containerSerial]="enrollData?.containerSerial"
-    [username]="enrollData?.user"
-    [userRealm]="enrollData?.realm"
-    [onlyAddToRealm]="enrollData?.onlyAddToRealm"
-    [rollover]="data.rollover ?? false"
-    state="verify"
-    [summaryOnly]="wizard"
-    [confirmLeave]="confirmLeave"></app-token-enrolled-text>
+@if (data.showEnrollData !== false && data.response) {
+  <app-token-enrollment-data
+    (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+    [enrolledInputData]="data.response.detail"
+    [compact]="wizard"
+    [tokenType]="tokenType"
+    [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+}
 
-  <app-enrollment-customization-frame
-    [enabled]="wizard"
-    [enrollmentDetail]="responseDetails">
-    @if (data.showEnrollData !== false && data.response) {
-      <app-token-enrollment-data
-        (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
-        [enrolledInputData]="data.response.detail"
-        [compact]="wizard"
-        [tokenType]="tokenType"
-        [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
-    }
-
-    <div class="margin-top-16">
-      <h3 i18n="@@token.verifyEnrollment">Verify Enrollment</h3>
-      <!-- The message comes from the token class and varies in length (the indexed-secret one
-         embeds a list of positions), so it is rendered at full dialog width instead of as a
-         mat-hint, which would be capped to the width of the input and wrap. -->
-      @if (verifyMessage) {
-        <div class="margin-bottom-16">{{ verifyMessage }}</div>
-      }
-      <mat-form-field class="input-width-l">
-        <mat-label i18n="@@token.otp">OTP</mat-label>
-        <input
-          [formField]="verifyOTPForm"
-          matInput />
-      </mat-form-field>
-    </div>
-  </app-enrollment-customization-frame>
-</app-dialog-wrapper>
+<div class="margin-top-16">
+  <h3 i18n="@@token.verifyEnrollment">Verify Enrollment</h3>
+  <!-- The message comes from the token class and varies in length (the indexed-secret one
+     embeds a list of positions), so it is rendered at full dialog width instead of as a
+     mat-hint, which would be capped to the width of the input and wrap. -->
+  @if (verifyMessage) {
+    <div class="margin-bottom-16">{{ verifyMessage }}</div>
+  }
+  <mat-form-field class="input-width-l">
+    <mat-label i18n="@@token.otp">OTP</mat-label>
+    <input
+      [formField]="verifyOTPForm"
+      matInput />
+  </mat-form-field>
+</div>

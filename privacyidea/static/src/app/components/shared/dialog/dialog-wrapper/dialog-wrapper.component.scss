@@ -57,6 +57,24 @@
   }
 }
 
+// Header and footer stay in place, only the body between them scrolls.
+.pi-dialog.pi-dialog-fixed {
+  display: flex;
+  flex-direction: column;
+  width: min(var(--pi-dialog-width), calc(100vw - 2 * 32px));
+  height: min(var(--dialog-height-fixed), calc(100vh - 2 * 32px));
+
+  .pi-dialog-header,
+  .pi-dialog-footer {
+    flex: none;
+  }
+
+  .mat-mdc-dialog-content {
+    flex: 1 1 auto;
+    overflow: auto;
+  }
+}
+
 .cancel-button-host {
   display: inline-flex;
 

@@ -20,32 +20,25 @@
 import { Component, computed, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
-import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "./token-enrollment-success.component";
 
 type WizardLastStepAction = "create_container" | "logout";
 
 @Component({
-  selector: "app-token-enrollment-last-step-dialog-wizard",
-  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
-  imports: [
-    DialogWrapperComponent,
-    EnrollmentCustomizationFrameComponent,
-    TokenEnrollmentDataComponent,
-    TokenEnrolledTextComponent
-  ]
+  selector: "app-token-enrollment-success-wizard",
+  templateUrl: "./token-enrollment-success.wizard.component.html",
+  imports: [TokenEnrollmentDataComponent]
 })
-export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
+export class TokenEnrollmentSuccessWizardComponent extends TokenEnrollmentSuccessComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
 
   // The only ways on: the dialog cannot be closed, and Logout tells the user that they are done.
-  protected readonly actions = computed<DialogAction<WizardLastStepAction>[]>(() => {
+  override readonly closable = false;
+  override readonly actions = computed<DialogAction<WizardLastStepAction>[]>(() => {
     const actions: DialogAction<WizardLastStepAction>[] = [];
     if (this.authService.containerWizard().enabled) {
       actions.push({
@@ -64,18 +57,14 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     return actions;
   });
 
-  protected override attemptClose(): void {
-    // Escape and a backdrop click do nothing: only the actions leave the wizard.
-  }
-
-  onAction(action: WizardLastStepAction): void {
+  override onAction(action: WizardLastStepAction): void {
     const label = this.actions().find((candidate) => candidate.value === action)?.label;
     this.confirmClose(label).subscribe((confirmed) => {
       if (!confirmed) {
         return;
       }
       if (action === "create_container") {
-        this.dialogRef.close();
+        this.flow.close();
         this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
         return;
       }
