@@ -30,7 +30,7 @@ import { BaseApiPayloadMapper, EnrollmentResponse } from "@app/mappers/token-api
 import { By } from "@angular/platform-browser";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { MockTokenService } from "@testing/mock-services";
 import { axe } from "@testing/axe";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -399,6 +399,37 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
       expect(message).toBe(
         "The registration code is shown only once. If you close this dialog now, it cannot be retrieved again."
       );
+    });
+
+    it("asks for a token whose values were regenerated while another token was on screen", () => {
+      const pending = new Subject<EnrollmentResponse>();
+      (TestBed.inject(TokenService) as unknown as MockTokenService).enrollToken = jest.fn().mockReturnValue(pending);
+      const paperToken = (serial: string, otp: string): EnrolledTokenInfo => ({
+        serial,
+        type: "paper",
+        otps: { 0: otp } as never,
+        enrollmentParameters: { data: { type: "paper", serial }, mapper: new BaseApiPayloadMapper() }
+      });
+      showTokens([paperToken("PPR-1", "111111"), registrationToken("REG-2", "33334444")]);
+      fixture.debugElement.query(By.directive(TokenEnrollmentDataComponent)).componentInstance.onOtpValuesPrinted();
+      fixture.detectChanges();
+
+      fixture.debugElement.query(By.directive(TokenEnrollmentDataComponent)).componentInstance.regenerateQRCode();
+      fixture.detectChanges();
+      component.next();
+      fixture.detectChanges();
+      reveal();
+      pending.next({
+        type: "paper",
+        result: { status: true },
+        detail: { type: "paper", serial: "PPR-1", otps: { 0: "999999" } }
+      } as unknown as EnrollmentResponse);
+      fixture.detectChanges();
+      answerConfirmation(false);
+
+      component.finish();
+
+      expect(dialogService.openDialog.mock.calls[0][0].data.message).toContain("The OTP values are shown only once.");
     });
 
     it("does not ask once every token's data is saved", () => {

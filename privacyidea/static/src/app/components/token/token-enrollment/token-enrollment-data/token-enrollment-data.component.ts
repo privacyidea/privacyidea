@@ -120,7 +120,13 @@ export class TokenEnrollmentDataComponent {
 
   private readonly registrationCodeOpen = computed(() => !!this.registrationCode() && !this.registrationCodeSaved());
   private readonly passwordOpen = computed(() => this.passwordGenerated() && !this.passwordSaved());
-  private readonly otpValuesOpen = computed(() => Object.keys(this.otpValues()).length > 0 && !this.otpValuesPrinted());
+  // The token whose values are being regenerated: the printed ones stop counting, the new ones are not shown yet.
+  private readonly regeneratingSerial = signal("");
+  private readonly otpValuesOpen = computed(
+    () =>
+      Object.keys(this.otpValues()).length > 0 &&
+      (!this.otpValuesPrinted() || this.regeneratingSerial() === this.serial())
+  );
 
   // What has not been downloaded or saved yet; the wizard asks before it leaves.
   private readonly unsavedData = computed(() =>
@@ -228,9 +234,11 @@ export class TokenEnrollmentDataComponent {
     delete newEnrollmentData.pin;
 
     this.regenerating.set(true);
+    this.regeneratingSerial.set(this.serial());
     this.tokenService.enrollToken({ data: newEnrollmentData, mapper: enrollmentParameters.mapper }).subscribe({
       next: (response) => {
         this.regenerating.set(false);
+        this.regeneratingSerial.set("");
         if (response?.detail) {
           // The opener keys the update on the serial, so it is always told about the response.
           // Only the displayed data is left alone when the dialog has moved on to another token.
@@ -240,7 +248,10 @@ export class TokenEnrollmentDataComponent {
           this.enrollmentResponseChange.emit(response);
         }
       },
-      error: () => this.regenerating.set(false)
+      error: () => {
+        this.regenerating.set(false);
+        this.regeneratingSerial.set("");
+      }
     });
   }
 }

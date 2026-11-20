@@ -495,6 +495,42 @@ describe("TokenEnrollmentDataComponent", () => {
       expect(unsaved.at(-1)).toBe("Print the OTP values.");
     });
 
+    it("asks while the printed values are being regenerated and again for the new ones", () => {
+      const pending = new Subject<EnrollmentResponse>();
+      mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+      show("paper", { otps: { 0: "111111" } });
+      component.onOtpValuesPrinted();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("");
+
+      component.regenerateQRCode();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+
+      pending.next({
+        type: "paper",
+        result: { status: true },
+        detail: { type: "paper", serial: "TOK0001", otps: { 0: "999999" } }
+      } as unknown as EnrollmentResponse);
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+    });
+
+    it("counts the printed values again when regenerating fails", () => {
+      const pending = new Subject<EnrollmentResponse>();
+      mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+      show("paper", { otps: { 0: "111111" } });
+      component.onOtpValuesPrinted();
+      component.regenerateQRCode();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+
+      pending.error(new Error("failed"));
+      fixture.detectChanges();
+
+      expect(unsaved.at(-1)).toBe("");
+    });
+
     it("leaves out the hints in the compact layout but still asks", () => {
       fixture.componentRef.setInput("compact", true);
       show("registration", { registrationcode: "12345808124095097608" });
