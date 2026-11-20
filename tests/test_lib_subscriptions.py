@@ -821,6 +821,32 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertTrue(nextcloud["in_use"])
         self.assertListEqual(["1.2.0"], nextcloud["versions"])
 
+    def test_20_owncloud_row_matches_the_user_agent_the_app_sends(self):
+        # The ownCloud app sends "ownCloud Plugin". The server reads the name "ownCloud"
+        # without a version, which is metered against the owncloud product and marks the
+        # owncloud row.
+        self.assertEqual("owncloud", get_metered_application("ownCloud"))
+        self.assertEqual(50, APPLICATIONS["owncloud"])
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="ownCloud Plugin",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+        self._add_subscription("owncloud", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        owncloud = overview["owncloud"]
+        self.assertTrue(owncloud["in_use"])
+        self.assertIsNotNone(owncloud["last_seen"])
+        self.assertListEqual([], owncloud["versions"])
+        self.assertEqual("valid", owncloud["subscription"])
+
 
 class SubscriptionDayCountTestCase(MyTestCase):
     """

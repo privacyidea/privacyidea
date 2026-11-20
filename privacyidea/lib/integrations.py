@@ -122,14 +122,13 @@ class Integration:
 
 
 # The free-tier limit, in users with active tokens, allowed without a subscription file.
-# `owncloud` / `demo_application` are legacy products with no current dashboard row or
-# picker entry — they stay reachable only for a client whose own user-agent happens to
-# equal one of these names, exactly as before.
+# `demo_application` is a legacy product with no dashboard row or picker entry. It stays
+# reachable only for a client whose own user-agent happens to equal that name.
 PRODUCTS: dict[str, Product] = {
     product.id: product
     for product in (
         Product(id="demo_application", label="Demo Application", free_users=0),
-        Product(id="owncloud", label="ownCloud", free_users=50),
+        Product(id="owncloud", label="ownCloud Classic", free_users=50),
         Product(id="privacyidea-nextcloud", label="Nextcloud", free_users=50),
         Product(id="privacyidea-ldap-proxy", label="LDAP Proxy", free_users=50),
         Product(id="privacyidea-cp", label="Windows Credential Provider", free_users=50),
@@ -199,6 +198,19 @@ CATALOG: tuple[Integration, ...] = (
         section="use_cases",
         ptl_slug="privacyidea-nextcloud",
         github_repo="privacyidea/privacyidea-nextcloud-app",
+    ),
+    # The ownCloud app sends the user-agent "ownCloud Plugin", without a version. The
+    # server reads the name "ownCloud" from it, so the "Versions" column stays empty.
+    Integration(
+        id="owncloud",
+        label="ownCloud Classic",
+        agent_names=("ownCloud",),
+        policy_value="ownCloud",
+        product_id="owncloud",
+        dashboard=True,
+        section="use_cases",
+        ptl_slug="privacyidea-owncloud",
+        github_repo="privacyidea/privacyidea-owncloud-app",
     ),
     Integration(
         id="privacyidea-cp",
