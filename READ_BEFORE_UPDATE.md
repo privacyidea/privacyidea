@@ -62,6 +62,47 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **Audit entries are now written in UTC and marked in the new column `entry_version`.** Before, they were written in
+  the local time of the server. Older entries keep that time and stay unmarked, the audit log and its time filters
+  read both kinds. The schema update (`privacyidea-schema-upgrade`) adds the column to the `pidea_audit` table. The
+  column may be empty, so adding it does not rebuild the table on MySQL, MariaDB, PostgreSQL or Oracle.
+
+  **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), the schema update does not reach it.
+  Add the column yourself, **before** you start the new version or at any later time:
+
+  ```
+  ALTER TABLE pidea_audit ADD COLUMN entry_version INTEGER;  -- MySQL, MariaDB, PostgreSQL
+  ALTER TABLE pidea_audit ADD (entry_version INTEGER);       -- Oracle
+  ```
+
+  As long as the column is missing, privacyIDEA treats that audit database exactly as before the update. It keeps
+  writing entries in the local time of the server without the marker, `GET /audit/` returns them without an offset, and
+  time filters compare them in the local time of the server. Nothing is lost and nothing breaks. Each privacyIDEA
+  process checks for the column once, so restart the service after you add it. New entries are then stored in UTC.
+
+* **Timestamps that privacyIDEA returns now carry their UTC offset.** A value without an offset could be local time
+  of the server or UTC, and clients could not tell which. These values change their format:
+
+    * `valid_until` in the challenge response of email, SMS, 4 Eyes, questionnaire and indexed secret tokens is now
+      UTC in ISO 8601, e.g. `2026-05-01T12:34:56.123456+00:00`. Before, it was the local time of the server without
+      an offset.
+    * `lastseen` of `GET /client/` and `last_seen` of the subscription dashboard are now `2026-05-01T12:34:56+00:00`
+      instead of `Fri, 01 May 2026 12:34:56 GMT`.
+    * `date` and `startdate` of new audit entries end in `+00:00` in `GET /audit/`, the CSV download and
+      `pi-manage audit dump`. Older entries are returned unchanged.
+    * `timestamp` and `startdate` of the logger audit module end in `+00:00`. `startdate` is now UTC as well, so
+      `duration` is also correct on a server that does not run in UTC.
+
+  The `timestamp` of the Yubikey validation response (`/ttype/yubikey`) keeps its format, but is now UTC. If your
+  scripts or log parsers read one of these values, check that they accept the new format. The last seen time of
+  client applications and the time a policy description was last changed may be off by the UTC offset of the server
+  until they are written again.
+
+* **The user cache is emptied once during the update.** It wrote its timestamps in the local time of the server,
+  all other timestamps are UTC, and the old entries cannot be told apart. The schema update
+  (`privacyidea-schema-upgrade`) deletes all rows of the `usercache` table. No action is needed, the first logins
+  after the update read the user data from the resolvers again and refill the cache.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
