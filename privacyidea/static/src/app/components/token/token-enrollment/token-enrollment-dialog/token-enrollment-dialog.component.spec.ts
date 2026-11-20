@@ -1,0 +1,311 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { environment } from "@env/environment";
+import { AuthData, AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { EnrollTokenArguments, TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
+import { axe } from "@testing/axe";
+import { EnrollmentDialogHarness } from "@testing/enrollment-dialog-harness";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
+
+const response = (detail: Record<string, unknown>) =>
+  ({ result: { status: true }, detail: { serial: "OATH0001", ...detail } }) as unknown as EnrollmentResponse;
+const twoStep = () => response({ rollout_state: "clientwait", "2step_output": 1 });
+const verify = () => response({ rollout_state: "verify", verify: { message: "Enter OTP" } });
+const enrolled = () => response({ rollout_state: "enrolled" });
+
+describe("TokenEnrollmentDialogComponent", () => {
+  let harness: EnrollmentDialogHarness;
+  let dialogService: MockDialogService;
+  let tokenService: MockTokenService;
+  let authService: MockAuthService;
+  let options: Partial<EnrollmentFlowOptions> & { onIncomplete: jest.Mock; onCancelled: jest.Mock };
+
+  beforeEach(async () => {
+    harness = new EnrollmentDialogHarness();
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ...harness.providers,
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
+    }).compileComponents();
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    options = { onIncomplete: jest.fn(), onCancelled: jest.fn() };
+  });
+
+  const allowDelete = (allowed: boolean) =>
+    authService.actionAllowed.mockImplementation((action: string) => allowed && action === "delete");
+  const open = (first: EnrollmentResponse, data: Partial<TokenEnrollmentDialogData> = {}) => {
+    harness.open(first, data, options);
+    dialogService.openDialog.mockClear();
+  };
+  // The answer to the next question asked on top of the dialog.
+  const answer = (result: unknown) => {
+    const questionRef = new MockMatDialogRef();
+    questionRef.afterClosed.mockReturnValue(of(result));
+    dialogService.openDialog.mockReturnValue(questionRef);
+  };
+  const footerLabels = () => harness.footerButtons().map((button) => button.textContent?.trim());
+  const title = () => harness.element.querySelector(".pi-dialog-header h3")?.textContent?.trim();
+
+  describe("steps", () => {
+    it("stays one dialog of a fixed size from the two-step completion to the success step", () => {
+      allowDelete(false);
+      open(twoStep());
+      const wrapper = harness.element.querySelector(".pi-dialog");
+      expect(wrapper?.classList).toContain("pi-dialog-fixed");
+      expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentComponent);
+      expect(title()).toBe("Complete Token Enrollment");
+
+      harness.flow.finishStep(verify());
+      harness.fixture.detectChanges();
+      expect(harness.step()).toBeInstanceOf(TokenVerifyEnrollmentComponent);
+      expect(title()).toBe("Verify Token Enrollment");
+      expect(harness.element.textContent).toContain(
+        "The token was enrolled, but it still has to be verified before it can be used."
+      );
+
+      harness.flow.finishStep(enrolled());
+      harness.fixture.detectChanges();
+      expect(title()).toBe("Token Successfully Enrolled");
+      expect(footerLabels()).toEqual(["Close"]);
+      expect(harness.element.querySelector(".pi-dialog")).toBe(wrapper);
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("moves the focus to the input of a new step, else to its title", async () => {
+      allowDelete(false);
+      open(twoStep());
+      harness.fixture.autoDetectChanges();
+      await harness.fixture.whenStable();
+      expect(document.activeElement?.tagName).toBe("INPUT");
+
+      harness.flow.finishStep(enrolled());
+      await harness.fixture.whenStable();
+      expect(document.activeElement?.textContent?.trim()).toBe("Token Successfully Enrolled");
+    });
+
+    it("offers the step's action next to Close", () => {
+      allowDelete(true);
+      open(twoStep());
+
+      expect(footerLabels()).toEqual(["Close", "Enroll"]);
+    });
+  });
+
+  describe("leaving an unfinished step with the delete right", () => {
+    beforeEach(() => {
+      allowDelete(true);
+      open(verify());
+    });
+
+    it("asks whether to keep or delete the token", () => {
+      answer(undefined);
+
+      harness.footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ title: "Leave Incomplete Enrollment", discardButtonText: "Delete Token" })
+        })
+      );
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
+      expect(harness.element.textContent).not.toContain("If you close the dialog now");
+    });
+
+    it("keeps the token for the reopen button", () => {
+      answer("save-exit");
+
+      harness.footerButton("Close")?.click();
+
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+      expect(options.onIncomplete).toHaveBeenCalled();
+    });
+
+    it("deletes the token", () => {
+      answer("discard");
+
+      harness.footerButton("Close")?.click();
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("OATH0001");
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+      expect(options.onCancelled).toHaveBeenCalled();
+      expect(options.onIncomplete).not.toHaveBeenCalled();
+    });
+
+    it("lets Escape and a backdrop click ask the same way", () => {
+      answer(undefined);
+      expect(harness.dialogRef.disableClose).toBe(true);
+
+      harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      harness.dialogRef.fireBackdropClick();
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it("closes an unanswered question once the step is done", () => {
+      const questionRef = new MockMatDialogRef();
+      dialogService.openDialog.mockReturnValue(questionRef);
+      harness.footerButton("Close")?.click();
+
+      harness.flow.finishStep(enrolled());
+
+      expect(questionRef.close).toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it("deletes the token and stays on the enrollment page when its own link was followed", () => {
+      answer("discard");
+      const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+
+      (harness.element.querySelector(".enrolled__card-value") as HTMLElement).click();
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("OATH0001");
+      expect(contentService.tokenSelected).not.toHaveBeenCalled();
+    });
+
+    it("follows a link to another page after keeping the token", async () => {
+      answer("save-exit");
+      const confirmLeave = harness.fixture.componentInstance["confirmLeave"];
+      let followed: boolean | undefined;
+
+      confirmLeave("user").subscribe((result) => (followed = result));
+
+      expect(followed).toBe(true);
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("leaving an unfinished step without a choice", () => {
+    it("closes right away without the delete right and says how to finish the token", () => {
+      allowDelete(false);
+      open(verify());
+
+      expect(harness.element.textContent).toContain("you can open it again with the reopen button");
+      harness.footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+      expect(options.onIncomplete).toHaveBeenCalled();
+    });
+
+    it("never deletes in a rollover", () => {
+      allowDelete(true);
+      open(verify(), { rollover: true });
+
+      expect(harness.element.textContent).toContain("roll the token over again");
+      harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("context", () => {
+    const withUser = { enrollParameters: { data: { user: "alice", realm: "realm1" } } as EnrollTokenArguments };
+    const setRole = (role: "admin" | "user") =>
+      authService.authData.set({ ...authService.authData(), role } as AuthData);
+    const cardLabels = () =>
+      Array.from(harness.element.querySelectorAll(".enrolled__card-label") as NodeListOf<HTMLElement>).map((label) =>
+        label.textContent?.trim()
+      );
+
+    it("shows the user and the realm to an admin", () => {
+      setRole("admin");
+      open(twoStep(), withUser);
+
+      expect(harness.element.textContent).toContain("The token was created, but its enrollment is not complete yet.");
+      expect(cardLabels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("leaves out the user and the realm in self-service", () => {
+      setRole("user");
+      open(twoStep(), withUser);
+
+      expect(cardLabels()).toEqual(["Token"]);
+    });
+
+    it("frames every step with the summary and the post customization in the wizard", async () => {
+      setRole("user");
+      open(verify(), { ...withUser, wizard: true });
+      const httpMock = TestBed.inject(HttpTestingController);
+      const customizationUrl = (position: string) =>
+        environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await harness.fixture.whenStable();
+      harness.fixture.detectChanges();
+
+      const text = harness.element.textContent as string;
+      expect(text).toContain("Top OATH0001");
+      expect(text).toContain("Bottom");
+      expect(cardLabels()).toEqual([]);
+      httpMock.verify();
+    });
+
+    it("cannot be closed on the wizard's success step", () => {
+      options = { ...options, successStep: () => TokenEnrollmentLastStepDialogWizardComponent };
+      open(enrolled(), { wizard: true });
+
+      harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      harness.dialogRef.fireBackdropClick();
+
+      expect(footerLabels()).toEqual(["Logout"]);
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
+    });
+  });
+
+  it("stops polling once it closes", () => {
+    open(enrolled());
+
+    harness.footerButton("Close")?.click();
+
+    expect(tokenService.stopPolling).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    allowDelete(true);
+    open(twoStep());
+
+    expect(await axe(harness.element)).toHaveNoViolations();
+  });
+});

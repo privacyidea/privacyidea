@@ -16,27 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<app-dialog-wrapper
-  width="l"
-  [actions]="actions()"
-  (actionTriggered)="onAction($event)"
-  [showCloseButton]="false"
-  title="{{ title() }}">
-  <app-token-enrolled-text
-    [rollover]="rollover"
-    [serial]="serial"
-    [summaryOnly]="true"></app-token-enrolled-text>
-
-  <app-enrollment-customization-frame
-    [enabled]="true"
-    [enrollmentDetail]="data.response?.detail">
-    @if (data.showEnrollData !== false && data.response) {
-      <app-token-enrollment-data
-        (unsavedDataChange)="onCloseConfirmationChange($event)"
-        [compact]="true"
-        [enrolledInputData]="data.response.detail"
-        [enrollmentParameters]="data.enrollParameters"
-        [tokenType]="data.tokenType"></app-token-enrollment-data>
-    }
-  </app-enrollment-customization-frame>
-</app-dialog-wrapper>
+@if (data.showEnrollData !== false && data.response) {
+  <app-token-enrollment-data
+    (unsavedDataChange)="onCloseConfirmationChange($event)"
+    [compact]="true"
+    [enrolledInputData]="data.response.detail"
+    [enrollmentParameters]="data.enrollParameters"
+    [tokenType]="data.tokenType"></app-token-enrollment-data>
+}

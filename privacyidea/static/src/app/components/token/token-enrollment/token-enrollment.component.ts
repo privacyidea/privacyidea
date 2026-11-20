@@ -28,9 +28,9 @@ import {
   OnDestroy,
   OnInit,
   signal,
+  Type,
   viewChild
 } from "@angular/core";
-import { ComponentType } from "@angular/cdk/overlay";
 import { FieldTree, form, FormField, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
@@ -61,9 +61,9 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
+import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -73,12 +73,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import {
-  EnrollTokenArguments,
-  TokenEnrollmentDialogData,
-  TokenService,
-  TokenServiceInterface
-} from "@services/token/token.service";
+import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
@@ -235,10 +230,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private inputsResetPending = false;
   // False keeps the inputs of the enrolled token, see the wizard.
   protected readonly resetsInputsAfterEnrollment: boolean = true;
-  protected readonly lastStepDialogComponent: ComponentType<AbstractDialogComponent<TokenEnrollmentDialogData>> =
-    TokenEnrollmentLastStepDialogComponent;
+  protected readonly lastStepDialogComponent: Type<EnrollmentStep> = TokenEnrollmentLastStepDialogComponent;
   readonly enrollmentFlow = new EnrollmentFlow({
-    successDialog: () => this.lastStepDialogComponent,
+    successStep: () => this.lastStepDialogComponent,
     successBlockedReason: () =>
       this.isUserRequired() && !this.userService.selectedUser()
         ? $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`

@@ -20,6 +20,7 @@ import { TestBed } from "@angular/core/testing";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollmentFlow, EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -53,7 +54,7 @@ describe("EnrollmentFlow", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     options = {
-      successDialog: () => TokenEnrollmentLastStepDialogComponent,
+      successStep: () => TokenEnrollmentLastStepDialogComponent,
       onStepClosed: jest.fn(),
       onCancelled: jest.fn(),
       onIncomplete: jest.fn(),
@@ -66,81 +67,107 @@ describe("EnrollmentFlow", () => {
     flow.start({ response: first, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" });
     return flow;
   };
-  const openedComponent = (call: number) => dialogService.openDialog.mock.calls[call][0].component;
-  const dialogRef = (call: number) => dialogService.openDialog.mock.results[call].value as MockMatDialogRef<unknown>;
+  const dialogRef = (call = 0) => dialogService.openDialog.mock.results[call].value as MockMatDialogRef<unknown>;
 
-  it("opens the success dialog directly when no further step is needed", () => {
+  it("shows the success step directly when no further step is needed", () => {
     const enrolled = response({ rollout_state: "enrolled" });
     const flow = startFlow(enrolled);
 
     flow.continue(enrolled);
 
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-    expect(dialogService.openDialog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        component: TokenEnrollmentLastStepDialogComponent,
-        data: expect.objectContaining({ response: enrolled })
-      })
-    );
+    expect(dialogService.openDialog).toHaveBeenCalledWith({
+      component: TokenEnrollmentDialogComponent,
+      data: { flow },
+      configOverride: { disableClose: true, autoFocus: false }
+    });
+    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.dialogData()?.response).toBe(enrolled);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
   });
 
-  it("runs two-step completion, verification and success in this order", () => {
+  it("runs two-step completion, verification and success in one dialog", () => {
     const first = response({ rollout_state: "clientwait" });
     const completed = response({ rollout_state: "verify", verify: { message: "Enter OTP" } });
     const verified = response({ rollout_state: "enrolled" });
     const flow = startFlow(first);
 
     flow.continue(first);
-    expect(openedComponent(0)).toBe(TokenCompleteEnrollmentComponent);
-    expect(dialogService.openDialog.mock.calls[0][0].configOverride).toEqual({
-      autoFocus: "input",
-      disableClose: true
-    });
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
 
-    dialogRef(0).close(completed);
-    expect(openedComponent(1)).toBe(TokenVerifyEnrollmentComponent);
+    flow.finishStep(completed);
+    expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
     expect(flow.dialogData()?.response).toBe(completed);
     // The data shown for the second step is outdated once the token is complete.
     expect(flow.dialogData()?.showEnrollData).toBe(false);
 
-    dialogRef(1).close(verified);
-    expect(openedComponent(2)).toBe(TokenEnrollmentLastStepDialogComponent);
+    flow.finishStep(verified);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
     expect(flow.dialogData()?.response).toBe(verified);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    expect(options.onStepClosed).toHaveBeenCalledTimes(2);
 
-    dialogRef(2).close();
+    dialogRef().close();
     expect(options.onStepClosed).toHaveBeenCalledTimes(3);
+    expect(options.onIncomplete).not.toHaveBeenCalled();
   });
 
-  it("reports a cancelled step and opens nothing after it", () => {
+  it("emits stepFinished when the step changes and when the dialog closes", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first);
+    const finished = jest.fn();
+    flow.continue(first);
+    flow.stepFinished.subscribe(finished);
+
+    flow.finishStep(response({ rollout_state: "enrolled" }));
+    expect(finished).toHaveBeenCalledTimes(1);
+
+    flow.close();
+    expect(finished).toHaveBeenCalledTimes(2);
+  });
+
+  it("closes the dialog and reports a deleted token", () => {
     const first = response({ verify: { message: "Enter OTP" } });
     const flow = startFlow(first);
 
     flow.continue(first);
-    dialogRef(0).close(ENROLLMENT_CANCELLED);
+    flow.finishStep(ENROLLMENT_CANCELLED);
 
+    expect(dialogRef().close).toHaveBeenCalled();
     expect(options.onCancelled).toHaveBeenCalledTimes(1);
     expect(options.onIncomplete).not.toHaveBeenCalled();
-    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
   });
 
-  it("reports a step closed before the enrollment finished and resumes it later", () => {
-    const first = response({ rollout_state: "clientwait" });
+  it("reports a dialog closed before the enrollment finished and resumes at the same step", () => {
+    const first = response({ verify: { message: "Enter OTP" } });
     const flow = startFlow(first);
 
     flow.continue(first);
-    dialogRef(0).close(null);
+    flow.close();
 
     expect(options.onIncomplete).toHaveBeenCalledTimes(1);
     expect(options.onCompleted).not.toHaveBeenCalled();
 
     flow.resume();
     expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
-    expect(openedComponent(1)).toBe(TokenCompleteEnrollmentComponent);
+    expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
   });
 
-  it("keeps the success dialog closed while a reason blocks it", () => {
+  it("does not finish the enrollment again when the success step is resumed", () => {
+    const enrolled = response({ rollout_state: "enrolled" });
+    const flow = startFlow(enrolled);
+    flow.continue(enrolled);
+    flow.close();
+
+    flow.resume();
+
+    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(options.onCompleted).toHaveBeenCalledTimes(1);
+    expect(options.onIncomplete).not.toHaveBeenCalled();
+  });
+
+  it("keeps the success step closed while a reason blocks it", () => {
     options.successBlockedReason = () => "User missing";
     const enrolled = response({ rollout_state: "enrolled" });
     const flow = startFlow(enrolled);
@@ -152,17 +179,17 @@ describe("EnrollmentFlow", () => {
     expect(options.onCompleted).not.toHaveBeenCalled();
   });
 
-  it("reads the success dialog when it opens", () => {
-    class OtherSuccessDialog extends TokenEnrollmentLastStepDialogComponent {}
-    let successDialog: typeof TokenEnrollmentLastStepDialogComponent = TokenEnrollmentLastStepDialogComponent;
-    options.successDialog = () => successDialog;
+  it("reads the success step when it opens", () => {
+    class OtherSuccessStep extends TokenEnrollmentLastStepDialogComponent {}
+    let successStep: typeof TokenEnrollmentLastStepDialogComponent = TokenEnrollmentLastStepDialogComponent;
+    options.successStep = () => successStep;
     const enrolled = response({ rollout_state: "enrolled" });
     const flow = startFlow(enrolled);
-    successDialog = OtherSuccessDialog;
+    successStep = OtherSuccessStep;
 
     flow.continue(enrolled);
 
-    expect(openedComponent(0)).toBe(OtherSuccessDialog);
+    expect(flow.stepComponent()).toBe(OtherSuccessStep);
   });
 
   it("does nothing before an enrollment started or after it was reset", () => {
@@ -174,6 +201,7 @@ describe("EnrollmentFlow", () => {
     flow.resume();
 
     expect(dialogService.openDialog).not.toHaveBeenCalled();
+    expect(flow.step()).toBeNull();
   });
 
   it("keeps a regenerated response for the next step", () => {
@@ -185,8 +213,6 @@ describe("EnrollmentFlow", () => {
     flow.resume();
 
     expect(flow.dialogData()?.response).toBe(regenerated);
-    expect(dialogService.openDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ response: regenerated }) })
-    );
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
   });
 });

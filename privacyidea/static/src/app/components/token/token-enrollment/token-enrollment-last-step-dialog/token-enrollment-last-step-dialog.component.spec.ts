@@ -18,51 +18,51 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { AuthService } from "@services/auth/auth.service";
-import { ContentService } from "@services/content/content.service";
-import { DialogService } from "@services/dialog/dialog.service";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponse,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
+import { axe } from "@testing/axe";
+import { EnrollmentDialogHarness } from "@testing/enrollment-dialog-harness";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
-import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
+  let harness: EnrollmentDialogHarness;
   let component: TokenEnrollmentLastStepDialogComponent;
-  let fixture: ComponentFixture<TokenEnrollmentLastStepDialogComponent>;
-  const createDialogData = (): TokenEnrollmentDialogData => ({
-    response: {
+
+  const createResponse = (): EnrollmentResponse => ({
+    type: "totp",
+    detail: {
       type: "totp",
-      detail: {
-        type: "totp",
-        serial: "1234567890",
-        googleurl: {
-          description: "Google Authenticator URL",
-          img: "",
-          value: "otpauth://totp/Example:user?secret=ABCDEF1234567890&issuer=Example"
-        }
-      },
-      result: { status: true }
+      serial: "1234567890",
+      googleurl: {
+        description: "Google Authenticator URL",
+        img: "",
+        value: "otpauth://totp/Example:user?secret=ABCDEF1234567890&issuer=Example"
+      }
     },
+    result: { status: true }
+  });
+  const createDialogData = (): Partial<TokenEnrollmentDialogData> => ({
     tokenType: "totp",
     userRealm: "test-realm",
     onlyAddToRealm: false,
     enrollParameters: {
       data: {} as unknown as TokenEnrollmentData,
       mapper: {} as unknown as BaseApiPayloadMapper
-    },
-    onEnrollmentResponseChange: jest.fn()
+    }
   });
 
   const regeneratedResponse: EnrollmentResponse = {
@@ -79,64 +79,57 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     result: { status: true }
   };
 
-  const setup = async (dialogData: TokenEnrollmentDialogData): Promise<void> => {
+  const setup = async (
+    response: EnrollmentResponse = createResponse(),
+    data: Partial<TokenEnrollmentDialogData> = createDialogData()
+  ): Promise<void> => {
     TestBed.resetTestingModule();
+    harness = new EnrollmentDialogHarness();
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentLastStepDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: dialogData },
+        ...harness.providers,
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: TokenService, useClass: MockTokenService }
       ]
     }).compileComponents();
-
-    fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    harness.open(response, data);
+    component = harness.step<TokenEnrollmentLastStepDialogComponent>();
   };
 
   beforeEach(async () => {
-    await setup(createDialogData());
+    await setup();
   });
 
-  it("should create", () => {
-    expect(component).toBeTruthy();
+  it("is the step shown once the enrollment is done", () => {
+    expect(component).toBeInstanceOf(TokenEnrollmentLastStepDialogComponent);
+    expect(component.headerState).toBe("done");
   });
 
   it("should render title for normal enrollment", () => {
     expect(component["rollover"]).toBe(false);
     expect(component.title()).toBe("Token Successfully Enrolled");
-  });
-
-  it("should close on a route switch while nothing blocks it", () => {
-    component.onSwitchRoute();
-
-    expect(component["dialogRef"].close).toHaveBeenCalled();
+    expect(harness.element.querySelector("h3")?.textContent).toContain("Token Successfully Enrolled");
   });
 
   it("shows the container the token was added to", async () => {
-    const dialogData = createDialogData();
-    dialogData.response!.detail = { ...dialogData.response!.detail, container_serial: "SMPH0001" };
-    await setup(dialogData);
+    const response = createResponse();
+    response.detail = { ...response.detail, container_serial: "SMPH0001" };
+    await setup(response);
 
-    expect(fixture.nativeElement.textContent).toContain("SMPH0001");
+    expect(harness.element.textContent).toContain("SMPH0001");
   });
 
   it("should render the enrollment data when showEnrollData is not set", () => {
-    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
+    expect(harness.element.querySelector("app-token-enrollment-data")).toBeTruthy();
   });
 
   it("should not render the QR code when showEnrollData is false", async () => {
-    const pushDialogData: TokenEnrollmentDialogData = {
-      ...createDialogData(),
-      showEnrollData: false,
-      tokenType: "push",
-      response: {
+    await setup(
+      {
         type: "push",
         result: { status: true },
         detail: {
@@ -148,59 +141,49 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
             value: "otpauth://pipush/PIPU0001"
           }
         }
-      }
-    };
-    await setup(pushDialogData);
+      },
+      { ...createDialogData(), showEnrollData: false, tokenType: "push" }
+    );
 
-    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeNull();
-    expect(fixture.nativeElement.querySelector('img[alt="QR Code"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector("app-token-enrolled-text")).toBeTruthy();
+    expect(harness.element.querySelector("app-token-enrollment-data")).toBeNull();
+    expect(harness.element.querySelector('img[alt="QR Code"]')).toBeNull();
+    expect(harness.element.querySelector("app-token-enrolled-text")).toBeTruthy();
     expect(component.title()).toBe("Token Successfully Enrolled");
-    expect(
-      Array.from(fixture.nativeElement.querySelectorAll("button")).some((button) =>
-        (button as HTMLButtonElement).textContent?.includes("Close")
-      )
-    ).toBe(true);
+    expect(harness.footerButton("Close")).toBeTruthy();
   });
 
-  it("should report a regenerated QR code to the opener of the dialog", () => {
-    const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+  it("should report a regenerated QR code to the flow", () => {
+    const enrollmentData = harness.fixture.debugElement.query(By.css("app-token-enrollment-data"));
     enrollmentData.triggerEventHandler("enrollmentResponseChange", regeneratedResponse);
 
-    expect(component.data.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
+    expect(harness.flow.dialogData()?.response).toBe(regeneratedResponse);
   });
 
   it("should render title for rollover", async () => {
-    await setup({ ...createDialogData(), rollover: true });
+    await setup(createResponse(), { ...createDialogData(), rollover: true });
 
     expect(component["rollover"]).toBe(true);
     expect(component.title()).toBe("Token Successfully Rolled Over");
   });
 
-  const footerButtons = (): HTMLButtonElement[] =>
-    Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
-  const footerButton = (label: string) =>
-    footerButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement | undefined;
-
   it("keeps the close button enabled while the passphrase is not saved", () => {
     component.onCloseConfirmationChange("The passphrase is shown only once.");
-    fixture.detectChanges();
+    harness.fixture.detectChanges();
 
-    expect(footerButton("Close")?.disabled).toBe(false);
+    expect(harness.footerButton("Close")?.disabled).toBe(false);
   });
 
   it("offers only the close button", () => {
-    expect(footerButtons().map((button) => button.textContent?.trim())).toEqual(["Close"]);
+    expect(harness.footerButtons().map((button) => button.textContent?.trim())).toEqual(["Close"]);
   });
 
   describe("closing", () => {
     const passphraseWarning = "The passphrase is shown only once.";
-    let dialogRef: MockMatDialogRef<unknown>;
     let dialogService: MockDialogService;
 
     beforeEach(() => {
-      dialogRef = component["dialogRef"] as unknown as MockMatDialogRef<unknown>;
       dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      dialogService.openDialog.mockClear();
     });
 
     const answerConfirmation = (confirmed: boolean) => {
@@ -210,31 +193,31 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     };
 
     it("closes right away when nothing would be lost", () => {
-      footerButton("Close")?.click();
+      harness.footerButton("Close")?.click();
 
       expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(dialogRef.close).toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
     });
 
     it("stays open when closing without the passphrase is not confirmed", () => {
       component.onCloseConfirmationChange(passphraseWarning);
       answerConfirmation(false);
 
-      footerButton("Close")?.click();
+      harness.footerButton("Close")?.click();
 
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ message: passphraseWarning }) })
       );
-      expect(dialogRef.close).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
     });
 
     it("closes once closing without the passphrase is confirmed", () => {
       component.onCloseConfirmationChange(passphraseWarning);
       answerConfirmation(true);
 
-      footerButton("Close")?.click();
+      harness.footerButton("Close")?.click();
 
-      expect(dialogRef.close).toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
     });
 
     it("lets a link in the header ask the same way before it leaves", () => {
@@ -242,44 +225,44 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       answerConfirmation(false);
       const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
-      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+      (harness.element.querySelector(".enrolled__card-value") as HTMLElement).click();
 
       expect(dialogService.openDialog).toHaveBeenCalled();
       expect(contentService.tokenSelected).not.toHaveBeenCalled();
-      expect(dialogRef.close).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
 
       answerConfirmation(true);
-      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+      (harness.element.querySelector(".enrolled__card-value") as HTMLElement).click();
 
       expect(contentService.tokenSelected).toHaveBeenCalledWith("1234567890");
-      expect(dialogRef.close).toHaveBeenCalled();
+      expect(harness.dialogRef.close).toHaveBeenCalled();
     });
 
     it("ignores keys other than Escape", () => {
       component.onCloseConfirmationChange(passphraseWarning);
 
-      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Enter" }));
 
       expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(dialogRef.close).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
     });
 
     it("lets Escape and a backdrop click ask the same way", () => {
-      expect(dialogRef.disableClose).toBe(true);
+      expect(harness.dialogRef.disableClose).toBe(true);
       component.onCloseConfirmationChange(passphraseWarning);
       answerConfirmation(false);
 
-      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-      dialogRef.fireBackdropClick();
+      harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      harness.dialogRef.fireBackdropClick();
 
       expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
-      expect(dialogRef.close).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
     });
   });
 
   it("passes the axe accessibility checks", async () => {
-    fixture.detectChanges();
+    harness.fixture.detectChanges();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    expect(await axe(harness.element)).toHaveNoViolations();
   });
 });

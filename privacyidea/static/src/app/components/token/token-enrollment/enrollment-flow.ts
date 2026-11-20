@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentType } from "@angular/cdk/overlay";
-import { inject, signal } from "@angular/core";
+import { computed, inject, signal, Type } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
@@ -29,42 +30,67 @@ import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollme
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
+import { Observable, Subject } from "rxjs";
+
+export type EnrollmentStepKind = "complete" | "verify" | "success";
 
 export interface EnrollmentFlowOptions {
-  // Read when the success dialog opens, so a subclass can replace it, see the wizard.
-  successDialog: () => ComponentType<AbstractDialogComponent<TokenEnrollmentDialogData>>;
-  // A reason given here keeps the success dialog closed and is shown as a warning.
+  // Read when the success step opens, so a subclass can replace it, see the wizard.
+  successStep: () => Type<EnrollmentStep>;
+  // A reason given here keeps the success step closed and is shown as a warning.
   successBlockedReason?: () => string | null;
+  // A step finished or the dialog closed.
   onStepClosed?: () => void;
   // The incomplete token was deleted.
   onCancelled?: () => void;
-  // A step was closed before the enrollment finished. The token exists, resume() finishes it.
+  // The dialog was closed before the enrollment finished. The token exists, resume() finishes it.
   onIncomplete?: () => void;
   onCompleted?: () => void;
 }
 
 /**
- * Runs the steps of a token enrollment that follow the first response: the two-step completion
- * (rollout state "clientwait"), the verification (a "verify" challenge in the response) and the
- * success dialog. The server response decides the next step, so the number of steps is not known in
- * advance.
+ * Runs the steps of a token enrollment that follow the first response in one dialog: the two-step
+ * completion (rollout state "clientwait"), the verification (a "verify" challenge in the response)
+ * and the success step. The server response decides the next step, so the number of steps is not
+ * known in advance.
  *
- * Holds the state of the running enrollment, so a closed step can be resumed later.
+ * Holds the state of the running enrollment, so a closed dialog can be resumed at the same step.
  */
 export class EnrollmentFlow {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly dialogData = signal<TokenEnrollmentDialogData | null>(null);
+  readonly step = signal<EnrollmentStepKind | null>(null);
+  readonly stepComponent = computed<Type<EnrollmentStep> | null>(() => {
+    switch (this.step()) {
+      case "complete":
+        return TokenCompleteEnrollmentComponent;
+      case "verify":
+        return TokenVerifyEnrollmentComponent;
+      case "success":
+        return this.options.successStep();
+      default:
+        return null;
+    }
+  });
+
+  private readonly stepFinishedSubject = new Subject<void>();
+  // Emits when the current step is left: for the next step, or because the dialog closed.
+  readonly stepFinished: Observable<void> = this.stepFinishedSubject.asObservable();
+
+  private dialogRef: MatDialogRef<unknown> | null = null;
+  private cancelled = false;
 
   constructor(private readonly options: EnrollmentFlowOptions) {}
 
   /**
    * Starts a new enrollment from the response of its first request.
    *
-   * @param data The data of the enrolled token for the step dialogs.
+   * @param data The data of the enrolled token for the steps.
    */
   start(data: Omit<TokenEnrollmentDialogData, "onEnrollmentResponseChange">): void {
+    this.step.set(null);
     this.dialogData.set({
       ...data,
       onEnrollmentResponseChange: (response) => this.setResponse(response)
@@ -72,11 +98,12 @@ export class EnrollmentFlow {
   }
 
   reset(): void {
+    this.step.set(null);
     this.dialogData.set(null);
   }
 
   /**
-   * Opens the step that the response asks for next.
+   * Shows the step that the response asks for next.
    *
    * @param response The latest response of the running enrollment.
    */
@@ -89,19 +116,51 @@ export class EnrollmentFlow {
       this.verify(response);
       return;
     }
-    this.openStep(TokenCompleteEnrollmentComponent, (result) => {
-      // The data shown for the second step is outdated once the token is complete.
-      this.dialogData.update((data) => (data ? { ...data, showEnrollData: false } : data));
-      this.verify(result);
-    });
+    this.show("complete");
   }
 
-  // Opens the step again that was closed before the enrollment finished.
+  // Opens the dialog again at the step it was closed in.
   resume(): void {
+    const step = this.step();
+    if (step && this.dialogData()) {
+      this.show(step);
+      return;
+    }
     const response = this.dialogData()?.response;
     if (response) {
       this.continue(response);
     }
+  }
+
+  /**
+   * Called by a step when it is done.
+   *
+   * @param result The response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null to close
+   *   the dialog with the enrollment unfinished.
+   */
+  finishStep(result: EnrollmentStepResult): void {
+    if (result === ENROLLMENT_CANCELLED) {
+      this.cancelled = true;
+      this.close();
+      return;
+    }
+    if (!result) {
+      this.close();
+      return;
+    }
+    this.options.onStepClosed?.();
+    if (this.step() === "complete") {
+      // The data shown for the second step is outdated once the token is complete.
+      this.dialogData.update((data) => (data ? { ...data, showEnrollData: false } : data));
+      this.verify(result);
+      return;
+    }
+    this.finish(result);
+  }
+
+  // Closes the dialog without asking. Before the success step, the enrollment stays unfinished.
+  close(): void {
+    this.dialogRef?.close();
   }
 
   private verify(response: EnrollmentResponse): void {
@@ -110,43 +169,52 @@ export class EnrollmentFlow {
       this.finish(response);
       return;
     }
-    this.openStep(TokenVerifyEnrollmentComponent, (result) => this.finish(result));
+    this.show("verify");
   }
 
   private finish(response: EnrollmentResponse): void {
     const blockedReason = this.options.successBlockedReason?.();
     if (blockedReason) {
       this.notificationService.warning(blockedReason);
+      this.close();
       return;
     }
     this.setResponse(response);
-    this.dialogService
-      .openDialog({ component: this.options.successDialog(), data: this.dialogData()! })
-      .afterClosed()
-      .subscribe(() => this.options.onStepClosed?.());
+    this.show("success");
     this.options.onCompleted?.();
   }
 
-  private openStep(
-    component: ComponentType<AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentStepResult>>,
-    next: (response: EnrollmentResponse) => void
-  ): void {
+  private show(step: EnrollmentStepKind): void {
+    this.stepFinishedSubject.next();
+    this.step.set(step);
+    if (!this.dialogRef) {
+      this.openDialog();
+    }
+  }
+
+  private openDialog(): void {
     const dialogRef = this.dialogService.openDialog({
-      component,
-      data: this.dialogData()!,
-      configOverride: { autoFocus: "input", disableClose: true }
+      component: TokenEnrollmentDialogComponent,
+      data: { flow: this },
+      // The dialog asks before it closes and moves the focus itself on every step.
+      configOverride: { disableClose: true, autoFocus: false }
     });
-    dialogRef.afterClosed().subscribe((result) => {
+    this.dialogRef = dialogRef;
+    dialogRef.afterClosed().subscribe(() => {
+      if (this.dialogRef !== dialogRef) {
+        return;
+      }
+      this.dialogRef = null;
+      this.stepFinishedSubject.next();
       this.options.onStepClosed?.();
-      if (result === ENROLLMENT_CANCELLED) {
+      if (this.cancelled) {
+        this.cancelled = false;
         this.options.onCancelled?.();
         return;
       }
-      if (!result) {
+      if (this.step() !== "success") {
         this.options.onIncomplete?.();
-        return;
       }
-      next(result);
     });
   }
 

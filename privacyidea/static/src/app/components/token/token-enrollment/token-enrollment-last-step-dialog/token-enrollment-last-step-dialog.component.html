@@ -16,29 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<app-dialog-wrapper
-  width="l"
-  [handleCloseExternally]="true"
-  (wrapperClose)="attemptClose()"
-  cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@common.close"
-  title="{{ title() }}">
-  <app-token-enrolled-text
-    (switchRoute)="onSwitchRoute()"
-    [confirmLeave]="confirmLeave"
-    [containerSerial]="containerSerial"
-    [onlyAddToRealm]="data.enrollParameters.data.onlyAddToRealm"
-    [rollover]="rollover"
-    [serial]="serial"
-    [userRealm]="data.enrollParameters.data.realm"
-    [username]="data.enrollParameters.data.user"></app-token-enrolled-text>
-
-  @if (data.showEnrollData !== false && data.response) {
-    <app-token-enrollment-data
-      (closeConfirmationChange)="onCloseConfirmationChange($event)"
-      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
-      [enrolledInputData]="data.response.detail"
-      [enrollmentParameters]="data.enrollParameters"
-      [tokenType]="data.tokenType"></app-token-enrollment-data>
-  }
-</app-dialog-wrapper>
+@if (data.showEnrollData !== false && data.response) {
+  <app-token-enrollment-data
+    (closeConfirmationChange)="onCloseConfirmationChange($event)"
+    (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+    [enrolledInputData]="data.response.detail"
+    [enrollmentParameters]="data.enrollParameters"
+    [tokenType]="data.tokenType"></app-token-enrollment-data>
+}

@@ -16,62 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { Component, computed, inject, signal } from "@angular/core";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
-import { confirmLeaveIncompleteStep } from "@components/token/token-enrollment/leave-incomplete-enrollment";
-import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
-import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
-import {
-  ENROLLMENT_CANCELLED,
-  EnrollmentStepResult
-} from "@components/token/token-enrollment/token-enrollment.constants";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+// The second request of a two-step enrollment, with the part of the key that the authenticator app generated.
 @Component({
   selector: "app-token-complete-enrollment",
-  imports: [
-    DialogWrapperComponent,
-    EnrollmentCustomizationFrameComponent,
-    TokenEnrolledTextComponent,
-    MatFormField,
-    MatHint,
-    MatInput,
-    MatLabel,
-    TokenEnrollmentDataComponent,
-    FormField
-  ],
+  imports: [MatFormField, MatHint, MatInput, MatLabel, TokenEnrollmentDataComponent, FormField],
   templateUrl: "./token-complete-enrollment.component.html"
 })
-export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
-  TokenEnrollmentDialogData,
-  EnrollmentStepResult
-> {
+export class TokenCompleteEnrollmentComponent extends EnrollmentStep {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+
+  readonly title = signal($localize`:@@token.completeToken:Complete Token Enrollment`).asReadonly();
+  readonly headerState = "incomplete";
 
   protected readonly enrollDetails = this.data.response?.detail;
-  // A link leaves like Close; where Cancel replaces Close, it asks what happens to the token.
-  protected readonly confirmLeave = confirmLeaveIncompleteStep({
-    dialogService: this.dialogService,
-    tokenService: this.tokenService,
-    serial: () => this.enrollDetails?.serial,
-    canCancel: () => this.canCancelEnrollment(),
-    close: (result) => this.dialogRef.close(result),
-    stepClosed: () => this.dialogRef.afterClosed()
-  });
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   // The enrollment response has no type, so the type comes from the enrollment request
   protected readonly tokenType: string = this.enrollParameters?.data?.type ?? this.data.tokenType;
@@ -90,48 +57,19 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
   });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
 
-  readonly dialogActions = computed<DialogAction<string>[]>(() => {
-    const actions: DialogAction<string>[] = [];
-    if (this.canCancelEnrollment()) {
-      actions.push({
-        label: $localize`:@@common.cancel:Cancel`,
-        type: "destruct",
-        value: "cancelEnrollment"
-      });
-    }
-    actions.push({
+  override readonly actions = computed<DialogAction<string>[]>(() => [
+    {
       label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
       disabled: this.invalidInputSignal()
-    });
-    return actions;
-  });
+    }
+  ]);
 
-  onDialogAction(value: string) {
+  override onAction(value: string): void {
     if (value === "enroll") {
       this.enrollToken();
     }
-    if (value === "cancelEnrollment") {
-      this.cancelEnrollment();
-    }
-  }
-
-  cancelEnrollment() {
-    const tokenSerial = this.enrollDetails?.serial;
-    if (!tokenSerial) {
-      return;
-    }
-    this.tokenService.cancelEnrollment(tokenSerial).subscribe({
-      next: () => this.close(ENROLLMENT_CANCELLED),
-      error: () => undefined
-    });
-  }
-
-  // Cancel deletes the incomplete token, Close keeps it for later. Only one of them is offered, so
-  // a user who may delete does not leave a token behind that they cannot finish.
-  protected canCancelEnrollment(): boolean {
-    return !this.data.rollover && this.authService.actionAllowed("delete");
   }
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {
@@ -151,7 +89,7 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
     this.tokenService.enrollToken(this.enrollParameters).subscribe({
       next: (response) => {
         if (response?.result?.status && response?.detail?.rollout_state !== "client_wait") {
-          this.dialogRef.close(response);
+          this.flow.finishStep(response);
         }
       }
     });

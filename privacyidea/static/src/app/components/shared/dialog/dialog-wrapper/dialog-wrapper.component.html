@@ -1,4 +1,6 @@
-<div class="pi-dialog pi-dialog-{{ width() }}">
+<div
+  [class.pi-dialog-fixed]="fixedSize()"
+  class="pi-dialog pi-dialog-{{ width() }}">
   <div class="pi-dialog-header">
     <h3
       class="margin-8"

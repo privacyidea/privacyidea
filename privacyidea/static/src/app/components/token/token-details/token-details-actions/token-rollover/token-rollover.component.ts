@@ -55,7 +55,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal<string | null | undefined>(null);
   // The rollover dialog closes after the first step, the flow runs the remaining steps on its own.
   readonly enrollmentFlow = new EnrollmentFlow({
-    successDialog: () => TokenEnrollmentLastStepDialogComponent,
+    successStep: () => TokenEnrollmentLastStepDialogComponent,
     onStepClosed: () => this.tokenService.tokenDetailResource.reload()
   });
 
