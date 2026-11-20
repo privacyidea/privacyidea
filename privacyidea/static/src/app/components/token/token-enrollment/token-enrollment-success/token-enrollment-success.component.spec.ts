@@ -36,11 +36,11 @@ import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "./token-enrollment-success.component";
 
-describe("TokenEnrollmentLastStepDialogComponent", () => {
+describe("TokenEnrollmentSuccessComponent", () => {
   let harness: EnrollmentDialogHarness;
-  let component: TokenEnrollmentLastStepDialogComponent;
+  let component: TokenEnrollmentSuccessComponent;
 
   const createResponse = (): EnrollmentResponse => ({
     type: "totp",
@@ -97,7 +97,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       ]
     }).compileComponents();
     harness.open(response, data);
-    component = harness.step<TokenEnrollmentLastStepDialogComponent>();
+    component = harness.step<TokenEnrollmentSuccessComponent>();
   };
 
   beforeEach(async () => {
@@ -105,7 +105,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
   });
 
   it("is the step shown once the enrollment is done", () => {
-    expect(component).toBeInstanceOf(TokenEnrollmentLastStepDialogComponent);
+    expect(component).toBeInstanceOf(TokenEnrollmentSuccessComponent);
     expect(component.headerState).toBe("done");
   });
 

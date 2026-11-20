@@ -27,7 +27,7 @@ import {
 } from "@components/token/token-enrollment/enrollment-flow";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { EnrollTokenArguments, TokenEnrollmentDialogData } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -64,7 +64,7 @@ export class EnrollmentDialogHarness {
     const dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     dialogService.openDialog.mockReturnValueOnce(this.dialogRef);
     this.flow = TestBed.runInInjectionContext(
-      () => new EnrollmentFlow({ successStep: () => TokenEnrollmentLastStepDialogComponent, ...options })
+      () => new EnrollmentFlow({ successStep: () => TokenEnrollmentSuccessComponent, ...options })
     );
     this.flow.start(
       {

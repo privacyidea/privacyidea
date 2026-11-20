@@ -28,11 +28,11 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 // The second request of a two-step enrollment, with the part of the key that the authenticator app generated.
 @Component({
-  selector: "app-token-complete-enrollment",
+  selector: "app-token-complete-enrollment-two-step",
   imports: [MatFormField, MatHint, MatInput, MatLabel, TokenEnrollmentDataComponent, FormField],
-  templateUrl: "./token-complete-enrollment.component.html"
+  templateUrl: "./token-complete-enrollment-two-step.component.html"
 })
-export class TokenCompleteEnrollmentComponent extends EnrollmentStep {
+export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   readonly title = signal($localize`:@@token.completeToken:Complete Token Enrollment`).asReadonly();

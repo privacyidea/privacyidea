@@ -39,10 +39,10 @@ import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
-import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
+import { TokenEnrollmentSuccessWizardComponent } from "./token-enrollment-success.wizard.component";
 
-describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
-  let component: TokenEnrollmentLastStepDialogWizardComponent;
+describe("TokenEnrollmentSuccessWizardComponent", () => {
+  let component: TokenEnrollmentSuccessWizardComponent;
   let harness: EnrollmentDialogHarness;
   let authService: MockAuthService;
   let httpMock: HttpTestingController;
@@ -91,8 +91,8 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
       container_wizard: { enabled: containerWizard, type: "", registration: false, template: null }
     } as AuthData);
     httpMock = TestBed.inject(HttpTestingController);
-    harness.open(response(), dialogData(), { successStep: () => TokenEnrollmentLastStepDialogWizardComponent });
-    component = harness.step<TokenEnrollmentLastStepDialogWizardComponent>();
+    harness.open(response(), dialogData(), { successStep: () => TokenEnrollmentSuccessWizardComponent });
+    component = harness.step<TokenEnrollmentSuccessWizardComponent>();
   };
 
   const flushCustomization = async (top = "", bottom = "") => {

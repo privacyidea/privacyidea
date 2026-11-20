@@ -22,7 +22,7 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
 import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import {
   ENROLLMENT_CANCELLED,
@@ -84,7 +84,7 @@ export class EnrollmentFlow {
       case "fido2":
         return TokenCompleteEnrollmentFido2Component;
       case "complete":
-        return TokenCompleteEnrollmentComponent;
+        return TokenCompleteEnrollmentTwoStepComponent;
       case "verify":
         return TokenVerifyEnrollmentComponent;
       case "success":

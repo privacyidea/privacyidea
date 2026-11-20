@@ -28,8 +28,8 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { environment } from "@env/environment";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -71,7 +71,7 @@ import { TokenCompleteEnrollmentPushComponent } from "./token-complete-enrollmen
 import { TokenEnrollmentDialogComponent } from "./token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
-import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
+import { TokenEnrollmentSuccessWizardComponent } from "./token-enrollment-success/token-enrollment-success.wizard.component";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
@@ -409,7 +409,7 @@ describe("TokenEnrollmentComponent", () => {
 
         expect(tokenService.enrollToken).toHaveBeenCalled();
         expect(enrollmentDialogsOpened()).toBe(1);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
       it("shows the first step of the token type in the enrollment dialog and resets once it deleted the token", async () => {
@@ -450,7 +450,7 @@ describe("TokenEnrollmentComponent", () => {
         );
 
         await component.enrollToken();
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
         component.enrollmentFlow.finishStep(ENROLLMENT_CANCELLED);
 
         expect(component.enrollmentFlow.dialogData()).toBeNull();
@@ -495,7 +495,7 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(component.enrollmentFlow.dialogData()?.showEnrollData).toBe(false);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
       it("passes the enrolled token type to the dialogs, not the selected one", async () => {
@@ -531,7 +531,7 @@ describe("TokenEnrollmentComponent", () => {
         await wizardComponent.enrollToken();
 
         expect(wizardComponent.enrollmentFlow.dialogData()?.wizard).toBe(true);
-        expect(wizardComponent.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogWizardComponent);
+        expect(wizardComponent.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessWizardComponent);
       });
 
       it("Strategy with showEnrollDataInLastStep true keeps the enroll data in the last step dialog", async () => {
@@ -554,7 +554,7 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(component.enrollmentFlow.dialogData()?.showEnrollData).toBe(true);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
       // enrollToken() of the token service reports the failure itself. The component used to
@@ -616,13 +616,13 @@ describe("TokenEnrollmentComponent", () => {
         await component.enrollToken();
 
         expect(tokenService.enrollToken).toHaveBeenCalled();
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
         expect(component.enrollmentFlow.dialogData()?.response).toBe(enrollResponse);
 
         component.enrollmentFlow.finishStep(completeResponse as unknown as EnrollmentResponse);
 
         // No verification was asked for, so the success step follows in the same dialog.
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
         expect(component.enrollmentFlow.dialogData()?.response).toBe(completeResponse);
         expect(enrollmentDialogsOpened()).toBe(1);
       });
@@ -663,14 +663,14 @@ describe("TokenEnrollmentComponent", () => {
         };
 
         await component.enrollToken();
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
 
         component.enrollmentFlow.finishStep(completeResponse as unknown as EnrollmentResponse);
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
         expect(component.enrollmentFlow.dialogData()?.response).toBe(completeResponse);
 
         component.enrollmentFlow.finishStep(verifyResponse as unknown as EnrollmentResponse);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
         expect(component.enrollmentFlow.dialogData()?.response).toBe(verifyResponse);
         expect(enrollmentDialogsOpened()).toBe(1);
       });
@@ -703,7 +703,7 @@ describe("TokenEnrollmentComponent", () => {
         expect(component.enrollmentFlow.dialogData()?.response).toBe(enrollResponse);
 
         component.enrollmentFlow.finishStep(verifyResponse as unknown as EnrollmentResponse);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
         expect(component.enrollmentFlow.dialogData()?.response).toBe(verifyResponse);
         expect(enrollmentDialogsOpened()).toBe(1);
       });
@@ -722,7 +722,7 @@ describe("TokenEnrollmentComponent", () => {
       component.enrollmentFlow.continue(response);
 
       expect(enrollmentDialogsOpened()).toBe(1);
-      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       expect(component.enrollmentFlow.dialogData()?.tokenType).toBe("hotp");
       expect(component.enrollmentFlow.dialogData()?.response).toEqual(response);
     });
@@ -896,7 +896,7 @@ describe("TokenEnrollmentComponent", () => {
 
         component.enrollmentFlow.finishStep(enrolledResponse);
 
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
         expect(component.description()).toBe("next token");
         expect(component.setPin()).toBe("5678");
 
@@ -905,7 +905,7 @@ describe("TokenEnrollmentComponent", () => {
         dialogServiceMock.openDialog.mockClear();
         component.reopenEnrollmentDialog();
         expect(enrollmentDialogsOpened()).toBe(1);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
       it("resets the inputs when the verify dialog closes before the verification", async () => {
@@ -955,7 +955,7 @@ describe("TokenEnrollmentComponent", () => {
       component.reopenEnrollmentDialog();
 
       expect(enrollmentDialogsOpened()).toBe(1);
-      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       expect(component.enrollmentFlow.dialogData()?.response).toBe(regenerated);
     });
 
@@ -970,7 +970,7 @@ describe("TokenEnrollmentComponent", () => {
       component.reopenEnrollmentDialog();
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
       expect(enrollmentDialogsOpened()).toBe(1);
-      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     });
   });
 

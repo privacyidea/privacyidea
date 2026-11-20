@@ -64,7 +64,7 @@ import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enroll
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -229,9 +229,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private inputsResetPending = false;
   // False keeps the inputs of the enrolled token, see the wizard.
   protected readonly resetsInputsAfterEnrollment: boolean = true;
-  protected readonly lastStepDialogComponent: Type<EnrollmentStep> = TokenEnrollmentLastStepDialogComponent;
+  protected readonly successStepComponent: Type<EnrollmentStep> = TokenEnrollmentSuccessComponent;
   readonly enrollmentFlow = new EnrollmentFlow({
-    successStep: () => this.lastStepDialogComponent,
+    successStep: () => this.successStepComponent,
     successBlockedReason: () =>
       this.isUserRequired() && !this.userService.selectedUser()
         ? $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`

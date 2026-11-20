@@ -35,9 +35,9 @@ import {
 } from "@testing/mock-services";
 import { of } from "rxjs";
 import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
@@ -150,8 +150,8 @@ describe("TokenRolloverComponent", () => {
     expect(dialogRef.close).toHaveBeenCalled();
     expect(dialogService.openDialog).toHaveBeenCalled();
 
-    const lastStepDialogRef = dialogService.openDialog.mock.results[0].value;
-    lastStepDialogRef.close();
+    const successDialogRef = dialogService.openDialog.mock.results[0].value;
+    successDialogRef.close();
 
     expect(reloadSpy).toHaveBeenCalled();
   });
@@ -208,7 +208,7 @@ describe("TokenRolloverComponent", () => {
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ component: TokenEnrollmentDialogComponent })
     );
-    expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
   });
 
   it("gives the dialogs the type of the enrollment request, not the selected enrollment type", async () => {
@@ -269,7 +269,7 @@ describe("TokenRolloverComponent", () => {
     const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
 
     await component.rolloverToken();
-    expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+    expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
 
     component.enrollmentFlow.finishStep(completed);
 
@@ -277,7 +277,7 @@ describe("TokenRolloverComponent", () => {
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ component: TokenEnrollmentDialogComponent })
     );
-    expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(component.enrollmentFlow.dialogData()).toEqual(
       expect.objectContaining({ response: completed, rollover: true })
     );

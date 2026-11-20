@@ -23,8 +23,8 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { EnrollmentFirstStep, EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
 import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
 import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogWizardComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
+import { TokenEnrollmentSuccessWizardComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.wizard.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { environment } from "@env/environment";
 import { AuthData, AuthService } from "@services/auth/auth.service";
@@ -96,7 +96,7 @@ describe("TokenEnrollmentDialogComponent", () => {
       open(twoStep());
       const wrapper = harness.element.querySelector(".pi-dialog");
       expect(wrapper?.classList).toContain("pi-dialog-fixed");
-      expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentComponent);
+      expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentTwoStepComponent);
       expect(title()).toBe("Complete Token Enrollment");
 
       harness.flow.finishStep(verify());
@@ -342,7 +342,7 @@ describe("TokenEnrollmentDialogComponent", () => {
     });
 
     it("cannot be closed on the wizard's success step", () => {
-      options = { ...options, successStep: () => TokenEnrollmentLastStepDialogWizardComponent };
+      options = { ...options, successStep: () => TokenEnrollmentSuccessWizardComponent };
       open(enrolled(), { wizard: true });
 
       harness.dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));

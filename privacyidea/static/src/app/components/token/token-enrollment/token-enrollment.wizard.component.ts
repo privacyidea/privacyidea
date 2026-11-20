@@ -42,7 +42,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { map } from "rxjs";
-import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
+import { TokenEnrollmentSuccessWizardComponent } from "./token-enrollment-success/token-enrollment-success.wizard.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
@@ -117,7 +117,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   // The wizard keeps the inputs of the enrolled token. Its template does not create the type-specific
   // inputs anew.
   protected override readonly resetsInputsAfterEnrollment = false;
-  protected override readonly lastStepDialogComponent = TokenEnrollmentLastStepDialogWizardComponent;
+  protected override readonly successStepComponent = TokenEnrollmentSuccessWizardComponent;
 
   override descriptionRequired = computed(() => {
     return this.authService.requireDescription().includes(this.tokenType().key);

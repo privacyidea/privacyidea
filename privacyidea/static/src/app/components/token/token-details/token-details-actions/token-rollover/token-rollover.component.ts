@@ -24,7 +24,7 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -54,7 +54,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal<string | null | undefined>(null);
   // The rollover dialog closes after the first step, the flow runs the remaining steps on its own.
   readonly enrollmentFlow = new EnrollmentFlow({
-    successStep: () => TokenEnrollmentLastStepDialogComponent,
+    successStep: () => TokenEnrollmentSuccessComponent,
     onStepClosed: () => this.tokenService.tokenDetailResource.reload()
   });
 

@@ -25,9 +25,9 @@ import {
 } from "@components/token/token-enrollment/enrollment-flow";
 import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
 import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -60,7 +60,7 @@ describe("EnrollmentFlow", () => {
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     options = {
-      successStep: () => TokenEnrollmentLastStepDialogComponent,
+      successStep: () => TokenEnrollmentSuccessComponent,
       onStepClosed: jest.fn(),
       onCancelled: jest.fn(),
       onIncomplete: jest.fn(),
@@ -87,7 +87,7 @@ describe("EnrollmentFlow", () => {
       data: { flow },
       configOverride: { disableClose: true, autoFocus: false }
     });
-    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(flow.dialogData()?.response).toBe(enrolled);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
   });
@@ -99,7 +99,7 @@ describe("EnrollmentFlow", () => {
     const flow = startFlow(first);
 
     flow.continue(first);
-    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
 
     flow.finishStep(completed);
     expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
@@ -108,7 +108,7 @@ describe("EnrollmentFlow", () => {
     expect(flow.dialogData()?.showEnrollData).toBe(false);
 
     flow.finishStep(verified);
-    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(flow.dialogData()?.response).toBe(verified);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
@@ -129,7 +129,7 @@ describe("EnrollmentFlow", () => {
     expect(flow.firstStep).toEqual({ kind: "push" });
 
     flow.finishStep(enrolled);
-    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(flow.firstStep).toBeNull();
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
@@ -173,7 +173,7 @@ describe("EnrollmentFlow", () => {
     flow.continue(first);
 
     expect(flow.reopened).toBe(false);
-    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
   });
 
   it("emits stepFinished when the step changes and when the dialog closes", () => {
@@ -225,7 +225,7 @@ describe("EnrollmentFlow", () => {
 
     flow.resume();
 
-    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
     expect(options.onIncomplete).not.toHaveBeenCalled();
   });
@@ -243,8 +243,8 @@ describe("EnrollmentFlow", () => {
   });
 
   it("reads the success step when it opens", () => {
-    class OtherSuccessStep extends TokenEnrollmentLastStepDialogComponent {}
-    let successStep: typeof TokenEnrollmentLastStepDialogComponent = TokenEnrollmentLastStepDialogComponent;
+    class OtherSuccessStep extends TokenEnrollmentSuccessComponent {}
+    let successStep: typeof TokenEnrollmentSuccessComponent = TokenEnrollmentSuccessComponent;
     options.successStep = () => successStep;
     const enrolled = response({ rollout_state: "enrolled" });
     const flow = startFlow(enrolled);
@@ -276,6 +276,6 @@ describe("EnrollmentFlow", () => {
     flow.resume();
 
     expect(flow.dialogData()?.response).toBe(regenerated);
-    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
   });
 });

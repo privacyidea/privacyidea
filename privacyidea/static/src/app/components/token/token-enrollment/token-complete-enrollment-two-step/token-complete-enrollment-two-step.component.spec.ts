@@ -28,11 +28,11 @@ import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollm
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
-import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
+import { TokenCompleteEnrollmentTwoStepComponent } from "./token-complete-enrollment-two-step.component";
 
-describe("TokenCompleteEnrollmentComponent", () => {
-  let component: TokenCompleteEnrollmentComponent;
-  let fixture: ComponentFixture<TokenCompleteEnrollmentComponent>;
+describe("TokenCompleteEnrollmentTwoStepComponent", () => {
+  let component: TokenCompleteEnrollmentTwoStepComponent;
+  let fixture: ComponentFixture<TokenCompleteEnrollmentTwoStepComponent>;
   let mockTokenService: MockTokenService;
   let host: MockEnrollmentStepHost;
 
@@ -46,7 +46,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
     TestBed.resetTestingModule();
     host = mockEnrollmentStepHost(data);
     await TestBed.configureTestingModule({
-      imports: [TokenCompleteEnrollmentComponent],
+      imports: [TokenCompleteEnrollmentTwoStepComponent],
       providers: [
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
@@ -54,7 +54,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
-    fixture = TestBed.createComponent(TokenCompleteEnrollmentComponent);
+    fixture = TestBed.createComponent(TokenCompleteEnrollmentTwoStepComponent);
     component = fixture.componentInstance;
     mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     fixture.detectChanges();

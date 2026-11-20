@@ -26,11 +26,11 @@ import { map, Observable, of } from "rxjs";
 
 // The enrolled token with its enrollment data.
 @Component({
-  selector: "app-token-enrollment-last-step-dialog",
-  templateUrl: "./token-enrollment-last-step-dialog.component.html",
+  selector: "app-token-enrollment-success",
+  templateUrl: "./token-enrollment-success.component.html",
   imports: [TokenEnrollmentDataComponent]
 })
-export class TokenEnrollmentLastStepDialogComponent extends EnrollmentStep {
+export class TokenEnrollmentSuccessComponent extends EnrollmentStep {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly rollover = this.data.rollover ?? false;
 

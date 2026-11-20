@@ -23,16 +23,16 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentSuccessComponent } from "./token-enrollment-success.component";
 
 type WizardLastStepAction = "create_container" | "logout";
 
 @Component({
-  selector: "app-token-enrollment-last-step-dialog-wizard",
-  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
+  selector: "app-token-enrollment-success-wizard",
+  templateUrl: "./token-enrollment-success.wizard.component.html",
   imports: [TokenEnrollmentDataComponent]
 })
-export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
+export class TokenEnrollmentSuccessWizardComponent extends TokenEnrollmentSuccessComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
 
