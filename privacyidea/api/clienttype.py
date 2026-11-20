@@ -74,7 +74,7 @@ def get_clients():
           "value": {
             "PAM": [
               {"ip": "10.0.0.5", "hostname": "host1.example.com",
-               "lastseen": "2026-05-01 12:34:56"}
+               "lastseen": "2026-05-01T12:34:56+00:00"}
             ],
             "SAML": []
           }

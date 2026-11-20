@@ -45,6 +45,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.token import create_challenge
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ValidateError
+from privacyidea.models.utils import utc_now, utc_isoformat
 
 log = logging.getLogger(__name__)
 
@@ -237,8 +238,8 @@ class IndexedSecretTokenClass(TokenClass):
             transactionid = transactionid or db_challenge.transaction_id
             return_message = return_message.format(position_str)
 
-        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = f"{expiry_date!s}"
+        expiry_date = utc_now() + datetime.timedelta(seconds=validity)
+        attributes['valid_until'] = utc_isoformat(expiry_date)
         reply_dict = {"attributes": attributes}
 
         return True, return_message, transactionid, reply_dict

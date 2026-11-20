@@ -19,6 +19,8 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Test the models of the privacyIDEA database."""
 import os
+import time
+import warnings
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
@@ -44,13 +46,14 @@ from privacyidea.models import (Token,
                                 Realm,
                                 Config,
                                 Policy,
-                                Challenge, PasswordReset, ClientApplication, UserCache,
+                                Challenge, PasswordReset, ClientApplication, UserCache, PolicyDescription, AuthCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
                                 ConditionalAccessPolicy, ConditionalAccessPolicyCondition,
                                 ConditionalAccessPolicyStage, ConditionalAccessStageAction, AuthenticationLog,
                                 AuthenticationLogReason, ConditionalAccessOutcome)
-from .base import MyTestCase
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, non_utc_time_zone
 
 
 class TokenModelTestCase(MyTestCase):
@@ -358,6 +361,12 @@ class TokenModelTestCase(MyTestCase):
         # delete the realm
         db_realm.delete()
 
+    def test_11a_policy_description_last_update_is_utc(self):
+        with non_utc_time_zone():
+            before = utc_now()
+            description = PolicyDescription(1, name="pol11a", object_type="policy", description="text")
+        self.assertAlmostEqual(before, description.last_update, delta=timedelta(seconds=5))
+
     def test_11_policy(self):
         p = Policy("pol1", active="true",
                    scope="selfservice", action="action1",
@@ -511,8 +520,8 @@ class TokenModelTestCase(MyTestCase):
     def test_21_add_update_delete_clientapp(self):
         # MySQLs DATETIME type supports only seconds so we have to mock now()
         current_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.subscription.datetime') as mock_dt:
-            mock_dt.now.return_value = current_time
+        with mock.patch('privacyidea.models.subscription.utc_now') as mock_now:
+            mock_now.return_value = current_time
 
             app = ClientApplication(ip="1.2.3.4", hostname="host1",
                                     clienttype="PAM", node="localnode")
@@ -525,6 +534,16 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(c.clienttype, "PAM")
 
         self.assertIn("localnode", repr(c))
+
+    def test_22_clientapp_lastseen_default_is_utc(self):
+        with non_utc_time_zone():
+            before = utc_now()
+            app = ClientApplication(ip="192.0.2.22", hostname="host22.example.org",
+                                    clienttype="PAM", node="localnode")
+            db.session.add(app)
+            db.session.flush()
+        self.assertAlmostEqual(before, app.lastseen, delta=timedelta(seconds=5))
+        db.session.rollback()
 
     def test_23_usercache(self):
         username = "cornelius"
@@ -608,6 +627,19 @@ class TokenModelTestCase(MyTestCase):
 
         counter10 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter10, None)
+
+    def test_28_column_defaults_use_no_deprecated_utcnow(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            before = utc_now()
+            entry = AuthCache("user28", "realm28", "resolver28", "hash28")
+            db.session.add(entry)
+            db.session.flush()
+        utcnow_warnings = [w for w in caught if "utcnow" in str(w.message)]
+        self.assertEqual([], [str(w.message) for w in utcnow_warnings])
+        self.assertAlmostEqual(before, entry.first_auth, delta=timedelta(seconds=5))
+        self.assertAlmostEqual(before, entry.last_auth, delta=timedelta(seconds=5))
+        db.session.rollback()
 
     def test_27_monitoring_stats(self):
         # Simple test to write data to the monitoring stats table
@@ -788,6 +820,21 @@ class ResolverRealmTestCase(MyTestCase):
 
         db.session.delete(node1)
         db.session.delete(node2)
+
+    def test_02_nodename_lastseen_default_is_taken_per_row(self):
+        node1 = NodeName(id="3f0d1c52-6a3b-4d1e-9c55-0a1b2c3d4e51", name="Node02a")
+        node2 = NodeName(id="3f0d1c52-6a3b-4d1e-9c55-0a1b2c3d4e52", name="Node02b")
+        db.session.add(node1)
+        db.session.flush()
+        # MySQL stores whole seconds only, so the pause must be longer than one second
+        time.sleep(1.1)
+        db.session.add(node2)
+        db.session.flush()
+        self.assertIsNone(node1.lastseen.tzinfo)
+        self.assertIsNone(node2.lastseen.tzinfo)
+        self.assertNotEqual(node1.lastseen, node2.lastseen)
+        self.assertAlmostEqual(utc_now(), node2.lastseen, delta=timedelta(seconds=5))
+        db.session.rollback()
 
     # TODO: add resolver realm config with ids and different nodes
     # TODO: same nodes with different timestamps

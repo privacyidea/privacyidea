@@ -8,7 +8,8 @@ from privacyidea.lib.token import init_token, remove_token, import_tokens, get_t
 from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
 from privacyidea.lib.user import (User)
 from privacyidea.models import Token
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, FakeFlaskG, FakeAudit, non_utc_time_zone
 
 PWFILE = "tests/testdata/passwords"
 
@@ -219,3 +220,23 @@ class IndexedSecretTokenTestCase(MyTestCase):
 
         delete_policy("pol1")
         remove_token("PIIX1234")
+
+    def test_07_challenge_valid_until_carries_utc_offset(self):
+        t = init_token({"type": "indexedsecret",
+                        "otpkey": "mysimplesecret",
+                        "serial": "PIIX_VALID_UNTIL"})
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit
+        g.policy_object = PolicyClass()
+        # The validity of this token type is fixed
+        validity = 120
+
+        with non_utc_time_zone():
+            before = utc_now()
+            success, _message, _transaction_id, reply_dict = t.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assert_valid_until_is_utc(reply_dict["attributes"]["valid_until"], validity, before)
+
+        # Clean up
+        remove_token("PIIX_VALID_UNTIL")

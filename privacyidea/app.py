@@ -90,6 +90,7 @@ from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
+from privacyidea.models.utils import utc_now
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
                                      get_accepted_language)
 
@@ -459,7 +460,7 @@ def _setup_node_configuration(app: Flask):
         if inspect.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid),
                                       name=pi_node_name,
-                                      lastseen=datetime.datetime.now(datetime.UTC)))
+                                      lastseen=utc_now()))
             db.session.commit()
         else:
             log.warning(f"Could not update node names in db. "

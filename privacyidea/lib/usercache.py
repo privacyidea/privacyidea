@@ -23,6 +23,7 @@ import datetime
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.realm import get_ordered_resolvers
 from privacyidea.models import UserCache, db
+from privacyidea.models.utils import utc_now
 from sqlalchemy import and_, delete, select
 
 log = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ def add_to_cache(username, used_login, resolver, user_id):
     :param user_id: ID of the user in its resolver
     """
     if is_cache_enabled():
-        timestamp = datetime.datetime.now()
+        timestamp = utc_now()
         log.debug(f'Adding record to cache: ({username!r}, {used_login!r}, {resolver!r}, {user_id!r}, {timestamp!r})')
         record = UserCache(username, used_login, resolver, user_id, timestamp)
         record.save()
@@ -165,10 +166,10 @@ def create_filter(username=None, used_login=None, resolver=None,
     if expired:
         cache_time = get_cache_time()
         conditions.append(
-            UserCache.timestamp < datetime.datetime.now() - cache_time)
+            UserCache.timestamp < utc_now() - cache_time)
     elif expired is False:
         cache_time = get_cache_time()
-        conditions.append(UserCache.timestamp >= datetime.datetime.now() - cache_time)
+        conditions.append(UserCache.timestamp >= utc_now() - cache_time)
 
     if username:
         conditions.append(UserCache.username == username)

@@ -84,6 +84,7 @@ from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
+from privacyidea.models.utils import utc_now, utc_isoformat
 
 log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
@@ -339,9 +340,8 @@ class EmailTokenClass(HotpTokenClass):
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = datetime.datetime.now() + \
-                      datetime.timedelta(seconds=validity)
-        reply_dict['attributes']['valid_until'] = f"{expiry_date!s}"
+        expiry_date = utc_now() + datetime.timedelta(seconds=validity)
+        reply_dict['attributes']['valid_until'] = utc_isoformat(expiry_date)
 
         return success, return_message, transactionid, reply_dict
 

@@ -31,13 +31,15 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            SubscriptionState,
                                            EXPIRING_THRESHOLD_DAYS,
                                            APPLICATIONS,
-                                           DASHBOARD_PLUGINS)
+                                           DASHBOARD_PLUGINS,
+                                           USAGE_RECENT_DAYS)
 from privacyidea.lib.integrations import AGENT_TO_INTEGRATION
 from privacyidea.lib import subscriptions as subscriptions_module
 from privacyidea.lib.token import init_token, enable_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import ClientApplication, Subscription, db
-from .base import MyTestCase
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, non_utc_time_zone
 
 # 100 users
 SUBSCRIPTION1 = {'by_address': 'Ludwig-Erhard-Str. 12 / Kassel / Germany', 'for_email': 'info@netknights.it',
@@ -631,6 +633,26 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         self.assertListEqual(["10.0", "2.0.0-rc1", "1.2.3", "1.2"],
                              sorted(["1.2", "10.0", "1.2.3", "2.0.0-rc1"],
                                     key=version_sort_key, reverse=True))
+
+    def test_20_dashboard_last_seen_carries_utc_offset(self):
+        self._add_clientapp("privacyidea-cp", seen_days_ago=1)
+        overview = {e["application"]: e for e in get_plugin_subscription_status(token_users=0)}
+        last_seen = overview["privacyidea-cp"]["last_seen"]
+        self.assertIsInstance(last_seen, str)
+        self.assertTrue(last_seen.endswith("+00:00"), last_seen)
+
+    def test_21_in_use_is_measured_on_the_utc_clock(self):
+        # Seen just inside the usage window on the UTC clock. Measured against
+        # a local clock ahead of UTC the client would look too old.
+        seen = utc_now() - timedelta(days=USAGE_RECENT_DAYS) + timedelta(hours=2)
+        db.session.add(ClientApplication(
+            ip="192.0.2.17", clienttype="privacyidea-cp/1.0 test/1",
+            node="localnode", lastseen=seen))
+        db.session.commit()
+        with non_utc_time_zone("Asia/Shanghai"):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status(token_users=0)}
+        self.assertTrue(overview["privacyidea-cp"]["in_use"])
 
     def test_17_subscription_without_end_date_is_not_valid(self):
         # Subscription.date_till is nullable. Such a record cannot be reported as

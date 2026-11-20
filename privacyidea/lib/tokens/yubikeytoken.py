@@ -397,7 +397,7 @@ class YubikeyTokenClass(TokenClass):
         signature = get_optional(request.all_data, "h")
         status = "MISSING_PARAMETER"
 
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
+        timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ%f")
         data = {'otp': otp,
                 'nonce': nonce,
                 'status': status,

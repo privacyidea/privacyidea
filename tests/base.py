@@ -1,7 +1,11 @@
 """Base test configuration to set up/teardown tests."""
+import os
 import pathlib
+import time
 import unittest
+from contextlib import contextmanager
 from unittest import mock
+from flask import has_app_context
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
@@ -9,6 +13,7 @@ from sqlalchemy.orm.session import close_all_sessions
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
 from privacyidea.models import Token, db, save_config_timestamp
+from privacyidea.lib.config import get_shared_config_object, invalidate_config_object
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -21,6 +26,32 @@ from privacyidea.lib.lifecycle import call_finalizers
 
 PWFILE = "tests/testdata/passwords"
 PWFILE2 = "tests/testdata/passwd"
+
+
+@contextmanager
+def non_utc_time_zone(name: str = "Asia/Shanghai"):
+    """Run the enclosed code with the process time zone set to ``name``.
+
+    ``datetime.now()`` and ``time.localtime()`` then differ from UTC even on a
+    UTC machine, so a test can tell local time from UTC. ``TZ`` (also when it
+    was unset before) and the C library time zone are restored on exit.
+    """
+    had_tz = "TZ" in os.environ
+    old_tz = os.environ.get("TZ")
+    os.environ["TZ"] = name
+    time.tzset()
+    try:
+        yield
+    finally:
+        if had_tz:
+            os.environ["TZ"] = old_tz
+        else:
+            os.environ.pop("TZ", None)
+        time.tzset()
+        # The shared config stored its load time as naive local time of ``name``, drop it so the next access reloads
+        if has_app_context():
+            get_shared_config_object().timestamp = None
+            invalidate_config_object()
 
 
 def force_expire_challenges(transaction_id):
@@ -291,6 +322,23 @@ class MyTestCase(unittest.TestCase):
         """
         for key in list(iter(self.app_context.g)):
             self.app_context.g.pop(key)
+
+    def assert_valid_until_is_utc(self, valid_until: str, validity: int, before) -> None:
+        """
+        Assert that a challenge ``valid_until`` string is an ISO-8601 timestamp with the UTC offset ``+00:00``,
+        which lies ``validity`` seconds after a moment between ``before`` and now (both from ``utc_now()``).
+        """
+        from datetime import datetime, timedelta
+        from privacyidea.models.utils import utc_now
+        after = utc_now()
+        parsed = datetime.fromisoformat(valid_until)
+        self.assertIsNotNone(parsed.utcoffset(), valid_until)
+        self.assertEqual(timedelta(0), parsed.utcoffset(), valid_until)
+        parsed_naive_utc = parsed.replace(tzinfo=None)
+        # Allow a second of slack for the clock granularity
+        slack = timedelta(seconds=1)
+        self.assertGreaterEqual(parsed_naive_utc, before + timedelta(seconds=validity) - slack, valid_until)
+        self.assertLessEqual(parsed_naive_utc, after + timedelta(seconds=validity) + slack, valid_until)
 
     def pin_to_database(self, *features: str) -> None:
         """Keep the named Redis workloads off for this test class.

@@ -6,11 +6,13 @@ import logging
 
 from testfixtures import log_capture
 
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.token import init_token, check_serial_pass, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.foureyestoken import FourEyesTokenClass
 from privacyidea.lib.tokens.foureyestoken import log as foureyes_log
 from privacyidea.lib.user import User
-from .base import MyTestCase
+from privacyidea.models.utils import utc_now
+from .base import MyTestCase, non_utc_time_zone
 
 
 class FourEyesTokenTestCase(MyTestCase):
@@ -194,3 +196,19 @@ class FourEyesTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(foureyetoken.token.serial)
+
+    def test_06_challenge_valid_until_carries_utc_offset(self):
+        self.setUp_user_realms()
+        tok = init_token({"serial": "eye_valid_until", "type": "4eyes",
+                          "4eyes": f"{self.realm1!s}:2", "separator": " "})
+        validity = int(get_from_config("DefaultChallengeValidityTime", 120))
+
+        with non_utc_time_zone():
+            before = utc_now()
+            success, _message, _transaction_id, reply_dict = tok.create_challenge(options={})
+
+        self.assertTrue(success)
+        self.assert_valid_until_is_utc(reply_dict["attributes"]["valid_until"], validity, before)
+
+        # Clean up
+        remove_token(tok.token.serial)

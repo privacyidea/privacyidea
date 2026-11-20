@@ -10,7 +10,8 @@ from sqlalchemy.engine import Engine
 
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.models import ClientApplication, db
-from .base import MyTestCase
+from privacyidea.models.utils import utc_isoformat, utc_now
+from .base import MyTestCase, non_utc_time_zone
 from privacyidea.lib.clientapplication import (_LAST_WRITE_KEY, _MAX_TRACKED_CLIENTS,
                                                _write_interval_seconds, get_clientapplication,
                                                save_clientapplication)
@@ -29,14 +30,14 @@ class ClientApplicationTestCase(MyTestCase):
 
         r = get_clientapplication()
         self.assertEqual(len(r), 4)
-        now = datetime.now()
+        now = utc_now()
         for client_type, apps in r.items():
             if client_type == "SAML":
                 self.assertEqual(2, len(apps))
             else:
                 self.assertEqual(1, len(apps))
             for app in apps:
-                self.assertAlmostEqual(now, app.get("lastseen"), delta=timedelta(seconds=5))
+                self.assertAlmostEqual(now, datetime.fromisoformat(app.get("lastseen")).replace(tzinfo=None), delta=timedelta(seconds=5))
 
         r = get_clientapplication(group_by="ip")
         self.assertEqual(len(r), 2)
@@ -53,8 +54,26 @@ class ClientApplicationTestCase(MyTestCase):
         self.assertEqual(len(r), 4)
         self.assertEqual(r["OTRS"][0]["ip"], "1.2.3.4")
         self.assertEqual(r["PAM"][0]["ip"], "1.2.3.4")
-        self.assertTrue(r["RADIUS"][0]["lastseen"] < datetime.now())
-        self.assertTrue(r["SAML"][0]["lastseen"] < datetime.now())
+        self.assertTrue(datetime.fromisoformat(r["RADIUS"][0]["lastseen"]).replace(tzinfo=None) < utc_now())
+        self.assertTrue(datetime.fromisoformat(r["SAML"][0]["lastseen"]).replace(tzinfo=None) < utc_now())
+
+    def test_09_lastseen_is_written_in_utc(self):
+        with non_utc_time_zone():
+            before = utc_now()
+            save_clientapplication("192.0.2.9", "PAM")
+            after = utc_now()
+        row = ClientApplication.query.filter_by(ip="192.0.2.9", clienttype="PAM").one()
+        self.assertAlmostEqual(before, row.lastseen, delta=timedelta(seconds=5))
+        self.assertAlmostEqual(after, row.lastseen, delta=timedelta(seconds=5))
+
+    def test_10_lastseen_is_returned_with_utc_offset(self):
+        save_clientapplication("192.0.2.10", "RADIUS")
+        row = ClientApplication.query.filter_by(ip="192.0.2.10", clienttype="RADIUS").one()
+        apps = get_clientapplication(ip="192.0.2.10")
+        lastseen = apps["RADIUS"][0]["lastseen"]
+        self.assertIsInstance(lastseen, str)
+        self.assertTrue(lastseen.endswith("+00:00"), lastseen)
+        self.assertEqual(row.lastseen.isoformat(), lastseen.split("+")[0])
 
     def test_03_update_refreshes_lastseen(self):
         # Saving the same (ip, clienttype, node) again updates the existing row's
@@ -63,14 +82,14 @@ class ClientApplicationTestCase(MyTestCase):
         t1 = datetime.now()
         t2 = t1 + timedelta(minutes=5)
 
-        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
-            mock_dt.now.return_value = t1
+        with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
+            mock_now.return_value = t1
             save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
         self.assertEqual(t1, row.lastseen)
 
-        with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
-            mock_dt.now.return_value = t2
+        with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
+            mock_now.return_value = t2
             save_clientapplication("1.2.3.4", "PAM")
         # Still exactly one row, and its lastseen advanced to t2.
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
@@ -87,8 +106,8 @@ class ClientApplicationTestCase(MyTestCase):
         @contextmanager
         def _fake_time(t):
             """ context manager that fakes the current time that is written to the ``lastseen`` column """
-            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
-                mock_dt.now.return_value = t
+            with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
+                mock_now.return_value = t
                 yield
 
         # remove all rows first
@@ -120,8 +139,8 @@ class ClientApplicationTestCase(MyTestCase):
         apps = get_clientapplication(clienttype="PAM")
         self.assertEqual(list(apps.keys()), ["PAM"])
         self.assertEqual(len(apps["PAM"]), 2)
-        self.assertIn({"ip": "1.2.3.4", "hostname": None, "lastseen": t1}, apps["PAM"])
-        self.assertIn({"ip": "2.3.4.5", "hostname": None, "lastseen": t1}, apps["PAM"])
+        self.assertIn({"ip": "1.2.3.4", "hostname": None, "lastseen": utc_isoformat(t1)}, apps["PAM"])
+        self.assertIn({"ip": "2.3.4.5", "hostname": None, "lastseen": utc_isoformat(t1)}, apps["PAM"])
 
         with _fake_time(t2):
             with _set_node("pinode1"):
@@ -146,15 +165,15 @@ class ClientApplicationTestCase(MyTestCase):
         # check that the apps are returned correctly
         apps = get_clientapplication(ip="1.2.3.4")
         self.assertEqual(set(apps.keys()), {"PAM", "RADIUS"})
-        self.assertEqual(apps["PAM"], [{"ip": "1.2.3.4", "hostname": None, "lastseen": t2}])
-        self.assertEqual(apps["RADIUS"], [{"ip": "1.2.3.4", "hostname": None, "lastseen": t2}])
+        self.assertEqual(apps["PAM"], [{"ip": "1.2.3.4", "hostname": None, "lastseen": utc_isoformat(t2)}])
+        self.assertEqual(apps["RADIUS"], [{"ip": "1.2.3.4", "hostname": None, "lastseen": utc_isoformat(t2)}])
 
         apps = get_clientapplication(group_by="ip")
         self.assertEqual(set(apps.keys()), {"1.2.3.4", "2.3.4.5"})
         self.assertEqual(len(apps["1.2.3.4"]), 2)
-        self.assertIn({"clienttype": "PAM", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
-        self.assertIn({"clienttype": "RADIUS", "hostname": None, "lastseen": t2}, apps["1.2.3.4"])
-        self.assertEqual(apps["2.3.4.5"], [{"clienttype": "PAM", "hostname": None, "lastseen": t1}])
+        self.assertIn({"clienttype": "PAM", "hostname": None, "lastseen": utc_isoformat(t2)}, apps["1.2.3.4"])
+        self.assertIn({"clienttype": "RADIUS", "hostname": None, "lastseen": utc_isoformat(t2)}, apps["1.2.3.4"])
+        self.assertEqual(apps["2.3.4.5"], [{"clienttype": "PAM", "hostname": None, "lastseen": utc_isoformat(t1)}])
 
 
 class ClientApplicationWriteThrottleTestCase(MyTestCase):
@@ -200,13 +219,13 @@ class ClientApplicationWriteThrottleTestCase(MyTestCase):
 
     def test_02_a_repeated_save_within_the_interval_is_skipped(self):
         with self._write_interval(60):
-            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
                 first_seen = datetime.now()
-                mock_dt.now.return_value = first_seen
+                mock_now.return_value = first_seen
                 save_clientapplication("1.2.3.4", "PAM")
                 # A second later the same client is back. Its row already says
                 # it was around, so there is nothing worth writing
-                mock_dt.now.return_value = first_seen + timedelta(seconds=1)
+                mock_now.return_value = first_seen + timedelta(seconds=1)
                 save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
         self.assertEqual(first_seen, row.lastseen)
@@ -226,22 +245,22 @@ class ClientApplicationWriteThrottleTestCase(MyTestCase):
 
     def test_04_a_save_after_the_interval_writes_again(self):
         with self._write_interval(60):
-            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
                 first_seen = datetime.now()
-                mock_dt.now.return_value = first_seen
+                mock_now.return_value = first_seen
                 save_clientapplication("1.2.3.4", "PAM")
                 # Move the clock past the interval rather than sleeping
                 later = first_seen + timedelta(seconds=61)
-                mock_dt.now.return_value = later
+                mock_now.return_value = later
                 save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
         self.assertEqual(later, row.lastseen)
 
     def test_05_clients_are_throttled_one_by_one(self):
         with self._write_interval(60):
-            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
                 first_seen = datetime.now()
-                mock_dt.now.return_value = first_seen
+                mock_now.return_value = first_seen
                 save_clientapplication("1.2.3.4", "PAM")
                 # A different address, and a different client type on the same
                 # address, are both clients of their own
@@ -251,12 +270,12 @@ class ClientApplicationWriteThrottleTestCase(MyTestCase):
 
     def test_06_an_interval_of_zero_writes_every_time(self):
         with self._write_interval(0):
-            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
+            with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
                 first_seen = datetime.now()
-                mock_dt.now.return_value = first_seen
+                mock_now.return_value = first_seen
                 save_clientapplication("1.2.3.4", "PAM")
                 later = first_seen + timedelta(seconds=1)
-                mock_dt.now.return_value = later
+                mock_now.return_value = later
                 save_clientapplication("1.2.3.4", "PAM")
         row = ClientApplication.query.filter_by(ip="1.2.3.4", clienttype="PAM").one()
         self.assertEqual(later, row.lastseen)

@@ -6,7 +6,8 @@ import logging
 from testfixtures import log_capture
 
 from testfixtures import LogCapture
-from .base import MyTestCase
+from datetime import datetime, UTC, timedelta
+from .base import MyTestCase, non_utc_time_zone
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
@@ -445,3 +446,37 @@ class YubikeyTokenTestCase(MyTestCase):
                 self.assertTrue(r > old_r, (r, old_r))
                 old_r = r
             token.delete_token()
+
+    def test_23_response_timestamp_is_utc(self):
+        fixed = "ebedeeefegeheiej"
+        otpkey = "cc17a4d77eaed96e9d14b5c87a02e718"
+        otp = "ebedeeefegeheiejtjtrutblehenfjljrirgdihrfuetljtt"
+        init_token({"type": "yubikey",
+                    "otpkey": otpkey,
+                    "otplen": len(otp),
+                    "yubikey.prefix": fixed,
+                    "serial": "UBAM87654321_1"})
+
+        env = EnvironBuilder(method='GET', headers={}).get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        apiid = "utc-client.example.org"
+        set_privacyidea_config(f"yubikey.apiid.{apiid!s}", "1YMEbMZijD3DzL21UfKGnOOI13c=")
+        req.all_data = {'id': apiid, "otp": otp, "nonce": "utc nonce value"}
+
+        with non_utc_time_zone():
+            before = datetime.now(UTC).replace(tzinfo=None)
+            text_type, result = YubikeyTokenClass.api_endpoint(req, g)
+            after = datetime.now(UTC).replace(tzinfo=None)
+
+        self.assertEqual("plain", text_type)
+        self.assertIn("status=OK", result)
+        lines = dict(line.split("=", 1) for line in result.splitlines() if "=" in line)
+        # The format is kept: the literal "Z" is followed by the microseconds
+        timestamp = datetime.strptime(lines["timestamp"], "%Y-%m-%dT%H:%M:%SZ%f")
+        # The format only holds whole seconds before the "Z", so allow a second of slack
+        self.assertGreaterEqual(timestamp, before - timedelta(seconds=1), lines["timestamp"])
+        self.assertLessEqual(timestamp, after, lines["timestamp"])
+
+        remove_token("UBAM87654321_1")
