@@ -124,7 +124,7 @@
                       <app-filter-value-button
                         class="margin-left-8"
                         [column]="column.key"
-                        [value]="element[column.key]?.slice(0, 10)"
+                        [value]="element[column.key]"
                         (filterValue)="addFilterValue(column.key, $event)" />
                     </div>
                   }

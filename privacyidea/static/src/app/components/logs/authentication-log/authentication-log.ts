@@ -92,7 +92,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { toFilterDisplay } from "@utils/date-format.utils";
+import { endOfLocalDayIso, parseFilterTimestamp, startOfLocalDayIso, toFilterDisplay } from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
@@ -199,21 +199,6 @@ const DRY_RUN_OPTIONS: readonly MultiSelectFilterOption[] = [
   { label: $localize`:@@authLog.dryRunOnly:Dry run only`, value: "true" }
 ];
 
-// Local start/end-of-day ISO bounds for a date chosen in the range picker: the picker yields a native Date at local
-// midnight, and since the log renders timestamps in local time, the bounds are the local day's edges (inclusive end at
-// 23:59:59) converted to the ISO string the API filter expects.
-function startOfDayIso(date: Date): string {
-  const day = new Date(date);
-  day.setHours(0, 0, 0, 0);
-  return day.toISOString();
-}
-
-function endOfDayIso(date: Date): string {
-  const day = new Date(date);
-  day.setHours(23, 59, 59, 0);
-  return day.toISOString();
-}
-
 // The custom-range slider has a fixed number of positions (its resolution) mapped onto a dynamic time span (the
 // window), which defaults to the span from the oldest entry to now, or the widest fallback until that loads.
 const RANGE_SLIDER_STEPS = 200;
@@ -230,24 +215,6 @@ const PRESET_LABELS: readonly { ms: number; label: string }[] = [
   { ms: 182 * MS_PER_DAY, label: $localize`:@@authLog.lastMonths:Last 6 months` },
   { ms: 365 * MS_PER_DAY, label: $localize`:@@authLog.lastYear:Last year` }
 ];
-
-// Inverse of toFilterDisplay for the editable start_time/end_time chips: parses the mirrored display, plain ISO, or a
-// partial typed datetime into an ISO string, returning null for an empty or unparsable value.
-function parseFilterTimestamp(value: string | null | undefined): string | null {
-  const trimmed = (value ?? "").trim();
-  if (!trimmed) {
-    return null;
-  }
-  // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
-  // then fall back to the raw text so plain ISO input still parses.
-  for (const candidate of [trimmed.replace(" ", "T").replace(/\s+(?=[+\-Z])/, ""), trimmed]) {
-    const date = new Date(candidate);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString();
-    }
-  }
-  return null;
-}
 
 // What the Client column's provenance badge says. Mirrors
 // privacyidea.lib.conditional_access.authentication_log.ClientLabelSource; an unknown or absent value gets no
@@ -733,7 +700,7 @@ export class AuthenticationLog {
   // other bound, and clearing a field (null) drops its bound; the picked range also zooms the slider window so the
   // selected span fills the track (e.g. a single day becomes 24 hours).
   onRangeStartDateChange(date: Date | null): void {
-    const fromIso = date ? startOfDayIso(date) : null;
+    const fromIso = date ? startOfLocalDayIso(date) : null;
     const toIso = this.authenticationLogService.timestampTo();
     this.zoomSliderToRange(fromIso, toIso);
     this.applyTimeRange(fromIso, toIso);
@@ -741,7 +708,7 @@ export class AuthenticationLog {
 
   onRangeEndDateChange(date: Date | null): void {
     const fromIso = this.authenticationLogService.timestampFrom();
-    const toIso = date ? endOfDayIso(date) : null;
+    const toIso = date ? endOfLocalDayIso(date) : null;
     this.zoomSliderToRange(fromIso, toIso);
     this.applyTimeRange(fromIso, toIso);
   }

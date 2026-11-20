@@ -93,17 +93,62 @@
                     column.key
                   )
                 ) {
-                  <div class="flex">
+                  <div
+                    class="flex"
+                    [class.date-range-anchor]="column.key === 'startdate'">
                     <button
-                      (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                      (click)="onHeaderFilterClick(column.key)"
                       aria-label="Filter by {{ column.label }}"
                       i18n-aria-label="@@common.filterBy"
                       class="filter-button"
                       mat-icon-button>
-                      <mat-icon class="keyword-button-icon margin-left-0">
-                        {{ getFilterIconName(column.key) }}
-                      </mat-icon>
+                      @if (column.key === "startdate") {
+                        <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
+                      } @else {
+                        <mat-icon class="keyword-button-icon margin-left-0">
+                          {{ getFilterIconName(column.key) }}
+                        </mat-icon>
+                      }
                     </button>
+                    @if (column.key === "startdate") {
+                      <!-- The hidden range input only holds the picker's model and anchors its overlay to the button. -->
+                      <mat-date-range-input
+                        [rangePicker]="rangePicker"
+                        class="date-range-hidden-input">
+                        <input
+                          matStartDate
+                          (dateChange)="onRangeStartDateChange($event.value)"
+                          [value]="rangePickerStart()"
+                          aria-label="Start date"
+                          i18n-aria-label="@@audit.rangeStart" />
+                        <input
+                          matEndDate
+                          (dateChange)="onRangeEndDateChange($event.value)"
+                          [value]="rangePickerEnd()"
+                          aria-label="End date"
+                          i18n-aria-label="@@audit.rangeEnd" />
+                      </mat-date-range-input>
+                      <mat-date-range-picker
+                        #rangePicker
+                        (opened)="onRangePickerOpened()"
+                        (closed)="onRangePickerClosed()"
+                        [calendarHeaderComponent]="rangeHeader"
+                        panelClass="auth-log-datepicker">
+                        <!-- Time mode: a registered actions row keeps clicked days pending, so the picker neither
+                             applies nor closes on a complete range and stays open for the end clock. Each day click
+                             opens the clock popup (#clockPopup), the component applies the range. The row shows what
+                             is picked so far. -->
+                        @if (rangeTimeMode()) {
+                          <mat-date-range-picker-actions>
+                            <div class="audit-range-time-summary">
+                              @for (line of rangeSummary(); track $index) {
+                                <div>{{ line }}</div>
+                              }
+                            </div>
+                          </mat-date-range-picker-actions>
+                        }
+                      </mat-date-range-picker>
+                    }
                   </div>
                 }
               </div>
@@ -138,7 +183,7 @@
                       <app-filter-value-button
                         class="margin-left-8"
                         [column]="column.key"
-                        [value]="element[column.key]?.slice(0, 10)"
+                        [value]="element[column.key]"
                         (filterValue)="addFilterValue(column.key, $event)" />
                     </div>
                   }
@@ -257,3 +302,13 @@
       icon="receipt_long" />
   }
 </div>
+
+<!-- The clock of the range picker's time mode, shown in a popup at the clicked day (see AuditComponent.openClock). -->
+<ng-template #clockPopup>
+  @if (clockTarget(); as target) {
+    <app-clock-dial
+      [label]="clockLabel()"
+      [min]="target.min"
+      (selected)="onClockTimeSelected($event)" />
+  }
+</ng-template>

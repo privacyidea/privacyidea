@@ -52,6 +52,9 @@ export class MockAuditService implements AuditServiceInterface {
   );
   sort = signal<Sort>({ active: "time", direction: "desc" });
   isDownloading = signal(false);
+  timestampFrom = signal<string | null>(null);
+  timestampTo = signal<string | null>(null);
+  rangeTimeMode = signal(false);
   clearFilter = jest.fn().mockImplementation(() => {
     this.activeFilter.set(new FilterValue());
   });

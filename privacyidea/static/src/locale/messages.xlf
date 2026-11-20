@@ -46,6 +46,69 @@
           <context context-type="linenumber">28</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="audit.rangeStart" datatype="html">
+        <source>Start date</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
+          <context context-type="linenumber">85</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeEnd" datatype="html">
+        <source>End date</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeStartTime" datatype="html">
+        <source>Start time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">450</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeEndTime" datatype="html">
+        <source>End time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">449</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeSummaryStart" datatype="html">
+        <source>Start</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">459</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeSummaryEnd" datatype="html">
+        <source>End</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">460</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.selectTime" datatype="html">
+        <source>Time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit-date-range-header.component.ts</context>
+          <context context-type="linenumber">48</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.hour" datatype="html">
+        <source>Hour</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
+          <context context-type="linenumber">121</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.minute" datatype="html">
+        <source>Minute</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
+          <context context-type="linenumber">122</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="common.filterInput" datatype="html">
         <source>Filter Input</source>
         <context-group purpose="location">
