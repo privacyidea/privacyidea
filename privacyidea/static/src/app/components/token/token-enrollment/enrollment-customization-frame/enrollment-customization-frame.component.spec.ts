@@ -35,7 +35,7 @@ import { EnrollmentCustomizationFrameComponent } from "./enrollment-customizatio
 })
 class HostComponent {
   enabled = signal(true);
-  detail = {
+  detail: EnrollmentResponseDetail | undefined = {
     serial: "OATH0001",
     googleurl: { description: "", img: "data:image/png;base64,QR", value: "otpauth://hotp/OATH0001" }
   } as unknown as EnrollmentResponseDetail;
@@ -47,13 +47,16 @@ describe("EnrollmentCustomizationFrameComponent", () => {
   const customizationUrl = (position: string) =>
     environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
 
-  const setup = async (enabled: boolean) => {
+  const setup = async (enabled: boolean, detail?: EnrollmentResponseDetail | null) => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
     fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.enabled.set(enabled);
+    if (detail !== undefined) {
+      fixture.componentInstance.detail = detail ?? undefined;
+    }
     httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   };
@@ -75,6 +78,29 @@ describe("EnrollmentCustomizationFrameComponent", () => {
     const paragraphs = Array.from(element.querySelectorAll("p")).map((p) => p.className);
     expect(paragraphs).toEqual(["top", "step-content", "bottom"]);
     expect(element.querySelector(".top")?.textContent).toBe("OATH0001 otpauth://hotp/OATH0001");
+  });
+
+  it("takes the QR code and URL from whichever enrollment URL the token type returns", async () => {
+    await setup(true, {
+      serial: "TIQR0001",
+      tiqrenroll: { description: "", img: "data:image/png;base64,TIQR", value: "tiqrenroll://TIQR0001" }
+    } as unknown as EnrollmentResponseDetail);
+    httpMock.expectOne(customizationUrl("top")).flush("<p class='top'>{{ url }}</p><img src='{{ qrCode }}'>");
+    httpMock.expectOne(customizationUrl("bottom")).flush("");
+    await settle();
+
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector(".top")?.textContent).toBe("tiqrenroll://TIQR0001");
+    expect(element.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,TIQR");
+  });
+
+  it("fills in empty tags without enrollment details", async () => {
+    await setup(true, null);
+    httpMock.expectOne(customizationUrl("top")).flush("<p class='top'>[{{ serial }}|{{ url }}|{{ qrCode }}]</p>");
+    httpMock.expectOne(customizationUrl("bottom")).flush("");
+    await settle();
+
+    expect(fixture.nativeElement.querySelector(".top")?.textContent).toBe("[||]");
   });
 
   it("leaves out an empty customization", async () => {

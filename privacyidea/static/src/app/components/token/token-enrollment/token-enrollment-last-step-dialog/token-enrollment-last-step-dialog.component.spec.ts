@@ -119,6 +119,14 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component["dialogRef"].close).toHaveBeenCalled();
   });
 
+  it("shows the container the token was added to", async () => {
+    const dialogData = createDialogData();
+    dialogData.response!.detail = { ...dialogData.response!.detail, container_serial: "SMPH0001" };
+    await setup(dialogData);
+
+    expect(fixture.nativeElement.textContent).toContain("SMPH0001");
+  });
+
   it("should render the enrollment data when showEnrollData is not set", () => {
     expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
   });
@@ -245,6 +253,15 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
 
       expect(contentService.tokenSelected).toHaveBeenCalledWith("1234567890");
       expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("ignores keys other than Escape", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+
+      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
     });
 
     it("lets Escape and a backdrop click ask the same way", () => {

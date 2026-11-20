@@ -62,7 +62,7 @@ export class EnrollmentCustomizationFrameComponent {
   }
 
   private render(resource: HttpResourceRef<string | undefined>): string | null {
-    const raw = resource.hasValue() ? (resource.value() ?? "") : "";
+    const raw = resource.hasValue() ? resource.value() : "";
     if (!raw.trim()) {
       return null;
     }

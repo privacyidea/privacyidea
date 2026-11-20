@@ -539,6 +539,12 @@ describe("TokenEnrollmentDataComponent", () => {
       expect(unsaved.at(-1)).toBe("Show or copy the registration code.");
     });
 
+    it("passes the certificate's question about an unsaved passphrase on", () => {
+      show("certificate", { pkcs12: "MIIB", pkcs12_password: "generated-passphrase" });
+
+      expect(confirmations.at(-1)).toContain("The passphrase of the PKCS#12 container is shown only once.");
+    });
+
     it("joins the certificate's open steps with its own", () => {
       show("registration", { registrationcode: "12345808124095097608" });
       component.onCertificateUnsavedChange("Download the certificate.");
