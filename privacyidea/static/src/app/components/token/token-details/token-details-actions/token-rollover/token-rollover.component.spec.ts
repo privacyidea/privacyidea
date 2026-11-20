@@ -34,6 +34,8 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { of } from "rxjs";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
@@ -173,15 +175,12 @@ describe("TokenRolloverComponent", () => {
       result: { status: true },
       detail: { rollout_state: "done", serial: "ABC123", googleurl: { img: "regenerated-img", value: "regen-url" } }
     } as unknown as EnrollmentResponse;
-    component.enrolledDialogData()?.onEnrollmentResponseChange?.(regenerated);
+    component.enrollmentFlow.dialogData()?.onEnrollmentResponseChange?.(regenerated);
 
-    expect(component.enrollResponse()).toBe(regenerated);
-    expect(component.enrolledDialogData()?.response).toBe(regenerated);
+    expect(component.enrollmentFlow.dialogData()?.response).toBe(regenerated);
 
     dialogService.openDialog.mockClear();
-    (component as unknown as { openLastStepDialog: (response: EnrollmentResponse | null) => void }).openLastStepDialog(
-      component.enrolledDialogData()?.response ?? null
-    );
+    component.enrollmentFlow.resume();
 
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ response: regenerated }) })
@@ -207,16 +206,7 @@ describe("TokenRolloverComponent", () => {
 
     await component.rolloverToken();
 
-    expect(component.enrolledDialogData()?.tokenType).toBe("totp");
-  });
-
-  it("should show a warning when opening the last step dialog without a response", () => {
-    (component as unknown as { openLastStepDialog: (response: EnrollmentResponse | null) => void }).openLastStepDialog(
-      null
-    );
-
-    expect(notificationService.warning).toHaveBeenCalledWith("No rollover response available.");
-    expect(dialogService.openDialog).not.toHaveBeenCalled();
+    expect(component.enrollmentFlow.dialogData()?.tokenType).toBe("totp");
   });
 
   it("should show snackbar if no token is set", async () => {
@@ -234,114 +224,43 @@ describe("TokenRolloverComponent", () => {
     );
   });
 
-  describe("handleCompleteEnrollment", () => {
-    it("opens the complete-enrollment dialog when rollout_state is 'clientwait' and forwards the result to verify", () => {
-      const enrollResponse = {
+  it("runs the two-step completion and reloads the token details after each step", async () => {
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({
+        data: { type: "hotp", serial: "ABC123", rollover: true },
+        mapper: { map: (x: unknown) => x }
+      })
+    });
+    tokenService.enrollToken.mockReturnValue(
+      of({
         result: { status: true },
         detail: { rollout_state: "clientwait", serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      const completeResponse = {
-        result: { status: true },
-        detail: { rollout_state: "enrolled", serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      const afterClosed = jest.fn().mockReturnValue(of(completeResponse));
-      dialogService.openDialog.mockReturnValue({ afterClosed } as unknown as MatDialogRef<unknown>);
+      } as unknown as EnrollmentResponse)
+    );
+    const completed = {
+      result: { status: true },
+      detail: { rollout_state: "enrolled", serial: "ABC123" }
+    } as unknown as EnrollmentResponse;
+    dialogService.openDialog.mockReturnValueOnce({
+      afterClosed: () => of(completed)
+    } as unknown as MatDialogRef<unknown>);
+    const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
 
-      component.enrolledDialogData.set({
-        response: enrollResponse,
-        enrollParameters: {} as never,
-        tokenType: "hotp",
-        rollover: true
-      });
-      const verifySpy = jest.spyOn(component, "handleVerifyEnrollment").mockImplementation(() => undefined);
+    await component.rolloverToken();
 
-      component.handleCompleteEnrollment(enrollResponse);
-
-      expect(dialogService.openDialog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse }),
-          configOverride: { autoFocus: "input", disableClose: true }
-        })
-      );
-      expect(verifySpy).toHaveBeenCalledWith(completeResponse);
-      expect(component.enrolledDialogData()?.showEnrollData).toBe(false);
-    });
-
-    it("skips the dialog and routes directly to verify when rollout_state is not 'clientwait'", () => {
-      const enrollResponse = {
-        result: { status: true },
-        detail: { rollout_state: "enrolled", serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      component.enrolledDialogData.set({
-        response: enrollResponse,
-        enrollParameters: {} as never,
-        tokenType: "hotp",
-        rollover: true
-      });
-      const verifySpy = jest.spyOn(component, "handleVerifyEnrollment").mockImplementation(() => undefined);
-
-      component.handleCompleteEnrollment(enrollResponse);
-
-      expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(verifySpy).toHaveBeenCalledWith(enrollResponse);
-    });
-  });
-
-  describe("handleVerifyEnrollment", () => {
-    it("opens the verify dialog when the response requires verification and finalizes with the closed result", () => {
-      const enrollResponse = {
-        result: { status: true },
-        detail: { verify: { message: "type the OTP" }, serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      const verifiedResponse = {
-        result: { status: true },
-        detail: { rollout_state: "enrolled", serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      const afterClosed = jest.fn().mockReturnValue(of(verifiedResponse));
-      dialogService.openDialog.mockReturnValue({ afterClosed } as unknown as MatDialogRef<unknown>);
-
-      component.enrolledDialogData.set({
-        response: enrollResponse,
-        enrollParameters: {} as never,
-        tokenType: "hotp",
-        rollover: true
-      });
-      const finalizeSpy = jest
-        .spyOn(component as unknown as { _handleEnrollmentResponse: () => void }, "_handleEnrollmentResponse")
-        .mockImplementation(() => undefined);
-
-      component.handleVerifyEnrollment(enrollResponse);
-
-      expect(dialogService.openDialog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ response: enrollResponse }),
-          configOverride: { autoFocus: "input", disableClose: true }
-        })
-      );
-      expect(finalizeSpy).toHaveBeenCalledWith(verifiedResponse);
-      expect(component.enrollResponse()).toEqual(verifiedResponse);
-    });
-
-    it("skips the verify dialog when no verification is required", () => {
-      const enrollResponse = {
-        result: { status: true },
-        detail: { serial: "ABC123" }
-      } as unknown as EnrollmentResponse;
-      component.enrolledDialogData.set({
-        response: enrollResponse,
-        enrollParameters: {} as never,
-        tokenType: "hotp",
-        rollover: true
-      });
-      const finalizeSpy = jest
-        .spyOn(component as unknown as { _handleEnrollmentResponse: () => void }, "_handleEnrollmentResponse")
-        .mockImplementation(() => undefined);
-
-      component.handleVerifyEnrollment(enrollResponse);
-
-      expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(finalizeSpy).toHaveBeenCalledWith(enrollResponse);
-    });
+    expect(dialogService.openDialog).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ component: TokenCompleteEnrollmentComponent })
+    );
+    expect(dialogService.openDialog).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        component: TokenEnrollmentLastStepDialogComponent,
+        data: expect.objectContaining({ response: completed, rollover: true })
+      })
+    );
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("passes the axe accessibility checks", async () => {

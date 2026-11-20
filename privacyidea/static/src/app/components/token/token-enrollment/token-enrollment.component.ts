@@ -63,9 +63,8 @@ import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -78,8 +77,7 @@ import {
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
-  TokenServiceInterface,
-  TokenType
+  TokenServiceInterface
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
@@ -195,10 +193,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
-  enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
   tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
@@ -208,8 +202,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   serial = signal<string | null>(null);
   readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
-
-  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();
@@ -245,6 +237,21 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly resetsInputsAfterEnrollment: boolean = true;
   protected readonly lastStepDialogComponent: ComponentType<AbstractDialogComponent<TokenEnrollmentDialogData>> =
     TokenEnrollmentLastStepDialogComponent;
+  readonly enrollmentFlow = new EnrollmentFlow({
+    successDialog: () => this.lastStepDialogComponent,
+    successBlockedReason: () =>
+      this.isUserRequired() && !this.userService.selectedUser()
+        ? $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
+        : null,
+    onCancelled: () => this.resetEnrollment(),
+    onIncomplete: () => this.resetInputsBeforeLastStep(),
+    onCompleted: () => {
+      // From now on, the reopen button opens the success dialog, not the first step of push,
+      // WebAuthn or passkey again.
+      this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
+      this.resetInputsAfterEnrollment(true);
+    }
+  });
 
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -313,7 +320,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   );
 
   canReopenEnrollmentDialog = computed(
-    () => !!this.enrollSwitch()?.currentStrategy()?.reopenDialog() || !!this.enrolledDialogData()
+    () => !!this.enrollSwitch()?.currentStrategy()?.reopenDialog() || !!this.enrollmentFlow.dialogData()
   );
 
   protected wizard = false;
@@ -372,15 +379,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         this.resetEnrollment();
         return;
       }
-      this.enrollResponse.set(enrollmentResponse);
       if (enrollmentResponse) {
-        this._handleEnrollmentResponse(enrollmentResponse);
+        this.enrollmentFlow.continue(enrollmentResponse);
       }
       return;
     }
-    if (this.enrolledDialogData()) {
-      this.handleCompleteEnrollment(this.enrolledDialogData()?.response || null);
-    }
+    this.enrollmentFlow.resume();
   }
 
   async enrollToken(): Promise<boolean> {
@@ -453,7 +457,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    this.enrolledDialogData.set({
+    this.enrollmentFlow.start({
       response: enrollmentResponse,
       enrollParameters: enrollmentArgs,
       tokenType: enrollmentArgs.data.type,
@@ -462,8 +466,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
       rollover: false,
       showEnrollData: strategy.showEnrollDataInLastStep,
-      wizard: this.wizard,
-      onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
+      wizard: this.wizard
     });
     this.inputsResetPending = true;
 
@@ -486,92 +489,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       this.resetInputsBeforeLastStep();
       return true;
     }
-    // two step enrollment + handles further enrollment steps (verify + success dialog)
-    this.handleCompleteEnrollment(enrollmentResponse);
+    this.enrollmentFlow.continue(enrollmentResponse);
     return true;
-  }
-
-  updateEnrollmentResponse(response: EnrollmentResponse): void {
-    this.enrollResponse.set(response);
-    this.enrolledDialogData.update((data) => (data ? { ...data, response: response } : data));
-  }
-
-  handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
-    if (!this.enrolledDialogData() || !enrollmentResponse) return;
-
-    this.enrollResponse.set(enrollmentResponse);
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: enrollmentResponse
-    });
-
-    if (enrollmentResponse?.detail.rollout_state !== "clientwait") {
-      return this.handleVerifyEnrollment(enrollmentResponse);
-    }
-
-    const dialogRef = this.dialogService.openDialog({
-      component: TokenCompleteEnrollmentComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { autoFocus: "input", disableClose: true }
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result === ENROLLMENT_CANCELLED) {
-        this.resetEnrollment();
-        return;
-      }
-      if (!result) {
-        // Closed before the second step. The reopen button opens this dialog again.
-        this.resetInputsBeforeLastStep();
-        return;
-      }
-      this.enrollResponse.set(result);
-      this.enrolledDialogData.set({
-        ...this.enrolledDialogData()!,
-        showEnrollData: false
-      });
-      this.handleVerifyEnrollment(result);
-    });
-  }
-
-  handleVerifyEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
-    if (!this.enrolledDialogData() || !enrollmentResponse) return;
-
-    this.enrollResponse.set(enrollmentResponse);
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: enrollmentResponse
-    });
-
-    if (!enrollmentResponse?.detail?.verify) {
-      // No verify required, directly open last step dialog
-      return this._handleEnrollmentResponse(enrollmentResponse);
-    }
-
-    // Open verify dialog
-    const dialogRef = this.dialogService.openDialog({
-      component: TokenVerifyEnrollmentComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { autoFocus: "input", disableClose: true }
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result === ENROLLMENT_CANCELLED) {
-        this.resetEnrollment();
-        return;
-      }
-      if (!result) {
-        // Closed before the verification. The reopen button opens this dialog again.
-        this.resetInputsBeforeLastStep();
-        return;
-      }
-      this.enrollResponse.set(result);
-      this._handleEnrollmentResponse(result);
-    });
   }
 
   resetEnrollment(): void {
     this.inputsResetPending = false;
-    this.enrollResponse.set(null);
-    this.enrolledDialogData.set(null);
+    this.enrollmentFlow.reset();
     this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
     // The enrollment was cancelled and its token deleted, so the inputs are unsaved changes again.
     if (!this.destroyRef.destroyed) {
@@ -658,45 +582,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
           this.selectedContainerForm().markAsDirty();
         }
       });
-  }
-
-  protected openLastStepDialog(response: EnrollmentResponse | null): void {
-    if (!response) {
-      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
-      return;
-    }
-
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: response
-    });
-
-    this.dialogService.openDialog({
-      component: this.lastStepDialogComponent,
-      data: this.enrolledDialogData()
-    });
-  }
-
-  protected _handleEnrollmentResponse(response: EnrollmentResponse): void {
-    const detail = response.detail || {};
-    const rolloutState = detail.rollout_state;
-
-    if (rolloutState === "clientwait") {
-      return;
-    }
-
-    if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.warning(
-        $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
-      );
-      return;
-    }
-
-    this.openLastStepDialog(response);
-    // The enrollment is complete. From now on, the reopen button opens the last step dialog from
-    // enrolledDialogData, not the first step of push, WebAuthn or passkey again.
-    this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
-    this.resetInputsAfterEnrollment(true);
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
