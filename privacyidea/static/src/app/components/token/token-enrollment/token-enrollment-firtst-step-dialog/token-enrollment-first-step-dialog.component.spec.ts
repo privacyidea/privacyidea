@@ -20,7 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogState } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
@@ -33,7 +33,7 @@ import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { lastValueFrom, NEVER, of, Subject, throwError } from "rxjs";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
@@ -64,7 +64,7 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     TestBed.resetTestingModule();
     dialogRefMock = {
       close: jest.fn(),
-      getState: jest.fn().mockReturnValue(MatDialogState.OPEN)
+      afterClosed: jest.fn().mockReturnValue(NEVER)
     } as unknown as jest.Mocked<MatDialogRef<TokenEnrollmentFirstStepDialogComponent>>;
 
     await TestBed.configureTestingModule({
@@ -164,6 +164,20 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
 
       expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
       expect(dialogRefMock.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("drops the question and keeps the token once the rollout closes the step", async () => {
+      await setup({ showCancelButton: true });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
+      const followed = confirmLeave("container");
+      const questionRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
+
+      stepClosed.next();
+
+      expect(questionRef.close).toHaveBeenCalled();
+      expect(await followed).toBe(false);
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
     });
 
     it("deletes the token and follows a link to another page", async () => {
@@ -267,14 +281,29 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
       expect(dialogRefMock.close).not.toHaveBeenCalled();
     });
 
-    it("deletes the token even when the rollout finished while the confirmation was open", async () => {
+    it("closes the unanswered confirmation once the rollout closes the step", async () => {
       await setup({ showCancelButton: true, cancelConfirmationMessage: "Scanned codes stop working." });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
+
+      clickButton("Cancel");
+      const confirmationRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
+      stepClosed.next();
+
+      expect(confirmationRef.close).toHaveBeenCalled();
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    });
+
+    it("completes a confirmed deletion even when the rollout closes the step meanwhile", async () => {
+      await setup({ showCancelButton: true, cancelConfirmationMessage: "Scanned codes stop working." });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
       const confirmationRef = new MockMatDialogRef();
       confirmationRef.afterClosed.mockReturnValue(of(true));
       dialogService.openDialog.mockReturnValue(confirmationRef);
-      dialogRefMock.getState.mockReturnValue(MatDialogState.CLOSED);
 
       clickButton("Cancel");
+      stepClosed.next();
 
       expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
     });

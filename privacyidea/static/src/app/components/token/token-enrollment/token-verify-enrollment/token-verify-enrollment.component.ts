@@ -68,7 +68,8 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
     tokenService: this.tokenService,
     serial: () => this.responseDetails?.serial,
     canCancel: () => this.canCancelEnrollment(),
-    close: (result) => this.dialogRef.close(result)
+    close: (result) => this.dialogRef.close(result),
+    stepClosed: () => this.dialogRef.afterClosed()
   });
   protected readonly verifyMessage = this.responseDetails?.verify?.message ?? "";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};

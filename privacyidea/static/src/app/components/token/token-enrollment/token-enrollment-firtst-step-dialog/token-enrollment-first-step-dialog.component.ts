@@ -21,7 +21,10 @@ import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
-import { confirmLeaveIncompleteStep } from "@components/token/token-enrollment/leave-incomplete-enrollment";
+import {
+  closeWithStep,
+  confirmLeaveIncompleteStep
+} from "@components/token/token-enrollment/leave-incomplete-enrollment";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
 import {
@@ -63,7 +66,8 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
     tokenService: this.tokenService,
     serial: () => this.data.enrollmentResponse.detail?.serial,
     canCancel: () => !!this.data.showCancelButton,
-    close: (result) => this.dialogRef.close(result)
+    close: (result) => this.dialogRef.close(result),
+    stepClosed: () => this.dialogRef.afterClosed()
   });
 
   protected readonly registrationFailed = computed(() => this.data.registrationFailed?.() ?? false);
@@ -106,21 +110,20 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
       this.deleteIncompleteToken(tokenSerial);
       return;
     }
-    this.dialogService
-      .openDialog({
-        component: MessageConfirmationDialogComponent,
-        data: {
-          title: $localize`:@@token.cancelEnrollment:Cancel Enrollment`,
-          message: confirmationMessage,
-          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
-        }
-      })
-      .afterClosed()
-      .subscribe((confirmed) => {
-        if (confirmed) {
-          this.deleteIncompleteToken(tokenSerial);
-        }
-      });
+    const questionRef = this.dialogService.openDialog({
+      component: MessageConfirmationDialogComponent,
+      data: {
+        title: $localize`:@@token.cancelEnrollment:Cancel Enrollment`,
+        message: confirmationMessage,
+        confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
+      }
+    });
+    closeWithStep(questionRef, this.dialogRef.afterClosed());
+    questionRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.deleteIncompleteToken(tokenSerial);
+      }
+    });
   }
 
   private deleteIncompleteToken(tokenSerial: string): void {

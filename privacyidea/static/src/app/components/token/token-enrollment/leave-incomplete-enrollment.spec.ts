@@ -21,7 +21,7 @@ import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockTokenService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { lastValueFrom, NEVER, of, Subject, throwError } from "rxjs";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { confirmLeaveIncompleteStep, leaveIncompleteEnrollment } from "./leave-incomplete-enrollment";
 
@@ -35,7 +35,7 @@ describe("leaveIncompleteEnrollment", () => {
     dialogService.openDialog.mockReturnValue(dialogRef);
   };
 
-  const leave = () => lastValueFrom(leaveIncompleteEnrollment(dialogService, tokenService, "HOTP0001"));
+  const leave = () => lastValueFrom(leaveIncompleteEnrollment(dialogService, tokenService, "HOTP0001", NEVER));
 
   beforeEach(() => {
     dialogService = new MockDialogService();
@@ -78,6 +78,18 @@ describe("leaveIncompleteEnrollment", () => {
     expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
   });
 
+  it("closes the question and stays when the step closes by itself", async () => {
+    const stepClosed = new Subject<void>();
+    const result = lastValueFrom(leaveIncompleteEnrollment(dialogService, tokenService, "HOTP0001", stepClosed));
+    const questionRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
+
+    stepClosed.next();
+
+    expect(questionRef.close).toHaveBeenCalled();
+    expect(await result).toBe("stay");
+    expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+  });
+
   it("stays when the token cannot be deleted", async () => {
     answer("discard");
     tokenService.cancelEnrollment.mockReturnValue(throwError(() => new Error("denied")));
@@ -87,17 +99,20 @@ describe("leaveIncompleteEnrollment", () => {
 
   describe("confirmLeaveIncompleteStep", () => {
     let close: jest.Mock;
+    let stepClosed: Subject<void>;
     const confirmLeave = (canCancel: boolean) =>
       confirmLeaveIncompleteStep({
         dialogService,
         tokenService,
         serial: () => "HOTP0001",
         canCancel: () => canCancel,
-        close
+        close,
+        stepClosed: () => stepClosed
       });
 
     beforeEach(() => {
       close = jest.fn();
+      stepClosed = new Subject<void>();
     });
 
     it("closes and follows the link without asking while Close is offered", async () => {
@@ -125,6 +140,16 @@ describe("leaveIncompleteEnrollment", () => {
 
       expect(await lastValueFrom(confirmLeave(true)("user"))).toBe(true);
       expect(close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("follows no link once the step has closed by itself", async () => {
+      const followed = lastValueFrom(confirmLeave(true)("container"));
+
+      stepClosed.next();
+
+      expect(await followed).toBe(false);
+      expect(close).not.toHaveBeenCalled();
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
     });
 
     it("neither closes nor follows the link when the user stays", async () => {

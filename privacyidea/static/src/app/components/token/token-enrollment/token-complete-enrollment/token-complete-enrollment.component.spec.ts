@@ -37,14 +37,14 @@ import { MockContentService } from "@testing/mock-services/mock-content-service"
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 
-import { lastValueFrom, of } from "rxjs";
+import { lastValueFrom, NEVER, of } from "rxjs";
 import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
 import { axe } from "@testing/axe";
 
 describe("TokenCompleteEnrollmentComponent", () => {
   let component: TokenCompleteEnrollmentComponent;
   let fixture: ComponentFixture<TokenCompleteEnrollmentComponent>;
-  let dialogRefSpy: { close: jest.Mock };
+  let dialogRefSpy: { close: jest.Mock; afterClosed: jest.Mock };
   let mockTokenService: MockTokenService;
 
   const dialogData = {
@@ -54,7 +54,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
   };
 
   beforeEach(async () => {
-    dialogRefSpy = { close: jest.fn() };
+    dialogRefSpy = { close: jest.fn(), afterClosed: jest.fn().mockReturnValue(NEVER) };
     await TestBed.configureTestingModule({
       imports: [TokenCompleteEnrollmentComponent],
       providers: [
@@ -177,7 +177,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
 
     const setup = async (data: Record<string, unknown> = {}, canDelete = false) => {
       TestBed.resetTestingModule();
-      dialogRefSpy = { close: jest.fn() };
+      dialogRefSpy = { close: jest.fn(), afterClosed: jest.fn().mockReturnValue(NEVER) };
       await TestBed.configureTestingModule({
         imports: [TokenCompleteEnrollmentComponent],
         providers: [

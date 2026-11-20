@@ -69,7 +69,8 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
     tokenService: this.tokenService,
     serial: () => this.enrollDetails?.serial,
     canCancel: () => this.canCancelEnrollment(),
-    close: (result) => this.dialogRef.close(result)
+    close: (result) => this.dialogRef.close(result),
+    stepClosed: () => this.dialogRef.afterClosed()
   });
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   // The enrollment response has no type, so the type comes from the enrollment request
