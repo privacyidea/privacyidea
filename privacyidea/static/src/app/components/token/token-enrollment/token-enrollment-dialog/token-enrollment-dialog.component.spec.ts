@@ -20,7 +20,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
+import { EnrollmentFirstStep, EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
+import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
+import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -35,7 +37,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 
 const response = (detail: Record<string, unknown>) =>
   ({ result: { status: true }, detail: { serial: "OATH0001", ...detail } }) as unknown as EnrollmentResponse;
@@ -71,8 +73,12 @@ describe("TokenEnrollmentDialogComponent", () => {
 
   const allowDelete = (allowed: boolean) =>
     authService.actionAllowed.mockImplementation((action: string) => allowed && action === "delete");
-  const open = (first: EnrollmentResponse, data: Partial<TokenEnrollmentDialogData> = {}) => {
-    harness.open(first, data, options);
+  const open = (
+    first: EnrollmentResponse,
+    data: Partial<TokenEnrollmentDialogData> = {},
+    firstStep: EnrollmentFirstStep | null = null
+  ) => {
+    harness.open(first, data, options, firstStep);
     dialogService.openDialog.mockClear();
   };
   // The answer to the next question asked on top of the dialog.
@@ -107,6 +113,59 @@ describe("TokenEnrollmentDialogComponent", () => {
       expect(footerLabels()).toEqual(["Close"]);
       expect(harness.element.querySelector(".pi-dialog")).toBe(wrapper);
       expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("stays one dialog from the push QR code to the success step", () => {
+      allowDelete(false);
+      const poll = new Subject();
+      tokenService.pollTokenRolloutState.mockReturnValue(poll);
+      open(
+        response({ rollout_state: "clientwait", pushurl: { img: "data:image/png;base64,QR", value: "x" } }),
+        {},
+        {
+          kind: "push"
+        }
+      );
+      const wrapper = harness.element.querySelector(".pi-dialog");
+      expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentPushComponent);
+      expect(title()).toBe("Take Action on Your Authenticator");
+      expect(footerLabels()).toEqual(["Close"]);
+
+      poll.next({ result: { status: true, value: { tokens: [{ rollout_state: "enrolled" }] } } });
+      harness.fixture.detectChanges();
+
+      expect(title()).toBe("Token Successfully Enrolled");
+      expect(harness.element.querySelector(".pi-dialog")).toBe(wrapper);
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("offers Retry next to Close after a failed FIDO2 registration", async () => {
+      allowDelete(false);
+      open(
+        response({ rollout_state: "clientwait" }),
+        { tokenType: "webauthn" },
+        {
+          kind: "fido2",
+          register: () => Promise.resolve(null)
+        }
+      );
+      await new Promise((resolve) => setTimeout(resolve));
+      harness.fixture.detectChanges();
+
+      expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentFido2Component);
+      expect(footerLabels()).toEqual(["Close", "Retry"]);
+    });
+
+    it("warns in the push step that the token is deleted even if the QR code was scanned", () => {
+      allowDelete(true);
+      tokenService.pollTokenRolloutState.mockReturnValue(new Subject());
+      open(response({ rollout_state: "clientwait" }), {}, { kind: "push" });
+      answer(undefined);
+
+      harness.footerButton("Close")!.click();
+
+      const message = dialogService.openDialog.mock.calls[0][0].data.message as string;
+      expect(message).toContain("The token is deleted even if the QR code was already scanned.");
     });
 
     it("moves the focus to the input of a new step, else to its title", async () => {

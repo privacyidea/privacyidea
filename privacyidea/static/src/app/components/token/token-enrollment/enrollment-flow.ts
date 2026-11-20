@@ -20,6 +20,8 @@ import { computed, inject, signal, Type } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
+import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
+import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import {
@@ -32,7 +34,20 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
 import { Observable, Subject } from "rxjs";
 
-export type EnrollmentStepKind = "complete" | "verify" | "success";
+export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "success";
+
+/**
+ * The step a token type needs right after its first response. Push waits for the app to register, WebAuthn and
+ * passkey run the browser registration. Both start again when the dialog is reopened.
+ */
+export type EnrollmentFirstStep =
+  | { kind: "push" }
+  | {
+      kind: "fido2";
+      // Ends with the response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null when the
+      // registration failed and can be retried. The signal aborts once the step is left.
+      register: (signal: AbortSignal) => Promise<EnrollmentStepResult>;
+    };
 
 export interface EnrollmentFlowOptions {
   // Read when the success step opens, so a subclass can replace it, see the wizard.
@@ -49,9 +64,9 @@ export interface EnrollmentFlowOptions {
 }
 
 /**
- * Runs the steps of a token enrollment that follow the first response in one dialog: the two-step
- * completion (rollout state "clientwait"), the verification (a "verify" challenge in the response)
- * and the success step. The server response decides the next step, so the number of steps is not
+ * Runs the steps of a token enrollment that follow the first response in one dialog: the first step
+ * of the token type (push, WebAuthn, passkey), the two-step completion (rollout state "clientwait"),
+ * the verification (a "verify" challenge in the response) and the success step. The server response decides the next step, so the number of steps is not
  * known in advance.
  *
  * Holds the state of the running enrollment, so a closed dialog can be resumed at the same step.
@@ -64,6 +79,10 @@ export class EnrollmentFlow {
   readonly step = signal<EnrollmentStepKind | null>(null);
   readonly stepComponent = computed<Type<EnrollmentStep> | null>(() => {
     switch (this.step()) {
+      case "push":
+        return TokenCompleteEnrollmentPushComponent;
+      case "fido2":
+        return TokenCompleteEnrollmentFido2Component;
       case "complete":
         return TokenCompleteEnrollmentComponent;
       case "verify":
@@ -79,6 +98,11 @@ export class EnrollmentFlow {
   // Emits when the current step is left: for the next step, or because the dialog closed.
   readonly stepFinished: Observable<void> = this.stepFinishedSubject.asObservable();
 
+  // Set until the first step of the token type is done.
+  firstStep: EnrollmentFirstStep | null = null;
+  // Whether the dialog was opened again with the reopen button, see the push polling.
+  reopened = false;
+
   private dialogRef: MatDialogRef<unknown> | null = null;
   private cancelled = false;
 
@@ -88,9 +112,16 @@ export class EnrollmentFlow {
    * Starts a new enrollment from the response of its first request.
    *
    * @param data The data of the enrolled token for the steps.
+   * @param firstStep The step the token type needs first, if any.
    */
-  start(data: Omit<TokenEnrollmentDialogData, "onEnrollmentResponseChange">): void {
+  start(
+    data: Omit<TokenEnrollmentDialogData, "onEnrollmentResponseChange">,
+    firstStep: EnrollmentFirstStep | null = null
+  ): void {
     this.step.set(null);
+    this.firstStep = firstStep;
+    this.reopened = false;
+    this.cancelled = false;
     this.dialogData.set({
       ...data,
       onEnrollmentResponseChange: (response) => this.setResponse(response)
@@ -99,6 +130,7 @@ export class EnrollmentFlow {
 
   reset(): void {
     this.step.set(null);
+    this.firstStep = null;
     this.dialogData.set(null);
   }
 
@@ -112,6 +144,10 @@ export class EnrollmentFlow {
       return;
     }
     this.setResponse(response);
+    if (this.firstStep) {
+      this.show(this.firstStep.kind);
+      return;
+    }
     if (response.detail?.rollout_state !== "clientwait") {
       this.verify(response);
       return;
@@ -123,6 +159,7 @@ export class EnrollmentFlow {
   resume(): void {
     const step = this.step();
     if (step && this.dialogData()) {
+      this.reopened = true;
       this.show(step);
       return;
     }
@@ -149,7 +186,13 @@ export class EnrollmentFlow {
       return;
     }
     this.options.onStepClosed?.();
-    if (this.step() === "complete") {
+    const step = this.step();
+    if (step === "push" || step === "fido2") {
+      this.firstStep = null;
+      this.continue(result);
+      return;
+    }
+    if (step === "complete") {
       // The data shown for the second step is outdated once the token is complete.
       this.dialogData.update((data) => (data ? { ...data, showEnrollData: false } : data));
       this.verify(result);

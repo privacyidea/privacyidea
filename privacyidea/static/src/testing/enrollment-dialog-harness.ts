@@ -20,7 +20,11 @@ import { Provider } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { EnrollmentFlow, EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
+import {
+  EnrollmentFirstStep,
+  EnrollmentFlow,
+  EnrollmentFlowOptions
+} from "@components/token/token-enrollment/enrollment-flow";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
@@ -49,23 +53,28 @@ export class EnrollmentDialogHarness {
    * @param response The response that decides the first step.
    * @param data Overrides of the enrollment data.
    * @param options Overrides of the flow options.
+   * @param firstStep The first step of the token type, if any.
    */
   open(
     response: EnrollmentResponse,
     data: Partial<TokenEnrollmentDialogData> = {},
-    options: Partial<EnrollmentFlowOptions> = {}
+    options: Partial<EnrollmentFlowOptions> = {},
+    firstStep: EnrollmentFirstStep | null = null
   ): void {
     const dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     dialogService.openDialog.mockReturnValueOnce(this.dialogRef);
     this.flow = TestBed.runInInjectionContext(
       () => new EnrollmentFlow({ successStep: () => TokenEnrollmentLastStepDialogComponent, ...options })
     );
-    this.flow.start({
-      response,
-      enrollParameters: { data: {} } as EnrollTokenArguments,
-      tokenType: "hotp",
-      ...data
-    });
+    this.flow.start(
+      {
+        response,
+        enrollParameters: { data: {} } as EnrollTokenArguments,
+        tokenType: "hotp",
+        ...data
+      },
+      firstStep
+    );
     this.flow.continue(response);
     this.fixture = TestBed.createComponent(TokenEnrollmentDialogComponent);
     this.fixture.detectChanges();

@@ -18,7 +18,13 @@
  **/
 import { TestBed } from "@angular/core/testing";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { EnrollmentFlow, EnrollmentFlowOptions } from "@components/token/token-enrollment/enrollment-flow";
+import {
+  EnrollmentFirstStep,
+  EnrollmentFlow,
+  EnrollmentFlowOptions
+} from "@components/token/token-enrollment/enrollment-flow";
+import { TokenCompleteEnrollmentFido2Component } from "@components/token/token-enrollment/token-complete-enrollment-fido2/token-complete-enrollment-fido2.component";
+import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
@@ -62,9 +68,9 @@ describe("EnrollmentFlow", () => {
     };
   });
 
-  const startFlow = (first: EnrollmentResponse): EnrollmentFlow => {
+  const startFlow = (first: EnrollmentResponse, firstStep: EnrollmentFirstStep | null = null): EnrollmentFlow => {
     const flow = TestBed.runInInjectionContext(() => new EnrollmentFlow(options));
-    flow.start({ response: first, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" });
+    flow.start({ response: first, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" }, firstStep);
     return flow;
   };
   const dialogRef = (call = 0) => dialogService.openDialog.mock.results[call].value as MockMatDialogRef<unknown>;
@@ -111,6 +117,63 @@ describe("EnrollmentFlow", () => {
     dialogRef().close();
     expect(options.onStepClosed).toHaveBeenCalledTimes(3);
     expect(options.onIncomplete).not.toHaveBeenCalled();
+  });
+
+  it("shows the first step of the token type before the response decides the next step", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const enrolled = response({ rollout_state: "enrolled" });
+    const flow = startFlow(first, { kind: "push" });
+
+    flow.continue(first);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+    expect(flow.firstStep).toEqual({ kind: "push" });
+
+    flow.finishStep(enrolled);
+    expect(flow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
+    expect(flow.firstStep).toBeNull();
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    expect(options.onCompleted).toHaveBeenCalledTimes(1);
+  });
+
+  it("continues a FIDO2 registration with the verification the response asks for", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first, { kind: "fido2", register: jest.fn() });
+
+    flow.continue(first);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentFido2Component);
+
+    flow.finishStep(response({ verify: { message: "Enter OTP" } }));
+    expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
+  });
+
+  it("reopens a closed first step and tells it that it was reopened", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first, { kind: "push" });
+    flow.continue(first);
+    expect(flow.reopened).toBe(false);
+    flow.close();
+    expect(options.onIncomplete).toHaveBeenCalledTimes(1);
+
+    flow.resume();
+
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+    expect(flow.reopened).toBe(true);
+  });
+
+  it("forgets the first step of an earlier enrollment", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first, { kind: "push" });
+    flow.continue(first);
+    flow.close();
+    flow.resume();
+    flow.close();
+
+    flow.start({ response: first, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" });
+    flow.continue(first);
+
+    expect(flow.reopened).toBe(false);
+    expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentComponent);
   });
 
   it("emits stepFinished when the step changes and when the dialog closes", () => {

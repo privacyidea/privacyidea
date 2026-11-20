@@ -21,15 +21,14 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
 import { Base64Service } from "@services/base64/base64.service";
-import { AuthService } from "@services/auth/auth.service";
-import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockBase64Service, MockNotificationService, MockTokenService } from "@testing/mock-services";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
 import { axe } from "@testing/axe";
@@ -39,7 +38,6 @@ describe("EnrollPasskeyComponent", () => {
   let fixture: ComponentFixture<EnrollPasskeyComponent>;
 
   let tokenService: MockTokenService;
-  let dialogService: MockDialogService;
   let b64: MockBase64Service;
   let notif: MockNotificationService;
 
@@ -61,8 +59,6 @@ describe("EnrollPasskeyComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: AuthService, useClass: MockAuthService },
         { provide: Base64Service, useClass: MockBase64Service },
         { provide: NotificationService, useClass: MockNotificationService }
       ]
@@ -72,12 +68,24 @@ describe("EnrollPasskeyComponent", () => {
     component = fixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture.detectChanges();
   });
+
+  // Runs the registration the strategy hands to the enrollment dialog.
+  const register = (
+    response: EnrollmentResponse,
+    data: TokenEnrollmentData,
+    signal: AbortSignal = new AbortController().signal
+  ): Promise<EnrollmentStepResult> => {
+    const firstStep = component.firstStep(response, data);
+    if (firstStep.kind !== "fido2") {
+      throw new Error("Passkey hands over a FIDO2 registration");
+    }
+    return firstStep.register(signal);
+  };
 
   afterAll(() => {
     Object.defineProperty(navigator, "credentials", {
@@ -98,7 +106,7 @@ describe("EnrollPasskeyComponent", () => {
     expect(notif.error).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
   });
 
-  it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
+  it("happy path: init -> create cred -> finalize", async () => {
     const finalResp = { detail: { serial: "S-1" } };
     const createdCred = {
       id: "cred-1",
@@ -144,10 +152,9 @@ describe("EnrollPasskeyComponent", () => {
     expect(args).not.toBeNull();
     tokenService.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
     const initResponse = await tokenService.enrollToken(args);
-    const res = await component.onEnrollmentResponse(initResponse, args!.data);
+    const res = await register(initResponse, args!.data);
 
     expect(tokenService.enrollToken).toHaveBeenCalledTimes(2);
-    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
 
     // The finalize request contains the transports and only the PRF flag, the PRF results stay in the client
     const finalizeArgs = tokenService.enrollToken.mock.calls[1][0];
@@ -160,12 +167,9 @@ describe("EnrollPasskeyComponent", () => {
 
     expect(res).toStrictEqual(finalResp);
     expect((res as EnrollmentResponse).detail.serial).toBe("S-1");
-
-    // After the happy path completes the strategy clears its reopenDialog signal back to undefined.
-    expect(component.reopenDialog()).toBeUndefined();
   });
 
-  it("handles invalid server response (no passkey_registration)", async () => {
+  it("reports a failed attempt for an invalid server response (no passkey_registration)", async () => {
     const initResp = { detail: { transaction_id: "t", serial: "S-9" } };
     tokenService.enrollToken.mockReturnValueOnce(of(initResp));
     setNavigatorCredentials({
@@ -173,10 +177,9 @@ describe("EnrollPasskeyComponent", () => {
     });
     const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
-    const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
-    await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
+    const finalResponse = register(initResponse as EnrollmentResponse, enrollmentArgs!.data);
+    await expect(finalResponse).resolves.toBeNull();
     expect(notif.error).toHaveBeenCalledWith("Failed to initiate Passkey registration: Invalid server response.");
-    expect(dialogService.openDialog).not.toHaveBeenCalled();
   });
 
   it("readPublicKeyCred rejects when the enrollment response has no passkey_registration", async () => {
@@ -231,7 +234,7 @@ describe("EnrollPasskeyComponent", () => {
 
     const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
-    const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
+    const finalResponse = register(initResponse as EnrollmentResponse, enrollmentArgs!.data);
 
     await expect(finalResponse).resolves.toBe(ENROLLMENT_CANCELLED);
 
@@ -241,136 +244,32 @@ describe("EnrollPasskeyComponent", () => {
     expect(tokenService.deleteToken).toHaveBeenCalledWith("S-2");
   });
 
-  it("reopen dialog callback re-runs passkey init+finalize when dialog is closed", async () => {
-    const createdCred = {
-      id: "cred-1",
-      rawId: new Uint8Array([1]).buffer,
-      authenticatorAttachment: "platform",
-      response: {
-        attestationObject: new Uint8Array([2]).buffer,
-        clientDataJSON: new Uint8Array([3]).buffer
-      },
-      getClientExtensionResults: () => ({})
-    };
-    Object.defineProperty(navigator, "credentials", {
-      configurable: true,
-      get: () => ({ create: jest.fn().mockResolvedValue(createdCred) })
-    });
-
-    const passkeyInit = (serial: string, tx: string) =>
-      ({
-        detail: {
-          serial,
-          transaction_id: tx,
-          passkey_registration: {
-            rp: { name: "Example", id: "example.com" },
-            user: { id: "AA", name: "alice", displayName: "Alice" },
-            challenge: "AAAA",
-            pubKeyCredParams: [],
-            excludeCredentials: [],
-            authenticatorSelection: {},
-            timeout: 10000,
-            extensions: {},
-            attestation: "none"
-          }
+  it("does not finalize a registration once the step was left", async () => {
+    setNavigatorCredentials({ create: jest.fn().mockResolvedValue({}) });
+    const initResponse = {
+      detail: {
+        serial: "S-3",
+        transaction_id: "tx",
+        passkey_registration: {
+          rp: { name: "Example", id: "example.com" },
+          user: { id: "AA", name: "alice", displayName: "Alice" },
+          challenge: "AAAA",
+          pubKeyCredParams: [],
+          excludeCredentials: [],
+          authenticatorSelection: {},
+          timeout: 10000,
+          extensions: {},
+          attestation: "none"
         }
-      }) as unknown as EnrollmentResponse;
+      }
+    } as unknown as EnrollmentResponse;
+    const left = new AbortController();
 
-    const finalize = (serial: string) => ({ detail: { serial } });
+    const pending = register(initResponse, { type: "passkey" } as TokenEnrollmentData, left.signal);
+    left.abort();
 
-    tokenService.enrollToken
-      .mockReturnValueOnce(of(passkeyInit("S-1", "tx-1")))
-      .mockReturnValueOnce(of(finalize("S-1")));
-
-    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
-    const finalResponse = await component.onEnrollmentResponse(
-      initResponse as EnrollmentResponse,
-      enrollmentArgs!.data
-    );
-    expect(finalResponse).toEqual(finalize("S-1"));
-    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-
-    // strategy.reopenDialog is cleared once the flow finalizes successfully.
-    expect(component.reopenDialog()).toBeUndefined();
-  });
-
-  describe("cancelling the enrollment", () => {
-    let authService: MockAuthService;
-
-    beforeEach(() => {
-      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    });
-
-    const passkeyInitResponse = () =>
-      ({
-        detail: {
-          serial: "S-CANCEL",
-          transaction_id: "tx",
-          passkey_registration: {
-            rp: { name: "Example", id: "example.com" },
-            user: { id: "AA", name: "alice", displayName: "Alice" },
-            challenge: "AAAA",
-            pubKeyCredParams: [],
-            excludeCredentials: [],
-            authenticatorSelection: {},
-            timeout: 10000,
-            extensions: {},
-            attestation: "none"
-          }
-        }
-      }) as unknown as EnrollmentResponse;
-
-    const startPendingRegistration = async () => {
-      // The browser prompt never settles, so the dialog stays open until the user acts on it.
-      setNavigatorCredentials({ create: jest.fn().mockReturnValue(new Promise(() => undefined)) });
-      tokenService.enrollToken.mockReturnValue(of(passkeyInitResponse()));
-      const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
-      const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
-      const pending = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
-      await Promise.resolve();
-      // Wrapped so that awaiting the helper does not await the enrollment itself.
-      return { pending };
-    };
-
-    const dialogData = () => dialogService.openDialog.mock.calls[0][0].data;
-    const dialogConfig = () => dialogService.openDialog.mock.calls[0][0].configOverride;
-
-    it("offers cancel when deletion is allowed", async () => {
-      authService.actionAllowed.mockImplementation((action: string) => action === "delete");
-
-      const { pending } = await startPendingRegistration();
-
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, wizard: false }));
-      expect(dialogConfig()).toEqual({ disableClose: true });
-
-      component.currentStepOneRef?.close();
-      await pending;
-    });
-
-    it("offers no cancel without the delete right", async () => {
-      authService.actionAllowed.mockReturnValue(false);
-
-      const { pending } = await startPendingRegistration();
-
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false }));
-      expect(dialogConfig()).toEqual({ disableClose: false });
-
-      component.currentStepOneRef?.close();
-      await pending;
-    });
-
-    it("reports the cancellation and drops the reopen action", async () => {
-      authService.actionAllowed.mockImplementation((action: string) => action === "delete");
-
-      const { pending } = await startPendingRegistration();
-      expect(component.reopenDialog()).toBeDefined();
-
-      component.currentStepOneRef?.close(ENROLLMENT_CANCELLED);
-
-      expect(await pending).toBe(ENROLLMENT_CANCELLED);
-      expect(component.reopenDialog()).toBeUndefined();
-    });
+    expect(await pending).toBeNull();
+    expect(tokenService.enrollToken).not.toHaveBeenCalled();
   });
 
   it("passes the axe accessibility checks", async () => {

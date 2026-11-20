@@ -22,8 +22,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockTokenService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, NEVER, of, Subject, throwError } from "rxjs";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
-import { confirmLeaveIncompleteStep, leaveIncompleteEnrollment } from "./leave-incomplete-enrollment";
+import { leaveIncompleteEnrollment } from "./leave-incomplete-enrollment";
 
 describe("leaveIncompleteEnrollment", () => {
   let dialogService: MockDialogService;
@@ -97,66 +96,13 @@ describe("leaveIncompleteEnrollment", () => {
     expect(await leave()).toBe("stay");
   });
 
-  describe("confirmLeaveIncompleteStep", () => {
-    let close: jest.Mock;
-    let stepClosed: Subject<void>;
-    const confirmLeave = (canCancel: boolean) =>
-      confirmLeaveIncompleteStep({
-        dialogService,
-        tokenService,
-        serial: () => "HOTP0001",
-        canCancel: () => canCancel,
-        close,
-        stepClosed: () => stepClosed
-      });
+  it("adds what deleting means in the current step to the question", async () => {
+    answer(undefined);
+    await lastValueFrom(
+      leaveIncompleteEnrollment(dialogService, tokenService, "PIPU0001", NEVER, "Scanned codes stop working.")
+    );
 
-    beforeEach(() => {
-      close = jest.fn();
-      stepClosed = new Subject<void>();
-    });
-
-    it("closes and follows the link without asking while Close is offered", async () => {
-      expect(await lastValueFrom(confirmLeave(false)("token"))).toBe(true);
-      expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(close).toHaveBeenCalledWith();
-    });
-
-    it("closes and follows the link when the token is kept", async () => {
-      answer("save-exit");
-
-      expect(await lastValueFrom(confirmLeave(true)("token"))).toBe(true);
-      expect(close).toHaveBeenCalledWith();
-    });
-
-    it("does not open the details of the deleted token", async () => {
-      answer("discard");
-
-      expect(await lastValueFrom(confirmLeave(true)("token"))).toBe(false);
-      expect(close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
-    });
-
-    it("follows a link to another page after deleting the token", async () => {
-      answer("discard");
-
-      expect(await lastValueFrom(confirmLeave(true)("user"))).toBe(true);
-      expect(close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
-    });
-
-    it("follows no link once the step has closed by itself", async () => {
-      const followed = lastValueFrom(confirmLeave(true)("container"));
-
-      stepClosed.next();
-
-      expect(await followed).toBe(false);
-      expect(close).not.toHaveBeenCalled();
-      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
-    });
-
-    it("neither closes nor follows the link when the user stays", async () => {
-      answer(undefined);
-
-      expect(await lastValueFrom(confirmLeave(true)("token"))).toBe(false);
-      expect(close).not.toHaveBeenCalled();
-    });
+    const message = dialogService.openDialog.mock.calls[0][0].data.message as string;
+    expect(message).toMatch(/^The enrollment of this token is not complete\..* Scanned codes stop working\.$/);
   });
 });

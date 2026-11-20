@@ -21,11 +21,6 @@ import {
   SaveAndExitDialogComponent,
   SaveAndExitDialogResult
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
-import {
-  ENROLLMENT_CANCELLED,
-  EnrollmentStepResult
-} from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenServiceInterface } from "@services/token/token.service";
 import { catchError, map, Observable, of, switchMap, takeUntil } from "rxjs";
@@ -33,21 +28,30 @@ import { catchError, map, Observable, of, switchMap, takeUntil } from "rxjs";
 export type LeaveIncompleteEnrollmentResult = "stay" | "keep" | "deleted";
 
 /**
- * Asks whether to keep or delete the incomplete token before a link leaves an enrollment step.
+ * Asks whether to keep or delete the incomplete token before leaving an enrollment step.
  * Emits "deleted" only once the token is gone, and "stay" if the user stays or the deletion fails.
  * The question closes with "stay" once the step closes by itself, e.g. when the push token was registered meanwhile.
+ *
+ * @param dialogService Opens the question.
+ * @param tokenService Deletes the token.
+ * @param serial The serial of the incomplete token.
+ * @param stepClosed Emits when the step is left without the question.
+ * @param deleteWarning Added to the question, what deleting means in this step.
+ * @returns What the user chose, once it is done.
  */
 export function leaveIncompleteEnrollment(
   dialogService: DialogServiceInterface,
   tokenService: TokenServiceInterface,
   serial: string,
-  stepClosed: Observable<unknown>
+  stepClosed: Observable<unknown>,
+  deleteWarning: string | null = null
 ): Observable<LeaveIncompleteEnrollmentResult> {
+  const message = $localize`:@@token.leaveIncompleteEnrollmentMessage:The enrollment of this token is not complete. Do you want to keep the incomplete token or delete it before leaving?`;
   const questionRef = dialogService.openDialog({
     component: SaveAndExitDialogComponent,
     data: {
       title: $localize`:@@token.leaveIncompleteEnrollment:Leave Incomplete Enrollment`,
-      message: $localize`:@@token.leaveIncompleteEnrollmentMessage:The enrollment of this token is not complete. Do you want to keep the incomplete token or delete it before leaving?`,
+      message: deleteWarning ? `${message} ${deleteWarning}` : message,
       saveButtonText: $localize`:@@token.keepToken:Keep Token`,
       discardButtonText: $localize`:@@common.deleteToken:Delete Token`,
       cancelButtonText: $localize`:@@common.back:Back`,
@@ -70,41 +74,6 @@ export function leaveIncompleteEnrollment(
       );
     })
   );
-}
-
-/**
- * Builds the header's confirmLeave for an incomplete enrollment step. It closes the step dialog itself: like
- * Close where Close is offered, otherwise as the user decides. A deleted token's own details stay closed.
- */
-export function confirmLeaveIncompleteStep(options: {
-  dialogService: DialogServiceInterface;
-  tokenService: TokenServiceInterface;
-  serial: () => string | undefined;
-  canCancel: () => boolean;
-  close: (result?: EnrollmentStepResult) => void;
-  // Emits when the step dialog closes, also by itself.
-  stepClosed: () => Observable<unknown>;
-}): (link: EnrolledTextLink) => Observable<boolean> {
-  return (link) => {
-    const serial = options.serial();
-    if (!options.canCancel() || !serial) {
-      options.close();
-      return of(true);
-    }
-    return leaveIncompleteEnrollment(options.dialogService, options.tokenService, serial, options.stepClosed()).pipe(
-      map((result) => {
-        if (result === "stay") {
-          return false;
-        }
-        if (result === "keep") {
-          options.close();
-          return true;
-        }
-        options.close(ENROLLMENT_CANCELLED);
-        return link !== "token";
-      })
-    );
-  };
 }
 
 /**

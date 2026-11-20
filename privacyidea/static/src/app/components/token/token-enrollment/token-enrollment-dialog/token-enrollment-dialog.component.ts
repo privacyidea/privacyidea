@@ -131,7 +131,13 @@ export class TokenEnrollmentDialogComponent
       this.flow.close();
       return of(true);
     }
-    return leaveIncompleteEnrollment(this.dialogService, this.tokenService, serial, this.flow.stepFinished).pipe(
+    return leaveIncompleteEnrollment(
+      this.dialogService,
+      this.tokenService,
+      serial,
+      this.flow.stepFinished,
+      step?.deleteWarning
+    ).pipe(
       map((result) => {
         if (result === "stay") {
           return false;

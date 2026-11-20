@@ -46,6 +46,8 @@ export abstract class EnrollmentStep {
   readonly actions: Signal<DialogAction<string>[]> = signal([]);
   // False hides Close and ignores Escape and backdrop clicks, see the wizard.
   readonly closable: boolean = true;
+  // Added to the question before the incomplete token is deleted.
+  readonly deleteWarning: string | null = null;
 
   constructor() {
     inject(ENROLLMENT_STEP_HOST).register(this);

@@ -34,6 +34,7 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { of } from "rxjs";
+import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-enrollment/token-complete-enrollment-push/token-complete-enrollment-push.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
@@ -153,6 +154,26 @@ describe("TokenRolloverComponent", () => {
     lastStepDialogRef.close();
 
     expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("runs the first step of the token type only once the rollover form has closed", async () => {
+    component.token.set({ type: "push", serial: "PIPU0001" });
+    const firstResponse = { result: { status: true }, detail: { serial: "PIPU0001", rollout_state: "clientwait" } };
+    const firstStep = jest.fn().mockReturnValue({ kind: "push" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({ data: { type: "push" }, mapper: { map: (x: unknown) => x } }),
+      firstStep
+    });
+    tokenService.enrollToken.mockReturnValue(of(firstResponse as unknown as EnrollmentResponse));
+
+    await component.rolloverToken();
+
+    expect(firstStep).toHaveBeenCalledWith(firstResponse, { type: "push" });
+    expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+    expect(dialogRef.close.mock.invocationCallOrder[0]).toBeLessThan(
+      dialogService.openDialog.mock.invocationCallOrder[0]
+    );
+    expect(component.enrollmentFlow.dialogData()?.rollover).toBe(true);
   });
 
   it("should keep the regenerated response for a reopened last step dialog", async () => {

@@ -25,7 +25,6 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -126,20 +125,16 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
 
-    this.enrollmentFlow.start({
-      response: enrollmentResponse,
-      enrollParameters: enrollmentArgs,
-      tokenType: enrollmentArgs.data.type,
-      rollover: true
-    });
-
-    // Complete rollover
-    // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
-    if (strategy.onEnrollmentResponse && enrollmentResponse) {
-      const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
-      enrollmentResponse = stepResult === ENROLLMENT_CANCELLED ? null : stepResult;
-    }
-
+    this.enrollmentFlow.start(
+      {
+        response: enrollmentResponse,
+        enrollParameters: enrollmentArgs,
+        tokenType: enrollmentArgs.data.type,
+        rollover: true
+      },
+      enrollmentResponse ? (strategy.firstStep?.(enrollmentResponse, enrollmentArgs.data) ?? null) : null
+    );
+    // The enrollment dialog takes over, so it does not open on top of the rollover form.
     this.dialogRef.close();
     if (enrollmentResponse) {
       this.enrollmentFlow.continue(enrollmentResponse);

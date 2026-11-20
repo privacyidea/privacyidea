@@ -67,6 +67,7 @@ import {
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
+import { TokenCompleteEnrollmentPushComponent } from "./token-complete-enrollment-push/token-complete-enrollment-push.component";
 import { TokenEnrollmentDialogComponent } from "./token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
@@ -78,9 +79,7 @@ import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 // Mock token enroll strategy
 function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
-  const withDefaults = strategy
-    ? { enrollmentBlockedReason: signal(null), reopenDialog: signal(undefined), ...(strategy as object) }
-    : strategy;
+  const withDefaults = strategy ? { enrollmentBlockedReason: signal(null), ...(strategy as object) } : strategy;
   Object.defineProperty(component, "enrollSwitch", {
     value: () => ({ currentStrategy: () => withDefaults }),
     configurable: true
@@ -413,27 +412,29 @@ describe("TokenEnrollmentComponent", () => {
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
       });
 
-      it("resets the pending enrollment when the strategy reports a cancellation", async () => {
+      it("shows the first step of the token type in the enrollment dialog and resets once it deleted the token", async () => {
         tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
-        const reopenDialog = signal<(() => Promise<unknown>) | undefined>(() => Promise.resolve(null));
+        const firstStep = jest.fn().mockReturnValue({ kind: "push" });
         installStrategy(component, {
           buildEnrollmentArgs: jest.fn().mockReturnValue({
             data: { type: "push" },
             mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
           }),
-          onEnrollmentResponse: jest.fn().mockResolvedValue(ENROLLMENT_CANCELLED),
-          reopenDialog
+          firstStep
         });
-        tokenService.enrollToken.mockReturnValueOnce(
-          of({ result: { status: true }, detail: { serial: "PIPU0001", rollout_state: "clientwait" } })
-        );
+        const firstResponse = { result: { status: true }, detail: { serial: "PIPU0001", rollout_state: "clientwait" } };
+        tokenService.enrollToken.mockReturnValueOnce(of(firstResponse));
 
         const result = await component.enrollToken();
 
         expect(result).toBe(true);
+        expect(firstStep).toHaveBeenCalledWith(firstResponse, { type: "push" });
+        expect(enrollmentDialogsOpened()).toBe(1);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+
+        component.enrollmentFlow.finishStep(ENROLLMENT_CANCELLED);
+
         expect(component.enrollmentFlow.dialogData()).toBeNull();
-        expect(reopenDialog()).toBeUndefined();
-        expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
       });
 
       it("resets the pending enrollment when the complete dialog cancels it", async () => {
@@ -844,32 +845,27 @@ describe("TokenEnrollmentComponent", () => {
         expect(wizardComponent["inputsGeneration"]()).toBe(generation);
       });
 
-      it("resets the inputs at once when the push step stops in clientwait", async () => {
+      it("resets all inputs when the push step is closed before the app registered the token", async () => {
         tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
-        const enrolledResponse = {
-          result: { status: true },
-          detail: { serial: "PIPU0002", rollout_state: "enrolled" }
-        } as unknown as EnrollmentResponse;
-        const reopenAction = jest.fn().mockResolvedValue(enrolledResponse);
         installStrategy(component, {
           buildEnrollmentArgs: strategyArgs("push"),
-          onEnrollmentResponse: jest.fn().mockResolvedValue(null),
-          reopenDialog: signal(reopenAction)
+          firstStep: () => ({ kind: "push" })
         });
         tokenService.enrollToken.mockReturnValueOnce(
           of({ result: { status: true }, detail: { serial: "PIPU0002", rollout_state: "clientwait" } })
         );
         component.descriptionForm().controlValue.set("first token");
         const generation = component["inputsGeneration"]();
-        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
 
         await component.enrollToken();
+        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
+        component.enrollmentFlow.close();
 
-        expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
         expect(component.description()).toBe("");
-        // The type-specific component stays, because it holds the reopen action.
-        expect(component["inputsGeneration"]()).toBe(generation);
+        // The flow holds the first step, so the type-specific inputs can be created anew.
+        expect(component["inputsGeneration"]()).toBe(generation + 1);
         expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
+        expect(component.canReopenEnrollmentDialog()).toBe(true);
       });
 
       it("keeps the inputs for the next token when a push enrollment finishes on reopen", async () => {
@@ -878,35 +874,36 @@ describe("TokenEnrollmentComponent", () => {
           result: { status: true },
           detail: { serial: "PIPU0003", rollout_state: "enrolled" }
         } as unknown as EnrollmentResponse;
-        const reopenAction = jest.fn().mockResolvedValue(enrolledResponse);
-        const reopenDialog = signal<jest.Mock | undefined>(reopenAction);
         installStrategy(component, {
           buildEnrollmentArgs: strategyArgs("push"),
-          onEnrollmentResponse: jest.fn().mockResolvedValue(null),
-          reopenDialog
+          firstStep: () => ({ kind: "push" })
         });
         tokenService.enrollToken.mockReturnValueOnce(
           of({ result: { status: true }, detail: { serial: "PIPU0003", rollout_state: "clientwait" } })
         );
         await component.enrollToken();
+        component.enrollmentFlow.close();
         component.descriptionForm().controlValue.set("next token");
         component.setPin.set("5678");
         component.repeatPin.set("5678");
+        dialogServiceMock.openDialog.mockClear();
 
-        await component.reopenEnrollmentDialog();
+        component.reopenEnrollmentDialog();
 
-        expect(reopenAction).toHaveBeenCalledTimes(1);
         expect(enrollmentDialogsOpened()).toBe(1);
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+        expect(component.enrollmentFlow.reopened).toBe(true);
+
+        component.enrollmentFlow.finishStep(enrolledResponse);
+
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
         expect(component.description()).toBe("next token");
         expect(component.setPin()).toBe("5678");
 
-        // The next reopen shows the last step dialog and does not poll again.
+        // The next reopen shows the success step and does not poll again.
         component.enrollmentFlow.close();
         dialogServiceMock.openDialog.mockClear();
-        expect(reopenDialog()).toBeUndefined();
-        await component.reopenEnrollmentDialog();
-        expect(reopenAction).toHaveBeenCalledTimes(1);
+        component.reopenEnrollmentDialog();
         expect(enrollmentDialogsOpened()).toBe(1);
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
       });
@@ -928,40 +925,6 @@ describe("TokenEnrollmentComponent", () => {
         expect(component["inputsGeneration"]()).toBe(generation + 1);
         expect(component.enrollmentFlow.dialogData()).not.toBeNull();
       });
-
-      it("drops the reopen action of the enrolled token with the recreated type-specific inputs", async () => {
-        const strategyBefore = component["enrollSwitch"]()?.currentStrategy();
-        expect(strategyBefore).toBeDefined();
-        const staleReopenAction = jest.fn();
-        strategyBefore!.reopenDialog.set(staleReopenAction);
-        component.enrollmentFlow.dialogData.set(lastStepData());
-        component["inputsResetPending"] = true;
-
-        openLastStep(component);
-        fixture.detectChanges();
-
-        const strategyAfter = component["enrollSwitch"]()?.currentStrategy();
-        expect(strategyAfter).toBeDefined();
-        expect(strategyAfter).not.toBe(strategyBefore);
-        expect(strategyAfter!.reopenDialog()).toBeUndefined();
-
-        component.enrollmentFlow.close();
-        dialogServiceMock.openDialog.mockClear();
-        await component.reopenEnrollmentDialog();
-
-        expect(staleReopenAction).not.toHaveBeenCalled();
-        expect(enrollmentDialogsOpened()).toBe(1);
-        expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentLastStepDialogComponent);
-      });
-    });
-
-    it("reopenEnrollmentDialog: uses reopen function when provided", () => {
-      const fn = jest.fn().mockReturnValue(of(null));
-      installStrategy(component, { reopenDialog: () => fn });
-      component.reopenEnrollmentDialog();
-
-      expect(fn).toHaveBeenCalledTimes(1);
-      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     });
 
     it("reopenEnrollmentDialog: reopens with the regenerated response instead of the initial one", async () => {
@@ -1460,7 +1423,7 @@ describe("TokenEnrollmentComponent", () => {
           data: { type: "push" },
           mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         }),
-        onEnrollmentResponse: jest.fn().mockResolvedValue(ENROLLMENT_CANCELLED)
+        firstStep: () => ({ kind: "push" })
       });
       tokenService.enrollToken.mockReturnValueOnce(
         of({ result: { status: true }, detail: { serial: "PIPU0004", rollout_state: "clientwait" } })
@@ -1470,6 +1433,7 @@ describe("TokenEnrollmentComponent", () => {
       pendingChangesService.clearAllRegistrations.mockClear();
 
       await component.enrollToken();
+      component.enrollmentFlow.finishStep(ENROLLMENT_CANCELLED);
 
       expect(registerHasChanges).toHaveBeenCalledTimes(1);
       const lastClear = Math.max(0, ...pendingChangesService.clearAllRegistrations.mock.invocationCallOrder);
