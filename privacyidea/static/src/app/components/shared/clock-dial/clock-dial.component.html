@@ -18,30 +18,45 @@
 -->
 <div class="clock-dial__title">{{ label() }}</div>
 <div class="clock-dial__readout">
-  <button
-    type="button"
-    class="clock-dial__part"
+  <!-- Typed time: two digits each, a keystroke past 0-23 / 0-59 or before the minimum is refused. The dial below picks
+       the same values. -->
+  <input
+    #hourField
+    class="clock-dial__part clock-dial__field--hour"
     [class.clock-dial__part--active]="view() === 'hours'"
-    [attr.aria-label]="hourLabel"
-    [attr.aria-pressed]="view() === 'hours'"
-    (click)="showHours()">
-    {{ hourText() }}
-  </button>
+    type="text"
+    inputmode="numeric"
+    maxlength="2"
+    autocomplete="off"
+    placeholder="--"
+    aria-label="Hour"
+    i18n-aria-label="@@clockDial.hour"
+    [value]="hourDraft()"
+    (focus)="showHours()"
+    (click)="showHours()"
+    (input)="onHourInput($event)"
+    (keydown)="onFieldKeydown($event, 'hours')" />
   <span
     class="clock-dial__colon"
     aria-hidden="true"
     >:</span
   >
-  <button
-    type="button"
-    class="clock-dial__part"
+  <input
+    #minuteField
+    class="clock-dial__part clock-dial__field--minute"
     [class.clock-dial__part--active]="view() === 'minutes'"
-    [attr.aria-label]="minuteLabel"
-    [attr.aria-pressed]="view() === 'minutes'"
-    [disabled]="hour() === null"
-    (click)="showMinutes()">
-    {{ minuteText() }}
-  </button>
+    type="text"
+    inputmode="numeric"
+    maxlength="2"
+    autocomplete="off"
+    placeholder="--"
+    aria-label="Minute"
+    i18n-aria-label="@@clockDial.minute"
+    [value]="minuteDraft()"
+    (focus)="showMinutes()"
+    (click)="showMinutes()"
+    (input)="onMinuteInput($event)"
+    (keydown)="onFieldKeydown($event, 'minutes')" />
 </div>
 <div
   #face

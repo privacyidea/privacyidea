@@ -113,15 +113,15 @@ function sameLocalDay(a: Date, b: Date): boolean {
 }
 
 /**
- * Where the time mode's clock popup goes, relative to the range picker panel: right of it, else left of it, centred
- * on the clicked day's row (`offsetY` from the panel's centre), as a last resort below or above the panel. Beside the
- * panel it covers neither the calendar nor the summary line under it.
+ * Where the time mode's clock popup goes, relative to the range picker panel: directly below it, else right of it,
+ * else left of it, there centred on the clicked day's row (`offsetY` from the panel's centre), as a last resort above
+ * the panel. Below or beside the panel it covers neither the calendar nor the summary line under it.
  */
 export function clockPopupPositions(offsetY: number): ConnectedPosition[] {
   return [
+    { originX: "center", originY: "bottom", overlayX: "center", overlayY: "top", offsetY: 4 },
     { originX: "end", originY: "center", overlayX: "start", overlayY: "center", offsetX: 8, offsetY },
     { originX: "start", originY: "center", overlayX: "end", overlayY: "center", offsetX: -8, offsetY },
-    { originX: "center", originY: "bottom", overlayX: "center", overlayY: "top", offsetY: 4 },
     { originX: "center", originY: "top", overlayX: "center", overlayY: "bottom", offsetY: -4 }
   ];
 }
@@ -395,6 +395,9 @@ export class AuditComponent {
   // Choosing a date sets the whole local day as that bound (inclusive) and keeps the other bound, clearing a field
   // (null) drops its bound.
   onRangeStartDateChange(date: Date | null): void {
+    if (date) {
+      this.startPickedInSession.set(true);
+    }
     this.applyTimeRange(date ? startOfLocalDayIso(date) : null, this.auditService.timestampTo());
   }
 
@@ -402,16 +405,26 @@ export class AuditComponent {
     this.applyTimeRange(this.auditService.timestampFrom(), date ? endOfLocalDayIso(date) : null);
   }
 
+  // Whether a start day (in time mode: a start time) was picked since the picker opened. Only such a pick makes the
+  // close rules below apply, so opening and closing the picker leaves an open-ended range as it is.
+  private readonly startPickedInSession = signal<boolean>(false);
+
   // Picking a single day and dismissing the picker leaves the end open. That means "this one day", so the end is set
   // to the end of the start day instead of leaving an open-ended range. In time mode, a start day with a picked start
-  // time and no end yet runs from that time to the end of its day (rule 1), however the picker was closed.
+  // time and no end yet runs from that time to the end of its day (rule 1), however the picker was closed. Both rules
+  // apply only to a start picked in this picker session, an open-ended range the picker opened with stays open.
   onRangePickerClosed(): void {
     const timedStart = this.timedStart();
     const endPicked = !!this.timedEnd()?.time;
+    const startPicked = this.startPickedInSession();
+    this.startPickedInSession.set(false);
     this.resetTimedSelection();
+    if (!startPicked) {
+      return;
+    }
     if (timedStart?.time && !endPicked) {
       this.applyTimeRange(
-        atLocalTimeIso(timedStart.day, formatClockTime(timedStart.time), 0),
+        atLocalTimeIso(timedStart.day, formatClockTime(timedStart.time)),
         endOfLocalDayIso(timedStart.day)
       );
     }
@@ -422,6 +435,7 @@ export class AuditComponent {
   }
 
   onRangePickerOpened(): void {
+    this.startPickedInSession.set(false);
     this.resetTimedSelection();
   }
 
@@ -486,7 +500,8 @@ export class AuditComponent {
   }
 
   // The time a clock emitted: a start time waits for the end day (or the picker closing), an end time applies the
-  // range from the start time (second 0) to the end time (second 59) and closes the picker.
+  // range from the start time to the end time, both at second 0, and closes the picker. A picked time is a point in
+  // time, the backend includes the whole second of an end given in whole seconds.
   onClockTimeSelected(time: ClockTime): void {
     const target = this.clockTarget();
     const timedStart = this.timedStart();
@@ -495,14 +510,15 @@ export class AuditComponent {
       return;
     }
     if (target.bound === "start") {
+      this.startPickedInSession.set(true);
       this.timedStart.set({ day: timedStart.day, time });
       return;
     }
     // The picked selection stays (for the summary) until the picker has closed, the end time keeps the close handler
     // from applying rule 1 over it.
     this.timedEnd.set({ day: target.day, time });
-    const fromIso = atLocalTimeIso(timedStart.day, formatClockTime(timedStart.time!), 0);
-    const toIso = atLocalTimeIso(target.day, formatClockTime(time), 59);
+    const fromIso = atLocalTimeIso(timedStart.day, formatClockTime(timedStart.time!));
+    const toIso = atLocalTimeIso(target.day, formatClockTime(time));
     this.applyTimeRange(fromIso, toIso);
     this.rangePicker()?.close();
   }
@@ -536,7 +552,8 @@ export class AuditComponent {
     return new DateRange<Date>(timedStart?.day ?? null, null);
   }
 
-  // The clock's overlay origin is the picker panel, so it opens beside the calendar, level with the clicked day's row.
+  // The clock's overlay origin is the picker panel, so it opens below the calendar, or beside it level with the clicked
+  // day's row.
   clockPopupPositioning(anchor: HTMLElement): { origin: HTMLElement; positions: ConnectedPosition[] } {
     const panel = anchor.closest<HTMLElement>(".mat-datepicker-content") ?? anchor;
     const cell = anchor.getBoundingClientRect();
@@ -545,8 +562,9 @@ export class AuditComponent {
     return { origin: panel, positions: clockPopupPositions(offsetY) };
   }
 
-  // Shows the clock in a popup beside the picker panel at the clicked day's row (see clockPopupPositions), pushed back
-  // into the viewport if needed. Its backdrop and Escape close only the clock, the picker stays open.
+  // Shows the clock in a popup below the picker panel, or beside it at the clicked day's row (see clockPopupPositions),
+  // pushed back into the viewport if none fits. Its backdrop and Escape close only the clock, the picker stays open,
+  // and the focus goes back to the clicked day. The clock traps the focus while it is shown.
   private openClock(target: AuditClockTarget, anchor: HTMLElement | null): void {
     this.closeClock();
     this.clockTarget.set(target);

@@ -24,7 +24,7 @@ import { PiResponse } from "@app/app.component";
 import { AuditDownloadDialogComponent } from "@components/logs/audit/audit-download-dialog/audit-download-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
-import { parseFilterTimestamp } from "@utils/date-format.utils";
+import { parseFilterEndTimestamp, parseFilterTimestamp } from "@utils/date-format.utils";
 import { splitExactMatch } from "@utils/filter.utils";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -100,12 +100,17 @@ const apiFilterKeys = [
   "container_type"
 ];
 
-// An emptied or removed chip drops the bound, an unparsable edit in progress keeps the previous one.
-function boundFromChip(chip: string | undefined, previous: string | null | undefined): string | null {
+// An emptied or removed chip drops the bound, an unparsable edit in progress keeps the previous one. The end of an
+// interval is read by parseFilterEndTimestamp, so a typed end that is only a date includes that whole local day.
+function boundFromChip(
+  chip: string | undefined,
+  previous: string | null | undefined,
+  parse: (value: string) => string | null = parseFilterTimestamp
+): string | null {
   if (!chip?.trim()) {
     return null;
   }
-  return parseFilterTimestamp(chip) ?? previous ?? null;
+  return parse(chip) ?? previous ?? null;
 }
 
 // A startdate or date value with a "/" is an ISO 8601 time interval "<start>/<end>", either end may be empty. Any other
@@ -188,7 +193,24 @@ export class AuditService extends FilterableTableService implements AuditService
     source: () => this.activeFilter().getValueOfKey("startdate"),
     computation: (chip, previous) => {
       const interval = timeInterval(chip);
-      return interval ? boundFromChip(interval.end, previous?.value) : null;
+      return interval ? boundFromChip(interval.end, previous?.value, parseFilterEndTimestamp) : null;
+    }
+  });
+
+  // The bounds of a typed date interval chip ("<start>/<end>" on date), read like the startdate halves: a bound
+  // without an offset is the viewer's local time, an emptied half drops it and an unparsable edit keeps the last one.
+  private readonly dateFrom = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("date"),
+    computation: (chip, previous) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.start, previous?.value) : null;
+    }
+  });
+  private readonly dateTo = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("date"),
+    computation: (chip, previous) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.end, previous?.value, parseFilterEndTimestamp) : null;
     }
   });
 
@@ -238,12 +260,16 @@ export class AuditService extends FilterableTableService implements AuditService
 
   // The filter parameters of search and download. A startdate interval chip goes out as "<fromIso>/<toIso>" in UTC with
   // open ends left empty, or not at all when neither bound is set, instead of the wildcard-wrapped chip text. A typed
-  // date interval goes out trimmed and without wildcards, the backend checks its bounds.
+  // date interval goes out the same way, its bounds read as the startdate halves are.
   private requestFilterParams(): Record<string, string> {
     const params = { ...this.filterParams() };
-    const dateInterval = timeInterval(this.activeFilter().getValueOfKey("date"));
-    if (dateInterval) {
-      params["date"] = `${dateInterval.start.trim()}/${dateInterval.end.trim()}`;
+    if (timeInterval(this.activeFilter().getValueOfKey("date"))) {
+      delete params["date"];
+      const dateFrom = this.dateFrom();
+      const dateTo = this.dateTo();
+      if (dateFrom || dateTo) {
+        params["date"] = `${dateFrom ?? ""}/${dateTo ?? ""}`;
+      }
     }
     if (timeInterval(this.activeFilter().getValueOfKey("startdate"))) {
       delete params["startdate"];

@@ -16,7 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { InteractivityChecker } from "@angular/cdk/a11y";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { axe } from "@testing/axe";
 import {
   CLOCK_DIAL_SIZE,
   CLOCK_INNER_RADIUS,
@@ -102,12 +104,26 @@ describe("ClockDialComponent", () => {
     face().dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
     fixture.detectChanges();
   };
+  const hourField = (): HTMLInputElement => fixture.nativeElement.querySelector(".clock-dial__field--hour");
+  const minuteField = (): HTMLInputElement => fixture.nativeElement.querySelector(".clock-dial__field--minute");
+  // Typing into a field: its new text and the input event the browser fires for it.
+  const type = (field: HTMLInputElement, text: string): void => {
+    field.value = text;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    fixture.detectChanges();
+  };
+  const fieldKey = (field: HTMLInputElement, name: string): void => {
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+  };
   const markClasses = (text: string) =>
     Array.from(fixture.nativeElement.querySelectorAll(".clock-dial__mark") as NodeListOf<Element>).find(
       (mark) => mark.textContent?.trim() === text
     )?.classList;
 
   async function create(min: ClockTime | null = null): Promise<void> {
+    // jsdom does no layout, so the CDK sees every element as invisible and the focus trap would find nothing to focus.
+    jest.spyOn(InteractivityChecker.prototype, "isVisible").mockReturnValue(true);
     await TestBed.configureTestingModule({ imports: [ClockDialComponent] }).compileComponents();
     fixture = TestBed.createComponent(ClockDialComponent);
     component = fixture.componentInstance;
@@ -162,8 +178,8 @@ describe("ClockDialComponent", () => {
 
     expect(component.minute()).toBe(7);
     expect(emitted).toEqual([{ hour: 1, minute: 7 }]);
-    expect(fixture.nativeElement.querySelector(".clock-dial__readout").textContent).toContain("01");
-    expect(fixture.nativeElement.querySelector(".clock-dial__readout").textContent).toContain("07");
+    expect(hourField().value).toBe("01");
+    expect(minuteField().value).toBe("07");
   });
 
   it("dragging follows the pointer and commits where it is released", async () => {
@@ -195,7 +211,7 @@ describe("ClockDialComponent", () => {
     tap(90, CLOCK_OUTER_RADIUS);
     expect(component.view()).toBe("minutes");
 
-    (fixture.nativeElement.querySelector(".clock-dial__part") as HTMLButtonElement).click();
+    hourField().click();
     fixture.detectChanges();
 
     expect(component.view()).toBe("hours");
@@ -246,6 +262,128 @@ describe("ClockDialComponent", () => {
       pointer("pointermove", 240, CLOCK_OUTER_RADIUS);
       pointer("pointerup", 240, CLOCK_OUTER_RADIUS);
       expect(component.hour()).toBe(10);
+    });
+  });
+
+  describe("typing", () => {
+    it("the hour field has the focus on open", async () => {
+      await create();
+      expect(document.activeElement).toBe(hourField());
+    });
+
+    it("a typed hour moves on to the minute field, a typed minute and Enter emit the time", async () => {
+      await create();
+      type(hourField(), "09");
+      expect(component.hour()).toBe(9);
+      expect(component.view()).toBe("minutes");
+      expect(document.activeElement).toBe(minuteField());
+
+      type(minuteField(), "45");
+      expect(component.minute()).toBe(45);
+      expect(emitted).toEqual([]);
+      fieldKey(minuteField(), "Enter");
+
+      expect(emitted).toEqual([{ hour: 9, minute: 45 }]);
+    });
+
+    it("refuses a keystroke that would make the hour past 23: 2 then 5 stays 2, 1 then 5 gives 15", async () => {
+      await create();
+      type(hourField(), "2");
+      type(hourField(), "25");
+      expect(hourField().value).toBe("2");
+      expect(component.hour()).toBe(2);
+      expect(hourField().hasAttribute("aria-invalid")).toBe(false);
+
+      type(hourField(), "");
+      type(hourField(), "1");
+      type(hourField(), "15");
+      expect(hourField().value).toBe("15");
+      expect(component.hour()).toBe(15);
+    });
+
+    it("refuses a keystroke that would make the minute past 59: 6 then 0 stays 6", async () => {
+      await create();
+      type(hourField(), "10");
+      type(minuteField(), "6");
+      type(minuteField(), "60");
+      expect(minuteField().value).toBe("6");
+      expect(component.minute()).toBe(6);
+      fieldKey(minuteField(), "Enter");
+      expect(emitted).toEqual([{ hour: 10, minute: 6 }]);
+    });
+
+    it("refuses a pasted value that is out of range", async () => {
+      await create();
+      type(hourField(), "1");
+      type(hourField(), "99");
+      expect(hourField().value).toBe("1");
+      expect(component.hour()).toBe(1);
+    });
+
+    it("keeps only digits", async () => {
+      await create();
+      type(hourField(), "1a");
+      expect(hourField().value).toBe("1");
+      expect(component.hour()).toBe(1);
+    });
+
+    it("refuses a keystroke that would make the time fall before the minimum", async () => {
+      await create({ hour: 9, minute: 30 });
+      // "0" can still become 09, so it is taken, but as an unfinished hour it sets none yet.
+      type(hourField(), "0");
+      expect(hourField().value).toBe("0");
+      expect(component.hour()).toBeNull();
+      type(hourField(), "08");
+      expect(hourField().value).toBe("0");
+      expect(component.hour()).toBeNull();
+
+      type(hourField(), "09");
+      expect(component.hour()).toBe(9);
+      // No minute from 1 on (1, 10-19) is at or after 9:30, so "1" is refused right away.
+      type(minuteField(), "1");
+      expect(minuteField().value).toBe("");
+      expect(component.minute()).toBeNull();
+      fieldKey(minuteField(), "Enter");
+      expect(emitted).toEqual([]);
+
+      type(minuteField(), "3");
+      expect(minuteField().value).toBe("3");
+      expect(component.minute()).toBeNull();
+      type(minuteField(), "30");
+      fieldKey(minuteField(), "Enter");
+      expect(emitted).toEqual([{ hour: 9, minute: 30 }]);
+    });
+
+    it("the fields show what the dial picks, the arrow keys in a field step its value", async () => {
+      await create();
+      tap(90, CLOCK_OUTER_RADIUS);
+      expect(hourField().value).toBe("03");
+
+      fieldKey(hourField(), "ArrowUp");
+      expect(component.hour()).toBe(4);
+      expect(hourField().value).toBe("04");
+      fieldKey(minuteField(), "ArrowDown");
+      expect(component.minute()).toBe(59);
+      expect(minuteField().value).toBe("59");
+    });
+
+    // Checked with a time set: without a value the dial's slider has no aria-valuenow, which axe flags (known, open).
+    it("passes the axe accessibility checks with a typed time", async () => {
+      await create();
+      type(hourField(), "09");
+      type(minuteField(), "30");
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    });
+
+    it("Tab stays inside the clock: past the last element it wraps to the hour field, before the first to the dial", async () => {
+      await create();
+      const anchors = Array.from(document.querySelectorAll<HTMLElement>(".cdk-focus-trap-anchor"));
+      expect(anchors.length).toBe(2);
+
+      anchors[1].focus();
+      expect(document.activeElement).toBe(hourField());
+      anchors[0].focus();
+      expect(document.activeElement).toBe(face());
     });
   });
 

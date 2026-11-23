@@ -32,33 +32,8 @@ import { AuditService, AuditServiceInterface } from "@services/audit/audit.servi
   selector: "app-audit-date-range-header",
   imports: [MatDatepickerModule, MatButtonModule, MatCheckbox, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="audit-range-clear">
-      <button
-        mat-button
-        type="button"
-        [disabled]="!hasRange()"
-        (click)="clear()">
-        <mat-icon>filter_alt_off</mat-icon>
-        <span i18n="@@common.clearFilter">Clear Filter</span>
-      </button>
-      <mat-checkbox
-        [checked]="timeMode()"
-        (change)="onTimeModeChange($event.checked)"
-        i18n="@@audit.selectTime"
-        >Time</mat-checkbox
-      >
-    </div>
-    <mat-calendar-header />
-  `,
-  styles: `
-    .audit-range-clear {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 8px 0;
-    }
-  `
+  templateUrl: "./audit-date-range-header.component.html",
+  styleUrl: "./audit-date-range-header.component.scss"
 })
 export class AuditDateRangeHeaderComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);

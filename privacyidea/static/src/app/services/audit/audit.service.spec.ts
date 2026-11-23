@@ -221,8 +221,55 @@ describe("AuditService (signals & helpers)", () => {
     content.routeUrl.set("/logs/audit");
     TestBed.tick();
     const searchReq = httpMock.expectOne((req) => req.url.endsWith("/audit/"));
-    expect(searchReq.request.params.get("date")).toBe("2026-11-05 00:00:00 +01:00/");
+    expect(searchReq.request.params.get("date")).toBe("2026-11-04T23:00:00.000Z/");
     searchReq.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
+  });
+
+  describe("typed bounds without an offset", () => {
+    // Expectations are built with the local Date constructor, so they hold in any zone. In a zone away from UTC
+    // (as on a developer machine) a bound read as UTC instead of local fails them.
+    // The interval the audit request carries for a typed chip value.
+    const sentInterval = (key: string, value: string): string | null => {
+      auditService.activeFilter.set(new FilterValue().addEntry(key, value));
+      content.routeUrl.set("/logs/audit");
+      TestBed.tick();
+      const req = httpMock.expectOne((r) => r.url.endsWith("/audit/"));
+      const sent: string | null = req.request.params.get(key);
+      req.flush(MockPiResponse.fromValue({ auditcolumns: [], auditdata: [], count: 0, current: 1 }));
+      return sent;
+    };
+
+    it.each(["startdate", "date"])("%s: a date and time is the viewer's local time", (key) => {
+      expect(sentInterval(key, "2026-11-05 10:00:00/")).toBe(`${new Date(2026, 10, 5, 10, 0, 0, 0).toISOString()}/`);
+    });
+
+    it.each(["startdate", "date"])("%s: a date alone is local midnight, not UTC midnight", (key) => {
+      expect(sentInterval(key, "2026-11-05/")).toBe(`${new Date(2026, 10, 5, 0, 0, 0, 0).toISOString()}/`);
+    });
+
+    it.each(["startdate", "date"])("%s: a bound with Z is sent as given", (key) => {
+      expect(sentInterval(key, "/2026-11-05T10:00:00Z")).toBe("/2026-11-05T10:00:00.000Z");
+    });
+
+    it.each(["startdate", "date"])("%s: an end that is only a date includes that whole local day", (key) => {
+      expect(sentInterval(key, "2026-11-04/2026-11-05")).toBe(
+        `${new Date(2026, 10, 4, 0, 0, 0, 0).toISOString()}/${new Date(2026, 10, 5, 23, 59, 59, 0).toISOString()}`
+      );
+    });
+
+    it.each(["startdate", "date"])("%s: an end that is only a month runs to the end of its last local day", (key) => {
+      expect(sentInterval(key, "/2026-11")).toBe(`/${new Date(2026, 10, 30, 23, 59, 59, 0).toISOString()}`);
+    });
+
+    it.each(["startdate", "date"])("%s: an end with a time is that time", (key) => {
+      expect(sentInterval(key, "/2026-11-05 13:00:00")).toBe(`/${new Date(2026, 10, 5, 13, 0, 0, 0).toISOString()}`);
+    });
+
+    it("date: an unparsable edit keeps the previous bound", () => {
+      const localMidnight: string = new Date(2026, 10, 5, 0, 0, 0, 0).toISOString();
+      expect(sentInterval("date", "2026-11-05/")).toBe(`${localMidnight}/`);
+      expect(sentInterval("date", "2026-11-05 1x/")).toBe(`${localMidnight}/`);
+    });
   });
 
   it("downloadCSV does not trigger a GET request if dialog is cancelled", () => {

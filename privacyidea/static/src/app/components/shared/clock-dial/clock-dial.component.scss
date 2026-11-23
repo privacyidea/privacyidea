@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-// A small card: title, the HH:mm readout (each part switches the dial to it) and the dial. It is shown in a CDK overlay
-// pane next to the date picker, whose panel is surface-container-high: the lowest surface (white in light mode, the
+// A small card: title, the HH:mm fields (each part switches the dial to it) and the dial. It is shown in a CDK overlay
+// pane below or next to the date picker, whose panel is surface-container-high: the lowest surface (white in light mode, the
 // darkest tone in dark mode), an outline and a raised shadow set it clearly apart from it in both modes.
 :host {
   display: flex;
@@ -26,7 +26,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px 16px;
-  border-radius: 28px;
+  border-radius: var(--border-radius);
   border: 1px solid var(--mat-sys-outline-variant);
   background: var(--mat-sys-surface-container-lowest);
   color: var(--mat-sys-on-surface);
@@ -47,23 +47,24 @@
 }
 
 .clock-dial__part {
-  min-width: 72px;
+  width: 72px;
   padding: 4px 8px;
+  text-align: center;
   border: 0;
   border-radius: 8px;
   font: inherit;
   color: var(--mat-sys-on-surface);
   background: var(--mat-sys-surface-container-highest);
-  cursor: pointer;
+  cursor: text;
 
   &--active {
     color: var(--mat-sys-on-primary-container);
     background: var(--mat-sys-primary-container);
   }
 
-  &:disabled {
-    cursor: default;
-    opacity: 0.38;
+  &::placeholder {
+    color: inherit;
+    opacity: 0.6;
   }
 
   &:focus-visible {

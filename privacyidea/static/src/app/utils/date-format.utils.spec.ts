@@ -18,7 +18,12 @@
  **/
 
 import { expectedLocalDateTime } from "@testing/expected-local-date-time";
-import { atLocalTimeIso, formatLocalDateTime } from "./date-format.utils";
+import {
+  atLocalTimeIso,
+  formatLocalDateTime,
+  parseFilterEndTimestamp,
+  parseFilterTimestamp
+} from "./date-format.utils";
 
 describe("formatLocalDateTime", () => {
   it("returns an empty string for null, undefined or empty input", () => {
@@ -99,16 +104,60 @@ describe("formatLocalDateTime", () => {
 });
 
 describe("atLocalTimeIso", () => {
-  it("sets the local wall-clock time and the given seconds on the date's local day", () => {
-    expect(atLocalTimeIso(new Date(2026, 8, 24, 13, 0), "08:30", 0)).toBe(
+  it("sets the local wall-clock time at second 0 on the date's local day", () => {
+    expect(atLocalTimeIso(new Date(2026, 8, 24, 13, 0), "08:30")).toBe(
       new Date(2026, 8, 24, 8, 30, 0, 0).toISOString()
     );
-    expect(atLocalTimeIso(new Date(2026, 8, 24), "17:15", 59)).toBe(new Date(2026, 8, 24, 17, 15, 59, 0).toISOString());
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "17:15")).toBe(new Date(2026, 8, 24, 17, 15, 0, 0).toISOString());
   });
 
   it("returns null for an empty or malformed time", () => {
-    expect(atLocalTimeIso(new Date(2026, 8, 24), "", 0)).toBeNull();
-    expect(atLocalTimeIso(new Date(2026, 8, 24), "25:00", 0)).toBeNull();
-    expect(atLocalTimeIso(new Date(2026, 8, 24), "8:3", 0)).toBeNull();
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "")).toBeNull();
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "25:00")).toBeNull();
+    expect(atLocalTimeIso(new Date(2026, 8, 24), "8:3")).toBeNull();
+  });
+});
+
+describe("parseFilterTimestamp", () => {
+  // Expectations are built with the local Date constructor, so they hold in any zone. In a zone away from UTC
+  // (as on a developer machine) a bound read as UTC instead of local fails them.
+  it("reads a typed date and time without an offset as the viewer's local time", () => {
+    expect(parseFilterTimestamp("2026-11-05 10:00:00")).toBe(new Date(2026, 10, 5, 10, 0, 0, 0).toISOString());
+  });
+
+  it("reads a typed date without a time as local midnight, not UTC midnight", () => {
+    expect(parseFilterTimestamp("2026-11-05")).toBe(new Date(2026, 10, 5, 0, 0, 0, 0).toISOString());
+    expect(parseFilterTimestamp("2026-11")).toBe(new Date(2026, 10, 1, 0, 0, 0, 0).toISOString());
+  });
+
+  it("keeps a bound with Z or an offset at the instant it names", () => {
+    expect(parseFilterTimestamp("2026-11-05T10:00:00Z")).toBe("2026-11-05T10:00:00.000Z");
+    expect(parseFilterTimestamp("2026-11-05 10:00:00 +01:00")).toBe("2026-11-05T09:00:00.000Z");
+  });
+
+  it("returns null for an empty or unparsable value", () => {
+    expect(parseFilterTimestamp("")).toBeNull();
+    expect(parseFilterTimestamp("2026-11-05 10:0x")).toBeNull();
+    expect(parseFilterTimestamp("2026-13")).toBeNull();
+    expect(parseFilterTimestamp("2026-02-31")).toBeNull();
+  });
+});
+
+describe("parseFilterEndTimestamp", () => {
+  it("reads a typed end that is only a date as the end of that local day", () => {
+    expect(parseFilterEndTimestamp("2026-11-05")).toBe(new Date(2026, 10, 5, 23, 59, 59, 0).toISOString());
+  });
+
+  it("reads a typed month or year as the end of its last local day", () => {
+    expect(parseFilterEndTimestamp("2026-11")).toBe(new Date(2026, 10, 30, 23, 59, 59, 0).toISOString());
+    expect(parseFilterEndTimestamp("2026-02")).toBe(new Date(2026, 1, 28, 23, 59, 59, 0).toISOString());
+    expect(parseFilterEndTimestamp("2026")).toBe(new Date(2026, 11, 31, 23, 59, 59, 0).toISOString());
+  });
+
+  it("reads an end with a time or an offset as parseFilterTimestamp does", () => {
+    expect(parseFilterEndTimestamp("2026-11-05 10:00:00")).toBe(new Date(2026, 10, 5, 10, 0, 0, 0).toISOString());
+    expect(parseFilterEndTimestamp("2026-11-05T10:00:00Z")).toBe("2026-11-05T10:00:00.000Z");
+    expect(parseFilterEndTimestamp("2026-13")).toBeNull();
+    expect(parseFilterEndTimestamp("")).toBeNull();
   });
 });

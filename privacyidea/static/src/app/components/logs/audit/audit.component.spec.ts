@@ -196,6 +196,33 @@ describe("AuditComponent (unit)", () => {
       );
     });
 
+    it("opening and closing the picker without a pick keeps an open-ended range open", () => {
+      const fromIso: string = startOfLocalDayIso(new Date(2026, 8, 24));
+      const chip = `${toFilterDisplay(fromIso)}/`;
+      mockAuditService.timestampFrom.set(fromIso);
+      mockAuditService.activeFilter.set(new FilterValue().addEntry("startdate", chip));
+
+      component.onRangePickerOpened();
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(fromIso);
+      expect(mockAuditService.timestampTo()).toBeNull();
+      expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe(chip);
+    });
+
+    it("a start day picked after opening over an open-ended range still filters that whole day on close", () => {
+      const day: Date = new Date(2026, 8, 26);
+      mockAuditService.timestampFrom.set(startOfLocalDayIso(new Date(2026, 8, 24)));
+
+      component.onRangePickerOpened();
+      component.onRangeStartDateChange(day);
+      component.onRangeEndDateChange(null);
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(startOfLocalDayIso(day));
+      expect(mockAuditService.timestampTo()).toBe(endOfLocalDayIso(day));
+    });
+
     it("closing the picker with a full range changes nothing", () => {
       component.onRangeStartDateChange(new Date(2026, 8, 24));
       component.onRangeEndDateChange(new Date(2026, 8, 26));
@@ -287,6 +314,34 @@ describe("AuditComponent (unit)", () => {
       );
     });
 
+    it("opening and closing the picker without a pick keeps an open-ended range open", () => {
+      const fromIso: string = startOfLocalDayIso(new Date(2026, 8, 24));
+      const chip = `${toFilterDisplay(fromIso)}/`;
+      mockAuditService.rangeTimeMode.set(true);
+      mockAuditService.timestampFrom.set(fromIso);
+      mockAuditService.activeFilter.set(new FilterValue().addEntry("startdate", chip));
+
+      component.onRangePickerOpened();
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(fromIso);
+      expect(mockAuditService.timestampTo()).toBeNull();
+      expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe(chip);
+    });
+
+    it("rule 1 over an open-ended range: a picked day and start time still run to that day's end on close", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      mockAuditService.timestampFrom.set(startOfLocalDayIso(new Date(2026, 8, 20)));
+      component.onRangePickerOpened();
+      clickDay(new Date(2026, 8, 24));
+      component.onClockTimeSelected({ hour: 8, minute: 30 });
+
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(new Date(2026, 8, 24, 8, 30, 0, 0).toISOString());
+      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 24, 23, 59, 59, 0).toISOString());
+    });
+
     it("rule 1: closing the picker before a start time was picked applies nothing", () => {
       mockAuditService.rangeTimeMode.set(true);
       component.onRangePickerOpened();
@@ -318,7 +373,7 @@ describe("AuditComponent (unit)", () => {
       component.onClockTimeSelected({ hour: 17, minute: 15 });
 
       const fromIso = new Date(2026, 8, 24, 8, 30, 0, 0).toISOString();
-      const toIso = new Date(2026, 8, 24, 17, 15, 59, 0).toISOString();
+      const toIso = new Date(2026, 8, 24, 17, 15, 0, 0).toISOString();
       expect(mockAuditService.timestampFrom()).toBe(fromIso);
       expect(mockAuditService.timestampTo()).toBe(toIso);
       expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe(
@@ -343,7 +398,25 @@ describe("AuditComponent (unit)", () => {
       component.onClockTimeSelected({ hour: 6, minute: 45 });
 
       expect(mockAuditService.timestampFrom()).toBe(new Date(2026, 8, 24, 22, 0, 0, 0).toISOString());
-      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 26, 6, 45, 59, 0).toISOString());
+      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 26, 6, 45, 0, 0).toISOString());
+    });
+
+    it("a picked end time is that point in time: 12:00 to 13:00 ends at 13:00:00, not 13:00:59", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      component.onRangePickerOpened();
+      clickDay(new Date(2026, 8, 24));
+      component.onClockTimeSelected({ hour: 12, minute: 0 });
+      clickDay(new Date(2026, 8, 24));
+
+      component.onClockTimeSelected({ hour: 13, minute: 0 });
+
+      const fromIso: string = new Date(2026, 8, 24, 12, 0, 0, 0).toISOString();
+      const toIso: string = new Date(2026, 8, 24, 13, 0, 0, 0).toISOString();
+      expect(mockAuditService.timestampTo()).toBe(toIso);
+      expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe(
+        `${toFilterDisplay(fromIso)}/${toFilterDisplay(toIso)}`
+      );
+      expect(toFilterDisplay(toIso)).toContain("13:00:00");
     });
 
     it("a day before the start day starts over with a new start clock", () => {
@@ -425,15 +498,18 @@ describe("AuditComponent (unit)", () => {
       expect(mockAuditService.timestampFrom()).toBeNull();
     });
 
-    it("the clock opens beside the picker panel, right first, then left, at the clicked row", () => {
+    it("the clock opens directly below the picker panel, beside it at the clicked row only when there is no room", () => {
       const positions = clockPopupPositions(12);
       expect(positions[0]).toEqual(
-        expect.objectContaining({ originX: "end", overlayX: "start", originY: "center", overlayY: "center", offsetY: 12 })
+        expect.objectContaining({ originX: "center", overlayX: "center", originY: "bottom", overlayY: "top" })
       );
       expect(positions[1]).toEqual(
+        expect.objectContaining({ originX: "end", overlayX: "start", originY: "center", overlayY: "center", offsetY: 12 })
+      );
+      expect(positions[2]).toEqual(
         expect.objectContaining({ originX: "start", overlayX: "end", originY: "center", overlayY: "center", offsetY: 12 })
       );
-      expect(positions.length).toBeGreaterThan(2);
+      expect(positions.length).toBeGreaterThan(3);
     });
 
     it("time mode disables dragging the range, the days come from clicks only", () => {
@@ -770,7 +846,7 @@ describe("AuditComponent (template rendering)", () => {
         new Date(day.getFullYear(), day.getMonth(), 10, 8, 30, 0, 0).toISOString()
       );
       expect(mockAuditService.timestampTo()).toBe(
-        new Date(day.getFullYear(), day.getMonth(), 10, 17, 15, 59, 0).toISOString()
+        new Date(day.getFullYear(), day.getMonth(), 10, 17, 15, 0, 0).toISOString()
       );
       expect(closeSpy).toHaveBeenCalled();
       expect(dial()).toBeNull();
@@ -786,8 +862,27 @@ describe("AuditComponent (template rendering)", () => {
       const { origin, positions } = component.clockPopupPositioning(cells()[9]);
 
       expect(origin).toBe(cells()[9].closest(".mat-datepicker-content"));
-      expect(positions[0].originX).toBe("end");
-      expect(positions[0].overlayX).toBe("start");
+      expect(positions[0].originY).toBe("bottom");
+      expect(positions[0].overlayY).toBe("top");
+    });
+
+    it("time mode: the open clock has the focus in its hour field, and closing it gives the focus back to the day", () => {
+      const picker = component.rangePicker()!;
+      mockAuditService.rangeTimeMode.set(true);
+      fixture.detectChanges();
+      picker.open();
+      fixture.detectChanges();
+      cells()[9].focus();
+      cells()[9].click();
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(dial()!.querySelector(".clock-dial__field--hour"));
+
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+      fixture.detectChanges();
+
+      expect(dial()).toBeNull();
+      expect(document.activeElement).toBe(cells()[9]);
     });
 
     // Escape after a start time is picked closes the picker and applies that day from the start time (rule 1), whatever

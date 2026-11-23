@@ -16,12 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { FocusTrap, FocusTrapFactory } from "@angular/cdk/a11y";
 import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
+  inject,
   input,
   output,
   signal,
@@ -93,9 +96,11 @@ function hourPoint(hour: number): { x: number; y: number } {
 }
 
 /**
- * Clock face time picker: first the hour on a two-ring 24h dial, then (automatically) the minute. Tap or drag on the
- * dial, or use the arrow keys (PageUp/PageDown step 5 minutes) and Enter. Picking the minute emits `selected`.
- * Times before `min` are greyed out and cannot be picked, so a caller can rule out an end before a start.
+ * Clock face time picker: first the hour on a two-ring 24h dial, then (automatically) the minute. Type the time into
+ * the hour and minute fields (the focus starts in the hour field), tap or drag on the dial, or use the arrow keys
+ * (PageUp/PageDown step 5) and Enter. Picking the minute on the dial, or Enter with both fields valid, emits `selected`.
+ * Times before `min` are greyed out and cannot be picked or typed, so a caller can rule out an end before a start.
+ * The focus is trapped inside while the clock is shown, the caller closes it (Escape) and gives the focus back.
  */
 @Component({
   selector: "app-clock-dial",
@@ -104,6 +109,7 @@ function hourPoint(hour: number): { x: number; y: number } {
   styleUrl: "./clock-dial.component.scss",
   host: {
     role: "dialog",
+    "aria-modal": "true",
     "[attr.aria-label]": "label()"
   }
 })
@@ -121,7 +127,16 @@ export class ClockDialComponent {
   protected readonly hourLabel = $localize`:@@clockDial.hour:Hour`;
   protected readonly minuteLabel = $localize`:@@clockDial.minute:Minute`;
   private readonly face = viewChild.required<ElementRef<HTMLElement>>("face");
+  private readonly hourField = viewChild.required<ElementRef<HTMLInputElement>>("hourField");
+  private readonly minuteField = viewChild.required<ElementRef<HTMLInputElement>>("minuteField");
   private dragging = false;
+  private focusTrap: FocusTrap | null = null;
+
+  // The text of the hour and minute fields. Typing sets it as typed, a value picked on the dial or by an arrow key
+  // writes it padded to two digits. A keystroke or paste that could no longer give an allowed value (past 23 / 59, or
+  // before `min` whatever digit follows) is refused, and the field keeps its previous text.
+  protected readonly hourDraft = signal<string>("");
+  protected readonly minuteDraft = signal<string>("");
 
   protected readonly hourText = computed(() => {
     const hour = this.hour();
@@ -172,7 +187,13 @@ export class ClockDialComponent {
   });
 
   constructor() {
-    afterNextRender(() => this.face().nativeElement.focus());
+    const host: HTMLElement = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const focusTrapFactory: FocusTrapFactory = inject(FocusTrapFactory);
+    afterNextRender(() => {
+      this.focusTrap = focusTrapFactory.create(host);
+      this.hourField().nativeElement.focus();
+    });
+    inject(DestroyRef).onDestroy(() => this.focusTrap?.destroy());
   }
 
   isHourDisabled(hour: number): boolean {
@@ -194,6 +215,82 @@ export class ClockDialComponent {
     if (this.hour() !== null) {
       this.view.set("minutes");
     }
+  }
+
+  protected onHourInput(event: Event): void {
+    const text: string | null = this.acceptedText(event, this.hourDraft(), 23, (hour) => this.isHourDisabled(hour));
+    if (text === null) {
+      return;
+    }
+    this.hourDraft.set(text);
+    this.applyHour(this.valueOf(text, 23, (hour) => this.isHourDisabled(hour)));
+    if (text.length === 2) {
+      this.view.set("minutes");
+      this.minuteField().nativeElement.focus();
+    }
+  }
+
+  protected onMinuteInput(event: Event): void {
+    const text: string | null = this.acceptedText(event, this.minuteDraft(), 59, (minute) =>
+      this.isMinuteDisabled(minute)
+    );
+    if (text === null) {
+      return;
+    }
+    this.minuteDraft.set(text);
+    this.minute.set(this.valueOf(text, 59, (minute) => this.isMinuteDisabled(minute)));
+  }
+
+  // Arrow keys and PageUp/PageDown in a field step its value as on the dial, Enter emits the typed time once both
+  // fields hold a valid value, or moves on to the minute field after a valid hour.
+  protected onFieldKeydown(event: KeyboardEvent, part: ClockDialView): void {
+    const steps: Record<string, number> = { ArrowUp: 1, ArrowDown: -1, PageUp: 5, PageDown: -5 };
+    if (event.key in steps) {
+      event.preventDefault();
+      this.view.set(part === "minutes" && this.hour() === null ? "hours" : part);
+      this.step(steps[event.key]);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const hour = this.hour();
+      const minute = this.minute();
+      if (hour !== null && minute !== null) {
+        this.selected.emit({ hour, minute });
+      } else if (hour !== null) {
+        this.view.set("minutes");
+        this.minuteField().nativeElement.focus();
+      }
+    }
+  }
+
+  // The field's new text, its digits only, when it can still give an allowed value: empty, an allowed value itself, or
+  // a first digit that some second one makes allowed. Otherwise null, and the field is set back to `previous` with
+  // the caret at its end.
+  private acceptedText(
+    event: Event,
+    previous: string,
+    max: number,
+    disabled: (value: number) => boolean
+  ): string | null {
+    const field = event.target as HTMLInputElement;
+    const digits: string = field.value.replace(/\D/g, "");
+    const allowed = (value: number): boolean => value <= max && !disabled(value);
+    const first = Number(digits);
+    const ok: boolean =
+      digits.length === 0 ||
+      (digits.length === 1 && (allowed(first) || Array.from({ length: 10 }, (_, d) => first * 10 + d).some(allowed))) ||
+      (digits.length === 2 && allowed(first));
+    const text: string = ok ? digits : previous;
+    if (field.value !== text) {
+      field.value = text;
+      field.setSelectionRange(text.length, text.length);
+    }
+    return ok ? text : null;
+  }
+
+  // The value an accepted field text stands for, or null while it is empty or an unfinished first digit.
+  private valueOf(text: string, max: number, disabled: (value: number) => boolean): number | null {
+    const value = Number(text);
+    return text && value <= max && !disabled(value) ? value : null;
   }
 
   protected onPointerDown(event: PointerEvent): void {
@@ -258,7 +355,7 @@ export class ClockDialComponent {
     if (hours) {
       this.setHour(next);
     } else {
-      this.minute.set(next);
+      this.setMinute(next);
     }
   }
 
@@ -291,17 +388,29 @@ export class ClockDialComponent {
     } else {
       const minute = minuteAtPoint(x, y);
       if (!this.isMinuteDisabled(minute)) {
-        this.minute.set(minute);
+        this.setMinute(minute);
       }
     }
   }
 
-  // A new hour can make the chosen minute fall before the minimum, which is then dropped.
+  // An hour picked on the dial or by an arrow key, written into the hour field too.
   private setHour(hour: number): void {
+    this.hourDraft.set(String(hour).padStart(2, "0"));
+    this.applyHour(hour);
+  }
+
+  private setMinute(minute: number): void {
+    this.minuteDraft.set(String(minute).padStart(2, "0"));
+    this.minute.set(minute);
+  }
+
+  // A new hour can make the chosen minute fall before the minimum, which is then dropped, from its field too.
+  private applyHour(hour: number | null): void {
     this.hour.set(hour);
     const minute = this.minute();
     if (minute !== null && this.isMinuteDisabled(minute)) {
       this.minute.set(null);
+      this.minuteDraft.set("");
     }
   }
 }

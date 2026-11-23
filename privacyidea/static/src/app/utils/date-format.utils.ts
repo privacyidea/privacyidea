@@ -82,14 +82,37 @@ export function toFilterDisplay(isoString: string): string {
   return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
 }
 
+// A typed date without a time ("2026", "2026-11" or "2026-11-05") as the local period it names, by its first and its
+// last day. Undefined when the value is no date alone, null when it names an impossible date: the Date constructor
+// rolls an impossible month or day over into the next one, and a typo must not move the bound.
+function typedLocalPeriod(value: string): { first: Date; last: Date } | null | undefined {
+  const match: RegExpExecArray | null = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(value);
+  if (!match) {
+    return undefined;
+  }
+  const [year, month, date]: number[] = [Number(match[1]), Number(match[2] ?? 1), Number(match[3] ?? 1)];
+  const first = new Date(year, month - 1, date);
+  if (first.getMonth() !== month - 1 || first.getDate() !== date) {
+    return null;
+  }
+  const last: Date = match[3] ? first : match[2] ? new Date(year, month, 0) : new Date(year, 11, 31);
+  return { first, last };
+}
+
 /**
  * Inverse of toFilterDisplay for the editable time filter chips: parses the mirrored display, plain ISO
  * or a partial typed datetime into an ISO string, returning null for an empty or unparsable value.
+ * A value without an offset is the viewer's local time, as everywhere in the WebUI, a date alone included: it is local
+ * midnight, where new Date("2026-11-05") would give UTC midnight. A value with Z or an offset names that instant.
  */
 export function parseFilterTimestamp(value: string | null | undefined): string | null {
   const trimmed = (value ?? "").trim();
   if (!trimmed) {
     return null;
+  }
+  const period = typedLocalPeriod(trimmed);
+  if (period !== undefined) {
+    return period ? period.first.toISOString() : null;
   }
   // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
   // then fall back to the raw text so plain ISO input still parses.
@@ -100,6 +123,19 @@ export function parseFilterTimestamp(value: string | null | undefined): string |
     }
   }
   return null;
+}
+
+/**
+ * parseFilterTimestamp for the end of a range: a typed end that is only a date (a day, a month or a year) includes
+ * that whole local period, so it runs to 23:59:59 of its last day, as a day picked in the range picker does. An end
+ * with a time or an offset reads as in parseFilterTimestamp.
+ */
+export function parseFilterEndTimestamp(value: string | null | undefined): string | null {
+  const period = typedLocalPeriod((value ?? "").trim());
+  if (period !== undefined) {
+    return period ? endOfLocalDayIso(period.last) : null;
+  }
+  return parseFilterTimestamp(value);
 }
 
 /**
@@ -120,14 +156,14 @@ export function endOfLocalDayIso(date: Date): string {
 
 /**
  * The local day a date falls on at a wall-clock time given as "HH:mm" (as formatClockTime of the clock dial gives it),
- * with the given seconds, as an ISO string. Null when the time is empty or malformed.
+ * at second 0, as an ISO string. Null when the time is empty or malformed.
  */
-export function atLocalTimeIso(date: Date, time: string, seconds: number): string | null {
+export function atLocalTimeIso(date: Date, time: string): string | null {
   const match = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/.exec(time);
   if (!match) {
     return null;
   }
   const day = new Date(date);
-  day.setHours(Number(match[1]), Number(match[2]), seconds, 0);
+  day.setHours(Number(match[1]), Number(match[2]), 0, 0);
   return day.toISOString();
 }
