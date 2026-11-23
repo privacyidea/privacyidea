@@ -466,6 +466,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
     this.inputsResetPending = true;
+    // The inputs belong to the enrolled token now, so they are no unsaved changes, also not while the first step of
+    // push, WebAuthn or passkey is open. The input reset registers the guard again for the next token.
+    this.pendingChangesService.clearAllRegistrations();
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
@@ -477,9 +480,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       }
       enrollmentResponse = stepResult;
     }
-    // The inputs of the enrolled token are not unsaved changes any more. The input reset registers
-    // the guard again for the next token.
-    this.pendingChangesService.clearAllRegistrations();
     if (!enrollmentResponse) {
       // The step stopped before the enrollment finished, for example because the user closed the push
       // QR dialog in clientwait. The token exists, and the reopen button finishes its enrollment later.
