@@ -28,7 +28,7 @@ import { axe } from "@testing/axe";
 import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollment-step-host";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
 
 describe("TokenVerifyEnrollmentComponent", () => {
@@ -162,6 +162,37 @@ describe("TokenVerifyEnrollmentComponent", () => {
     component.onAction("verify");
     expect(mockTokenService.verifyToken).toHaveBeenCalled();
     expect(host.flow.finishStep).not.toHaveBeenCalled();
+  });
+
+  describe("while the OTP is checked", () => {
+    let request: Subject<unknown>;
+
+    beforeEach(() => {
+      request = new Subject();
+      mockTokenService.verifyToken = jest.fn().mockReturnValue(request);
+      component.verifyOTP_value.set("123456");
+      component.onAction("verify");
+    });
+
+    it("checks the OTP only once and disables Verify", () => {
+      component.onAction("verify");
+
+      expect(mockTokenService.verifyToken).toHaveBeenCalledTimes(1);
+      expect(component.actions()[0].disabled).toBe(true);
+    });
+
+    it("enables Verify again once the check failed", () => {
+      request.error(new Error("failed"));
+
+      expect(component.actions()[0].disabled).toBe(false);
+    });
+
+    it("ignores a response that arrives after the step was left", () => {
+      fixture.destroy();
+      request.next({ result: { status: true }, detail: { rollout_state: "enrolled", serial: "123" } });
+
+      expect(host.flow.finishStep).not.toHaveBeenCalled();
+    });
   });
 
   it("passes the axe accessibility checks", async () => {

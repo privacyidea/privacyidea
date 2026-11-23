@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatInput } from "@angular/material/input";
 import { MatFormField, MatLabel } from "@angular/material/select";
@@ -25,6 +26,7 @@ import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-st
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { finalize } from "rxjs";
 
 // Asks for an OTP value to verify that the authenticator was set up, see the verify_enrollment policy.
 @Component({
@@ -34,6 +36,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 })
 export class TokenVerifyEnrollmentComponent extends EnrollmentStep {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly title = signal($localize`:@@token.verifyTokenEnrollment:Verify Token Enrollment`).asReadonly();
   readonly headerState = "verify";
@@ -50,13 +53,15 @@ export class TokenVerifyEnrollmentComponent extends EnrollmentStep {
     required(f);
   });
   invalidInputSignal = computed(() => !this.verifyOTPForm().valid());
+  // Set while the OTP is checked, so a second click does not check it again.
+  protected readonly verifying = signal(false);
 
   override readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`:@@token.verify:Verify`,
       type: "confirm",
       value: "verify",
-      disabled: this.invalidInputSignal()
+      disabled: this.invalidInputSignal() || this.verifying()
     }
   ]);
 
@@ -68,16 +73,25 @@ export class TokenVerifyEnrollmentComponent extends EnrollmentStep {
 
   verifyOTP() {
     const tokenSerial = this.responseDetails?.serial;
-    if (!tokenSerial) {
+    if (!tokenSerial || this.verifying()) {
       return;
     }
-    this.tokenService.verifyToken(tokenSerial, this.verifyOTP_value()).subscribe({
-      next: (response) => {
-        if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
-          this.flow.finishStep(response as unknown as EnrollmentResponse);
-        }
-      }
-    });
+    this.verifying.set(true);
+    this.tokenService
+      .verifyToken(tokenSerial, this.verifyOTP_value())
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.verifying.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
+            this.flow.finishStep(response as unknown as EnrollmentResponse);
+          }
+        },
+        // verifyToken() has already notified about the failure; Verify works again.
+        error: () => undefined
+      });
   }
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {

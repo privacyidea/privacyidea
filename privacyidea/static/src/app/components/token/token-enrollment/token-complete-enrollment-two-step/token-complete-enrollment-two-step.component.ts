@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -25,6 +26,7 @@ import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-st
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { finalize } from "rxjs";
 
 // The second request of a two-step enrollment, with the part of the key that the authenticator app generated.
 @Component({
@@ -34,6 +36,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 })
 export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly title = signal($localize`:@@token.completeToken:Complete Token Enrollment`).asReadonly();
   readonly headerState = "incomplete";
@@ -56,13 +59,16 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
     required(f);
   });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
+  // A second request would arrive after the token left clientwait, and the server would store the client part as
+  // the whole key.
+  protected readonly enrolling = signal(false);
 
   override readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
-      disabled: this.invalidInputSignal()
+      disabled: this.invalidInputSignal() || this.enrolling()
     }
   ]);
 
@@ -77,6 +83,10 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   }
 
   enrollToken() {
+    if (this.enrolling()) {
+      return;
+    }
+    this.enrolling.set(true);
     this.enrollParameters.data.serial = this.enrollDetails?.serial;
     if (this.clientPart()) {
       this.enrollParameters.data["otpKey"] = this.clientPart();
@@ -86,12 +96,20 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
         delete this.enrollParameters.data["twoStepInit"];
       }
     }
-    this.tokenService.enrollToken(this.enrollParameters).subscribe({
-      next: (response) => {
-        if (response?.result?.status && response?.detail?.rollout_state !== "client_wait") {
-          this.flow.finishStep(response);
-        }
-      }
-    });
+    this.tokenService
+      .enrollToken(this.enrollParameters)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.enrolling.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          if (response?.result?.status && response?.detail?.rollout_state !== "client_wait") {
+            this.flow.finishStep(response);
+          }
+        },
+        // enrollToken() has already notified about the failure; Enroll works again.
+        error: () => undefined
+      });
   }
 }

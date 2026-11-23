@@ -27,7 +27,7 @@ import { axe } from "@testing/axe";
 import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollment-step-host";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { TokenCompleteEnrollmentTwoStepComponent } from "./token-complete-enrollment-two-step.component";
 
 describe("TokenCompleteEnrollmentTwoStepComponent", () => {
@@ -138,6 +138,43 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
     component.onAction("enroll");
     expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(host.flow.finishStep).not.toHaveBeenCalled();
+  });
+
+  describe("while the request runs", () => {
+    const completed = {
+      detail: { type: "hotp", serial: "123", rollout_state: "enrolled" },
+      result: { status: true }
+    } as EnrollmentResponse;
+    let request: Subject<EnrollmentResponse>;
+
+    beforeEach(() => {
+      request = new Subject<EnrollmentResponse>();
+      mockTokenService.enrollToken = jest.fn().mockReturnValue(request);
+      component.clientPart.set("SOMEKEY");
+      component.onAction("enroll");
+    });
+
+    it("sends the client part only once and disables Enroll", () => {
+      component.onAction("enroll");
+
+      expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(1);
+      expect(component.actions()[0].disabled).toBe(true);
+    });
+
+    it("enables Enroll again once the request failed", () => {
+      request.error(new Error("failed"));
+
+      expect(component.actions()[0].disabled).toBe(false);
+      component.onAction("enroll");
+      expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(2);
+    });
+
+    it("ignores a response that arrives after the step was left", () => {
+      fixture.destroy();
+      request.next(completed);
+
+      expect(host.flow.finishStep).not.toHaveBeenCalled();
+    });
   });
 
   it("should remove twoStepInit from enrollParameters.data when enrolling", () => {
