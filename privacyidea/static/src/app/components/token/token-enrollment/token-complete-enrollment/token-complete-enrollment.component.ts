@@ -48,8 +48,9 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly enrollDetails = this.data.response?.detail;
-  protected readonly tokenType = this.data.response?.type ?? "hotp";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
+  // The enrollment response has no type, so the type comes from the enrollment request
+  protected readonly tokenType: string = this.enrollParameters?.data?.type ?? this.data.tokenType;
   protected readonly twoStepEnrollment = computed(() => {
     return (
       this.enrollDetails?.["2step_output"] ||

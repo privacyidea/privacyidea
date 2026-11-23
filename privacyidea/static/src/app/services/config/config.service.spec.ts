@@ -110,6 +110,7 @@ describe("ConfigService", () => {
     req.flush(mockResponse);
 
     expect(service.config()).toEqual(mockConfig);
+    expect(service.configLoaded()).toBe(true);
     expect(setSpy).toHaveBeenCalledWith("3.8");
   });
 
@@ -132,11 +133,24 @@ describe("ConfigService", () => {
     localService.removeData(BEARER_TOKEN_STORAGE_KEY);
   });
 
+  it("should send the query of the URL the WebUI was opened with", () => {
+    const openedUrl = window.location.href;
+    window.history.replaceState({}, "", "/app/v2/en/?kiosk=1&lang=de%20AT");
+    try {
+      service.loadConfig();
+      const req = httpMock.expectOne(environment.proxyUrl + "/config?kiosk=1&lang=de%20AT");
+      req.flush({ result: { status: true, value: mockConfig } });
+    } finally {
+      window.history.replaceState({}, "", openedUrl);
+    }
+  });
+
   it("should handle error and keep default config", () => {
     service.loadConfig();
     const req = httpMock.expectOne(environment.proxyUrl + "/config");
     req.flush(null, { status: 500, statusText: "Server Error" });
 
+    expect(service.configLoaded()).toBe(false);
     // Should keep the default config values
     expect(service.config()).toEqual({
       remote_user: "",

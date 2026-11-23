@@ -47,3 +47,7 @@ Configuration Parameters
   This is the time in seconds for how long the sent OTP value is valid. If a
   user tries to authenticate with the sent OTP value after this time,
   authentication will fail.
+
+  A value sent automatically after a successful authentication (authentication
+  policy ``smsautosend``) and a value sent to verify the enrollment have no time
+  limit; they stay valid until they are used or a later value is sent or used.

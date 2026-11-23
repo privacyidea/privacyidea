@@ -40,21 +40,5 @@
     matTooltip="Logout">
     <mat-icon>logout</mat-icon>
   </button>
-  <div
-    [ngClass]="[
-      sessionTimerService.remainingTime()! < 31000
-        ? 'red-light'
-        : sessionTimerService.remainingTime()! < 60000
-          ? 'yellow-light'
-          : 'on-surface-variant'
-    ]"
-    class="session-timer padding-8"
-    i18n-matTooltip="@@nav.timeUntilSession"
-    matTooltip="Time until session expires">
-    @if (sessionOverOneDay()) {
-      {{ sessionDaysText() }}
-    } @else {
-      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
-    }
-  </div>
+  <app-session-timer />
 </div>

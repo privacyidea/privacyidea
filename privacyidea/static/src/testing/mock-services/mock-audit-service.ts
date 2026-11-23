@@ -45,7 +45,7 @@ export class MockAuditService implements AuditServiceInterface {
   pageSize = linkedSignal({ source: this.activeFilter, computation: () => 10 });
   pageIndex = linkedSignal({
     source: () => ({ filterValue: this.activeFilter(), pageSize: this.pageSize() }),
-    computation: () => 0
+    computation: () => 1
   });
   auditResource = new MockHttpResourceRef<PiResponse<Audit> | undefined>(
     MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 })

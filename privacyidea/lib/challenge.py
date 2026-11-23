@@ -185,10 +185,12 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
     sort_expression = Challenge.__table__.columns[sort_column]
+    # Challenges with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a challenge then appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_expression.desc())
+        stmt = stmt.order_by(sort_expression.desc(), Challenge.id.desc())
     else:
-        stmt = stmt.order_by(sort_expression.asc())
+        stmt = stmt.order_by(sort_expression.asc(), Challenge.id.asc())
 
     pagination = db.paginate(stmt, page=page, per_page=psize, error_out=False)
     challenge_list = [challenge.get() for challenge in pagination.items]
@@ -335,6 +337,33 @@ def delete_challenges(serial: str = None, transaction_id: str = None,
         cache_available = get_redis() is not None
     return DeleteChallengesResult(removed=removed + result.rowcount,
                                   cache_available=cache_available)
+
+
+def consume_challenge(challenge: "Challenge | ChallengeDTO") -> bool:
+    """
+    Remove this one challenge and report whether this very call removed it.
+
+    A single-use object has to be claimed by the request that uses it: of several requests that answer the same
+    challenge at the same time, only the one this returns True for may be accepted. The others see False, because
+    the row or the cached field was already gone when they got here.
+
+    :param challenge: the challenge that was answered, from the database or from the Redis cache
+    :return: True only for the call that removed the challenge
+    """
+    if isinstance(challenge, ChallengeDTO):
+        return evict_challenge(challenge.transaction_id, challenge.serial) == 1
+    # By primary key, and read from the identity map rather than from the row: the row may already be gone, and an
+    # unbound FIDO2 challenge has serial="", which Oracle stores as NULL, so WHERE serial = '' would never match.
+    challenge_id = sqlalchemy.inspect(challenge).identity[0]
+    # End the transaction that read the challenge, so the DELETE starts a new one and MariaDB >= 11.6.2 does not
+    # refuse it with 1020 "Record has changed since last read".
+    db.session.commit()
+    result = db.session.execute(delete(Challenge).where(Challenge.id == challenge_id)
+                                .execution_options(synchronize_session=False))
+    db.session.commit()
+    # After a False the caller must not touch the challenge object again: the commit expired it and a reload of a
+    # deleted row raises ObjectDeletedError.
+    return result.rowcount == 1
 
 
 def cancel_challenge(transaction_id: str) -> DeleteChallengesResult:

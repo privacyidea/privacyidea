@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -29,7 +30,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -50,16 +50,16 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-sms-gateways",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -92,12 +92,21 @@ export class SmsGatewaysComponent {
     allowed: () => this.authService.actionAllowed("smsgateway_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("smsgateway_write")
+      ? $localize`:@@smsGateway.createSMSGateway:Create an SMS gateway to send one-time passwords by text message.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "name", "description", "providermodule"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("smsgateway_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["name", "description", "providermodule"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
@@ -121,12 +130,36 @@ export class SmsGatewaysComponent {
     visibleRows: renderedRows(this.smsDataSource)
   });
 
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createSmsGateway:Create SMS Gateway`,
+      tone: "primary",
+      width: "l",
+      icon: "sms",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("smsgateway_write"),
+      run: () => this.onCreateNewGateway()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
+      run: () => this.deleteSelected()
+    }
+  ]);
+
   onCreateNewGateway(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
   }
 
   onEditGateway(gateway: SmsGateway): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS, gateway.name]);
   }
 
   deleteSelected(): void {

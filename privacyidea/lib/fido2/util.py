@@ -10,6 +10,7 @@ from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import text_column_equals
 from privacyidea.models import TokenInfo, Token, TokenCredentialIdHash, db
 
 
@@ -30,10 +31,8 @@ def get_fido2_token_by_credential_id(credential_id: str) -> TokenClass | None:
                 return create_tokenclass_object(db_token)
         else:
             log.debug(f"TokenCredentialIdHash entry not found for credential_id {credential_id}. Trying token info...")
-            # TokenInfo.Value is a CLOB on Oracle, which cannot be compared with "=" (ORA-00932).
-            # LIKE works on every dialect, and the hash is a hex digest, so it carries no wildcards.
             token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash",
-                                                             TokenInfo.Value.like(credential_id_hash))
+                                                             text_column_equals(TokenInfo.Value, credential_id_hash))
             token_id = db.session.scalar(token_id_stmt)
             db_token = db.session.get(Token, token_id) if token_id else None
             if db_token:
@@ -153,9 +152,8 @@ def credential_id_is_registered_to_other_token(credential_id: bytes, token_id: i
     registered_token_id = db.session.scalar(stmt)
     if registered_token_id is not None:
         return registered_token_id != token_id
-    # TokenInfo.Value is a CLOB on Oracle, which cannot be compared with "=", see get_fido2_token_by_credential_id
     stmt = select(TokenInfo.token_id).where(TokenInfo.Key == FIDO2TokenInfo.CREDENTIAL_ID_HASH,
-                                            TokenInfo.Value.like(credential_id_hash),
+                                            text_column_equals(TokenInfo.Value, credential_id_hash),
                                             TokenInfo.token_id != token_id).limit(1)
     return db.session.scalar(stmt) is not None
 

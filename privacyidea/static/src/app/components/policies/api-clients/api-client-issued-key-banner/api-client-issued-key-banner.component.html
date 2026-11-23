@@ -19,7 +19,7 @@
 @if (apiClientService.lastIssuedKey(); as issuedKey) {
   <div class="inline-success issued-key-panel">
     <div class="issued-key-header">
-      <span i18n="@@apiClient.apiKeyFor">API key for "{{ issuedKey.displayName }}"</span>
+      <span i18n="@@apiClient.apiKeyFor">API Key for "{{ issuedKey.displayName }}"</span>
       <button
         (click)="apiClientService.dismissIssuedKey()"
         aria-label="Dismiss"

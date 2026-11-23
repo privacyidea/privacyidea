@@ -26,9 +26,13 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { setRights } from "@testing/toolbar-actions";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -67,6 +71,7 @@ describe("ContainerTemplatesComponent", () => {
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useValue: mockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
         provideRouter([])
       ]
     }).compileComponents();
@@ -186,10 +191,10 @@ describe("ContainerTemplatesComponent", () => {
   });
   it("should navigate to details route only if row is not a skeleton row", () => {
     const router = TestBed.inject(Router);
-    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const navigateSpy = jest.spyOn(router, "navigate").mockResolvedValue(true);
 
     component.onClickTemplateName(mockTemplates[0]);
-    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + mockTemplates[0].name);
+    expect(navigateSpy).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS, mockTemplates[0].name]);
 
     navigateSpy.mockClear();
     component.onClickTemplateName({ name: "" } as ContainerTemplate);
@@ -241,8 +246,30 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.getFilterIconName("name")).toBe("filter_alt_off");
   });
 
+  it("hands a sort button click to the shared sort cycle, falling back to unsorted", () => {
+    const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+
+    component.onSortClick("name");
+
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith("name", component.activeSort, {
+      active: "",
+      direction: ""
+    });
+  });
+
+  it("reports the sort of a column as aria-sort", () => {
+    expect(component.ariaSort("name")).toBe("none");
+
+    component.activeSort.set({ active: "name", direction: "asc" });
+    expect(component.ariaSort("name")).toBe("ascending");
+    expect(component.ariaSort("default")).toBe("none");
+
+    component.activeSort.set({ active: "name", direction: "desc" });
+    expect(component.ariaSort("name")).toBe("descending");
+  });
+
   it("should sort data by name ascending", () => {
-    component.onSortChange({ active: "name", direction: "asc" });
+    component.activeSort.set({ active: "name", direction: "asc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -250,7 +277,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should sort data by name descending", () => {
-    component.onSortChange({ active: "name", direction: "desc" });
+    component.activeSort.set({ active: "name", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -258,7 +285,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should sort data by boolean 'default' column", () => {
-    component.onSortChange({ active: "default", direction: "desc" });
+    component.activeSort.set({ active: "default", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -267,7 +294,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should return unsorted data if sort direction is empty", () => {
-    component.onSortChange({ active: "name", direction: "" });
+    component.activeSort.set({ active: "name", direction: "" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -309,4 +336,53 @@ describe("ContainerTemplatesComponent", () => {
     component.onContainerTypeSelected(undefined);
     expect(component.filter().hasKey("container_type")).toBe(false);
   });
+
+  it.each([["container_template_create"], ["container_template_delete"]])(
+    "offers row selection with %s, which copy or delete the selection",
+    (right) => {
+      setRights(fixture, ["container_template_list", right]);
+
+      expect(component.columnKeys()).toContain("select");
+    }
+  );
+
+  it("offers no row selection without the rights to copy or delete templates", () => {
+    setRights(fixture, ["container_template_list"]);
+
+    expect(component.columnKeys()).not.toContain("select");
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      templatesSignal.set([]);
+    });
+
+    it("offers the create button and hint with container_template_create", () => {
+      setRights(fixture, ["container_template_list", "container_template_create"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Template");
+      expect(state.textContent).toContain("Create a template to roll out containers with a predefined set of tokens.");
+    });
+
+    it("offers neither button nor hint without container_template_create", () => {
+      setRights(fixture, ["container_template_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a template to roll out containers with a predefined set of tokens."
+      );
+    });
+  });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

@@ -22,7 +22,9 @@ import { AuditRangeSelectionStrategy } from "./audit-range-selection-strategy";
 import { DateRange } from "@angular/material/datepicker";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatPaginator } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
+import { By } from "@angular/platform-browser";
 import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditData, AuditService } from "@services/audit/audit.service";
@@ -42,6 +44,7 @@ import { endOfLocalDayIso, startOfLocalDayIso, toFilterDisplay } from "@utils/da
 import { of } from "rxjs";
 import { AuditComponent, clockPopupPositions } from "./audit.component";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
@@ -525,7 +528,7 @@ describe("AuditComponent (unit)", () => {
     expect(component.auditDataSource().data).toEqual(rows);
   });
 
-  it("onPageEvent mutates pageSize & pageIndex signals", () => {
+  it("onPageEvent stores the 0-based paginator index as the 1-based API page", () => {
     component.onPageEvent({
       pageSize: 15,
       pageIndex: 2,
@@ -533,7 +536,7 @@ describe("AuditComponent (unit)", () => {
       previousPageIndex: 1
     });
     expect(mockAuditService.pageSize()).toBe(15);
-    expect(mockAuditService.pageIndex()).toBe(2);
+    expect(mockAuditService.pageIndex()).toBe(3);
   });
 });
 
@@ -576,8 +579,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
-    const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
+  const showRows = (rows: AuditData[], count = 1) =>
     mockAuditService.auditResource.value.set({
       detail: undefined,
       id: 0,
@@ -588,7 +590,7 @@ describe("AuditComponent (template rendering)", () => {
       versionnumber: "",
       result: {
         value: {
-          count: 1,
+          count,
           auditdata: rows,
           auditcolumns: [],
           current: 0
@@ -596,6 +598,25 @@ describe("AuditComponent (template rendering)", () => {
         status: true
       }
     });
+
+  it.each([AuditComponent, AuditSelfServiceComponent])(
+    "%p shows the 1-based API page on the 0-based paginator",
+    (componentType) => {
+      const pageFixture = TestBed.createComponent(componentType);
+      showRows(
+        Array.from({ length: 10 }, () => ({}) as AuditData),
+        25
+      );
+      mockAuditService.pageIndex.set(2);
+      pageFixture.detectChanges();
+
+      const paginator = pageFixture.debugElement.query(By.directive(MatPaginator)).componentInstance as MatPaginator;
+      expect(paginator.pageIndex).toBe(1);
+    }
+  );
+
+  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
     fixture.detectChanges();
 
     const startdateColumnIndex = component.columnKeysMap.findIndex((c) => c.key === "startdate");
@@ -864,5 +885,62 @@ describe("AuditComponent (template rendering)", () => {
 
     expect(openSpy).toHaveBeenCalled();
     expect(toggleSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["admin", AuditComponent],
+    ["self-service", AuditSelfServiceComponent]
+  ])("names the %s filter input by its visible label", (_, componentType) => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
+    const filterFixture = TestBed.createComponent<AuditComponent>(componentType);
+    filterFixture.detectChanges();
+    const element: HTMLElement = filterFixture.nativeElement;
+    const input = element.querySelector<HTMLInputElement>(".mat-mdc-form-field input")!;
+
+    expect(input.hasAttribute("aria-label")).toBe(false);
+    expect(element.querySelector(`label[for="${input.id}"]`)?.textContent).toContain("Filter Audit Log");
+  });
+
+  describe("links", () => {
+    const hrefOf = (element: HTMLElement, text: string) =>
+      Array.from(element.querySelectorAll<HTMLAnchorElement>("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+
+    beforeEach(() => showRows([{ serial: "S-1", container_serial: "C-1", user: "alice", realm: "r1" } as AuditData]));
+
+    it.each([
+      ["admin", AuditComponent],
+      ["self-service", AuditSelfServiceComponent]
+    ])("links the %s token and container serials to their details pages", (_, componentType) => {
+      const linkFixture = TestBed.createComponent<AuditComponent>(componentType);
+      linkFixture.detectChanges();
+
+      expect(hrefOf(linkFixture.nativeElement, "S-1")).toBe("/tokens/details/S-1");
+      expect(hrefOf(linkFixture.nativeElement, "C-1")).toBe("/containers/details/C-1");
+    });
+
+    it.each([
+      ["admin", AuditComponent],
+      ["self-service", AuditSelfServiceComponent]
+    ])("passes the %s axe accessibility checks", async (_, componentType) => {
+      const axeFixture = TestBed.createComponent<AuditComponent>(componentType);
+      axeFixture.detectChanges();
+
+      expect(await axe(axeFixture.nativeElement)).toHaveNoViolations();
+    });
+
+    it("links admins to the details of the user in their realm", () => {
+      fixture.detectChanges();
+
+      expect(hrefOf(fixture.nativeElement, "alice")).toBe("/users/details/alice?realm=r1");
+    });
+
+    it("links users to their own details", () => {
+      const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
+      selfFixture.detectChanges();
+
+      expect(hrefOf(selfFixture.nativeElement, "alice")).toBe("/users/details");
+    });
   });
 });

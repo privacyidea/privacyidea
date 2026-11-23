@@ -19,7 +19,7 @@
 
 import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,7 +27,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -35,7 +35,8 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { reservedNames } from "@utils/reserved-names.utils";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import {
   PrivacyideaServer,
   PrivacyideaServerService,
@@ -93,14 +94,16 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
   privacyideaModel = signal<PrivacyideaFormModel>({ ...EMPTY_PRIVACYIDEA_FORM });
 
   privacyideaForm = form(this.privacyideaModel, (f) => {
-    required(f.identifier);
-    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
     // POST /privacyideaserver/test_request is the connection test endpoint, and browsers drop "." and ".."
     // from the URL, so a server with one of these names is never saved.
-    reservedNames(f.identifier, ["test_request", ".", ".."]);
+    identifierName(f.identifier, { reserved: ["test_request", ".", ".."] });
     required(f.url);
     disabled(f.identifier, () => this.isEditMode());
   });
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -108,7 +111,7 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const identifier = params.get("identifier");
+      const identifier = params.get(ROUTE_PARAMS.IDENTIFIER);
       if (identifier) {
         this.isEditMode.set(true);
         this.editIdentifier = identifier;

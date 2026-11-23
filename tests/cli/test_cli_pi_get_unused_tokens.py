@@ -25,6 +25,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import get_one_token, get_tokens, init_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from .base import CliTestCase
+from ..base import stored_empty_string
 
 OTPKEY = "3132333435363738393031323334353637383930"
 
@@ -147,8 +148,8 @@ class PIGetUnusedTokensTestCase(CliTestCase):
         self.assertEqual(0, result.exit_code, result.output)
         self.assertIn("Setting description for token OLD0001: unused for a while", result.output, result)
         self.assertEqual("unused for a while", get_one_token(serial="OLD0001").token.description)
-        self.assertEqual("", get_one_token(serial="NEW0001").token.description)
-        self.assertEqual("", get_one_token(serial="UNUSED0001").token.description)
+        self.assertEqual(stored_empty_string(), get_one_token(serial="NEW0001").token.description)
+        self.assertEqual(stored_empty_string(), get_one_token(serial="UNUSED0001").token.description)
 
     def test_08_mark_sets_tokeninfo_on_tokens_last_used_before_age(self):
         self.create_old_new_and_unused_token()
@@ -175,18 +176,17 @@ class PIGetUnusedTokensTestCase(CliTestCase):
         self.assertIn("expected key=value", result.output, result)
         self.assertNotEqual("not set", get_one_token(serial="OLD0001").token.description)
 
-    def test_09_mark_skips_tokeninfo_key_the_token_maintains_itself(self):
-        # "phone" is maintained by the SMS token itself, but is a free-form entry for a HOTP token. The SMS
-        # token is reported and left unchanged, and marking goes on with the HOTP token created after it.
+    def test_09_mark_writes_tokeninfo_key_the_token_maintains_itself(self):
+        # "phone" is maintained by the SMS token itself, but is a free-form entry for a HOTP token. The command
+        # runs on the server and writes the mark to both.
         create_token("SMS0001", datetime.timedelta(days=10), token_type="sms", parameters={"phone": "+491111"})
         create_token("OLD0001", datetime.timedelta(days=10))
 
         runner = self.app.test_cli_runner()
         result = runner.invoke(cli, ["mark", "5d", "-t", "phone=+492222"])
         self.assertEqual(0, result.exit_code, result.output)
-        self.assertIn("Skipped token SMS0001: ", result.output, result)
-        self.assertNotIn("Skipped token OLD0001", result.output, result)
-        self.assertEqual("+491111", get_one_token(serial="SMS0001").get_tokeninfo("phone"))
+        self.assertTrue(get_one_token(serial="SMS0001").is_owned_tokeninfo_key("phone"))
+        self.assertEqual("+492222", get_one_token(serial="SMS0001").get_tokeninfo("phone"))
         self.assertEqual("+492222", get_one_token(serial="OLD0001").get_tokeninfo("phone"))
 
     def test_10_unsupported_age_is_reported_and_changes_nothing(self):

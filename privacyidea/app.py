@@ -24,7 +24,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import atexit
-import json
 import logging
 import logging.config
 import os
@@ -34,16 +33,22 @@ import secrets
 import sys
 import time
 import uuid
-from importlib import metadata
-from importlib.metadata import PackageNotFoundError
 from pathlib import Path, PurePath
+from typing import IO, Any, NamedTuple
 
+import click
+import flask_migrate.cli
 import sqlalchemy as sa
 import yaml
-from flask import Flask, current_app, jsonify, request, redirect
+from alembic.runtime.migration import MigrationContext
+from flask import Flask, Request, current_app, jsonify, request, redirect
+from flask.cli import with_appcontext
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
+from werkzeug.datastructures import FileStorage, MultiDict
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.formparser import FormDataParser
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -88,6 +93,7 @@ from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.lib.utils import censor_connect_string
 from privacyidea.models import db, NodeName
 from privacyidea.models.utils import utc_now
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
@@ -99,6 +105,9 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 # remapped to the current one, see _resolve_ui_folders().
 PREVIEW_STATIC_FOLDER = "static_new"
 
+# The style hashes allow the inline styles of the legacy WebUI. The WebUI allows its styles with the
+# nonce of CSP_NONCE_DIRECTIVES instead. script-src allows no inline script: the build of the WebUI
+# writes none, because it does not inline the critical CSS (inlineCritical in angular.json).
 CSP = {
     'default-src': [
         '\'self\'',
@@ -134,6 +143,9 @@ CSP = {
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
     ]
 }
+# Talisman adds a new nonce for each request to these directives. Angular puts it on the style elements
+# that it adds for the components at runtime, see _serve_locale().
+CSP_NONCE_DIRECTIVES = ['style-src']
 
 migrate = Migrate()
 babel = Babel()
@@ -142,6 +154,48 @@ babel = Babel()
 # But since the logging system is not configured properly, the message might not
 # end up in the place as defined in the logging configuration
 log = logging.getLogger(__name__)
+
+
+class UrlencodedSizeLimitFormDataParser(FormDataParser):
+    """
+    Form data parser that also limits the size of an ``application/x-www-form-urlencoded`` body.
+
+    Werkzeug applies ``max_form_memory_size`` only to the text parts of a ``multipart/form-data`` body. This
+    parser also applies it to a urlencoded body: if the ``Content-Length`` of the body is larger than the limit,
+    it raises ``413 Request Entity Too Large`` before it reads the body. Flask takes the limit from the
+    configuration value ``MAX_FORM_MEMORY_SIZE``. ``None`` turns the check off.
+    """
+
+    def parse(self, stream: IO[bytes], mimetype: str, content_length: int | None,
+              options: dict[str, str] | None = None
+              ) -> tuple[IO[bytes], MultiDict[str, str], MultiDict[str, FileStorage]]:
+        if (mimetype == "application/x-www-form-urlencoded" and self.max_form_memory_size is not None
+                and content_length is not None and content_length > self.max_form_memory_size):
+            raise RequestEntityTooLarge()
+        return super().parse(stream, mimetype, content_length, options)
+
+
+class PrivacyIDEARequest(Request):
+    """
+    The request class of both application factories.
+    """
+    form_data_parser_class = UrlencodedSizeLimitFormDataParser
+
+
+def _enable_csp(app: Flask) -> bool:
+    """
+    Add the Content Security Policy and the other headers of Talisman to each response, if PI_ENABLE_CSP is set.
+
+    Both application factories call this, so that the package and the Docker image send the same policy.
+
+    :return: True if the policy is on
+    """
+    if not app.config.get(ConfigKey.ENABLE_CSP, False):
+        return False
+    Talisman(app, content_security_policy=CSP, content_security_policy_nonce_in=CSP_NONCE_DIRECTIVES,
+             force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+             session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+    return True
 
 
 def _register_spa_fallback(app: Flask) -> None:
@@ -467,6 +521,67 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+class SchemaState(NamedTuple):
+    """The schema state of a database: whether it has a schema revision stamp, and whether it holds the tables."""
+    stamped: bool
+    has_tables: bool
+
+
+def get_schema_state() -> SchemaState:
+    """
+    Read the schema state of the database of the current app. The token table stands for the tables of privacyIDEA.
+    """
+    with db.engine.connect() as connection:
+        stamped = bool(MigrationContext.configure(connection).get_current_heads())
+        has_tables = sa.inspect(connection).has_table("token")
+    return SchemaState(stamped=stamped, has_tables=has_tables)
+
+
+# What to do with a database that holds the tables of privacyIDEA but no schema revision stamp.
+TABLES_WITHOUT_STAMP_HINTS = (
+    "If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+    "stamp the database with 'pi-manage db stamp head'.",
+    "If an older version created the tables, stamp the database with the newest revision of that version. "
+    "The upgrade documentation lists the revisions of the versions before 3.10.",
+    "Then update the database with 'pi-manage db upgrade'.")
+
+
+def _check_revision_stamp() -> None:
+    """
+    Raise a ClickException if the database has no schema revision stamp. The migrations cannot tell which of them
+    such a database needs: run from the first revision, they would rename and recreate the tables of a current schema.
+    """
+    schema_state = get_schema_state()
+    if schema_state.stamped:
+        return
+    database = db.engine.url.render_as_string(hide_password=True)
+    if schema_state.has_tables:
+        hints = list(TABLES_WITHOUT_STAMP_HINTS)
+    else:
+        hints = ["If the database is empty, create the tables with 'pi-manage setup create_tables'."]
+    raise click.ClickException("\n  ".join([f"The database {database} has no schema revision stamp, so the "
+                                            "migrations to apply are unknown.",
+                                            "Check that this is the database you expect."] + hints))
+
+
+@with_appcontext
+def _upgrade_if_stamped(**parameters: Any) -> Any:
+    """
+    Run "db upgrade" of Flask-Migrate. Stop on a database without schema revision stamp, unless the command only
+    prints the SQL.
+    """
+    if not parameters.get("sql"):
+        _check_revision_stamp()
+    return flask_migrate.cli.upgrade.callback(**parameters)
+
+
+# "db upgrade" with the parameters of Flask-Migrate, so that "pi-manage db -d <directory> upgrade" works as before.
+# "db stamp" and "db current" stay available for a database without stamp.
+db_upgrade_command = click.Command("upgrade", callback=_upgrade_if_stamped, params=flask_migrate.cli.upgrade.params,
+                                   help=f"{flask_migrate.cli.upgrade.help}\n\n"
+                                        "Stops on a database without schema revision stamp.")
+
+
 def create_app(config_name="development",
                config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
@@ -492,6 +607,7 @@ def create_app(config_name="development",
     """
     app = Flask(__name__, static_folder=DefaultConfigValues.STATIC_FOLDER,
                 template_folder=DefaultConfigValues.TEMPLATE_FOLDER)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
@@ -524,12 +640,8 @@ def create_app(config_name="development",
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.config.get(ConfigKey.VERBOSE):
-            print("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.config.get(ConfigKey.VERBOSE):
+        print("Enabling CSP with Talisman")
 
     # Setup logging
     if config_name == "docker":
@@ -558,16 +670,9 @@ def create_app(config_name="development",
     db.init_app(app)
     init_ca_session(app)
 
-    # TODO: This is not necessary except for the pi-manage command line util
-    # Try to get the path of the migration directory from the installed package
-    # TODO: This still does not work with an editable installation if it is not called from the source folder
-    # By default, we assume we are in the source folder
-    migration_dir = "privacyidea/migrations"
-    try:
-        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
-        migration_dir = str(migration_path.locate().parent.resolve())
-    except (PackageNotFoundError, IndexError):
-        pass
+    # The migrations are part of the package, next to this module, in a source tree as in an installed or editable
+    # package. The pi-manage db commands use them.
+    migration_dir = str(Path(__file__).resolve().parent / "migrations")
     migrate.init_app(app, db, directory=migration_dir)
     db_command = app.cli.commands.get('db')
     if db_command is not None:
@@ -583,6 +688,8 @@ def create_app(config_name="development",
                 "interpreted as an option. Use '--' to separate them from options:\n"
                 "  pi-manage db downgrade -- -3"
             )
+        # The command group of Flask-Migrate is shared by all apps. Adding the same command again changes nothing.
+        db_command.add_command(db_upgrade_command)
 
     app.jinja_env.filters["versioned"] = versioned_asset
 
@@ -593,13 +700,6 @@ def create_app(config_name="development",
             init_hsm()
 
     _setup_node_configuration(app)
-
-    # SQLAlchemy Oracle dialect does not (yet) support JSON serializers
-    with app.app_context():
-        engine = db.session.get_bind()
-        if engine.name == "oracle":
-            engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
-            engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
@@ -630,6 +730,7 @@ def create_docker_app():
     files via docker-compose.
     """
     app = Flask(__name__)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
@@ -656,12 +757,8 @@ def create_docker_app():
     # And then we check if we have a minimal viable config
     _check_config(app)
 
-    # CSP with Talisman
-    if app.config.get(ConfigKey.ENABLE_CSP, False):
-        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
-        if app.debug:
-            sys.stderr.write("Enabling CSP with Talisman")
+    if _enable_csp(app) and app.debug:
+        sys.stderr.write("Enabling CSP with Talisman\n")
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG
@@ -694,11 +791,13 @@ def create_docker_app():
     # Check database connection
     with app.app_context():
         try:
-            log.debug("Test Database using URL '%s'", app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
-            db.session.execute(sa.text('SELECT 1'))
+            database_uri = censor_connect_string(app.config[ConfigKey.SQLALCHEMY_DATABASE_URI])
+            log.debug("Test Database using URL '%s'", database_uri)
+            # Compiled per dialect: "SELECT 1" on most databases, "SELECT 1 FROM DUAL" on Oracle, which needs a FROM
+            db.session.execute(sa.select(sa.literal_column("1")))
             log.debug("Database Connection successful!")
         except Exception as e:
-            raise RuntimeError(f"Could not connect to database: {e}")
+            raise RuntimeError(f"Could not connect to database: {e}") from e
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)

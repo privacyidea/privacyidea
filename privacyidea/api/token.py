@@ -62,7 +62,7 @@ from werkzeug.datastructures import FileStorage
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
-                                            postpolicy)
+                                            postpolicy, remove_new_token_on_error)
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_copy_token_action,
                                            check_token_init, check_token_upload,
@@ -105,6 +105,8 @@ from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.policy import Match
+from ..lib.auth import ROLE
+from .lib.policyhelper import check_token_import_allowed, hide_tokeninfo_per_token, UserAttributes
 from ..models.audit import audit_column_length
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -162,10 +164,10 @@ overall policy concept.
 
 
 @token_blueprint.route('/init', methods=['POST'])
+@prepolicy(check_token_init, request)
 @prepolicy(check_max_token_realm, request)
 @prepolicy(require_description, request)
 @prepolicy(check_max_token_user, request)
-@prepolicy(check_token_init, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_ca_connector, request)
 @prepolicy(init_ca_template, request)
@@ -190,9 +192,9 @@ overall policy concept.
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @prepolicy(force_server_generate_key, request)
-@postpolicy(save_pin_change, request)
+@postpolicy(remove_new_token_on_error(save_pin_change), request)
 @event("token_init", request, g)
-@postpolicy(check_verify_enrollment, request)
+@postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
 @CheckSubscription(request)
 @log_with(log, log_entry=False)
 def init():
@@ -205,8 +207,11 @@ def init():
 
     Requires authentication. Authorization is gated by the
     ``enroll<TOKENTYPE>`` policy in the calling principal's scope
-    (admin or user); a request without an explicit ``type`` defaults
-    to ``HOTP`` and is therefore checked against ``enrollHOTP``.
+    (admin or user). For the serial of an existing token, the type of
+    that token is used and a different ``type`` in the request is
+    rejected. Otherwise, a request without an explicit ``type``
+    defaults to ``HOTP`` and is therefore checked against
+    ``enrollHOTP``.
 
     For user callers, the ``user`` / ``realm`` / ``resolver`` fields
     are bound to the calling user before the view runs; a regular
@@ -354,7 +359,10 @@ def init():
     param["policies"] = g.get("policies", {})
 
     user = request.User
+    # The post-policies of /token/init clean up the token of this request if they fail
+    g.enrolled_token = None
     token = init_token(param, user)
+    g.enrolled_token = token
 
     if token:
         g.audit_object.log({"success": True})
@@ -803,6 +811,7 @@ def list_api():
                                  tokeninfo=tokeninfo, rollout_state=rollout_state,
                                  hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial,
                                  has_realm=has_realm)
+    hide_tokeninfo_per_token(g, tokens["tokens"])
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
@@ -1318,7 +1327,10 @@ def set_api(serial=None):
         written to tokens of that type, so a parameter cannot
         reach the namespace of another token type. These entries
         are maintained by the token, so the generic token-info
-        endpoints refuse them.
+        endpoints refuse them. An entry the token needs, for
+        example ``radius.user`` on a RADIUS token, cannot be set
+        to an empty value. Then the request fails with ERR905 and
+        changes nothing.
     :status 200: number of attribute updates applied in
         ``result.value``.
     """
@@ -1338,6 +1350,21 @@ def set_api(serial=None):
     validity_period_end = get_optional(request.all_data, "validity_period_end")
 
     res = 0
+
+    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
+    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
+    # fixed fields below and any framework parameter are unaffected. These entries are written first: an empty
+    # value for an entry the token needs is refused, and then none of the other fields is changed either.
+    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
+    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
+    if settable_info:
+        # A key one token type declares settable is not written to a token of another type, so the audit
+        # follows the write and names the entries that were actually written
+        written_keys = set_token_type_info(serial, settable_info, user=user)
+        for key in sorted(set(written_keys)):
+            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
+            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
+        res += len(written_keys)
 
     if description is not None:
         g.audit_object.add_to_log({'action_detail': f"description={description!r}, "})
@@ -1379,20 +1406,6 @@ def set_api(serial=None):
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
 
-    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
-    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
-    # fixed fields above and any framework parameter are unaffected.
-    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
-    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
-    if settable_info:
-        # A key one token type declares settable is not written to a token of another type, so the audit
-        # follows the write and names the entries that were actually written
-        written_keys = set_token_type_info(serial, settable_info, user=user)
-        for key in sorted(set(written_keys)):
-            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
-            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
-        res += len(written_keys)
-
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -1430,7 +1443,8 @@ def tokenrealm_api(serial=None):
 
        {"realms": "realm1,realm2"}
     """
-    realms = get_required(request.all_data, "realms")
+    # An empty value removes the token from all realms
+    realms = get_required(request.all_data, "realms", allow_empty=True)
     if isinstance(realms, list):
         realm_list = realms
     else:
@@ -1464,7 +1478,11 @@ def loadtokens_api(filename=None):
 
     Requires admin authentication and the import policy in scope
     ADMIN. The check honors the supplied ``tokenrealms``: the admin
-    must be allowed to import into every named realm.
+    must be allowed to import into every named realm. Each token of the
+    file that already exists is matched by its owner or one of its
+    realms, and each user of a version 2 OATH CSV file is matched as the
+    owner the token gets. One entry that is not allowed refuses the whole
+    file, before any token is written.
 
     :param filename: path component, used as a log/audit label for
         the imported file.
@@ -1551,6 +1569,11 @@ def loadtokens_api(filename=None):
             validate_mac=aes_validate_mac)
     else:
         import_tokens = {}
+
+    # Every token of the file is checked before the first one is written
+    check_token_import_allowed(g, import_tokens,
+                               UserAttributes(role=ROLE.ADMIN, adminuser=g.logged_in_user.get("username"),
+                                              adminrealm=g.logged_in_user.get("realm")))
 
     # Now import the Tokens from the dictionary
     for serial in import_tokens:
@@ -1810,7 +1833,7 @@ def set_tokeninfo_api(serial, key):
     :jsonparam value: tokeninfo value to set (required).
     :status 200: ``True`` on success in ``result.value``.
     """
-    value = get_required(request.all_data, "value")
+    value = get_required(request.all_data, "value", allow_empty=True)
     g.audit_object.log({"serial": serial})
     count = add_tokeninfo(serial, key, value)
     success = count > 0
@@ -1876,7 +1899,8 @@ def assign_tokengroup_api(serial, groupname=None):
         g.audit_object.add_to_log({'action_detail': groupname})
         assign_tokengroup(serial, tokengroup=groupname)
     else:
-        groups = get_required(request.all_data, "groups")
+        # An empty value removes all token groups of the token
+        groups = get_required(request.all_data, "groups", allow_empty=True)
         if isinstance(groups, list):
             group_list = groups
         else:

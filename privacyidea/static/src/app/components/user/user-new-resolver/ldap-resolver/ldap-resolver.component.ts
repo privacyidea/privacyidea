@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, effect, inject, input, signal } from "@angular/core";
-import { form, FormField, required } from "@angular/forms/signals";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -26,6 +26,8 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { BindType, LdapPreset, LDAPResolverData, ResolverService } from "@services/resolver/resolver.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 interface LdapFormModel {
@@ -40,12 +42,13 @@ interface LdapFormModel {
   BINDPW: string;
   KEYTABFILE: string;
   BINDDN: string;
-  TIMEOUT: number;
-  CACHE_TIMEOUT: number;
-  SIZELIMIT: number;
-  SERVERPOOL_ROUNDS: number;
-  SERVERPOOL_SKIP: number;
+  TIMEOUT: number | null;
+  CACHE_TIMEOUT: number | null;
+  SIZELIMIT: number | null;
+  SERVERPOOL_ROUNDS: number | null;
+  SERVERPOOL_SKIP: number | null;
   SERVERPOOL_PERSISTENT: boolean;
+  SERVERPOOL_STRATEGY: string;
   EDITABLE: boolean;
   OBJECT_CLASSES: string;
   DN_TEMPLATE: string;
@@ -90,7 +93,7 @@ export class LdapResolverComponent {
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "entryUUID"
     },
     {
@@ -98,10 +101,19 @@ export class LdapResolverComponent {
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
-      uidType: "objectGUID"
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
+      uidType: "objectGUID",
+      groupSearch: {
+        searchFilter:
+          "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))",
+        nameAttribute: "distinguishedName",
+        attributeMappingKey: "groups"
+      }
     }
   ];
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
   data = input<Partial<LDAPResolverData>>({});
   isEditMode = computed(() => !!this.resolverService.selectedResolverName());
 
@@ -123,6 +135,7 @@ export class LdapResolverComponent {
     SERVERPOOL_ROUNDS: 2,
     SERVERPOOL_SKIP: 30,
     SERVERPOOL_PERSISTENT: false,
+    SERVERPOOL_STRATEGY: "ROUND_ROBIN",
     EDITABLE: false,
     OBJECT_CLASSES: "",
     DN_TEMPLATE: "",
@@ -146,6 +159,15 @@ export class LdapResolverComponent {
     required(f.LOGINNAMEATTRIBUTE);
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
+    required(f.TIMEOUT);
+    required(f.SIZELIMIT);
+    disabled(f.START_TLS, () => this.startTlsDisabled());
+    disabled(f.TLS_VERSION, () => this.tlsVersionDisabled());
+    disabled(f.TLS_VERIFY, () => this.tlsVerifyDisabled());
+    disabled(f.TLS_CA_FILE, () => this.tlsCaFileDisabled());
+    required(f.group_search_filter, { when: () => this.model().recursive_group_search });
+    required(f.group_name_attribute, { when: () => this.model().recursive_group_search });
+    required(f.group_attribute_mapping_key, { when: () => this.model().recursive_group_search });
   });
 
   constructor() {
@@ -172,6 +194,7 @@ export class LdapResolverComponent {
         ...(initial.SERVERPOOL_PERSISTENT !== undefined
           ? { SERVERPOOL_PERSISTENT: parseBooleanValue(initial.SERVERPOOL_PERSISTENT) }
           : {}),
+        ...(initial.SERVERPOOL_STRATEGY !== undefined ? { SERVERPOOL_STRATEGY: initial.SERVERPOOL_STRATEGY } : {}),
         ...(initial.EDITABLE !== undefined ? { EDITABLE: parseBooleanValue(initial.EDITABLE) } : {}),
         ...(initial.OBJECT_CLASSES !== undefined ? { OBJECT_CLASSES: initial.OBJECT_CLASSES } : {}),
         ...(initial.DN_TEMPLATE !== undefined ? { DN_TEMPLATE: initial.DN_TEMPLATE } : {}),
@@ -203,24 +226,33 @@ export class LdapResolverComponent {
   // Computed TLS state
   isLdapsUri = computed(() => (this.model().LDAPURI || "").startsWith("ldaps:"));
   isLdapUri = computed(() => (this.model().LDAPURI || "").startsWith("ldap:"));
+  // An ldaps URI uses TLS without STARTTLS; the TLS version, the verification and the CA file apply to both.
+  tlsInUse = computed(() => this.isLdapsUri() || this.model().START_TLS);
   startTlsDisabled = computed(() => this.isLdapsUri());
-  tlsVersionDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsVerifyDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsCaFileDisabled = computed(() => !this.model().START_TLS || !this.model().TLS_VERIFY || this.isLdapsUri());
-  tlsCaFileRequired = computed(() => this.model().START_TLS && this.model().TLS_VERIFY && !this.isLdapsUri());
+  tlsVersionDisabled = computed(() => !this.tlsInUse());
+  tlsVerifyDisabled = computed(() => !this.tlsInUse());
+  tlsCaFileDisabled = computed(() => !this.tlsInUse() || !this.model().TLS_VERIFY);
 
   get showTls(): boolean {
     return this.isLdapUri() || this.isLdapsUri();
   }
 
   applyLdapPreset(preset: LdapPreset): void {
-    this.model.update((m) => ({
-      ...m,
-      LOGINNAMEATTRIBUTE: preset.loginName,
-      LDAPSEARCHFILTER: preset.searchFilter,
-      USERINFO: preset.userInfo,
-      UIDTYPE: preset.uidType,
-      MULTIVALUEATTRIBUTES: ""
-    }));
+    clearField(this.ldapForm.LOGINNAMEATTRIBUTE, preset.loginName);
+    clearField(this.ldapForm.LDAPSEARCHFILTER, preset.searchFilter);
+    clearField(this.ldapForm.USERINFO, preset.userInfo);
+    clearField(this.ldapForm.UIDTYPE, preset.uidType);
+    clearField(this.ldapForm.MULTIVALUEATTRIBUTES, "");
+    // The resolver does not follow search references. If the base DN is the domain root of an Active Directory, the
+    // search for a user also returns references to the DNS and configuration partitions. With referrals on, the
+    // resolver counts them as objects and finds more than one object for every login name.
+    clearField(this.ldapForm.NOREFERRALS, true);
+    clearField(this.ldapForm.EDITABLE, false);
+    if (preset.groupSearch) {
+      clearField(this.ldapForm.recursive_group_search, false);
+      clearField(this.ldapForm.group_search_filter, preset.groupSearch.searchFilter);
+      clearField(this.ldapForm.group_name_attribute, preset.groupSearch.nameAttribute);
+      clearField(this.ldapForm.group_attribute_mapping_key, preset.groupSearch.attributeMappingKey);
+    }
   }
 }

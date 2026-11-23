@@ -54,6 +54,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // or clamped to, kept alongside the column definition so the table's overall min-width
@@ -85,6 +86,7 @@ interface FlattenedClientRow {
   templateUrl: "./clients.component.html",
   styleUrls: ["./clients.component.scss"],
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTable,

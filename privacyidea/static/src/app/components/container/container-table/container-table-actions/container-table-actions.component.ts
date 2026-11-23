@@ -16,17 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject, viewChild } from "@angular/core";
+import { Component, computed, DOCUMENT, inject, input, output, signal, viewChild } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { MatMenu, MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { HttpErrorResponse } from "@angular/common/http";
+import { MatMenuTrigger } from "@angular/material/menu";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import {
+  ContainerService,
+  ContainerServiceInterface,
+  ContainerTemplateComparisonRow
+} from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
@@ -34,14 +36,15 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { forkJoin } from "rxjs";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
+  imports: [TableActionsComponent],
   templateUrl: "./container-table-actions.component.html"
 })
-export class ContainerTableActionsComponent {
+export class ContainerTableActionsComponent extends TableActionsHost {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -51,12 +54,52 @@ export class ContainerTableActionsComponent {
   protected readonly documentationService = inject(DocumentationService);
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly advancedFilterTrigger = viewChild<MatMenuTrigger>("advancedFilterTrigger");
-  readonly actionsMenu = viewChild.required(MatMenu);
+  private readonly router = inject(Router);
   containerSelection = this.containerService.containerSelection;
   selectedContainer = this.containerService.selectedContainerSerial;
+  readonly comparisonActive = input(false);
+  readonly comparisonLoaded = output<ContainerTemplateComparisonRow[]>();
+  readonly comparisonHidden = output<void>();
+  readonly comparingContainers = signal(false);
+
+  protected readonly actions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createContainer:Create Container`,
+      tone: "primary",
+      width: "m",
+      icon: "folder",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      pinned: true,
+      visible: this.authService.actionAllowed("container_create"),
+      run: () => this.router.navigate([ROUTE_PATHS.CONTAINERS_CREATE])
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "m",
+      icon: "delete_sweep",
+      visible: this.authService.actionAllowed("container_delete"),
+      disabled: !this.containerSelection.hasSelection(),
+      run: () => this.deleteSelectedContainer()
+    },
+    {
+      id: "compare",
+      label: this.comparisonActive()
+        ? $localize`:@@container.hideComparison:Hide comparison`
+        : $localize`:@@container.compareWithTemplates:Compare with templates`,
+      tone: "secondary",
+      width: "l",
+      icon: "compare_arrows",
+      visible: this.authService.actionAllowed("container_template_list"),
+      disabled: this.comparingContainers(),
+      run: () => void this.toggleComparison()
+    }
+  ]);
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection.selectedRows();
@@ -91,6 +134,74 @@ export class ContainerTableActionsComponent {
           }
         }
       });
+  }
+
+  async toggleComparison(): Promise<void> {
+    if (this.comparisonActive()) {
+      this.comparisonHidden.emit();
+      return;
+    }
+    await this.compareDisplayedContainers();
+  }
+
+  private comparisonErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body: unknown = error.error;
+      const serverMessage = (body as { result?: { error?: { message?: unknown } } } | null)?.result?.error?.message;
+      if (typeof serverMessage === "string" && serverMessage) {
+        return serverMessage;
+      }
+    }
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
+  }
+
+  private latestCompareRequest = 0;
+
+  async compareDisplayedContainers(): Promise<void> {
+    const displayedContainers = this.containerService.containerResource.value()?.result?.value?.containers ?? [];
+    // A newer request wins, the result of an older one is dropped.
+    const request = ++this.latestCompareRequest;
+    if (displayedContainers.length === 0) {
+      this.comparingContainers.set(false);
+      return;
+    }
+
+    const listState = () => ({
+      pageIndex: this.containerService.pageIndex(),
+      pageSize: this.containerService.pageSize(),
+      sort: this.containerService.sort(),
+      filter: this.containerService.activeFilter()
+    });
+    const before = listState();
+    this.comparingContainers.set(true);
+    try {
+      const comparisons: ContainerTemplateComparisonRow[] =
+        await this.containerService.compareContainersWithTemplates(displayedContainers);
+      const after = listState();
+      // The list changed while waiting, so the result belongs to rows no longer shown.
+      if (
+        request === this.latestCompareRequest &&
+        before.pageIndex === after.pageIndex &&
+        before.pageSize === after.pageSize &&
+        before.sort === after.sort &&
+        before.filter === after.filter
+      ) {
+        this.comparisonLoaded.emit(comparisons);
+      }
+    } catch (error) {
+      console.error("Failed to compare containers with their templates:", error);
+      const message = this.comparisonErrorMessage(error);
+      this.notificationService.error(
+        $localize`:@@container.failedToCompareSelected:Failed to compare selected containers. ${message}:MESSAGE:`
+      );
+    } finally {
+      if (request === this.latestCompareRequest) {
+        this.comparingContainers.set(false);
+      }
+    }
   }
 
   getFilterIconName(keyword: string): string {

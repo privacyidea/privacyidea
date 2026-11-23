@@ -5,13 +5,17 @@
 import logging
 import traceback
 from collections.abc import Callable, Iterator
+from fnmatch import fnmatchcase
 from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, exists, false, func, or_, select
-from sqlalchemy.sql import Select
+from sqlalchemy.orm import lazyload, selectinload
+from sqlalchemy.orm.attributes import set_committed_value
+from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
+from privacyidea.lib.cache.user import read_cached_usernames, write_cached_usernames
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -19,8 +23,9 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.usercache import add_many_to_cache, get_cached_usernames
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
@@ -64,6 +69,41 @@ def create_tokenclass_object(db_token: Token) -> TokenClass | None:
     return token_object
 
 
+def _get_realm_ids(realms: dict, exact_names: list[str], wildcard_patterns: list[str] | None = None) -> list[int]:
+    """
+    Return the IDs of the configured realms whose name is one of the exact names or matches one of the
+    wildcard patterns, in which "*" matches any characters, including none, and every other character only
+    itself. Both compare case-insensitively, like the database does with ``lower()``: realm names only consist
+    of ASCII letters, digits, "_", "-" and ".".
+
+    The patterns are matched with ``fnmatchcase``, which checks a pattern with many wildcards without trying
+    every way to split the realm name between them, as a regular expression with ".*" for each "*" would.
+
+    :param realms: The configured realms, as returned by ``get_realms()``
+    :param exact_names: Realm names
+    :param wildcard_patterns: Realm name patterns
+    :return: The IDs of the matching realms
+    """
+    exact = {name.lower() for name in exact_names}
+    # fnmatch also treats "?" and "[...]" as wildcards. In brackets, "[" and "?" only match themselves.
+    patterns = [pattern.lower().replace("[", "[[]").replace("?", "[?]") for pattern in wildcard_patterns or []]
+    return [realm_data["id"] for realm_name, realm_data in realms.items()
+            if realm_name.lower() in exact
+            or any(fnmatchcase(realm_name.lower(), pattern) for pattern in patterns)]
+
+
+def _in_realms(realm_ids: list[int]) -> ColumnElement[bool]:
+    """
+    The condition for the tokens that are in one of the given realms. The realm IDs are compared in chunks, as a
+    database limits the number of values in an ``IN`` clause.
+
+    :param realm_ids: The database IDs of the realms
+    :return: The condition on ``Token.id``
+    """
+    return Token.id.in_(select(TokenRealm.token_id).where(
+        or_(false(), *[TokenRealm.realm_id.in_(chunk) for chunk in _chunked(realm_ids)])))
+
+
 def _create_token_query(tokentype: str | None = None, token_type_list: list[str] | None = None,
                         realm: str | None = None,
                         assigned: bool | None = None, user: User | None = None,
@@ -80,12 +120,20 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
 
     sql_query = select(Token)
 
+    realms = get_realms()
+    # Without a resolver that is restricted to certain nodes every node serves every owner, and the node
+    # filter at the end would neither remove a token nor be needed. Leaving it out spares the joins it
+    # needs, which cost every token list a lookup per token.
+    filter_by_node = not all_nodes and any(resolver_entry.get("node")
+                                           for realm_data in realms.values()
+                                           for resolver_entry in realm_data.get("resolver", []))
+
     # Conditional Joins at the top to avoid re-joining
     should_join_token_owner = (bool(userid and userid.strip("*")) or
                                bool(resolver and resolver.strip("*")) or
                                bool(user) or
                                assigned is not None or
-                               not all_nodes)
+                               filter_by_node)
 
     if should_join_token_owner:
         sql_query = sql_query.outerjoin(TokenOwner, Token.id == TokenOwner.token_id)
@@ -107,26 +155,13 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
     if realm_list:
         realm_list = [r for r in realm_list if r.strip("*")]
 
+    # The realm names are matched against the configured realms here and the tokens are filtered by the realm
+    # IDs: a subquery on the realm names keeps the database from using the index on tokenrealm.realm_id.
     if realm_list:
         # Separate wildcard entries from exact entries
-        exact_realms = [r.lower() for r in realm_list if "*" not in r]
+        exact_realms = [r for r in realm_list if "*" not in r]
         wildcard_realms = [r for r in realm_list if "*" in r]
-
-        realm_conditions = []
-        if exact_realms:
-            realm_conditions.append(
-                func.lower(Realm.name).in_(exact_realms)
-            )
-        for wr in wildcard_realms:
-            realm_conditions.append(
-                func.lower(Realm.name).like(
-                    convert_wildcard_to_sql_like(wr.lower()),
-                    escape=SQL_LIKE_ESCAPE)
-            )
-
-        realm_ids = select(Realm.id).where(or_(*realm_conditions))
-        sql_query = sql_query.where(
-            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
+        sql_query = sql_query.where(_in_realms(_get_realm_ids(realms, exact_realms, wildcard_realms)))
 
     if has_realm is True:
         sql_query = sql_query.where(Token.id.in_(select(TokenRealm.token_id)))
@@ -135,10 +170,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         sql_query = sql_query.where(~exists().where(TokenRealm.token_id == Token.id))
 
     if allowed_realms is not None:
-        allowed_realm_ids = select(Realm.id).where(
-            func.lower(Realm.name).in_([r.lower() for r in allowed_realms]))
-        sql_query = sql_query.where(
-            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(allowed_realm_ids))))
+        sql_query = sql_query.where(_in_realms(_get_realm_ids(realms, allowed_realms)))
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
@@ -290,12 +322,13 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             sql_query = sql_query.where(Token.id.in_(subquery))
 
     # Node-specific resolver and realm configuration: the tokens of owners that another node serves are left out.
-    # A token belongs to no node if the resolver of its owner is in no realm at all, e.g. because the resolver was
-    # deleted, or if the realm of its owner has no resolver. Such a token is shown on every node, as it could
-    # otherwise neither be found nor deleted anywhere.
-    if not all_nodes:
+    # A token belongs to no node if it has no owner, if its owner names no resolver or if the resolver of its owner
+    # is in no realm at all, e.g. because the resolver was deleted. Such a token is shown on every node, whatever the
+    # realm of its owner, as it could otherwise neither be found nor deleted anywhere. The token of any other owner is
+    # shown if the resolver of the owner serves this node and the realm of the owner is not served by other nodes
+    # only.
+    if filter_by_node:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
-        realms = get_realms()
         resolvers = []
         resolvers_of_any_node = set()
         realms_to_filter = []
@@ -310,15 +343,14 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                 # Only other nodes serve this realm
                 realms_to_filter.append(realm_name)
 
-        # Build the resolver filter condition
-        resolver_filter = or_(
+        token_of_no_node = or_(
             TokenOwner.id.is_(None),
-            TokenOwner.resolver.in_(resolvers),
+            # Compared on its own, as NULL is neither in nor not in a list of names
+            TokenOwner.resolver.is_(None),
             TokenOwner.resolver.not_in(sorted(resolvers_of_any_node)),
         )
 
         # Re-join realm and explicitly include the join conditions in the filter to handle unassigned tokens
-        # The realm join is now correctly placed within the `if not all_nodes` block.
         sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id)
         realm_filter = or_(
             TokenOwner.realm_id.is_(None),
@@ -329,8 +361,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             )
         )
 
-        # Combine all filters with the existing query using and_()
-        sql_query = sql_query.where(and_(resolver_filter, realm_filter))
+        sql_query = sql_query.where(or_(token_of_no_node, and_(TokenOwner.resolver.in_(resolvers), realm_filter)))
 
     # print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
     # from sqlalchemy.dialects import postgresql
@@ -397,8 +428,10 @@ def _chunked(items: list, size: int = PAGE_QUERY_CHUNK_SIZE) -> Iterator[list]:
 
 
 def _select_owners(token_ids: list[int]) -> list[TokenOwner]:
+    # The tokens of the page are already loaded, so they are not joined again
     return db.session.scalars(
         select(TokenOwner).where(TokenOwner.token_id.in_(token_ids)).order_by(TokenOwner.id)
+        .options(lazyload(TokenOwner.token))
     ).unique().all()
 
 
@@ -411,7 +444,8 @@ def _select_container_serials(token_ids: list[int]) -> list:
     ).all()
 
 
-def _read_page_rows(token_ids: list[int], select_rows: Callable[[list[int]], list], what: str) -> list:
+def _read_page_rows(token_ids: list[int], select_rows: Callable[[list[int]], list], what: str,
+                    unread_token_ids: set[int] | None = None) -> list:
     """
     Read rows for a whole page of tokens, with one query per chunk of token IDs.
 
@@ -424,6 +458,8 @@ def _read_page_rows(token_ids: list[int], select_rows: Callable[[list[int]], lis
     :param token_ids: The database IDs of the tokens
     :param select_rows: Returns the rows for the given token IDs, or raises
     :param what: What is being read, for the log messages ("owners", ...)
+    :param unread_token_ids: If given, the IDs of the tokens whose rows could not be read even on
+                             their own are added to it
     :return: the rows of every chunk, in order. The rows of a token that could not be read
              even on its own are missing.
     """
@@ -448,25 +484,64 @@ def _read_page_rows(token_ids: list[int], select_rows: Callable[[list[int]], lis
                     except Exception as token_error:
                         log.error(f"Could not read the {what} of token {token_id}: {token_error!s}")
                         db.session.rollback()
+                        if unread_token_ids is not None:
+                            unread_token_ids.add(token_id)
         rows.extend(chunk_rows)
     return rows
 
 
-def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
+def _get_owners_by_token_id(token_ids: list[int],
+                            unread_token_ids: set[int] | None = None) -> dict[int, list[TokenOwner]]:
     """
-    Return the owner of each of the given tokens, with one query for the whole page.
-
-    A token can have several owners, in which case the first one is returned, just like
-    ``Token.first_owner`` does for a single token.
+    Return all owners of each of the given tokens, ordered by their ID, with one query for the whole page.
 
     :param token_ids: The database IDs of the tokens
-    :return: dictionary mapping a token ID to its owner. Tokens without an owner (or whose
-             owner could not be read even one by one) are not contained.
+    :param unread_token_ids: If given, the IDs of the tokens whose owners could not be read even
+                             one by one are added to it
+    :return: dictionary mapping a token ID to its owners. Tokens without an owner (or whose
+             owners could not be read even one by one) are not contained.
     """
-    owner_by_token_id = {}
-    for owner in _read_page_rows(token_ids, _select_owners, "owners"):
-        owner_by_token_id.setdefault(owner.token_id, owner)
-    return owner_by_token_id
+    owners_by_token_id = {}
+    for owner in _read_page_rows(token_ids, _select_owners, "owners", unread_token_ids):
+        owners_by_token_id.setdefault(owner.token_id, []).append(owner)
+    return owners_by_token_id
+
+
+def _load_page_details(tokens: list[Token], token_ids: list[int], owners_by_token_id: dict[int, list[TokenOwner]],
+                       unread_owner_token_ids: set[int]) -> None:
+    """
+    Load the token info and the token groups of a page of tokens with one query each, and hand
+    the owners that were already read for the page over to the tokens. Building the dictionaries
+    of the page then needs no query per token.
+
+    The tokens are read again with their realms, so that a token whose attributes expired since the page was
+    read, e.g. because reading the owners was rolled back, is loaded with the rest of the page and not on its
+    own.
+
+    This only saves queries: if the details can not be read for the page, every token reads its
+    own when it is turned into a dictionary.
+
+    :param tokens: The database objects of the tokens of the page
+    :param token_ids: The database IDs of these tokens. Reading the ID of a token whose attributes expired
+                      would load that token on its own.
+    :param owners_by_token_id: All owners of each token of the page, see ``_get_owners_by_token_id``
+    :param unread_owner_token_ids: The IDs of the tokens whose owners could not be read
+    """
+    try:
+        for chunk in _chunked(token_ids):
+            db.session.scalars(
+                select(Token).where(Token.id.in_(chunk))
+                .options(selectinload(Token.info_list), selectinload(Token.tokengroup_list))
+            ).unique().all()
+    except Exception as error:
+        log.error(f"Could not read the token info and token groups of a page of tokens: {error!s}")
+        log.debug(traceback.format_exc())
+        db.session.rollback()
+        return
+    for token in tokens:
+        # A token whose owners could not be read keeps querying its owner itself
+        if token.id not in unread_owner_token_ids:
+            set_committed_value(token, "owner_list", owners_by_token_id.get(token.id, []))
 
 
 def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
@@ -538,16 +613,21 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
 
         # In certain cases the LDAP or SQL server might not be reachable. Then an exception is raised
         try:
-            login_map = resolver.get_usernames_batch(user_ids)
+            # An ID the batch can not search for is reported, so it is not taken for a user that does not exist
+            unresolvable_ids = set()
+            login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+            unresolvable_owners.update((resolver_name, user_id) for user_id in unresolvable_ids)
         except Exception as batch_error:
             # A failing batch must not cost the whole page. Fall back to looking the users of this
-            # resolver up one by one, so that only the ones that keep failing are marked.
+            # resolver up one by one, so that only the ones that keep failing are marked. The single
+            # lookup is lookup_username, the one the batch uses as well, so that a user store which
+            # can not be reached is marked instead of reading like a user that does not exist.
             log.error(f"User information can not be retrieved in one batch: {batch_error!s}")
             log.debug(traceback.format_exc())
             login_map = {}
             for user_id in user_ids:
                 try:
-                    login_map[user_id] = resolver.getUsername(user_id)
+                    login_map[user_id] = resolver.lookup_username(user_id)
                 except Exception as user_error:
                     log.error(f"User information can not be retrieved: {user_error!s}")
                     log.debug(traceback.format_exc())
@@ -557,6 +637,122 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
             login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
 
     return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
+
+
+def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
+    """
+    Return the login names the user caches hold for the given owners. As for a ``User`` built from a
+    resolver and a user ID, the user cache in the database answers first and the Redis user cache second.
+
+    :param owners: The token owners
+    :return: The login name keyed by (resolver name, user ID), for the owners a cache holds
+    """
+    user_ids_by_resolver = {}
+    for owner in owners:
+        if owner.resolver and owner.user_id:
+            user_ids_by_resolver.setdefault(owner.resolver, {})[owner.user_id] = None
+    login_by_owner = {}
+    for resolver_name, user_ids in user_ids_by_resolver.items():
+        cached_logins = {}
+        try:
+            for chunk in _chunked(list(user_ids)):
+                cached_logins.update(get_cached_usernames(resolver_name, chunk))
+        except Exception as cache_error:
+            # A user cache that can not be read only costs the lookups it would have saved
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be read: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+        uncached_user_ids = [user_id for user_id in user_ids if not cached_logins.get(user_id)]
+        # Redis runs one command at a time, so the read is split like the query above: a single
+        # MGET over every owner of a run would hold up every authentication while it runs
+        for chunk in _chunked(uncached_user_ids):
+            cached_logins.update(read_cached_usernames(resolver_name, chunk))
+        for user_id in user_ids:
+            login = cached_logins.get(user_id)
+            if login:
+                login_by_owner[(resolver_name, user_id)] = login
+    return login_by_owner
+
+
+def _write_back_logins(login_by_owner: dict[tuple[str, str], str]) -> None:
+    """
+    Write the login names that were looked up in the user stores to both user caches, with one insert
+    per resolver and one Redis round trip per chunk, as a ``User`` built for each owner would have
+    cached them.
+
+    :param login_by_owner: The login name keyed by (resolver name, user ID). Empty login names are skipped.
+    """
+    login_by_user_id_by_resolver = {}
+    for (resolver_name, user_id), login in login_by_owner.items():
+        if login:
+            login_by_user_id_by_resolver.setdefault(resolver_name, {})[user_id] = login
+    for resolver_name, login_by_user_id in login_by_user_id_by_resolver.items():
+        # One Redis round trip per chunk, like the read, so that neither the pipeline of writes nor
+        # the index it extends grows with the number of owners a run looked up
+        for chunk in _chunked(list(login_by_user_id)):
+            write_cached_usernames(resolver_name, {user_id: login_by_user_id[user_id] for user_id in chunk})
+        try:
+            add_many_to_cache(resolver_name, login_by_user_id)
+        except Exception as cache_error:
+            # A user cache that can not be written only costs the lookups it would have saved later
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be written: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+
+
+def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = True) -> set[str]:
+    """
+    Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
+    resolver instead of one user store lookup per token.
+
+    A token is orphaned if its first owner has no user ID, belongs to a resolver that no longer exists,
+    does not exist in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
+    If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
+    read from the database is not orphaned, since it is not known to have an owner at all. An owner the
+    user cache holds is not looked up in the user store. A resolver without a batch lookup of its own asks
+    its user store for one owner at a time. The login names looked up in the user stores are written to
+    the user caches, as a ``User`` built for each owner would have done.
+
+    :param tokens: The token objects to check, e.g. one chunk of the token janitor
+    :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
+    :return: The serials of the orphaned tokens
+    """
+    token_by_id = {token.token.id: token for token in tokens}
+    owner_by_token_id = {token_id: owners[0]
+                         for token_id, owners in _get_owners_by_token_id(list(token_by_id)).items()}
+    resolvers = get_resolver_list()
+
+    orphaned_serials = set()
+    owners_to_resolve = {}
+    for token_id, owner in owner_by_token_id.items():
+        if owner.resolver and not resolvers.get(owner.resolver, {}).get("type"):
+            # The resolver of the owner was deleted, so the user can not exist any more. This has to be checked
+            # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+        elif not owner.user_id:
+            # The user object of an owner without a user ID has no login name
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+        else:
+            owners_to_resolve[token_id] = owner
+
+    cached_login_by_owner = _get_cached_logins(list(owners_to_resolve.values()))
+    uncached_owners = [owner for owner in owners_to_resolve.values()
+                       if (owner.resolver, owner.user_id) not in cached_login_by_owner]
+    resolved = _resolve_owner_logins(uncached_owners)
+    login_by_owner = resolved.login_by_owner | cached_login_by_owner
+    unresolvable_owners = set(resolved.unresolvable_owners)
+
+    for token_id, owner in owners_to_resolve.items():
+        owner_key = (owner.resolver, owner.user_id)
+        if owner_key in unresolvable_owners:
+            orphaned = orphaned_on_error
+        else:
+            orphaned = not login_by_owner.get(owner_key) or not owner.realm
+        if orphaned:
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+    _write_back_logins({owner_key: login for owner_key, login in login_by_owner.items()
+                        if owner_key not in cached_login_by_owner})
+    return orphaned_serials
 
 
 def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:
@@ -574,10 +770,15 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
     """
     token_objects = [token for token in tokens if isinstance(token, TokenClass)]
     token_ids = [token.token.id for token in token_objects]
-    owner_by_token_id = _get_owner_by_token_id(token_ids)
+    unread_owner_token_ids = set()
+    owners_by_token_id = _get_owners_by_token_id(token_ids, unread_owner_token_ids)
+    # The first owner of a token with several owners, like Token.first_owner
+    owner_by_token_id = {token_id: owners[0] for token_id, owners in owners_by_token_id.items()}
     login_by_owner, editable_by_resolver, unresolvable_owners = _resolve_owner_logins(
         list(owner_by_token_id.values()))
     container_serial_by_token_id = _get_container_serial_by_token_id(token_ids)
+    _load_page_details([token.token for token in token_objects], token_ids, owners_by_token_id,
+                       unread_owner_token_ids)
 
     token_dict_list = []
     for token in token_objects:
@@ -627,6 +828,12 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
         token_dict["container_serial"] = container_serial_by_token_id.get(token.token.id, "")
 
         token_dict_list.append(token_dict)
+
+    # The owners handed over to the tokens only serve building the dictionaries. Reading the owner of a token
+    # afterwards queries the database again, so that it sees the changes made in the meantime.
+    for token in token_objects:
+        if "owner_list" in token.token.__dict__:
+            db.session.expire(token.token, ["owner_list"])
 
     return token_dict_list
 
@@ -864,10 +1071,12 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
             log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
             sortby = Token.serial
 
+    # Tokens with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a token then appears on two pages or on none.
     if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
+        sql_query = sql_query.order_by(sortby.desc(), Token.id.desc())
     else:
-        sql_query = sql_query.order_by(sortby.asc())
+        sql_query = sql_query.order_by(sortby.asc(), Token.id.asc())
 
     session: Session = db.session
 

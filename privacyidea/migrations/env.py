@@ -5,6 +5,7 @@ import logging
 from logging.config import fileConfig
 
 from alembic import context
+from alembic.runtime.migration import MigrationContext, MigrationInfo
 from flask import current_app
 
 # this is the Alembic Config object, which provides
@@ -13,7 +14,8 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# Loggers that already exist, like the one Flask-Migrate reports command errors with, stay enabled.
+fileConfig(config.config_file_name, disable_existing_loggers=False)
 log = logging.getLogger('alembic.env')
 
 
@@ -97,6 +99,11 @@ def run_migrations_online():
         conf_args["process_revision_directives"] = process_revision_directives
 
     connectable = get_engine()
+    # The steps alembic applied, to tell a stamp from a migration in the log below
+    applied_steps = []
+
+    def remember_step(*, ctx: MigrationContext, step: MigrationInfo, heads: set, run_args: dict) -> None:
+        applied_steps.append(step)
 
     with connectable.connect() as connection:
         # Add AUTOCOMMIT isolation level to commit to db after every migration
@@ -106,6 +113,7 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
+            on_version_apply=remember_step,
             **conf_args
         )
 
@@ -119,7 +127,9 @@ def run_migrations_online():
             if not getattr(config.cmd_opts, 'autogenerate', False):
                 new_heads = ctx.get_current_heads()
                 new_rev = ", ".join(new_heads) if new_heads else "base"
-                if current_rev != new_rev:
+                if current_rev != new_rev and applied_steps and all(step.is_stamp for step in applied_steps):
+                    log.info(f'Stamped revision {new_rev}, no migration ran (was {current_rev})')
+                elif current_rev != new_rev:
                     log.info(f'Migrated from revision {current_rev} to revision {new_rev}')
                 else:
                     log.info(f'Revision remains at {current_rev}')

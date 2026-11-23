@@ -139,11 +139,13 @@ def read_time_intervals(param: dict) -> None:
 
 
 @log_with(log)
-def search(config, param=None, admin_params: dict | None = None):
+def search(config, param=None, admin_params: dict | None = None, exact_params: dict[str, str] | None = None):
     """
     Returns a list of audit entries, supports pagination
 
     :param config: The config entries from the file config
+    :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
+        *param*, such as the identity of a user
     :return: Audit dictionary with information about the previous and next
     pages.
     """
@@ -178,7 +180,7 @@ def search(config, param=None, admin_params: dict | None = None):
         del param["hidden_columns"]
 
     pagination = audit.search(param, admin_params=admin_params, sortorder=sortorder, page=page,
-                              page_size=page_size, timelimit=timelimit)
+                              page_size=page_size, timelimit=timelimit, exact_params=exact_params)
 
     # delete hidden columns from response
     if hidden_columns:

@@ -38,6 +38,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EventConditionMultiValue, EventService } from "@services/event/event.service";
 import { labeledOptions, LabeledValue } from "@utils/value-label.utils";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // These conditions keep their raw values: they are literally "True"/"False", not a yes/no or on/off.
 const RAW_VALUE_CONDITIONS: readonly string[] = ["result_value", "result_status"];
@@ -45,6 +46,7 @@ const RAW_VALUE_CONDITIONS: readonly string[] = ["result_value", "result_status"
 @Component({
   selector: "app-event-condition-list",
   imports: [
+    TooltipAriaLabelDirective,
     MatFormField,
     MatIcon,
     MatIconButton,

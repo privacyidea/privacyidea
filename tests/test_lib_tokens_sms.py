@@ -1,7 +1,9 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import json
 import logging
+from urllib.parse import parse_qs
 
 from unittest import mock
 import responses
@@ -9,6 +11,7 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -373,6 +376,50 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(r, r)
 
     @responses.activate
+    def test_18b_provider_config_and_otp_are_not_logged(self):
+        # The provider configuration holds the credentials of the gateway. Sending a challenge logs the names of
+        # what is sent and the server it is sent to, not the values or the URL. The OTP is not logged, and the
+        # phone number only by its last digits.
+        responses.add(responses.POST, self.SMSHttpUrl, body=self.success_body)
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        token = init_token({"type": "sms", "serial": "SMSLOG01", "phone": self.phone1})
+        try:
+            with self.assertLogs("privacyidea", level="DEBUG") as captured:
+                self.assertTrue(token.create_challenge("123456098713")[0])
+        finally:
+            remove_token("SMSLOG01")
+        output = "\n".join(captured.output)
+        self.assertNotIn("yoursecret", output)
+        self.assertNotIn("sms_send_api.cgi", output)
+        self.assertIn("issuing a POST request to http://smsgateway.com with the parameters []", output)
+        self.assertIn("'password'", output)
+        sent_otp = parse_qs(responses.calls[-1].request.body)["text"][0]
+        self.assertRegex(sent_otp, r"^[0-9]{6}$")
+        self.assertNotIn(sent_otp, output)
+        self.assertNotIn("123456789", output)
+        self.assertIn("submitMessage for the token SMSLOG01", output)
+
+    @responses.activate
+    def test_18c_failed_sms_is_logged_by_the_type_of_the_error(self):
+        # A gateway that is called with GET carries the parameters in the URL, which the error of the request names.
+        # The failure is logged by the type of the error.
+        set_privacyidea_config("sms.providerConfig",
+                               json.dumps({"URL": self.SMSHttpUrl, "HTTP_Method": "GET",
+                                           "PARAMETER": {"apikey": "gateway-api-key"},
+                                           "SMS_TEXT_KEY": "text", "SMS_PHONENUMBER_KEY": "destination"}))
+        token = init_token({"type": "sms", "serial": "SMSLOG02", "phone": self.phone1})
+        try:
+            # No response is registered, so the request fails with a ConnectionError that names the URL
+            with self.assertLogs("privacyidea", level="DEBUG") as captured:
+                self.assertFalse(token.create_challenge("123456098715")[0])
+        finally:
+            remove_token("SMSLOG02")
+        output = "\n".join(captured.output)
+        self.assertIn("The PIN was correct, but the SMS could not be sent! (ConnectionError)", output)
+        self.assertNotIn("gateway-api-key", output)
+        self.assertNotIn("123456789", output)
+
+    @responses.activate
     def test_18a_challenge_request_dynamic(self):
         # Send a challenge request for an SMS token with a dynamic phone number
         responses.add(responses.POST,
@@ -451,7 +498,7 @@ class SMSTokenTestCase(MyTestCase):
 
             smstext = token._get_sms_text(options)
             self.assertEqual(pol_text.strip("'"), smstext)
-            r, message = token._send_sms(smstext, options)
+            r, message = token._send_sms(smstext, options, otp=token.get_otp()[2])
             self.assertRegex(message, result_text)
 
         # Test AUTOSMS
@@ -603,6 +650,17 @@ class SMSTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token("PISM_DYN_TEST1")
+
+    def test_25_enroll_with_empty_phone(self):
+        # An empty phone number is accepted, e.g. for a user whose user store entry has no mobile number. A missing
+        # one is refused.
+        token = init_token(param={"serial": "PISM_EMPTY1", "type": "sms", "genkey": 1, "phone": ""})
+        self.assert_empty_string(token.get_tokeninfo("phone"))
+        remove_token("PISM_EMPTY1")
+
+        with self.assertRaises(ParameterError):
+            init_token(param={"serial": "PISM_EMPTY2", "type": "sms", "genkey": 1})
+        self.assertEqual([], get_tokens(serial="PISM_EMPTY2"))
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

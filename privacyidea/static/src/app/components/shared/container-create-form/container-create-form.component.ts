@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, model, output } from "@angular/core";
+import { FieldTree, form, FormField } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import {
@@ -29,16 +30,24 @@ import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field"
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import {
+  ContainerRegistrationConfigComponent,
+  ContainerRegistrationModel
+} from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { ContainerTemplateEditBodyComponent } from "@components/container/container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
 import { AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerServiceInterface, ContainerTemplate } from "@services/container/container.service";
 import { TokenServiceInterface } from "@services/token/token.service";
 
+function emptyTemplate(): ContainerTemplate {
+  return { container_type: "", default: false, name: "", template_options: { tokens: [] } };
+}
+
 @Component({
   selector: "app-container-create-form",
   standalone: true,
   imports: [
+    FormField,
     MatFormField,
     MatLabel,
     MatInput,
@@ -60,19 +69,18 @@ export class ContainerCreateFormComponent {
   containerService = input.required<ContainerServiceInterface>();
   tokenService = input.required<TokenServiceInterface>();
   authService = input.required<AuthServiceInterface>();
-  description = model.required<string>();
-  selectedTemplate = model.required<ContainerTemplate>();
+  descriptionField = input.required<FieldTree<string>>();
+  registration = input.required<FieldTree<ContainerRegistrationModel>>();
+  selectedTemplate = model<ContainerTemplate>(emptyTemplate());
   templateOptions = input.required<ContainerTemplate[]>();
-  generateQRCode = model.required<boolean>();
-  passphrasePrompt = model.required<string>();
-  passphraseResponse = model.required<string>();
-  userStorePassphrase = model.required<boolean>();
+  generateQRCode = model(false);
   availableTokenTypes = input.required<string[]>();
   showRegistration = input(false);
-  containerHasOwner = input(false);
   templateFieldClass = input("input-width-l");
 
-  validInputChange = output<boolean>();
+  readonly templateForm = form(this.selectedTemplate);
+  readonly generateQRCodeForm = form(this.generateQRCode);
+
   clearTemplate = output<void>();
   templateChange = output<ContainerTemplate>();
 

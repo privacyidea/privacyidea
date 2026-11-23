@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailsListDisplayComponent } from "./details-list-display.component";
+import { axe } from "@testing/axe";
 
 describe("DetailsListDisplayComponent", () => {
   let fixture: ComponentFixture<DetailsListDisplayComponent>;
@@ -46,5 +47,12 @@ describe("DetailsListDisplayComponent", () => {
 
     expect(component).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll("mat-list-item").length).toBe(0);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("items", ["realm1", "realm2"]);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

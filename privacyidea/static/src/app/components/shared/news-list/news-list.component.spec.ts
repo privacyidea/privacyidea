@@ -21,6 +21,7 @@ import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NewsListItem } from "@services/info/info.service";
 import { NewsListComponent } from "./news-list.component";
+import { axe } from "@testing/axe";
 
 describe("NewsListComponent", () => {
   let fixture: ComponentFixture<NewsListComponent>;
@@ -119,5 +120,20 @@ describe("NewsListComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector("mat-icon.news-empty-icon").textContent).toContain("newspaper");
+  });
+
+  it("marks summary images without alt text as decorative and keeps an alt that is there", () => {
+    fixture.componentRef.setInput("showSummary", true);
+    fixture.componentRef.setInput("items", [{ ...items[0], summary: '<img src="a.png"><img src="b.png" alt="Logo">' }]);
+    fixture.detectChanges();
+
+    const images: HTMLImageElement[] = Array.from(fixture.nativeElement.querySelectorAll(".news-summary img"));
+    expect(images.map((img) => img.getAttribute("alt"))).toEqual(["", "Logo"]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

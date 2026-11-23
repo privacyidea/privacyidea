@@ -129,6 +129,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
         self.reset_flask_g()
+        # The enrollment challenge is logged as a challenge step, not as the completed login
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, audit_entry["authentication"], audit_entry)
+        self.assertEqual(0, audit_entry["success"], audit_entry)
 
         # 3. scan the qrcode / Get the OTP value
         token_obj = get_tokens(serial=serial)[0]
@@ -692,7 +696,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Check that we do not have a log message (action_detail) regarding the max tokens in the audit
         audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
         self.assertIsNotNone(audit_entry)
-        self.assertFalse(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+        # An empty action_detail is None on Oracle
+        self.assertFalse((audit_entry["action_detail"] or "").startswith("ERR303: The number of "), audit_entry)
         self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
         self.assertEqual(audit_entry["success"], 1, audit_entry)
 
@@ -968,6 +973,36 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertFalse(res.json["result"]["value"], res.json)
         self.reset_flask_g()
+
+    @ldap3mock.activate
+    def test_08c_enroll_smartphone_template_change_pin_on_first_use(self):
+        create_container_template(container_type="smartphone", template_name="test",
+                                  options={"tokens": [{"type": "hotp", "genkey": True,
+                                                       "change_pin_on_first_use": True},
+                                                      {"type": "totp", "genkey": True}]})
+        self.addCleanup(delete_container_template, "test")
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH,
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
+                           PolicyAction.PASSTHRU: True})
+        self.addCleanup(delete_policy, "enroll_via_multichallenge")
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        self.addCleanup(delete_policy, "registration")
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            serial = res.json["detail"]["serial"]
+        self.reset_flask_g()
+        self.addCleanup(self._delete_container_with_tokens, serial)
+
+        tokens = {token.get_tokentype(): token for token in find_container_by_serial(serial).get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertIsNone(tokens["totp"].get_tokeninfo("next_pin_change"))
 
     @staticmethod
     def _delete_container_with_tokens(container_serial: str):

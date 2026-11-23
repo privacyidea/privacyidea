@@ -49,6 +49,7 @@ import logging
 import re
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 
 from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text, insert
 from sqlalchemy import inspect as sqlalchemy_inspect
@@ -62,6 +63,7 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate, TimeInterval
 from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.log import redact
 from privacyidea.lib.pooling import get_engine, engines_are_shared
 from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
@@ -110,6 +112,16 @@ def _csv_cell(value: object) -> str:
         if not _NUMBER.fullmatch(text.strip()):
             return f"'{text}"
     return text
+
+
+def get_audit_engine_options(config: Mapping) -> dict:
+    """
+    Get the SQLAlchemy engine options for the audit database.
+
+    :param config: The privacyIDEA configuration
+    :return: The options of PI_AUDIT_SQL_OPTIONS, or of SQLALCHEMY_ENGINE_OPTIONS if no audit options are given
+    """
+    return config.get(ConfigKey.AUDIT_SQL_OPTIONS, config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
 
 
 def _pool_accepts_pool_size(connect_string, engine_kwargs):
@@ -327,11 +339,8 @@ class Audit(AuditBase):
         connect_string = self.config.get(ConfigKey.AUDIT_SQL_URI, self.config.get(
             ConfigKey.SQLALCHEMY_DATABASE_URI))
         log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
-        # if no specific audit engine options are given, use the default from
-        # SQLALCHEMY_ENGINE_OPTIONS or none
-        sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
-                                      self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
-        log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
+        sqa_options = get_audit_engine_options(self.config)
+        log.debug(f"Using Audit SQLAlchemy engine options: {redact(sqa_options)!s}")
         # The engine options are merged over the pool defaults instead of being passed
         # alongside them, because a key present in both would raise a TypeError about
         # duplicate keyword arguments and take the whole pool configuration down with it.
@@ -440,7 +449,8 @@ class Audit(AuditBase):
 
     @staticmethod
     def _create_filter(param: dict, admin_params: dict | None = None,
-                       timelimit: datetime.timedelta | None = None, has_entry_version: bool = True):
+                       timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None,
+                       has_entry_version: bool = True):
         """
         create a filter condition for the logentry
 
@@ -453,6 +463,8 @@ class Audit(AuditBase):
                  "allowed_audit_realms": ["realm1", "realm2"]}
 
         :param timelimit: Only audit entries newer than this timedelta
+        :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
+            *param*, such as the identity of a user
         :param has_entry_version: Whether the audit table has the entry_version column
         """
         conditions = []
@@ -480,14 +492,7 @@ class Audit(AuditBase):
 
         for search_key in param.keys():
             search_value = param.get(search_key)
-            if search_key == "allowed_audit_realm":
-                # Add each realm in the allowed_audit_realm list to the search condition
-                realm_conditions = []
-                for realm in search_value:
-                    realm_conditions.append(LogEntry.realm == realm)
-                filter_realm = or_(*realm_conditions)
-                conditions.append(filter_realm)
-            elif search_key in ("startdate", "date") and isinstance(search_value, TimeInterval):
+            if search_key in ("startdate", "date") and isinstance(search_value, TimeInterval):
                 # A time interval, read by privacyidea.lib.audit.read_time_intervals
                 conditions.append(Audit._time_interval(getattr(LogEntry, search_key), search_value,
                                                        has_entry_version))
@@ -506,10 +511,22 @@ class Audit(AuditBase):
                         search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(is_true(search_value)))
+                    elif search_key == "number":
+                        # The entry number is the integer column id. It is compared exactly, a leading '!'
+                        # negates the condition, and a value that is not a number matches no entry.
+                        negate = search_value.startswith("!")
+                        number = search_value[1:] if negate else search_value
+                        if not number.strip().isdecimal():
+                            conditions.append(false())
+                        elif negate:
+                            conditions.append(LogEntry.id != int(number))
+                        else:
+                            conditions.append(LogEntry.id == int(number))
                     else:
                         # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
                         # matched literally. A leading '!' negates the condition.
-                        raw_column = getattr(LogEntry, search_key)
+                        # The entries name the column loglevel "log_level".
+                        raw_column = getattr(LogEntry, "loglevel" if search_key == "log_level" else search_key)
                         column = raw_column
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an
@@ -535,6 +552,9 @@ class Audit(AuditBase):
                     # bullshit stuff in the param
                     log.debug(f"Not a valid searchkey: {exx!s}")
 
+        for search_key, search_value in (exact_params or {}).items():
+            conditions.append(getattr(LogEntry, search_key) == search_value)
+
         if timelimit:
             conditions.append(Audit._newer_than(timelimit, has_entry_version))
         # Combine them with or to a BooleanClauseList
@@ -547,7 +567,7 @@ class Audit(AuditBase):
         return filter_condition
 
     def get_total(self, param: dict, admin_params: dict | None = None, AND: bool = True, display_error: bool = True,
-                  timelimit: datetime.timedelta | None = None) -> int:
+                  timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
@@ -555,7 +575,7 @@ class Audit(AuditBase):
         count = 0
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
-        filter_condition = self._create_filter(param, admin_params, timelimit=timelimit,
+        filter_condition = self._create_filter(param, admin_params, timelimit=timelimit, exact_params=exact_params,
                                                has_entry_version=self.has_entry_version)
 
         try:
@@ -891,9 +911,9 @@ class Audit(AuditBase):
                 # export and undo the point of reading it in rounds.
                 self.session.expunge(entry)
 
-    def get_count(self, search_dict, timedelta=None, success=None):
+    def get_count(self, search_dict, timedelta=None, success=None, exact_params: dict[str, str] | None = None):
         # create filter condition
-        filter_condition = self._create_filter(search_dict)
+        filter_condition = self._create_filter(search_dict, exact_params=exact_params)
         conditions = [filter_condition]
         if success is not None:
             conditions.append(LogEntry.success == int(is_true(success)))
@@ -910,7 +930,8 @@ class Audit(AuditBase):
         return log_count
 
     def search(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
-               sortorder: str = "asc", timelimit: datetime.timedelta | None = None):
+               sortorder: str = "asc", timelimit: datetime.timedelta | None = None,
+               exact_params: dict[str, str] | None = None):
         """
         This function returns the audit log as a Pagination object.
 
@@ -926,12 +947,15 @@ class Audit(AuditBase):
         :param page: The page number
         :param sortorder: "asc" - ascending or "desc" - descending
         :param timelimit: Only audit entries newer than this timedelta will be searched
+        :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
+            *search_dict*
         """
         page = page
         page_size = page_size
         paging_object = Paginate()
         paging_object.page = page
-        paging_object.total = self.get_total(search_dict, admin_params=admin_params, timelimit=timelimit)
+        paging_object.total = self.get_total(search_dict, admin_params=admin_params, timelimit=timelimit,
+                                             exact_params=exact_params)
         if page > 1:
             paging_object.prev = page - 1
         if paging_object.total > (page_size * page):
@@ -939,7 +963,7 @@ class Audit(AuditBase):
 
         auditIter = self.search_query(search_dict, admin_params=admin_params, page_size=page_size,
                                       page=page, sortorder=sortorder,
-                                      timelimit=timelimit)
+                                      timelimit=timelimit, exact_params=exact_params)
         while True:
             try:
                 le = next(auditIter)
@@ -960,7 +984,8 @@ class Audit(AuditBase):
         return paging_object
 
     def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
-                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None):
+                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None,
+                     exact_params: dict[str, str] | None = None):
         """
         This function returns the audit log as an iterator on the result
 
@@ -987,6 +1012,7 @@ class Audit(AuditBase):
 
             # create filter condition
             filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit,
+                                                   exact_params=exact_params,
                                                    has_entry_version=self.has_entry_version)
             stmt = self._select_entries().where(filter_condition)
 

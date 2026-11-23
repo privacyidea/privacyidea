@@ -48,7 +48,6 @@ import logging
 from dataclasses import dataclass
 from hashlib import sha256
 import secrets
-import random
 import string
 import binascii
 import ctypes
@@ -83,7 +82,10 @@ from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
 def safe_compare(a, b):
-    return hmac.compare_digest(to_bytes(a), to_bytes(b))
+    def encode(value):
+        # surrogatepass: a lone surrogate from a JSON request compares as a mismatch instead of raising
+        return value.encode("utf8", "surrogatepass") if isinstance(value, str) else value
+    return hmac.compare_digest(encode(a), encode(b))
 
 
 ROUNDS = 9
@@ -1080,8 +1082,9 @@ def generate_password(size=6, characters=string.ascii_lowercase + string.ascii_u
     passwd = [secrets.choice(str) for str in requirements]
     # fill the password until size with allowed characters
     passwd.extend(secrets.choice(characters) for _x in range(size - len(requirements)))
-    # Shuffle, so that we mix the requirements and the generic characters
-    random.shuffle(passwd)
+    # Shuffle, so that we mix the requirements and the generic characters. The positions are part of the password,
+    # so they come from the system random generator as well.
+    secrets.SystemRandom().shuffle(passwd)
     return "".join(passwd)
 
 

@@ -28,6 +28,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { of, Subject } from "rxjs";
 import { EventsWidgetComponent } from "./events-widget.component";
+import { axe } from "@testing/axe";
 
 function makeEventsResponse(events: { id: number; name: string; active: boolean }[]): PiResponse<EventHandler[]> {
   return {
@@ -186,5 +187,11 @@ describe("EventsWidgetComponent", () => {
     component.reload();
 
     expect(eventMock.getEventHandlers).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

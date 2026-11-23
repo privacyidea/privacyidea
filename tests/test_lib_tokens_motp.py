@@ -2,6 +2,8 @@
 This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
+from unittest import mock
+
 from privacyidea.lib.token import init_token, get_tokens, import_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokens.motptoken import MotpTokenClass
@@ -181,6 +183,17 @@ class MotpTokenTestCase(MyTestCase):
         # Check the same value again
         r = token.check_otp("6ed4e4", options={"initTime": 129612120})
         self.assertTrue(r == -1, r)
+
+    def test_06a_otp_value_used_by_another_request(self):
+        """The OTP value verifies, but another request advanced the counter past it first."""
+        db_token = Token("motp003", tokentype="motp")
+        db_token.save()
+        token = MotpTokenClass(db_token)
+        token.update({"otpkey": "0123456789abcdef", "motppin": "6666", "pin": "test"})
+
+        with mock.patch.object(MotpTokenClass, "advance_otp_count", return_value=False):
+            self.assertEqual(-1, token.check_otp("6ed4e4", options={"initTime": 129612120}))
+        token.delete_token()
 
     def test_07_motp_token_export(self):
         token = init_token(param={'serial': "OATH12345678",

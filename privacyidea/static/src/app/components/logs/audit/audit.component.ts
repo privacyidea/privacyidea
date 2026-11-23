@@ -55,7 +55,7 @@ import {
 } from "@angular/material/table";
 import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
@@ -105,6 +105,8 @@ import {
 } from "@angular/cdk/overlay";
 import { TemplatePortal } from "@angular/cdk/portal";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 function sameLocalDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -213,6 +215,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
 @Component({
   selector: "app-audit",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -262,15 +266,11 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
   readonly filterHint = inlineFilterHint();
@@ -322,7 +322,7 @@ export class AuditComponent {
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);
-    this.auditService.pageIndex.set(event.pageIndex);
+    this.auditService.pageIndex.set(event.pageIndex + 1);
   }
 
   toggleFilter(filterKeyword: string): void {

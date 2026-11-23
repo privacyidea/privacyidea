@@ -192,16 +192,17 @@ def assert_authentication_log(event_types, transaction_id=None, same_attempt=Tru
     return AuthLogEntries(entries)
 
 
-def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
-                                    serials: set[str] = None,
-                                    client_label: str = None, client_label_source: str = None,
-                                    endpoint: str = None, other_info: dict = None,
-                                    transaction_id: str = None,
-                                    source_ip: str = None, peer_ip: str = None,
-                                    source_ip_source: str = None, ip_chain: list = None,
+def assert_authentication_log_entry(entry: AuthenticationLog, user: User | None = None,
+                                    serials: set[str] | None = None,
+                                    client_label: str | None = None, client_label_source: str | None = None,
+                                    endpoint: str | None = None, other_info: dict | None = None,
+                                    transaction_id: str | None = None,
+                                    source_ip: str | None = None, peer_ip: str | None = None,
+                                    source_ip_source: str | None = None, ip_chain: list | None = None,
                                     user_role: AuthLogUserRole = AuthLogUserRole.USER,
-                                    reason: AuthEventReason = None, reasons: dict = None,
-                                    policies: list = None):
+                                    reason: AuthEventReason | list[AuthEventReason] | None = None,
+                                    reasons: dict | None = None,
+                                    policies: list | None = None) -> None:
     """
     Assert a single authentication-log entry carries the expected attributes.
 

@@ -21,7 +21,9 @@ import { By } from "@angular/platform-browser";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockNotificationService } from "@testing/mock-services";
+import { OBJECT_URL_LIFETIME_MS } from "@utils/download.utils";
 import { CertificateDataComponent } from "./certificate-data.component";
+import { axe } from "@testing/axe";
 
 const CERTIFICATE = "-----BEGIN CERTIFICATE-----\nMIIBdummy\n-----END CERTIFICATE-----";
 const PKCS12 = "AAECAw==";
@@ -103,6 +105,7 @@ describe("CertificateDataComponent", () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
@@ -238,9 +241,11 @@ describe("CertificateDataComponent", () => {
 
     it("revokes the object URL of every download", () => {
       setInputs({ serial: "CRT0001", certificate: CERTIFICATE, pkcs12: PKCS12 });
+      jest.useFakeTimers();
 
       component.downloadCertificate();
       component.downloadPkcs12();
+      jest.advanceTimersByTime(OBJECT_URL_LIFETIME_MS);
 
       expect(revokedUrls).toEqual(["blob:certificate-data/1", "blob:certificate-data/2"]);
     });
@@ -300,5 +305,11 @@ describe("CertificateDataComponent", () => {
       expect(fixture.nativeElement.textContent).toContain("The PKCS#12 container holds the private key.");
       expect(fixture.nativeElement.textContent).not.toContain("private key and the certificate");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -448,6 +448,16 @@ class UtilsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
+        # And check the PAM module, old and new user-agent
+        for user_agent in ['PAM/1.1.0', 'privacyidea-pam/1.0.0']:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={'username': 'pwpercent',
+                                                     'password': 'pw%45#test'},
+                                               headers={'User-Agent': user_agent}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, (user_agent, res))
+
         # now check the /validate/check endpoint
         set_policy(name="otppin",
                    scope=SCOPE.AUTH,
@@ -500,6 +510,19 @@ class UtilsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value"), res.json)
+
+        # the PAM module does not need quoting either
+        for user_agent in ['PAM/1.1.0', 'privacyidea-pam/1.0.0']:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "pwpercent",
+                                                     "realm": self.realm1,
+                                                     "pass": "pw%45#test"},
+                                               headers={'User-Agent': user_agent}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("value"), (user_agent, res.json))
 
         # cleanup
         remove_token(serial='spass1d')

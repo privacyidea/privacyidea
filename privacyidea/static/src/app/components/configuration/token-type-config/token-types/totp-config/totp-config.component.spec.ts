@@ -17,9 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
 import { TOTP_HASHLIB, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { axe } from "@testing/axe";
 
 const mockTotpSteps = ["30", "60"];
 const mockHashLibs = ["sha1", "sha256", "sha512"];
@@ -27,59 +31,132 @@ const mockHashLibs = ["sha1", "sha256", "sha512"];
 describe("TotpConfigComponent", () => {
   let fixture: ComponentFixture<TotpConfigComponent>;
   let component: TotpConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const input = (placeholder: string) =>
+    fixture.nativeElement.querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+  const type = async (placeholder: string, value: string) => {
+    input(placeholder).value = value;
+    input(placeholder).dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const selects = () =>
+    fixture.debugElement.queryAll(By.directive(MatSelect)).map((s) => s.componentInstance as MatSelect);
+  const pick = async (select: MatSelect, index: number) => {
+    document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+    select.open();
+    await flush();
+    (document.querySelectorAll("mat-option")[index] as HTMLElement).click();
+    await flush();
+  };
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(TotpConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    fixture.componentRef.setInput("totpSteps", mockTotpSteps);
+    fixture.componentRef.setInput("hashLibs", mockHashLibs);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TotpConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(TotpConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    fixture.componentRef.setInput("totpSteps", mockTotpSteps);
-    fixture.componentRef.setInput("hashLibs", mockHashLibs);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  afterEach(() => {
+    document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+  });
+
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "60";
-    component.updateFormData(TOTP_TIME_STEP, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TOTP_TIME_STEP]: newValue });
-  });
-
-  it("should preserve existing formData when updating a field", () => {
-    const initialData = {
-      [TOTP_TIME_STEP]: "30",
-      [TOTP_TIME_WINDOW]: 180
-    };
-    fixture.componentRef.setInput("formData", initialData);
-    fixture.detectChanges();
-
-    jest.spyOn(component.formDataChange, "emit");
-    component.updateFormData(TOTP_HASHLIB, "sha256");
-
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({
-      ...initialData,
+  it("should display the values of the form", async () => {
+    await create({
+      [TOTP_TIME_STEP]: "60",
+      [TOTP_TIME_WINDOW]: "240",
       [TOTP_HASHLIB]: "sha256"
     });
+
+    const [stepSelect, hashlibSelect] = selects();
+    expect(stepSelect.value).toBe("60");
+    expect(hashlibSelect.value).toBe("sha256");
+    expect(input("180").value).toBe("240");
   });
 
-  it("should display current formData values", () => {
-    const testData = {
-      [TOTP_TIME_STEP]: "60",
-      [TOTP_TIME_WINDOW]: 240,
-      [TOTP_HASHLIB]: "sha256"
-    };
-    fixture.componentRef.setInput("formData", testData);
+  it("writes the picked time step and hashlib to the form", async () => {
+    await create();
+    const [stepSelect, hashlibSelect] = selects();
+
+    await pick(stepSelect, 1);
+    expect(configForm.model().values[TOTP_TIME_STEP]).toBe("60");
+    await pick(hashlibSelect, 2);
+    expect(configForm.model().values[TOTP_HASHLIB]).toBe("sha512");
+  });
+
+  it("writes the typed time window as a string", async () => {
+    await create();
+
+    await type("180", "240");
+
+    expect(configForm.model().values[TOTP_TIME_WINDOW]).toBe("240");
+    expect(configForm.form().valid()).toBe(true);
+  });
+
+  it("writes an empty string, not NaN, when a number input is cleared", async () => {
+    await create({ [TOTP_TIME_WINDOW]: "180" });
+
+    await type("180", "");
+
+    expect(configForm.model().values[TOTP_TIME_WINDOW]).toBe("");
+  });
+
+  it("shows a message for text the number input cannot parse", async () => {
+    await create({ [TOTP_TIME_WINDOW]: "180" });
+    Object.defineProperty(input("180"), "validity", { value: { badInput: true } });
+
+    await type("180", "");
+    configForm.form.values[TOTP_TIME_WINDOW]().markAsTouched();
+    await flush();
+
+    expect(
+      configForm.form.values[TOTP_TIME_WINDOW]()
+        .errors()
+        .map((error) => error.kind)
+    ).toEqual(["parse"]);
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Enter a valid number.");
+    expect(configForm.form().valid()).toBe(false);
+    expect(fixture.nativeElement.querySelector(".panel-incomplete")?.textContent).toContain("Incomplete");
+  });
+
+  it("clears the time step and the hashlib through the form and marks them dirty", async () => {
+    await create({ [TOTP_TIME_STEP]: "30", [TOTP_HASHLIB]: "sha1" });
+    const clearButtons = fixture.debugElement.queryAll(By.css("app-clear-button button"));
+
+    clearButtons[0].nativeElement.click();
+    clearButtons[1].nativeElement.click();
+    await flush();
+
+    expect(configForm.model().values[TOTP_TIME_STEP]).toBe("");
+    expect(configForm.model().values[TOTP_HASHLIB]).toBe("");
+    expect(configForm.form.values[TOTP_TIME_STEP]().dirty()).toBe(true);
+    expect(configForm.form.values[TOTP_HASHLIB]().dirty()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
     fixture.detectChanges();
 
-    expect(component.formData()[TOTP_TIME_STEP]).toEqual("60");
-    expect(component.formData()[TOTP_TIME_WINDOW]).toEqual(240);
-    expect(component.formData()[TOTP_HASHLIB]).toEqual("sha256");
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -29,6 +29,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { NewsWidgetComponent } from "./news-widget.component";
+import { axe } from "@testing/axe";
 
 describe("NewsWidgetComponent", () => {
   let fixture: ComponentFixture<NewsWidgetComponent>;
@@ -260,5 +261,11 @@ describe("NewsWidgetComponent", () => {
       expect(withoutRight.nativeElement.querySelector(".news-hint").textContent).not.toContain("rss_age");
       withoutRight.destroy();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -21,7 +21,9 @@ import { PiResponse } from "@app/app.component";
 import {
   PolicyActionDetail,
   PolicyActionGroups,
+  policyActionValueIsValid,
   PolicyDetail,
+  policyNameCollides,
   PolicyServiceInterface,
   ScopedPolicyActions
 } from "@services/policies/policies.service";
@@ -60,6 +62,9 @@ export class MockPolicyService implements PolicyServiceInterface {
   getScopeOfAction = jest.fn().mockReturnValue(null);
   allPolicies = signal<PolicyDetail[]>([]);
   canSavePolicy = jest.fn().mockReturnValue(true);
+  isPolicyNameTaken = jest.fn((name: string, ownName?: string | null) =>
+    policyNameCollides(this.allPolicies(), name, ownName)
+  );
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
@@ -70,7 +75,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   isScopeChangeable = jest.fn().mockReturnValue(true);
   getActionNamesOf = jest.fn().mockReturnValue([]);
   getActionsOf = jest.fn().mockReturnValue({});
-  actionValueIsValid = jest.fn().mockReturnValue(true);
+  actionValueIsValid = jest.fn(policyActionValueIsValid);
   saveNewPolicy = jest.fn().mockResolvedValue(true);
   policyHasConditions = jest.fn().mockReturnValue(true);
   policyHasAdminConditions = jest.fn().mockReturnValue(true);

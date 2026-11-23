@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import {
@@ -29,8 +31,10 @@ import {
   OnInit,
   signal,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
@@ -56,7 +60,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -72,6 +76,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
+  compareResolverPriority,
   REALM_CA_POLICY_REFERENCE_ERROR_CODE,
   REALM_CUSTOM_ATTRIBUTES_ERROR_CODE,
   RealmRow,
@@ -86,6 +91,10 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { concat, last, lastValueFrom, take } from "rxjs";
 import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 interface ResolverWithPriority {
   name: string;
@@ -93,6 +102,14 @@ interface ResolverWithPriority {
 }
 
 type NodeResolversMap = Record<string, ResolverWithPriority[]>;
+
+/** The create and update payload of one node group: a priority is sent only when it holds a number. */
+function toResolverPayload(resolvers: ResolverWithPriority[]): { name: string; priority?: number }[] {
+  return resolvers.map((r) => {
+    const num = Number(r.priority);
+    return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
+  });
+}
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
@@ -111,9 +128,14 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,
+    FormField,
     MatButtonModule,
     MatCell,
     MatCellDef,
@@ -146,10 +168,6 @@ const columnKeysMap = [
   styleUrl: "./realm-table.component.scss"
 })
 export class RealmTableComponent implements OnDestroy, OnInit {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -169,6 +187,21 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   // Table State Signals
   selectedNode = signal<string>(ALL_NODES_VALUE);
+  private readonly nodeMenu = viewChild.required<MatMenu>("nodeMenu");
+
+  /** The node select is projected into the toolbar; the menu reaches the same choice through a submenu. */
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "node",
+      label: $localize`:@@realm.node:Node`,
+      tone: "secondary",
+      width: "m",
+      icon: "dns",
+      placement: "menu",
+      submenu: this.nodeMenu()
+    }
+  ]);
+
   filterString = signal<string>("");
   sort = signal({ active: "name", direction: "asc" } as Sort);
 
@@ -176,9 +209,9 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
   isCreatingRealm = signal<boolean>(false);
-  newRealmNameHasPatternError = computed(
-    () => this.newRealmName().length > 0 && !/^[a-zA-Z0-9._-]*$/.test(this.newRealmName())
-  );
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  readonly newRealmForm = form(this.newRealmName, (name) => identifierName(name));
 
   // Edit Form State
   editingRealmName = signal<string | null>(null);
@@ -227,7 +260,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const selectedNodeUuid = this.selectedNode();
 
     return Object.entries(realms).flatMap(([realmName, realm]) => {
-      const resolvers = realm.resolver ?? [];
+      const resolvers = [...(realm.resolver ?? [])].sort(compareResolverPriority);
 
       if (selectedNodeUuid !== ALL_NODES_VALUE) {
         const matchesNode = resolvers.some((r: { node: string }) => r.node === selectedNodeUuid);
@@ -336,13 +369,12 @@ export class RealmTableComponent implements OnDestroy, OnInit {
 
   // --- Create Handlers ---
   canSubmitNewRealm(): boolean {
-    return (
-      this.newRealmName().trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.newRealmName()) && !this.isCreatingRealm()
-    );
+    return this.newRealmForm().valid() && !this.isCreatingRealm();
   }
 
   resetCreateForm(): void {
     this.newRealmName.set("");
+    this.newRealmForm().reset();
     this.newRealmNodeResolvers.set({});
   }
 
@@ -363,11 +395,6 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     });
     current[nodeId] = updated;
     this.newRealmNodeResolvers.set(current);
-  }
-
-  setNewRealmName($event: Event) {
-    const input = $event.target as HTMLInputElement;
-    this.newRealmName.set(input.value);
   }
 
   setNewRealmResolverPriority(args: { nodeId: string; resolverName: string; priority?: string }): void {
@@ -399,7 +426,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     if (!this.canSubmitNewRealm()) return false;
 
     this.isCreatingRealm.set(true);
-    const realmName = this.newRealmName().trim();
+    const realmName = this.newRealmName();
     const nodeResolvers = this.newRealmNodeResolvers();
 
     const hasGlobalGroup = Object.prototype.hasOwnProperty.call(nodeResolvers, NO_NODE_ID);
@@ -410,20 +437,14 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (nodeResolvers[NO_NODE_ID] ?? []).map((r) => {
-        const num = Number(r.priority);
-        return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
-      });
+      const payload = toResolverPayload(nodeResolvers[NO_NODE_ID] ?? []);
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     } else if (nodeEntries.length === 0) {
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, []));
     }
 
     nodeEntries.forEach(([nodeId, resolvers]) => {
-      const payload = (resolvers ?? []).map((r) => {
-        const num = Number(r.priority);
-        return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
-      });
+      const payload = toResolverPayload(resolvers ?? []);
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 
@@ -533,18 +554,12 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (current[NO_NODE_ID] ?? []).map((res) => {
-        const num = Number(res.priority);
-        return res.priority === null || Number.isNaN(num) ? { name: res.name } : { name: res.name, priority: num };
-      });
+      const payload = toResolverPayload(current[NO_NODE_ID] ?? []);
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     }
 
     nodeEntries.forEach(([nodeId, list]) => {
-      const payload = (list ?? []).map((res) => {
-        const num = Number(res.priority);
-        return res.priority === null || Number.isNaN(num) ? { name: res.name } : { name: res.name, priority: num };
-      });
+      const payload = toResolverPayload(list ?? []);
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 
@@ -619,7 +634,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   }
 
   onClickResolver(resolverName: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName);
+    this.router.navigate([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, resolverName]);
   }
 
   ngOnDestroy(): void {

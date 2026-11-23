@@ -1,0 +1,60 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+// Every row keeps the width of the input field, so the dialog does not change size
+// with the optional checkbox and hint.
+.container-picker-buttons,
+.container-picker-warning {
+  width: var(--input-width-l);
+  box-sizing: border-box;
+}
+
+// Two shortcuts per row, so a row plus its gap is exactly as wide as the input below it.
+.container-picker-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  // Three rows of shortcuts fit, a fourth one peeks out so it is visible that the area scrolls.
+  max-height: 140px;
+  overflow: auto;
+
+  // Half the input width leaves no room for the default button padding next to a serial.
+  button {
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 8px;
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    margin-right: 4px;
+  }
+}
+
+// A block of its own: mat-form-field is inline-flex, so an inline checkbox would sit beside it.
+.container-picker-assign {
+  max-width: var(--input-width-l);
+  margin-top: 8px;
+}
+
+.container-picker-warning {
+  margin-top: 8px;
+}

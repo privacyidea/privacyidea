@@ -6,6 +6,7 @@ The lib.usercache.py only depends on the database model
 from contextlib import contextmanager
 
 from unittest.mock import patch
+from sqlalchemy import select
 
 from privacyidea.lib.error import UserError
 from tests import ldap3mock
@@ -16,7 +17,8 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time, add_to_cache, create_filter,
                                        cache_username, delete_user_cache,
-                                       EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled)
+                                       EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled,
+                                       get_cached_usernames, add_many_to_cache)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from privacyidea.models import UserCache, db
@@ -520,7 +522,68 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
         self._delete_realm()
 
-    def test_15_cache_entries_are_written_and_expired_in_utc(self):
+    def test_15_user_from_uid_not_in_cache(self):
+        # A user built from a uid and a resolver (like a token owner) without a cache entry is resolved by the uid.
+        # The resolver is not searched for a user with an empty login name.
+        self._create_realm()
+        delete_user_cache()
+        resolver_class = type(get_resolver_object(self.resolvername1))
+        with patch.object(resolver_class, "getUserId", autospec=True,
+                          side_effect=resolver_class.getUserId) as get_user_id:
+            user = User(realm=self.realm1, resolver=self.resolvername1, uid=self.uid)
+        self.assertEqual(self.username, user.login)
+        self.assertEqual(self.uid, user.uid)
+        searched_logins = [call.args[1] for call in get_user_id.call_args_list]
+        self.assertNotIn("", searched_logins)
+
+        # The resolved user is now in the cache
+        cached_entry = retrieve_latest_entry(create_filter(user_id=self.uid, resolver=self.resolvername1))
+        self.assertEqual(self.username, cached_entry.username)
+        delete_user_cache()
+        self._delete_realm()
+
+    def test_16_get_cached_usernames(self) -> None:
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        delete_user_cache()
+        try:
+            UserCache("renamed", "renamed", "reso1", "uid1", utc_now() - timedelta(seconds=10)).save()
+            UserCache("current", "current", "reso1", "uid1", utc_now()).save()
+            UserCache("expired", "expired", "reso1", "uid2", utc_now() - timedelta(seconds=700)).save()
+            UserCache("other", "other", "reso2", "uid3", utc_now()).save()
+
+            # The latest entry wins, an expired entry and an entry of another resolver do not count
+            self.assertDictEqual({"uid1": "current"},
+                                 get_cached_usernames("reso1", ["uid1", "uid2", "uid3", "uid4"]))
+            self.assertDictEqual({}, get_cached_usernames("reso1", []))
+
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+            self.assertDictEqual({}, get_cached_usernames("reso1", ["uid1"]))
+        finally:
+            set_privacyidea_config(EXPIRATION_SECONDS, 600)
+            delete_user_cache()
+
+    def test_17_add_many_to_cache(self) -> None:
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        delete_user_cache()
+        try:
+            with patch.object(db.session, "commit", wraps=db.session.commit) as commit:
+                add_many_to_cache("reso1", {"uid1": "alice", "uid2": "bob", "uid3": "", "": "nobody"})
+            # One commit for all entries, not one per user
+            self.assertEqual(1, commit.call_count)
+            self.assertDictEqual({"uid1": "alice", "uid2": "bob"},
+                                 get_cached_usernames("reso1", ["uid1", "uid2", "uid3"]))
+            # Like a User built from a resolver and a user ID, the login name is the used login as well
+            entry = retrieve_latest_entry(create_filter(resolver="reso1", user_id="uid1"))
+            self.assertEqual("alice", entry.used_login)
+
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+            add_many_to_cache("reso1", {"uid4": "carol"})
+            self.assertEqual(2, len(db.session.scalars(select(UserCache)).all()))
+        finally:
+            set_privacyidea_config(EXPIRATION_SECONDS, 600)
+            delete_user_cache()
+
+    def test_18_cache_entries_are_written_and_expired_in_utc(self):
         self.addCleanup(delete_user_cache)
         delete_user_cache()
         with non_utc_time_zone():
@@ -537,6 +600,10 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
             # An entry from 700 seconds ago is expired
             UserCache("hans15c", "hans15c", "resolver1", "uid15c", utc_now() - timedelta(seconds=700)).save()
             self.assertEqual(UserCache.query.filter(create_filter(username="hans15c", expired=True)).count(), 1)
+            # The bulk insert of the orphaned check writes UTC as well
+            add_many_to_cache("resolver1", {"uid15d": "hans15d"})
+            entry = UserCache.query.filter_by(username="hans15d").one()
+            self.assertAlmostEqual(utc_now(), entry.timestamp, delta=timedelta(seconds=5))
 
     def test_99_unset_config(self):
         # Test early exit!

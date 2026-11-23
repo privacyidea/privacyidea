@@ -54,6 +54,7 @@ from privacyidea.models import (Token,
                                 AuthenticationLogReason, ConditionalAccessOutcome)
 from privacyidea.models.utils import utc_now
 from .base import MyTestCase, non_utc_time_zone
+from .compare_helpers import recorded_compare_digest
 
 
 class TokenModelTestCase(MyTestCase):
@@ -321,6 +322,32 @@ class TokenModelTestCase(MyTestCase):
 
         token.delete()
 
+    def test_04a_encrypted_pin_is_compared_in_constant_time(self):
+        token = Token(serial="serial_encrypted_pin", tokentype="hmac")
+        token.set_pin("1234", hashed=False)
+        token.save()
+        self.assertTrue(token.is_pin_encrypted())
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(token.check_pin("1235"))
+        self.assertTrue(spy.saw("1234", "1235"))
+        self.assertTrue(token.check_pin("1234"))
+
+        token.delete()
+
+    def test_04b_legacy_pin_hash_is_compared_in_constant_time(self):
+        token = Token(serial="serial_legacy_pin_compare", tokentype="hmac")
+        token.save()
+        token.pin_hash = token.get_hashed_pin("1234")
+        token.save()
+        stored_hash = token.pin_hash
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(token.check_pin("1235"))
+        self.assertTrue(spy.saw(stored_hash, token.get_hashed_pin("1235")))
+
+        token.delete()
+
     def test_05_get_set_realm(self):
         t1 = Token(serial="serial1123")
         t1.save()
@@ -383,7 +410,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(p2.active, p2.active)
 
         # update
-        self.assertTrue(p.user == "", p.user)
+        self.assert_empty_string(p.user)
         p.user = "cornelius"
         p.resolver = "*"
         p.client = "0.0.0.0"
@@ -807,7 +834,7 @@ class ResolverRealmTestCase(MyTestCase):
                       realm_name="realm1").save()
 
         self.assertIn(res.id, [x.resolver.id for x in re1.resolver_list])
-        self.assertEqual(re1.resolver_list[0].node_uuid, "", re1.resolver_list[0])
+        self.assert_empty_string(re1.resolver_list[0].node_uuid, re1.resolver_list[0])
         re1.delete()
 
         re2 = Realm("realm2")

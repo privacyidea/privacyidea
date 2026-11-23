@@ -1,0 +1,162 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Builds the WebUI, runs privacyIDEA with PI_ENABLE_CSP = True and opens every page of the WebUI in Chromium
+# (privacyidea/static/playwright-e2e/csp.spec.ts). The check fails if the Content Security Policy blocks an inline
+# style or script on a page. The unit tests check the policy and the nonce of the served index.html. Only a browser
+# shows what the policy blocks while the WebUI runs. A failed nightly run opens or updates a GitHub issue.
+name: WebUI CSP check
+on:
+  schedule:
+    # Nightly at 01:30 UTC
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+  pull_request:
+    # A change to the check itself, or to the files that the spec imports, runs it on the pull request.
+    paths:
+      - '.github/workflows/webui-csp.yml'
+      - 'privacyidea/static/playwright-e2e/csp.spec.ts'
+      - 'privacyidea/static/playwright-e2e/playwright.config.ts'
+      - 'privacyidea/static/playwright-e2e/support/**'
+
+permissions:
+  contents: read
+
+jobs:
+  csp-check:
+    name: No CSP violations in the WebUI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # A throwaway instance on the runner: the passwords protect nothing.
+      BASE_URL: http://127.0.0.1:5000/app/v2/
+      E2E_CSP: "1"
+      E2E_USER: admin
+      E2E_PASS: e2e-admin-password
+      # A user of tests/testdata/passwords, for the self-service pages.
+      E2E_SELF_USER: selfservice
+      E2E_SELF_PASS: test
+      E2E_WORKERS: "4"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Load the Python version
+        id: pyversions
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "max=$MAX" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python ${{ steps.pyversions.outputs.max }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ steps.pyversions.outputs.max }}
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*  # Use the latest LTS-release
+          cache: npm
+          cache-dependency-path: privacyidea/static/package-lock.json
+
+      - name: Install Node.js dependencies
+        working-directory: privacyidea/static
+        run: npm ci
+
+      - name: Build the WebUI
+        working-directory: privacyidea/static
+        run: npm run build
+
+      - name: Install privacyIDEA
+        env:
+          # The shallow checkout has no tags, from which setuptools-scm reads the version.
+          SETUPTOOLS_SCM_PRETEND_VERSION: "0.0.0"
+        # Editable, so that the server serves the WebUI build of the checkout.
+        run: |
+          pip install -r requirements.txt
+          pip install --no-deps --editable .
+
+      - name: Set up privacyIDEA with PI_ENABLE_CSP = True
+        run: |
+          instance="$RUNNER_TEMP/privacyidea"
+          mkdir -p "$instance"
+          export PRIVACYIDEA_CONFIGFILE="$instance/pi.cfg"
+          echo "PRIVACYIDEA_CONFIGFILE=$PRIVACYIDEA_CONFIGFILE" >> "$GITHUB_ENV"
+          secret_key=$(python -c 'import secrets; print(secrets.token_hex(32))')
+          pepper=$(python -c 'import secrets; print(secrets.token_hex(32))')
+          cat > "$PRIVACYIDEA_CONFIGFILE" <<EOF
+          SQLALCHEMY_DATABASE_URI = "sqlite:///$instance/privacyidea.sqlite"
+          SECRET_KEY = "$secret_key"
+          PI_PEPPER = "$pepper"
+          PI_ENCFILE = "$instance/enckey"
+          PI_AUDIT_KEY_PRIVATE = "$instance/private.pem"
+          PI_AUDIT_KEY_PUBLIC = "$instance/public.pem"
+          PI_LOGFILE = "$instance/privacyidea.log"
+          PI_ENABLE_CSP = True
+          # The server runs on plain HTTP on the runner.
+          PI_FORCE_HTTPS = False
+          PI_SESSION_COOKIE_SECURE = False
+          EOF
+          pi-manage setup create_enckey
+          pi-manage setup create_audit_keys
+          pi-manage setup create_tables
+          pi-manage admin add "$E2E_USER" -p "$E2E_PASS"
+          printf "{'fileName': '%s'}\n" "$GITHUB_WORKSPACE/tests/testdata/passwords" > "$instance/resolver.txt"
+          pi-manage config resolver create e2e-users passwdresolver "$instance/resolver.txt"
+          pi-manage config realm create e2e-realm e2e-users
+          pi-manage config realm set_default e2e-realm
+
+      - name: Start privacyIDEA
+        run: |
+          nohup pi-manage run --host 127.0.0.1 --port 5000 > "$RUNNER_TEMP/privacyidea/server.log" 2>&1 &
+          curl --silent --show-error --fail --retry 30 --retry-connrefused --retry-delay 1 --output /dev/null \
+            --header "Accept: text/html" "$BASE_URL"
+
+      - name: Install Chromium for Playwright
+        working-directory: privacyidea/static
+        run: npx playwright install --with-deps chromium
+
+      - name: Open every page and check for CSP violations
+        working-directory: privacyidea/static
+        run: npx playwright test --config playwright-e2e/playwright.config.ts playwright-e2e/csp.spec.ts
+
+      - name: Keep the Playwright report and the server logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: webui-csp-report
+          path: |
+            privacyidea/static/playwright-e2e/playwright-report/
+            privacyidea/static/playwright-e2e/test-results/
+            ${{ runner.temp }}/privacyidea/server.log
+            ${{ runner.temp }}/privacyidea/privacyidea.log
+          retention-days: 14
+
+  notify-failure:
+    needs: csp-check
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only:
+    # the other runs show their failure as a check.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # for actions/checkout to reach the local composite action
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/notify-nightly-failure
+        with:
+          title: Nightly WebUI CSP check failed on master
+          body: |
+            The nightly WebUI CSP check failed on master. With PI_ENABLE_CSP = True, the browser blocked an inline style or script, or a page of the WebUI did not load.
+
+            The artifact webui-csp-report of the run holds the Playwright report and the server logs.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

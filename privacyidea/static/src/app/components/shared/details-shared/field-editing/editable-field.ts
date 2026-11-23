@@ -26,11 +26,16 @@ import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.co
 export interface EditableFieldOptions {
   onOpen?: () => void;
   onCancel?: () => void;
+  /** Whether the edited value may be saved. While it is false the save button is disabled and a commit does nothing. */
+  valid?: Signal<boolean>;
+  /** Runs when a commit is refused because `valid` is false, for example to touch the fields so their errors show. */
+  onInvalid?: () => void;
   onCommit: () => Promise<boolean | void>;
 }
 
 export interface EditableField {
   readonly isEditing: Signal<boolean>;
+  readonly valid: Signal<boolean>;
   readonly editButtonsElement: EditableElement<unknown>;
   readonly toggle: () => void;
   readonly commit: () => Promise<void>;
@@ -42,14 +47,20 @@ export function injectEditableField(options: EditableFieldOptions): EditableFiel
   const destroyRef = inject(DestroyRef);
 
   const isEditing = signal(false);
+  const valid = options.valid ?? signal(true).asReadonly();
 
   const editButtonsElement: EditableElement<unknown> = {
     keyMap: { key: "" },
     isEditing,
-    value: undefined
+    value: undefined,
+    valid
   };
 
   const commit = async (): Promise<void> => {
+    if (!valid()) {
+      options.onInvalid?.();
+      return;
+    }
     const resolved = await options.onCommit();
     // Keep edit mode open when the commit resolves to false (validation abort).
     if (resolved !== false) {
@@ -71,6 +82,7 @@ export function injectEditableField(options: EditableFieldOptions): EditableFiel
 
   const handle: DetailFieldHandle = {
     isEditing,
+    valid,
     save: commit,
     cancel
   };
@@ -78,5 +90,5 @@ export function injectEditableField(options: EditableFieldOptions): EditableFiel
   registry.register(handle);
   destroyRef.onDestroy(() => registry.unregister(handle));
 
-  return { isEditing, editButtonsElement, toggle, commit, cancel };
+  return { isEditing, valid, editButtonsElement, toggle, commit, cancel };
 }

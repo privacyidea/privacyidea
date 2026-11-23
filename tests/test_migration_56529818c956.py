@@ -24,7 +24,7 @@ pytestmark = [
 
 class TestMigration56529818c956(MigrationTestBase):
     REVISION = "56529818c956"
-    PARENT_REVISION = "b7c1e4d2a9f3"
+    PARENT_REVISION = "7e3010cbe03e"
 
     # The seed ships one SMTP server of its own, so the inserted ids start well above it.
     QUEUED_ID = 101
@@ -35,14 +35,17 @@ class TestMigration56529818c956(MigrationTestBase):
         return {column["name"] for column in sa.inspect(engine).get_columns("smtpserver")}
 
     def _insert_servers(self, engine: sa.engine.Engine) -> None:
-        # The flag is bound as a Boolean: PostgreSQL has a real boolean column, Oracle a NUMBER(1).
+        # The flags are bound as Boolean: PostgreSQL has a real boolean column, Oracle a NUMBER(1). The release seeds
+        # create smime and dont_send_on_error as NOT NULL without a default.
         statement = sa.text(
-            "INSERT INTO smtpserver (id, identifier, server, port, sender, enqueue_job) "
-            "VALUES (:id, :identifier, 'mail.example.com', 25, 'pi@example.com', :enqueue_job)"
-        ).bindparams(sa.bindparam("enqueue_job", type_=sa.Boolean()))
+            "INSERT INTO smtpserver (id, identifier, server, port, sender, enqueue_job, smime, dont_send_on_error) "
+            "VALUES (:id, :identifier, 'mail.example.com', 25, 'pi@example.com', :enqueue_job, :off, :off)"
+        ).bindparams(sa.bindparam("enqueue_job", type_=sa.Boolean()), sa.bindparam("off", type_=sa.Boolean()))
         with engine.connect() as connection:
-            connection.execute(statement, {"id": self.QUEUED_ID, "identifier": "queued", "enqueue_job": True})
-            connection.execute(statement, {"id": self.DIRECT_ID, "identifier": "direct", "enqueue_job": False})
+            connection.execute(statement, {"id": self.QUEUED_ID, "identifier": "queued", "enqueue_job": True,
+                                           "off": False})
+            connection.execute(statement, {"id": self.DIRECT_ID, "identifier": "direct", "enqueue_job": False,
+                                           "off": False})
             connection.commit()
 
     def test_upgrade_drops_the_column_and_keeps_the_servers(self, flask_app):

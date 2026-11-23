@@ -8,12 +8,6 @@ Email
 The token type *email* sends the OTP value in an email to the users. You can
 configure the email server in :ref:`email_token_config`.
 
-
-.. figure:: images/enroll_email.png
-   :width: 500
-
-   *Enroll an email token*
-
 When enrolling an email token, you only need to specify the email address of
 the user, or let the token read the address from the user store at each
 authentication (WebUI: *Read email dynamically from user source on each

@@ -1,14 +1,19 @@
 """Base test configuration to set up/teardown tests."""
 import os
 import pathlib
+import threading
 import time
 import unittest
+from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import datetime, timedelta, UTC
 from unittest import mock
-from flask import has_app_context
+
+from flask import Flask, g, has_app_context, request
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
+from testfixtures import Replace, test_datetime
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -52,6 +57,46 @@ def non_utc_time_zone(name: str = "Asia/Shanghai"):
         if has_app_context():
             get_shared_config_object().timestamp = None
             invalidate_config_object()
+
+
+@contextmanager
+def clock_moved_forward(seconds: int) -> Iterator[None]:
+    """
+    Move the clock of the challenges and of the sent Email and SMS OTP values forward by the given seconds.
+    """
+    later = datetime.now(UTC).replace(tzinfo=None) + timedelta(seconds=seconds)
+    with (Replace("privacyidea.models.utils.datetime", test_datetime(later, delta=0)),
+          Replace("privacyidea.lib.tokens.sent_otp_validity.datetime", test_datetime(later, delta=0))):
+        yield
+
+
+def run_in_parallel(app: Flask, functions: list) -> list:
+    """Run each function in its own thread and app context; return its result, or "exception: ..." if it raised."""
+    results = [None] * len(functions)
+
+    def run(index: int) -> None:
+        with app.app_context():
+            try:
+                results[index] = functions[index]()
+            except Exception as exception:  # every thread reports back
+                results[index] = f"exception: {exception!r}"[:200]
+            finally:
+                db.session.remove()
+
+    threads = [threading.Thread(target=run, args=(index,)) for index in range(len(functions))]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(30)
+    # End this thread's transaction, so the assertions read what the requests committed (MariaDB/MySQL
+    # REPEATABLE READ would otherwise keep showing an older snapshot).
+    db.session.rollback()
+    return results
+
+
+def results_of(responses: list) -> list:
+    """The result of each response body, or the exception string of a thread that did not get one."""
+    return [body["result"] if isinstance(body, dict) else body for body in responses]
 
 
 def force_expire_challenges(transaction_id):
@@ -110,6 +155,13 @@ def skip_unless_admin_lookup_folds_case(testcase):
     if not folds_case:
         testcase.skipTest("the admin lookup matches case-sensitively on this database, so one account cannot be "
                           "reached under a second spelling")
+
+
+def stored_empty_string() -> str | None:
+    """
+    What an empty string written to the database reads back as: ``''``, except on Oracle, which stores it as NULL.
+    """
+    return None if db.engine.dialect.name == "oracle" else ""
 
 
 class FakeFlaskG:
@@ -258,6 +310,22 @@ def _reset_database() -> None:
     db.session.commit()
 
 
+def _start_request_with_empty_g() -> None:
+    """
+    Remove everything from ``g`` before the first request of a request context is handled.
+
+    In production, every request has its own app context and with it an empty ``g``. A test class keeps one app
+    context for all its requests. Without this, a handler that does not set a value on ``g`` reads the value of an
+    earlier request. A request context that dispatches several requests keeps ``g`` between them, because some
+    tests send a request again and check what the request context collected.
+    """
+    if request.environ.get("privacyidea.tests.g_emptied"):
+        return
+    request.environ["privacyidea.tests.g_emptied"] = True
+    for key in list(iter(g)):
+        g.pop(key)
+
+
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None
@@ -294,6 +362,16 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app(cls.app_config_name, pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
+        # First in the list, so it runs before the handlers of the app put their values on g
+        cls.app.before_request_funcs.setdefault(None, []).insert(0, _start_request_with_empty_g)
+        cls.set_up_database()
+
+    @classmethod
+    def set_up_database(cls) -> None:
+        """
+        Empty the database, then add the configuration timestamp and the test admin. A test class that needs this
+        state for every test calls it in setUp.
+        """
         _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data
@@ -538,6 +616,12 @@ class MyTestCase(unittest.TestCase):
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
 
+    def assert_empty_string(self, value: str | None, msg: str | None = None) -> None:
+        """
+        Assert that *value* is an empty string read from the database, which on Oracle is None.
+        """
+        self.assertEqual(stored_empty_string(), value, msg)
+
     def find_most_recent_audit_entry(self, **filter_data):
         """
         Given audit log entry filters, return the most recent entry matching the criteria,
@@ -546,9 +630,10 @@ class MyTestCase(unittest.TestCase):
         """
         sorted_filter = filter_data.copy()
         sorted_filter["sortorder"] = "desc"
+        # The filters go into the query string, a GET request takes no parameters from its body
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data=sorted_filter,
+                                           query_string=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.data)

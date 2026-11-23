@@ -40,13 +40,16 @@
           tableUtilsService.getTdClassForKey(element.keyMap.key).concat(host().isEditingUser() ? ['padding-0'] : [])
         "
         mat-cell>
-        <div class="value-row">
+        <div
+          class="value-row"
+          [class.value-row--editing]="host().isEditingUser()">
           <div class="value-content">
             @switch (element.keyMap.key) {
               @case ("user_name") {
                 @if (host().isEditingUser() && userService.selectedUserRealm() !== "") {
                   <mat-form-field
-                    class="input-width-m height-52"
+                    appearance="fill"
+                    class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.enterUser">Enter User</mat-label>
                     <app-clearable-input
@@ -73,7 +76,8 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
-                      [attr.aria-label]="linkLabel(element.keyMap.label)"
+                      [appTruncationTooltip]="element.value"
+                      class="cell-truncate"
                       role="button"
                       tabindex="0">
                       {{ element.value }}
@@ -84,7 +88,8 @@
               @case ("user_realm") {
                 @if (host().isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52"
+                    appearance="fill"
+                    class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
                     <mat-select
@@ -144,7 +149,7 @@
     </ng-container>
     <tr
       *matRowDef="let row; columns: ['key', 'value']"
-      class="height-52"
+      class="details-field-height"
       mat-row></tr>
   </table>
 </app-details-card>
