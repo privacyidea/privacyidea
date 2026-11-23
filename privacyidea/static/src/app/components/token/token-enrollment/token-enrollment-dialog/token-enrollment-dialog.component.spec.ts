@@ -278,7 +278,9 @@ describe("TokenEnrollmentDialogComponent", () => {
       allowDelete(false);
       open(verify());
 
-      expect(harness.element.textContent).toContain("you can open it again with the reopen button");
+      expect(harness.element.textContent).toContain(
+        "you can open it again with the Reopen enrollment dialog button next to Enroll Token"
+      );
       harness.footerButton("Close")?.click();
 
       expect(dialogService.openDialog).not.toHaveBeenCalled();
