@@ -161,6 +161,21 @@ describe("EnrollmentFlow", () => {
     expect(flow.reopened).toBe(true);
   });
 
+  it("cannot reopen a closed FIDO2 registration, the token is kept", () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first, { kind: "fido2", register: jest.fn() });
+    flow.continue(first);
+    expect(flow.resumable()).toBe(false);
+
+    flow.close();
+
+    expect(options.onIncomplete).toHaveBeenCalledTimes(1);
+    expect(options.onCancelled).not.toHaveBeenCalled();
+    expect(flow.dialogData()).toBeNull();
+    flow.resume();
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+  });
+
   it("forgets the first step of an earlier enrollment", () => {
     const first = response({ rollout_state: "clientwait" });
     const flow = startFlow(first, { kind: "push" });

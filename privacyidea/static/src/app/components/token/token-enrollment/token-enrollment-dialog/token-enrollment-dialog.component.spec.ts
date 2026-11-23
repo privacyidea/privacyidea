@@ -288,6 +288,46 @@ describe("TokenEnrollmentDialogComponent", () => {
       expect(options.onIncomplete).toHaveBeenCalled();
     });
 
+    describe("in a FIDO2 registration, which cannot be reopened", () => {
+      const fido2 = (tokenType: string) =>
+        open(
+          response({ rollout_state: "clientwait" }),
+          { tokenType },
+          { kind: "fido2", register: () => new Promise(() => undefined) }
+        );
+      const allow = (rights: string[], rolloverTypes: string[] = []) => {
+        authService.actionAllowed.mockImplementation((action: string) => rights.includes(action));
+        authService.authData.set({
+          ...authService.authData()!,
+          token_rollover: Object.fromEntries(rolloverTypes.map((type) => [type, []]))
+        });
+      };
+
+      it("says that a passkey cannot be finished, as a passkey cannot be rolled over", () => {
+        allow(["token_rollover"], ["passkey"]);
+        fido2("passkey");
+
+        expect(harness.element.textContent).toContain(
+          "the token cannot be finished. Ask an administrator to delete it."
+        );
+        expect(harness.element.textContent).not.toContain("Reopen enrollment dialog");
+      });
+
+      it("points to the rollover for a WebAuthn token the user may roll over", () => {
+        allow(["token_rollover"], ["webauthn"]);
+        fido2("webauthn");
+
+        expect(harness.element.textContent).toContain("roll the token over in its details to finish it");
+      });
+
+      it("says that a WebAuthn token cannot be finished without the rollover right", () => {
+        allow([], ["webauthn"]);
+        fido2("webauthn");
+
+        expect(harness.element.textContent).toContain("the token cannot be finished");
+      });
+    });
+
     it("never deletes in a rollover", () => {
       allowDelete(true);
       open(verify(), { rollover: true });

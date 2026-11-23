@@ -36,6 +36,7 @@ import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-e
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { tokenTypes } from "@utils/token.utils";
 import { map, Observable, of, tap } from "rxjs";
 
 export interface EnrollmentDialogData {
@@ -83,6 +84,15 @@ export class TokenEnrollmentDialogComponent
   protected readonly canDelete = computed(
     () => !this.enrollment()?.rollover && this.authService.actionAllowed("delete")
   );
+  // The rule of the rollover button in the token details: the only way to finish a token whose step cannot be resumed.
+  protected readonly canRollOver = computed(() => {
+    const type = this.enrollment()?.tokenType ?? "";
+    return (
+      this.authService.actionAllowed("token_rollover") &&
+      this.authService.tokenRollover().includes(type) &&
+      !!tokenTypes.find((candidate) => candidate.key === type)?.rollover
+    );
+  });
 
   constructor() {
     super();

@@ -931,6 +931,22 @@ describe("TokenEnrollmentComponent", () => {
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
+      it("offers no reopen once a FIDO2 registration is closed", async () => {
+        installStrategy(component, {
+          buildEnrollmentArgs: strategyArgs("passkey"),
+          firstStep: () => ({ kind: "fido2", register: () => new Promise(() => undefined) })
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPK0001", rollout_state: "clientwait" } })
+        );
+        await component.enrollToken();
+        expect(component.canReopenEnrollmentDialog()).toBe(true);
+
+        component.enrollmentFlow.close();
+
+        expect(component.canReopenEnrollmentDialog()).toBe(false);
+      });
+
       it("resets the inputs when the verify dialog closes before the verification", async () => {
         installStrategy(component, { buildEnrollmentArgs: strategyArgs("hotp") });
         tokenService.enrollToken.mockReturnValueOnce(

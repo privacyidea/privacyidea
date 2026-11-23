@@ -37,8 +37,9 @@ import { Observable, Subject } from "rxjs";
 export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "success";
 
 /**
- * The step a token type needs right after its first response. Push waits for the app to register, WebAuthn and
- * passkey run the browser registration. Both start again when the dialog is reopened.
+ * The step a token type needs right after its first response. Push waits for the app to register and starts again
+ * when the dialog is reopened. WebAuthn and passkey run the browser registration, which cannot be reopened: it shows
+ * nothing the user keeps, and its challenge expires.
  */
 export type EnrollmentFirstStep =
   | { kind: "push" }
@@ -58,7 +59,7 @@ export interface EnrollmentFlowOptions {
   onStepClosed?: () => void;
   // The incomplete token was deleted.
   onCancelled?: () => void;
-  // The dialog was closed before the enrollment finished. The token exists, resume() finishes it.
+  // The dialog was closed before the enrollment finished. The token exists, resume() finishes it if resumable.
   onIncomplete?: () => void;
   onCompleted?: () => void;
 }
@@ -93,6 +94,9 @@ export class EnrollmentFlow {
         return null;
     }
   });
+
+  // Whether resume() can finish the enrollment once the dialog is closed in the current step.
+  readonly resumable = computed(() => this.step() !== "fido2");
 
   private readonly stepFinishedSubject = new Subject<void>();
   // Emits when the current step is left: for the next step, or because the dialog closed.
@@ -255,9 +259,13 @@ export class EnrollmentFlow {
         this.options.onCancelled?.();
         return;
       }
-      if (this.step() !== "success") {
-        this.options.onIncomplete?.();
+      if (this.step() === "success") {
+        return;
       }
+      if (!this.resumable()) {
+        this.reset();
+      }
+      this.options.onIncomplete?.();
     });
   }
 
