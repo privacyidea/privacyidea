@@ -178,9 +178,7 @@ class SharedConfigClass:
                         realmdef["resolver"].append({"priority": x.priority,
                                                      "name": x.resolver.name,
                                                      "type": x.resolver.rtype,
-                                                     # Oracle stores the empty node_uuid as NULL, return "" for no
-                                                     # node like the other databases
-                                                     "node": x.node_uuid or ""})
+                                                     "node": x.node_uuid})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
                 policies_db = db.session.scalars(select(Policy)).unique().all()
