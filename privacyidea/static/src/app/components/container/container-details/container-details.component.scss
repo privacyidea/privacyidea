@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 :host {
@@ -12,7 +12,7 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  width: table.details-panel-width(m, l, s);
+  width: table.details-panel-width(m, l, m);
   box-sizing: border-box;
 
   :host-context(body.self-service-layout) & {
@@ -21,25 +21,6 @@
 
   .mat-mdc-select-value-text {
     font-size: 14px;
-  }
-
-  .value-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .value-content {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .value-edit {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
   }
 }
 
@@ -58,44 +39,11 @@
   align-items: flex-start;
   gap: 16px;
 
-  ::ng-deep .actions-otp-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-
-    > h4 {
-      display: none;
-    }
-
-    .flex-column {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    mat-divider {
-      display: none;
-    }
-  }
 }
 
 .details-grid {
   @include table.details-cards-flex;
   margin-top: 8px;
-}
-
-.details-card--description {
-  @include table.details-description-card;
-  @include table.card-width(m);
-
-  .value-edit {
-    min-width: 80px;
-    justify-content: flex-end;
-  }
 }
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule.
@@ -111,8 +59,9 @@
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
 // after view-encapsulation attributes, is more specific than a lone class).
+// Wide enough for the user input and its save and cancel buttons in one row.
 .details-grid > .details-card--user {
-  @include table.card-width(s);
+  @include table.card-width(m);
 }
 
 // Add-token + token-table are a fixed-width pair kept together in one grid item,

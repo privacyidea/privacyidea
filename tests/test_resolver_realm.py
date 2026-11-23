@@ -6,6 +6,7 @@ from privacyidea.lib.resolvers.EntraIDResolver import (AUTHORITY, CLIENT_ID, CLI
 from privacyidea.lib.resolvers.HTTPResolver import (ATTRIBUTE_MAPPING, CONFIG_GET_USER_LIST, CONFIG_GET_USER_BY_ID,
                                                     CONFIG_GET_USER_BY_NAME, EDITABLE, HEADERS, ADVANCED,
                                                     CONFIG_AUTHORIZATION)
+from privacyidea.lib.resolver import delete_resolver, get_resolver_config, get_resolver_object
 from privacyidea.models import (Resolver,
                                 ResolverConfig,
                                 db)
@@ -162,3 +163,45 @@ class APIResolverTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 401)
         '''
+
+
+LDAP_ZERO_VALUE_PARAMETERS = {"type": "ldapresolver", "LDAPURI": "ldap://localhost", "LDAPBASE": "o=test",
+                              "BINDDN": "cn=manager,ou=example,o=test", "BINDPW": "ldaptest",
+                              "LOGINNAMEATTRIBUTE": "cn", "LDAPSEARCHFILTER": "(cn=*)",
+                              "USERINFO": '{"username": "cn", "email": "mail"}', "UIDTYPE": "DN"}
+
+
+class ResolverZeroValueTestCase(MyApiTestCase):
+    """
+    A numeric 0 is stored for the configuration keys for which the resolver class declares 0 as a value of its own.
+    For all other keys a 0 removes the entry, so the default applies. The LDAP resolver is only saved and loaded,
+    no LDAP server is contacted.
+    """
+
+    def _save(self, **values: int) -> None:
+        with self.app.test_request_context('/resolver/ldapzero', method='POST',
+                                           json={**LDAP_ZERO_VALUE_PARAMETERS, **values},
+                                           headers={"Authorization": self.at}):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response.json)
+        self.reset_flask_g()
+
+    def test_01_ldap_cache_timeout_zero_is_stored(self):
+        self.addCleanup(delete_resolver, "ldapzero")
+        # The WebUI sends the cache timeout as a JSON number
+        self._save(CACHE_TIMEOUT=0)
+        self.assertEqual("0", str(get_resolver_config("ldapzero").get("CACHE_TIMEOUT")))
+        self.assertEqual(0, get_resolver_object("ldapzero").cache_timeout)
+
+        # A stored 0 stays when the resolver is saved again with the JSON number 0
+        self._save(CACHE_TIMEOUT=0)
+        self.assertEqual(0, get_resolver_object("ldapzero").cache_timeout)
+
+        self._save(CACHE_TIMEOUT=30)
+        self.assertEqual(30, get_resolver_object("ldapzero").cache_timeout)
+
+        # A 0 for the connection timeout still means "use the default"
+        self._save(CACHE_TIMEOUT=0, TIMEOUT=0)
+        self.assertNotIn("TIMEOUT", get_resolver_config("ldapzero"))
+        self.assertEqual(5, get_resolver_object("ldapzero").timeout)
+        self.assertEqual(0, get_resolver_object("ldapzero").cache_timeout)

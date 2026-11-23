@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="User Details Container Table"
-  class="user-details-container-table-layout"
-  i18n-aria-label="@@user.userDetailsContainer">
+<div class="user-details-container-table-layout">
   <div class="details-header">
     <h4 i18n="@@user.containersUser">Containers of User</h4>
     <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
@@ -76,6 +73,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
               [checked]="selector.allRowsSelected()"
               [disabled]="!selector.hasVisibleRows()"
@@ -86,6 +85,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="selector.setRowSelected(row, $event.checked)"
               (click)="$event.stopPropagation()"
               [checked]="selector.isRowSelected(row)"
@@ -97,11 +98,13 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="columnWidthClass(column.key)"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="flex">
                   <button
+                    [attr.aria-label]="column.label | sortByLabel"
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
                     mat-icon-button
@@ -114,21 +117,24 @@
 
             <td
               *matCellDef="let element"
-              [ngClass]="{ 'input-width-l': column.key === 'description' }"
+              [ngClass]="columnWidthClass(column.key)"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        role="button"
-                        tabindex="0">
-                        {{ element.serial }}
-                      </a>
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                          role="button"
+                          tabindex="0">
+                          {{ element.serial }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("states") {
                     @if (authService.actionAllowed("container_state")) {

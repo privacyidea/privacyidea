@@ -66,6 +66,16 @@ export interface RealmResolver {
   priority: number | null;
 }
 
+/**
+ * Orders resolvers the way the backend searches them (get_ordered_resolvers): lowest priority number first,
+ * a missing priority counts as 1000, equal priorities by name.
+ */
+export function compareResolverPriority(a: RealmResolver, b: RealmResolver): number {
+  const byPriority = (a.priority || 1000) - (b.priority || 1000);
+  if (byPriority !== 0) return byPriority;
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+}
+
 export interface RealmServiceInterface {
   selectedRealms: WritableSignal<string[]>;
   realmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
@@ -76,6 +86,7 @@ export interface RealmServiceInterface {
   defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
   defaultRealmResolved: Signal<boolean>;
+  noRealm: Signal<boolean>;
 
   createRealm(
     realm: string,
@@ -201,6 +212,15 @@ export class RealmService implements RealmServiceInterface {
   // False while the default realm request is still in flight, so consumers can
   // avoid latching onto a provisional realm before the real default is known.
   defaultRealmResolved = computed<boolean>(() => !this.defaultRealmResource.isLoading());
+
+  // True only once the realm list has been loaded and is empty, so it never fires on a provisional state.
+  noRealm = computed<boolean>(
+    () =>
+      this.realmResource.hasValue() &&
+      !this.realmResource.isLoading() &&
+      this.realmOptions().length === 0 &&
+      this.defaultRealmResolved()
+  );
 
   constructor() {
     effect(() => {

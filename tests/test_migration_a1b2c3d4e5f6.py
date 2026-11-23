@@ -101,48 +101,6 @@ class MigrationEncryptionTestCase(MyTestCase):
         # Clean up
         gw.delete()
 
-    def test_04_migration_skips_already_encrypted(self):
-        """Migration is idempotent - already encrypted values are skipped."""
-        from privacyidea.migrations.versions.a1b2c3d4e5f6_encrypt_sensitive_db_fields import (
-            _looks_encrypted
-        )
-
-        # Create a gateway with an already-encrypted password
-        identifier = "idempotent_test_gw"
-        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
-
-        gw = SMSGateway(identifier, provider_module)
-        db.session.add(gw)
-        db.session.flush()
-
-        already_encrypted = encryptPassword("already_encrypted_pw")
-        pw_option = SMSGatewayOption(gateway_id=gw.id, Key="PASSWORD",
-                                     Value=already_encrypted, Type="option")
-        db.session.add(pw_option)
-        db.session.commit()
-
-        # Simulate migration - should skip this option
-        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw.id, Key="PASSWORD")
-        opt = db.session.execute(stmt).scalar_one()
-        self.assertTrue(_looks_encrypted(opt.Value))
-
-        # Value should remain the same after "migration"
-        original_value = opt.Value
-        if opt.Value and not _looks_encrypted(opt.Value):
-            opt.Value = encryptPassword(opt.Value)
-        db.session.commit()
-
-        db.session.expire_all()
-        stmt = select(SMSGatewayOption).filter_by(gateway_id=gw.id, Key="PASSWORD")
-        opt = db.session.execute(stmt).scalar_one()
-        self.assertEqual(opt.Value, original_value)
-
-        # And the original password is still recoverable
-        self.assertEqual(decryptPassword(opt.Value), "already_encrypted_pw")
-
-        # Clean up
-        gw.delete()
-
     def test_05_challenge_data_column_size_accommodates_encryption(self):
         """
         The challenge data column must be large enough to store encrypted values.

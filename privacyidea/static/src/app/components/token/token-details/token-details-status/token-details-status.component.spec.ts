@@ -27,6 +27,7 @@ import { MockTableUtilsService, MockTokenService } from "@testing/mock-services"
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsStatusComponent } from "./token-details-status.component";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsStatusComponent", () => {
   let component: TokenDetailsStatusComponent;
@@ -63,5 +64,48 @@ describe("TokenDetailsStatusComponent", () => {
     fixture.detectChanges();
     // self-service: Status becomes a detail field as well
     expect(fixture.nativeElement.querySelectorAll("app-detail-field").length).toBe(3);
+  });
+
+  describe("status toggle", () => {
+    const toggle = (): HTMLButtonElement => fixture.nativeElement.querySelector("button.status-toggle");
+    const description = (): string | undefined =>
+      toggle()
+        .getAttribute("aria-describedby")
+        ?.split(" ")
+        .map((id) => document.getElementById(id)?.textContent?.trim())
+        .join(" ");
+
+    beforeEach(() => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: ["enable", "disable"]
+      });
+      fixture.detectChanges();
+    });
+
+    it("is named by the state it shows", () => {
+      expect(toggle().hasAttribute("aria-label")).toBe(false);
+      expect(toggle().textContent?.trim()).toBe("Active");
+    });
+
+    it("passes the axe accessibility checks", async () => {
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    });
+
+    it("describes what pressing it does with the tooltip of the token tables", () => {
+      const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+      tableUtils.getTooltipForColumn.mockImplementation((_: string, row: { active: boolean }) =>
+        row.active ? "Deactivate Token" : "Activate Token"
+      );
+      (TestBed.inject(TokenService) as unknown as MockTokenService).tokenIsActive.set(false);
+      fixture.detectChanges();
+      expect(description()).toBe("Activate Token");
+
+      (TestBed.inject(TokenService) as unknown as MockTokenService).tokenIsActive.set(true);
+      fixture.detectChanges();
+
+      expect(description()).toBe("Deactivate Token");
+      expect(tableUtils.getTooltipForColumn).toHaveBeenCalledWith("active", { active: true });
+    });
   });
 });

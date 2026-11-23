@@ -18,6 +18,7 @@
  **/
 
 @use "../widget";
+@use "@angular/material" as mat;
 
 :host {
   @include widget.host;
@@ -34,7 +35,11 @@
   padding: 0 4px;
   font-size: 12px;
   line-height: 28px;
-  --mat-text-button-horizontal-padding: 4px;
+  @include mat.button-overrides(
+    (
+      text-horizontal-padding: 4px
+    )
+  );
 }
 
 .realm-trigger-label {
@@ -70,6 +75,10 @@
   margin: 0;
   padding: 8px 16px;
   color: var(--mat-sys-on-surface-variant);
+}
+
+.create-realm {
+  margin: 8px 16px 0;
 }
 
 .incomplete-users {

@@ -59,9 +59,13 @@ const advancedApiFilterKeys = ["token_serial", "template", "assigned"];
 // `realm` is the realm of the assigned user (it builds the endpoint's user object), not the container's
 // own realm, which is `container_realm`. It is only ever set implicitly to scope a `user:` filter, so it
 // stays out of `apiFilterKeys` and is not offered as a keyword.
-const hiddenApiFilterKeys = ["realm"];
+const hiddenApiFilterKeys = ["realm", "has_template"];
 
-const exactMatchKeys = new Set(["user", "realm", "container_realm", "type", "state", "assigned"]);
+const exactMatchKeys = new Set(["user", "realm", "container_realm", "type", "state", "assigned", "has_template"]);
+
+// Shown in the filter field as `template: any` and `template: none`, sent as the `has_template` query param.
+export const TEMPLATE_FILTER_ANY = "any";
+export const TEMPLATE_FILTER_NONE = "none";
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -82,6 +86,15 @@ export type TemplateComparisonResult = Record<
     };
   }
 >;
+
+export interface ContainerTemplateComparisonRow {
+  additional: string[];
+  containerSerial: string;
+  equal: boolean | null;
+  error?: string;
+  missing: string[];
+  templateName: string;
+}
 
 export interface ContainerDetails {
   count?: number;
@@ -167,6 +180,8 @@ export interface ContainerCreateData {
   realm?: string;
   name?: string;
   template?: ContainerTemplate;
+  // The server loads the template of this name; not sent together with template
+  template_name?: string;
 }
 
 export interface ContainerTemplate {
@@ -178,8 +193,15 @@ export interface ContainerTemplate {
   };
 }
 
+export interface ContainerTokenNotCreated {
+  type: string;
+  error: string;
+  serial?: string;
+}
+
 export interface ContainerCreateResult {
   container_serial: string;
+  tokens_not_created?: ContainerTokenNotCreated[];
   tokens?: Record<string, EnrollmentResponseDetail & { type: string }>;
 }
 
@@ -213,8 +235,13 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   selectedContainerSerial: WritableSignal<string | null>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  userContainerSerials: Signal<string[]>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
+  containerPickerFilter: WritableSignal<string | null>;
+  containerPickerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  pickableContainerDetails: Signal<ContainerDetailData[]>;
+  pickableContainers: Signal<string[]>;
   containerSelection: RowSelector<ContainerDetailData>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
@@ -223,6 +250,7 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   containerDetails: WritableSignal<ContainerDetails>;
   supportedTokenTypes: Signal<string[]>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
+  compareContainersWithTemplates: (containers: ContainerDetailData[]) => Promise<ContainerTemplateComparisonRow[]>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<PiResponse<boolean>>;
@@ -242,6 +270,11 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   setContainerInfos: (containerSerial: string, infos: Record<string, string>) => Observable<PiResponse<boolean>>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<PiResponse<boolean>>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  addTokensToContainer: (
+    containerSerial: string,
+    tokenSerials: string[],
+    notify?: boolean
+  ) => Observable<PiResponse<Record<string, boolean>>>;
   removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
   toggleAll: (action: "activate" | "deactivate") => Observable<(PiResponse<boolean> | null)[] | null>;
   removeAll: (containerSerial: string) => Observable<PiResponse<boolean> | null>;
@@ -276,7 +309,6 @@ export class ContainerService extends FilterableTableService implements Containe
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
-  private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -337,13 +369,20 @@ export class ContainerService extends FilterableTableService implements Containe
 
     effect(() => {
       clearTimeout(this.pollingTimeoutId);
-      this.pollingTrigger();
       const serial = this.containerSerial();
       const active = this.isPollingActive();
 
       const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
-      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
+      // The value of a running reload is the one from before the poll, e.g. still "registered" at the start of a
+      // rollover: only the answer to the poll decides whether the registration is completed.
+      if (
+        !active ||
+        !serial ||
+        this.containerDetailsResource.isLoading() ||
+        !this.containerDetailsResource.hasValue() ||
+        !onAllowedRoute
+      ) {
         return;
       }
 
@@ -357,7 +396,7 @@ export class ContainerService extends FilterableTableService implements Containe
 
       if (registrationState !== "registered") {
         this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update((count) => count + 1);
+          this.containerDetailsResource.reload();
         }, 2000);
       } else {
         const isRollover = this.isRolloverPolling();
@@ -425,7 +464,15 @@ export class ContainerService extends FilterableTableService implements Containe
 
       const filter = this.activeFilter();
       const filterMap = filter.filterMap;
-      const params = buildFilterParams(typedFilterEntries(filter), allowed, exactMatchKeys, {
+      // `template: any` and `template: none` are sent as the has_template query param.
+      const entries = typedFilterEntries(filter).map(([key, value]): [string, string | null] => {
+        const templateValue = key === "template" ? value?.trim().toLowerCase() : undefined;
+        if (templateValue === TEMPLATE_FILTER_ANY || templateValue === TEMPLATE_FILTER_NONE) {
+          return ["has_template", templateValue === TEMPLATE_FILTER_ANY ? "true" : "false"];
+        }
+        return [key, value];
+      });
+      const params = buildFilterParams(entries, allowed, exactMatchKeys, {
         keepEmptyKeys: this.keepEmptyKeys,
         presenceKeys: this.presenceKeys
       });
@@ -486,8 +533,8 @@ export class ContainerService extends FilterableTableService implements Containe
       return undefined;
     }
 
-    // This resource is specific to the user details page
-    if (!this.contentService.onUserDetails()) {
+    // This resource is specific to the user details page, which names its user in the URL
+    if (!this.contentService.onUserDetails() || !this.userService.detailsUser().username) {
       return undefined;
     }
 
@@ -502,6 +549,12 @@ export class ContainerService extends FilterableTableService implements Containe
       })
     });
   });
+
+  readonly userContainerSerials = computed<string[]>(() =>
+    this.userContainersResource.hasValue()
+      ? (this.userContainersResource.value()?.result?.value?.containers.map((container) => container.serial) ?? [])
+      : []
+  );
 
   containersForTokenTypeResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed, or we are not on the container details page
@@ -559,6 +612,63 @@ export class ContainerService extends FilterableTableService implements Containe
       return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
+
+  // The container picker dialog is not bound to a route, so it loads its own list. A null filter
+  // means no picker is open and nothing is requested.
+  readonly containerPickerFilter: WritableSignal<string | null> = signal(null);
+
+  containerPickerResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    const filter = this.containerPickerFilter();
+    if (filter === null || !this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+    return this.containerRequest({
+      page: 1,
+      pagesize: this.pageSize(),
+      no_token: 1,
+      ...toWildcardParam("container_serial", filter, new Set())
+    });
+  });
+
+  // The wildcard search above returns only its first page, so an exactly typed serial can be missing
+  // from it. This looks the typed serial up on its own so the picker can always offer it.
+  containerPickerExactResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    const filter = this.containerPickerFilter()?.trim();
+    if (!filter || !this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+    return this.containerRequest({
+      page: 1,
+      pagesize: 1,
+      no_token: 1,
+      container_serial: filter
+    });
+  });
+
+  pickableContainerDetails: WritableSignal<ContainerDetailData[]> = linkedSignal({
+    source: () => ({
+      value: this.containerPickerResource.hasValue() ? this.containerPickerResource.value() : undefined,
+      isLoading: this.containerPickerResource.isLoading(),
+      error: this.containerPickerResource.error(),
+      exactHit: this.containerPickerExactResource.hasValue()
+        ? this.containerPickerExactResource.value()?.result?.value?.containers?.[0]
+        : undefined
+    }),
+    computation: (source, previous): ContainerDetailData[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      const containers = source.value.result?.value?.containers ?? [];
+      const exactHit = source.exactHit;
+      if (!exactHit || containers.some((container) => container.serial === exactHit.serial)) {
+        return containers;
+      }
+      return [exactHit, ...containers];
+    }
+  });
+
+  readonly pickableContainers = computed<string[]>(() =>
+    this.pickableContainerDetails().map((container) => container.serial)
+  );
 
   containerSelection = new RowSelector<ContainerDetailData>({
     keyGetter: (container) => container.serial,
@@ -622,7 +732,6 @@ export class ContainerService extends FilterableTableService implements Containe
 
   containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
-    this.pollingTrigger();
     if (serial === "" || !this.authService.actionAllowed("container_list")) return undefined;
     return {
       url: this.containerBaseUrl,
@@ -657,9 +766,11 @@ export class ContainerService extends FilterableTableService implements Containe
   addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to assign container.", error);
@@ -675,9 +786,11 @@ export class ContainerService extends FilterableTableService implements Containe
   removeToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign container.", error);
@@ -694,9 +807,11 @@ export class ContainerService extends FilterableTableService implements Containe
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`, { realms: valueString }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
+        { realms: valueString },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
@@ -712,9 +827,11 @@ export class ContainerService extends FilterableTableService implements Containe
   setContainerDescription(containerSerial: string, value: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`, { description: value }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
+        { description: value },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
@@ -747,9 +864,11 @@ export class ContainerService extends FilterableTableService implements Containe
       new_states = states.concat("active").join(",");
     }
     return this.http
-      .post<
-        PiResponse<{ disabled: boolean } | { active: boolean }>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: new_states }, { headers })
+      .post<PiResponse<{ disabled: boolean } | { active: boolean }>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
+        { states: new_states },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
@@ -771,9 +890,11 @@ export class ContainerService extends FilterableTableService implements Containe
     }
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<Record<string, boolean>>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: states.join(",") }, { headers })
+      .post<PiResponse<Record<string, boolean>>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
+        { states: states.join(",") },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container states.", error);
@@ -855,9 +976,10 @@ export class ContainerService extends FilterableTableService implements Containe
   deleteInfo(containerSerial: string, key: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, { headers })
+      .delete<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`,
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete info.", error);
@@ -873,9 +995,11 @@ export class ContainerService extends FilterableTableService implements Containe
   addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to add token to container.", error);
@@ -888,12 +1012,42 @@ export class ContainerService extends FilterableTableService implements Containe
       );
   }
 
+  // Several tokens go in one request: parallel single adds each rewrite the whole token list of the
+  // container, so the last one to commit drops the tokens the others added.
+  addTokensToContainer(
+    containerSerial: string,
+    tokenSerials: string[],
+    notify = true
+  ): Observable<PiResponse<Record<string, boolean>>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<Record<string, boolean>>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/addall`,
+        { serial: tokenSerials.join(",") },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to add tokens to container.", error);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error(
+              $localize`:@@container.failedToAddTokensTo:Failed to add tokens to container. ${message}:MESSAGE:`
+            );
+          }
+          return throwError(() => error);
+        })
+      );
+  }
+
   removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
@@ -963,9 +1117,11 @@ export class ContainerService extends FilterableTableService implements Containe
     const headers = this.authService.getHeaders();
 
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/removeall`, { serial: tokensForAction.join(",") }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/removeall`,
+        { serial: tokensForAction.join(",") },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove all.", error);
@@ -997,9 +1153,11 @@ export class ContainerService extends FilterableTableService implements Containe
   deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`, { serial: param.serialList }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
+        { serial: param.serialList },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
@@ -1038,9 +1196,11 @@ export class ContainerService extends FilterableTableService implements Containe
     this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<ContainerUnregisterData>
-      >(`${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`, {}, { headers })
+      .post<PiResponse<ContainerUnregisterData>>(
+        `${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`,
+        {},
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
@@ -1091,7 +1251,13 @@ export class ContainerService extends FilterableTableService implements Containe
     this.containerSerial.set(containerSerial);
     this.isRolloverPolling.set(isRollover);
     this.isPollingActive.set(true);
-    this.pollingTrigger.update((count) => count + 1);
+    // A reload keeps the loaded value while polling, a new request would drop it and blank the details page.
+    // A reload is ignored while a request is running, whose answer may be from before the registration: setting the
+    // value cancels that request.
+    if (this.containerDetailsResource.isLoading()) {
+      this.containerDetailsResource.set(this.containerDetailsResource.value());
+    }
+    this.containerDetailsResource.reload();
   }
 
   async compareWithTemplate() {
@@ -1108,9 +1274,10 @@ export class ContainerService extends FilterableTableService implements Containe
 
     const headers = this.authService.getHeaders();
     const observable = this.http
-      .get<
-        PiResponse<TemplateComparisonResult>
-      >(`${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`, { headers })
+      .get<PiResponse<TemplateComparisonResult>>(
+        `${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`,
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           const message = error.error?.result?.error?.message || "";
@@ -1123,6 +1290,71 @@ export class ContainerService extends FilterableTableService implements Containe
 
     const result = await lastValueFrom(observable);
     this.templateComparison.set(result?.result?.value ?? null);
+  }
+
+  async compareContainersWithTemplates(containers: ContainerDetailData[]): Promise<ContainerTemplateComparisonRow[]> {
+    return Promise.all(
+      containers.map(async (container): Promise<ContainerTemplateComparisonRow> => {
+        const templateName = container.template ?? "";
+        if (!templateName) {
+          return {
+            additional: [],
+            containerSerial: container.serial,
+            equal: null,
+            missing: [],
+            templateName: ""
+          };
+        }
+
+        try {
+          const response = await lastValueFrom(
+            this.http.get<PiResponse<TemplateComparisonResult>>(
+              `${this.containerTemplateBaseUrl}${encodeURIComponent(templateName)}/compare`,
+              {
+                headers: this.authService.getHeaders(),
+                params: { container_serial: container.serial }
+              }
+            )
+          );
+          const comparison = response.result?.value?.[container.serial];
+          if (!comparison) {
+            throw new Error(`No comparison result was returned for container ${container.serial}.`);
+          }
+          return {
+            additional: comparison.tokens.additional,
+            containerSerial: container.serial,
+            equal: comparison.tokens.equal,
+            missing: comparison.tokens.missing,
+            templateName
+          };
+        } catch (error) {
+          // One failed comparison must not hide the results of the other containers.
+          return {
+            additional: [],
+            containerSerial: container.serial,
+            equal: null,
+            error: this.comparisonErrorMessage(error),
+            missing: [],
+            templateName
+          };
+        }
+      })
+    );
+  }
+
+  private comparisonErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage: unknown = (error.error as { result?: { error?: { message?: unknown } } } | null)?.result
+        ?.error?.message;
+      if (typeof serverMessage === "string" && serverMessage) {
+        return serverMessage;
+      }
+      return error.message;
+    }
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
   }
 
   readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({

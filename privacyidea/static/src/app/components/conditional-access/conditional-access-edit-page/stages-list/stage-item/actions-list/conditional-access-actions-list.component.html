@@ -29,7 +29,7 @@
       Only {{ pair[1] }} takes effect: a restriction is never weakened, so {{ pair[0] }} next to it changes nothing.
     </p>
   }
-  @if (actions().length === 0) {
+  @if (actionList().length === 0) {
     <p
       class="ca-actions-list-empty"
       i18n="@@conditionalAccess.noActionsYetAdd">
@@ -37,14 +37,13 @@
     </p>
   } @else {
     <mat-accordion multi>
-      @for (action of actions(); track $index) {
+      @for (action of actions(); track action; let index = $index) {
         <app-conditional-access-action-item
           [action]="action"
-          [siblingActions]="actions()"
-          [actionIndex]="$index"
+          [siblingActions]="actionList()"
+          [actionIndex]="index"
           [target]="target()"
-          (updateAction)="onUpdateAction($index, $event)"
-          (removeAction)="onRemoveAction($index)" />
+          (removeAction)="onRemoveAction(index)" />
       }
     </mat-accordion>
   }

@@ -35,7 +35,7 @@ import {
 export class PolicyTemplatePickerComponent {
   readonly policyTemplatesService: PolicyTemplatesServiceInterface = inject(PolicyTemplatesService);
 
-  readonly currentPriority = input<number>(1);
+  readonly currentPriority = input<number | null>(1);
   readonly templateApplied = output<Partial<PolicyDetail>>();
 
   readonly isExpanded = signal(false);
@@ -59,7 +59,9 @@ export class PolicyTemplatePickerComponent {
       priority: this.currentPriority() || 1
     };
     if (template.realm !== undefined) edits.realm = template.realm;
-    if (template.action !== undefined) edits.action = template.action;
+    // A boolean action is disabled by leaving it out, the backend only checks whether an action is set, not its value
+    if (template.action)
+      edits.action = Object.fromEntries(Object.entries(template.action).filter(([, value]) => value !== false));
     if (template.resolver !== undefined) edits.resolver = template.resolver;
     if (template.adminrealm !== undefined) edits.adminrealm = template.adminrealm;
     if (template.conditions !== undefined) edits.conditions = template.conditions;

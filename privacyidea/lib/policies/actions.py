@@ -191,6 +191,7 @@ class PolicyAction:
     REMEMBERED_DEVICE_REVOKE = "remembered_device_revoke"
     REMEMBER_DEVICE = "remember_device"
     REMEMBER_DEVICE_VALIDITY = "remember_device_validity"
+    REMEMBER_DEVICE_IDLE_TIMEOUT = "remember_device_idle_timeout"
     REMEMBER_DEVICE_MAX_DEVICES = "remember_device_max_devices"
     PREFERREDCLIENTMODE = "preferred_client_mode"
     REQUIRE_DESCRIPTION = "require_description"

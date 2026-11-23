@@ -31,9 +31,11 @@ import {
   signal,
   untracked
 } from "@angular/core";
+import { form, maxLength } from "@angular/forms/signals";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
+import { MatLabel } from "@angular/material/form-field";
 import { MatFormField, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
@@ -53,7 +55,11 @@ import {
   ContainerTokensEnrolledDialogComponent,
   ContainerTokensEnrolledDialogData
 } from "@components/container/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import {
+  ContainerRegistrationModel,
+  emptyRegistration,
+  registrationRules
+} from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -65,6 +71,7 @@ import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
+  ContainerTokenNotCreated,
   ContainerTemplate,
   ContainerType
 } from "@services/container/container.service";
@@ -73,14 +80,27 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EnrollTokenArguments, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { touchAll } from "@utils/form-state.utils";
 import { firstValueFrom } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+
+interface ContainerCreateModel {
+  description: string;
+  registration: ContainerRegistrationModel;
+}
+
+function emptyCreateModel(): ContainerCreateModel {
+  return { description: "", registration: emptyRegistration() };
+}
 
 @Component({
   selector: "app-container-create",
   imports: [
+    TooltipAriaLabelDirective,
     MatButton,
     MatFormField,
     MatIcon,
+    MatLabel,
     MatOption,
     MatSelect,
     MatIconButton,
@@ -107,11 +127,16 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
 
   @ViewChild(UserAssignmentComponent) userAssignmentComponent!: UserAssignmentComponent;
-  @ViewChild(ContainerRegistrationConfigComponent) registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
-  validInput = true;
-
-  description = signal("");
+  readonly model = signal<ContainerCreateModel>(emptyCreateModel());
+  readonly form = form(this.model, (f) => {
+    maxLength(f.description, this.tokenService.maxDescriptionLength);
+    registrationRules(f.registration, {
+      value: () => this.model().registration,
+      active: () => this.generateQRCode(),
+      hasOwner: () => this.isUserSelected()
+    });
+  });
   containerSerial = this.containerService.containerSerial;
   selectedUser = this.userService.selectionUsernameFilter;
   selectedUserRealm = this.userService.selectedUserRealm;
@@ -143,11 +168,9 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
       this.authService.actionAllowed("container_create")
   });
 
-  passphrasePrompt = signal("");
-  passphraseResponse = signal("");
-  userStorePassphrase = signal(false);
-
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
+  protected tokensNotCreated: ContainerTokenNotCreated[] = [];
+  protected allTokensFailed = false;
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
   constructor() {
@@ -173,19 +196,19 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.description() !== "" || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
+      () => this.form().dirty() || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
     );
-    this.pendingChangesService.registerValidChanges(() => this.validInput);
+    this.pendingChangesService.registerValidChanges(() => this.formValid());
     this.pendingChangesService.registerSave(() => this._saveForPendingChanges());
   }
 
   private async _saveForPendingChanges(): Promise<boolean> {
     const containerType = this.containerService.selectedContainerType()?.containerType;
-    if (!containerType || !this.validInput) return false;
+    if (!containerType || !this.formValid()) return false;
 
     const createData: ContainerCreateData = {
       type: containerType,
-      description: this.description(),
+      description: this.model().description,
       user: this.userAssignmentComponent?.onlyAddToRealm()
         ? ""
         : this.userAssignmentComponent?.userFilter() || this.userService.selectedUser()?.username || ""
@@ -193,11 +216,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.selectedUserRealm();
     }
-    const template = this.selectedTemplate();
-    if (template && template.template_options.tokens.length > 0) {
-      createData.name = template.name;
-      createData.template = template;
-    }
+    Object.assign(createData, this.templateCreateData());
 
     try {
       await firstValueFrom(this.containerService.createContainer(createData));
@@ -212,8 +231,11 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  protected onValidInputChange(isValid: boolean) {
-    this.validInput = isValid;
+  /**
+   * The create form is valid, and so is the user assignment once it is shown.
+   */
+  protected formValid(): boolean {
+    return this.form().valid() && (this.userAssignmentComponent?.valid() ?? true);
   }
 
   protected onTemplateChange(template: ContainerTemplate) {
@@ -229,13 +251,17 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   };
 
   createContainer() {
+    if (!this.formValid()) {
+      void touchAll(this.form);
+      return;
+    }
     this.registerResponse.set(null);
     const containerType = this.containerService.selectedContainerType()?.containerType;
     if (!containerType) return;
 
     const createData: ContainerCreateData = {
       type: containerType,
-      description: this.description(),
+      description: this.model().description,
       user: this.userAssignmentComponent?.onlyAddToRealm()
         ? ""
         : this.userAssignmentComponent?.userFilter() || this.userService.selectedUser()?.username || ""
@@ -246,10 +272,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     }
 
     const template = this.selectedTemplate();
-    if (template && template.template_options.tokens.length > 0) {
-      createData.name = template.name;
-      createData.template = template;
-    }
+    Object.assign(createData, this.templateCreateData());
 
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {
@@ -260,6 +283,11 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
           );
           return;
         }
+        const tokensNotCreated = response.result?.value?.tokens_not_created ?? [];
+        const allTokensFailed =
+          tokensNotCreated.length > 0 && Object.keys(response.result?.value?.tokens ?? {}).length === 0;
+        this.tokensNotCreated = tokensNotCreated;
+        this.allTokensFailed = allTokensFailed;
         this.pendingChangesService.clearAllRegistrations();
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
@@ -274,13 +302,21 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
               }))
             : [];
           if (enrolledTokens.length > 0) {
-            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial });
+            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial, tokensNotCreated });
           } else {
             this.onCreationSuccess(containerSerial);
           }
         }
       }
     });
+  }
+
+  /**
+   * The template part of the create request: the template selected on the page, if it has tokens.
+   */
+  protected templateCreateData(): Pick<ContainerCreateData, "name" | "template" | "template_name"> {
+    const template = this.selectedTemplate();
+    return template && template.template_options.tokens.length > 0 ? { name: template.name, template } : {};
   }
 
   protected buildEnrollmentParameters(
@@ -299,17 +335,24 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   }
 
   protected onCreationSuccess(serial: string) {
-    this.containerService.containerSerial.set(serial);
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + serial);
+    if (this.allTokensFailed) {
+      // The create page navigates away without a dialog, so the toast is the only place the failure is shown.
+      const notCreated = this.tokensNotCreated.map((entry) => `${entry.type} (${entry.error})`).join(", ");
+      this.notificationService.error(
+        $localize`:@@container.noTokenCreated:The container was created, but none of the tokens of the template was created: ${notCreated}:notCreated:`
+      );
+    }
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_DETAILS, serial]);
   }
 
   protected registerContainer(serial: string, regenerate = false) {
+    const registration = this.model().registration;
     this.containerService
       .registerContainer({
         container_serial: serial,
-        passphrase_user: this.registrationConfigComponent?.userStorePassphrase() || false,
-        passphrase_response: this.registrationConfigComponent?.passphraseResponse() || "",
-        passphrase_prompt: this.registrationConfigComponent?.passphrasePrompt() || ""
+        passphrase_user: registration.store,
+        passphrase_response: registration.response,
+        passphrase_prompt: registration.prompt
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -333,7 +376,9 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
-      registerContainer: this.registerContainer.bind(this)
+      registerContainer: this.registerContainer.bind(this),
+      tokensNotCreated: this.tokensNotCreated,
+      allTokensFailed: this.allTokensFailed
     });
 
     const dialogRef = this.dialogService.openDialog({
@@ -362,10 +407,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
 
   protected resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.passphrasePrompt.set("");
-    this.passphraseResponse.set("");
-    this.userStorePassphrase.set(false);
-    this.description.set("");
+    this.form().reset(emptyCreateModel());
     this.clearTemplateSelection();
   };
 

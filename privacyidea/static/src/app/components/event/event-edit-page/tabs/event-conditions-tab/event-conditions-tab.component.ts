@@ -28,23 +28,23 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { EventConditionListComponent } from "@components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
 import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-conditions-tab",
   imports: [
     ClearableInputComponent,
-    FormsModule,
+    FormField,
     EventConditionListComponent,
     MatExpansionModule,
     MatButtonModule,
-    SelectorButtonsComponent
+    ToggleGroupComponent
   ],
   templateUrl: "./event-conditions-tab.component.html",
   styleUrl: "./event-conditions-tab.component.scss",
@@ -61,7 +61,9 @@ export class EventConditionsTabComponent {
   removeToolTip = $localize`:@@event.removeCondition:Remove Condition`;
 
   addedCondition = signal("");
-  searchTerm = signal("");
+  searchModel = signal({ search: "" });
+  searchForm = form(this.searchModel);
+  searchTerm = computed(() => this.searchModel().search);
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
   remainingConditionsByGroup = linkedSignal({
@@ -120,8 +122,13 @@ export class EventConditionsTabComponent {
   }
 
   removeCondition(conditionName: string) {
-    delete this.selectedConditions()[conditionName];
-    this.selectedConditions.set({ ...this.selectedConditions() }); // Trigger change detection
+    this.selectedConditions.set(
+      Object.fromEntries(Object.entries(this.selectedConditions()).filter(([name]) => name !== conditionName))
+    );
     this.newConditions.emit(this.selectedConditions());
+  }
+
+  clearSearch(): void {
+    this.searchModel.set({ search: "" });
   }
 }

@@ -22,6 +22,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateAddTokenComponent", () => {
   let component: ContainerTemplateAddTokenComponent;
@@ -65,11 +66,17 @@ describe("ContainerTemplateAddTokenComponent", () => {
 
   it("should emit addTokenRequest when a chip is clicked", () => {
     const spy = jest.spyOn(component.addTokenRequest, "emit");
-    const firstChip = fixture.debugElement.query(By.css("mat-chip")).nativeElement;
+    const firstAction = fixture.debugElement.query(By.css("mat-chip button.chip-action")).nativeElement;
 
-    firstChip.click();
+    firstAction.click();
 
     expect(spy).toHaveBeenCalledWith("totp");
+  });
+
+  it("should render a focusable button inside each chip", () => {
+    const actions = fixture.debugElement.queryAll(By.css("mat-chip button.chip-action"));
+    expect(actions.length).toBe(3);
+    actions.forEach((a) => expect(a.nativeElement.tabIndex).toBeGreaterThanOrEqual(0));
   });
 
   it("should update rendered chips when tokenTypes input changes", () => {
@@ -79,5 +86,11 @@ describe("ContainerTemplateAddTokenComponent", () => {
     const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
     expect(chips.length).toBe(1);
     expect(chips[0].nativeElement.textContent).toContain("Yubikey");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

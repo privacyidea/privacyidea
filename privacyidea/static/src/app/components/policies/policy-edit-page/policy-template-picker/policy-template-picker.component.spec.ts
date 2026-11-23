@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PolicyTemplatesService } from "@services/policy-templates/policy-templates.service";
 import { MockPolicyTemplatesService } from "@testing/mock-services/mock-policy-templates-service";
 import { PolicyTemplatePickerComponent } from "./policy-template-picker.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyTemplatePickerComponent", () => {
   let fixture: ComponentFixture<PolicyTemplatePickerComponent>;
@@ -79,9 +80,32 @@ describe("PolicyTemplatePickerComponent", () => {
     expect(component.isExpanded()).toBe(false);
   });
 
+  it("leaves out boolean actions that the template sets to false", () => {
+    templatesMock.setTemplate({
+      name: "helpdesk",
+      scope: "admin",
+      action: { enable: true, policywrite: false, importtokens: false }
+    });
+    const emitSpy = jest.spyOn(component.templateApplied, "emit");
+
+    component.selectTemplate("helpdesk");
+
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ action: { enable: true } }));
+  });
+
   it("falls back to priority 1 when the current priority is 0", () => {
     templatesMock.setTemplate({ name: "tpl", scope: "admin" });
     fixture.componentRef.setInput("currentPriority", 0);
+    const emitSpy = jest.spyOn(component.templateApplied, "emit");
+
+    component.selectTemplate("tpl");
+
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: 1 }));
+  });
+
+  it("falls back to priority 1 when the current priority is empty", () => {
+    templatesMock.setTemplate({ name: "tpl", scope: "admin" });
+    fixture.componentRef.setInput("currentPriority", null);
     const emitSpy = jest.spyOn(component.templateApplied, "emit");
 
     component.selectTemplate("tpl");
@@ -122,5 +146,11 @@ describe("PolicyTemplatePickerComponent", () => {
 
     expect(emitSpy).not.toHaveBeenCalled();
     expect(component.isExpanded()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -19,7 +19,10 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
+import { ContentService } from "@services/content/content.service";
+import { MockContentService } from "@testing/mock-services";
 import { FindSerialResultDialogComponent, GetSerialResultDialogData } from "./find-serial-result-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("GetSerialResultDialogComponent", () => {
   let component: FindSerialResultDialogComponent;
@@ -38,6 +41,7 @@ describe("GetSerialResultDialogComponent", () => {
             serialList: ["Mock serial"]
           } as unknown as GetSerialResultDialogData
         },
+        { provide: ContentService, useClass: MockContentService },
         {
           provide: MatDialogRef,
           useValue: mockDialogRef
@@ -54,14 +58,20 @@ describe("GetSerialResultDialogComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("onClickSerial opens the found token through the content service", () => {
+    component.data.foundSerial = "A#1";
+    component.onClickSerial();
+    expect((component.contentService as unknown as MockContentService).tokenSelected).toHaveBeenCalledWith("A#1");
+  });
+
   it("should call dialogRef.close() when you invoke close()", () => {
     component.dialogRef.close("reset");
     expect(mockDialogRef.close).toHaveBeenCalledWith("reset");
   });
 
-  it("should build a link label from the given label", () => {
-    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("Mock serial")).toContain(
-      "Mock serial"
-    );
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -26,6 +26,7 @@ import { ContainerService } from "@services/container/container.service";
 import { RealmService } from "@services/realm/realm.service";
 import { MockAuthService, MockContainerService, MockRealmService } from "@testing/mock-services";
 import { ContainerDetailsRealmsComponent } from "./container-details-realms.component";
+import { axe } from "@testing/axe";
 
 interface ContainerRealmsFieldInternals {
   field: EditableField;
@@ -112,5 +113,11 @@ describe("ContainerDetailsRealmsComponent", () => {
     fixture.destroy();
 
     expect(unregisterSpy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

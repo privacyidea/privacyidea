@@ -24,6 +24,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { PolicyActionDetail, policyActionMatchesFilter, PolicyService } from "@services/policies/policies.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
+import { PolicyActionDrafts } from "../policy-action-drafts";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 
 @Component({
@@ -41,12 +42,16 @@ export class AddedActionsListComponent {
   readonly actionFilter = input<string>("");
 
   private policyService = inject(PolicyService);
+  private readonly drafts = inject(PolicyActionDrafts, { optional: true });
 
+  /** The actions matching the filter, plus every action whose value is invalid, so its error stays in sight. */
   readonly filteredActions = computed(() => {
     const filter = this.actionFilter().trim();
     if (!filter) return this.actions();
-    return this.actions().filter((action) =>
-      policyActionMatchesFilter(action.name, this.getDetailsOfAction(action.name) ?? undefined, filter)
+    return this.actions().filter(
+      (action) =>
+        policyActionMatchesFilter(action.name, this.getDetailsOfAction(action.name) ?? undefined, filter) ||
+        !!this.drafts?.has(action.name)
     );
   });
 
@@ -63,6 +68,7 @@ export class AddedActionsListComponent {
   }
 
   removeActionFromSelectedPolicy(actionName: string) {
+    this.drafts?.clear(actionName);
     const updatedActions = this.actions().filter((action) => action.name !== actionName);
     this.actionsChange.emit(updatedActions);
   }

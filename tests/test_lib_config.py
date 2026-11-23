@@ -4,7 +4,11 @@ This test file tests the lib.config
 The lib.config only depends on the database model.
 """
 import importlib
+import time
+from datetime import timedelta
 from unittest import mock
+
+from sqlalchemy import select
 
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -22,7 +26,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, invalidate_config_object,
+                                    this, get_config_object, invalidate_config_object, get_shared_config_object,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators,
                                     check_node_uuid_exists)
@@ -30,6 +34,7 @@ from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import Config, save_config_timestamp, db, NodeName
+from privacyidea.models.config import PRIVACYIDEA_TIMESTAMP
 from .base import MyTestCase
 
 
@@ -278,6 +283,64 @@ class ConfigTestCase(MyTestCase):
         # ... and the new config object knows!
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
 
+    @staticmethod
+    def _write_config_value_in_database(key: str, value: str, timestamp: str | None = None) -> None:
+        """
+        Change a config value directly in the database, the way another node does it. With a timestamp, the
+        configuration timestamp in the database is set to it as well.
+        """
+        db.session.scalars(select(Config).filter_by(Key=key)).one().Value = value
+        if timestamp is not None:
+            db.session.scalars(select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)).one().Value = timestamp
+        db.session.commit()
+
+    def test_09b_reload_on_a_change_by_a_node_with_a_clock_behind(self):
+        # A change is picked up when the database timestamp differs from the one read with the loaded
+        # configuration, also when the other node's clock is behind the clock of this node
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+        self._write_config_value_in_database("reload_key", "v2", timestamp=str(time.time() - 10))
+        invalidate_config_object()
+        self.assertEqual("v2", get_from_config("reload_key"))
+
+    def test_09c_no_reload_while_the_database_timestamp_is_unchanged(self):
+        # As long as the configuration timestamp in the database is unchanged, the loaded configuration is used,
+        # also within the second of the last change
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+        self._write_config_value_in_database("reload_key", "v2")
+        invalidate_config_object()
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+    def test_09d_database_timestamp_is_checked_once_per_interval(self):
+        # With PI_CHECK_RELOAD_CONFIG, the database timestamp is checked at most once per interval. A check that
+        # finds no change starts a new interval, and the first check after the interval picks up a change.
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+        shared_config = get_shared_config_object()
+
+        with mock.patch.dict(self.app.config, {"PI_CHECK_RELOAD_CONFIG": 60}):
+            # The last reload and the last check are longer ago than the interval, the configuration is unchanged
+            shared_config.timestamp -= timedelta(seconds=120)
+            shared_config.last_check_time -= timedelta(seconds=120)
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # A change within the interval after that check is not seen yet
+            self._write_config_value_in_database("reload_key", "v2", timestamp=str(time.time()))
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # The first check after the interval picks it up
+            shared_config.last_check_time -= timedelta(seconds=61)
+            invalidate_config_object()
+            self.assertEqual("v2", get_from_config("reload_key"))
+
     def test_10_enrollable_tokentypes(self):
         # Execute the function twice to ensure the cache works
         for i in range(2):
@@ -341,6 +404,46 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
         delete_privacyidea_config("ExpSecret")
 
+    def test_12d_export_import_skip_instance_internal_keys(self):
+        from privacyidea.lib.config import export_config, import_config
+        # Keys starting with "__" belong to this instance, like the config timestamp or an enckey canary
+        set_privacyidea_config("__test_internal", "this instance")
+        set_privacyidea_config("ExpPlain", "exported")
+        exported = export_config()
+        self.assertNotIn("__test_internal", exported)
+        self.assertNotIn("__timestamp__", exported)
+        self.assertEqual("exported", exported["ExpPlain"]["Value"])
+        self.assertEqual({}, export_config(name="__test_internal"))
+
+        # An export of another instance that still carries such keys does not replace the ones of this instance
+        import_config({"__test_internal": {"Value": "other instance"},
+                       "ExpPlain": {"Value": "imported"}})
+        self.assertEqual("this instance", get_from_config("__test_internal"))
+        self.assertEqual("imported", get_from_config("ExpPlain"))
+        delete_privacyidea_config("__test_internal")
+        delete_privacyidea_config("ExpPlain")
+
+    def test_12e_import_logs_names_only(self):
+        from privacyidea.lib.config import import_config
+        # The data of an import holds the decrypted secrets, so the log only names the imported entries
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            import_config({"ImportedSecret": {"Value": "imported-secret-value", "Type": "password"}})
+        output = "\n".join(captured.output)
+        self.assertIn("Import server config: ['ImportedSecret']", output)
+        self.assertNotIn("imported-secret-value", output)
+        # Reading the entry does not log its value either
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            self.assertEqual("imported-secret-value", get_from_config("ImportedSecret"))
+        self.assertNotIn("imported-secret-value", "\n".join(captured.output))
+        delete_privacyidea_config("ImportedSecret")
+
+    def test_12f_get_import_names(self):
+        from privacyidea.lib.utils.export import get_import_names
+        self.assertEqual(["resolver1", "resolver2"], get_import_names({"resolver1": {}, "resolver2": {}}))
+        self.assertEqual(["policy1", None], get_import_names([{"name": "policy1"}, {"action": "enroll"}]))
+        self.assertEqual(["connector1"], get_import_names([{"connectorname": "connector1"}], "connectorname"))
+        self.assertEqual([], get_import_names("not a list"))
+
     def test_13_update_password_entry_without_type(self):
         from privacyidea.lib.crypto import decryptPassword
         set_privacyidea_config("SecretToUpdate", "first", typ="password")
@@ -364,3 +467,65 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("public", stored.Type)
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
+
+    def test_15_default_otp_length_is_public(self):
+        set_privacyidea_config("DefaultOtpLen", "8")
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+
+    def test_16_default_otp_length_stored_without_type_is_public(self):
+        # An entry saved before the setting became public has no type and is still readable by users.
+        Config("DefaultOtpLen", "8", "", "").save()
+        Config("UntypedAdminSetting", "secret", "", "").save()
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assert_empty_string(stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        self.assertIsNone(get_from_config("UntypedAdminSetting", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+        delete_privacyidea_config("UntypedAdminSetting")
+
+    def test_17_token_password_settings_are_stored_encrypted(self):
+        from privacyidea.lib.crypto import decryptPassword
+        # These token settings are written without a type, as the token configuration of the WebUI does. Their
+        # token class declares them a password, so they are stored encrypted and read back decrypted.
+        settings = {"yubikey.apiid.client1": "yubikey-api-key",
+                    "yubico.secret": "yubico-api-key",
+                    "radius.secret": "radius-shared-secret",
+                    "email.password": "smtp-password",
+                    "sms.providerConfig": '{"PASSWORD": "gateway-password"}'}
+        for key, value in settings.items():
+            with self.subTest(key=key):
+                set_privacyidea_config(key, value)
+                stored = db.session.query(Config).filter_by(Key=key).one()
+                self.assertEqual("password", stored.Type)
+                self.assertEqual(value, decryptPassword(stored.Value))
+                self.assertEqual(value, get_from_config(key))
+                delete_privacyidea_config(key)
+
+        # The other settings of these token types keep the type they are written with
+        set_privacyidea_config("yubico.id", "client-id")
+        self.assert_empty_string(db.session.query(Config).filter_by(Key="yubico.id").one().Type)
+        delete_privacyidea_config("yubico.id")
+
+    def test_18_plain_token_password_setting_is_censored_in_export(self):
+        from privacyidea.lib.config import export_config, is_password_config_entry
+        from privacyidea.lib.crypto import CENSORED
+        # An entry stored in plain text and without a type, before its token class declared it a password
+        Config("yubikey.apiid.client1", "yubikey-api-key", "", "").save()
+        try:
+            self.assertTrue(is_password_config_entry("yubikey.apiid.client1", ""))
+            self.assertEqual("yubikey-api-key", get_from_config("yubikey.apiid.client1"))
+            censored = export_config(censor=True)
+            self.assertEqual(CENSORED, censored["yubikey.apiid.client1"]["Value"])
+            # An uncensored export carries the value as it is stored
+            exported = export_config(name="yubikey.apiid.client1")
+            self.assertEqual("yubikey-api-key", exported["yubikey.apiid.client1"]["Value"])
+        finally:
+            delete_privacyidea_config("yubikey.apiid.client1")
+        self.assertFalse(is_password_config_entry("yubico.id", ""))
+        self.assertFalse(is_password_config_entry("PrependPin", ""))
+        self.assertTrue(is_password_config_entry("PrependPin", "password"))

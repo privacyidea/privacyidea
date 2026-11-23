@@ -110,11 +110,6 @@ realms all resolvers are still shown, grouped by *All nodes* and by node. A real
 nodes* is not listed for the node, although the node uses it: a node uses the resolvers under *All nodes* together with
 the resolvers assigned to it.
 
-.. figure:: images/realm_list_node.png
-   :width: 500
-
-   *Realm list of testnode*
-
 A node lists and manages the tokens of the users it serves: the tokens whose owner belongs to a resolver the node
 uses in a realm, and the tokens without an owner. The tokens of users that only other nodes serve are left out. A
 token whose owner belongs to a resolver that is in no realm at all, e.g. because the resolver was deleted, belongs to
@@ -147,18 +142,6 @@ selected under *All nodes* are not node specific, and these settings will be app
 
    *Create a realm on the list page*
 
-In the previous WebUI, navigate to the *Create Realm* page in the sidebar menu for more advanced node-specific settings.
-A unique realm name is required and resolvers applicable for all nodes can be selected.
-Additionally, multiple nodes can be selected from the drop down menu. All selected nodes appear in the table where the
-resolvers and priorities can be selected individually for each node.
-Another option is to select non-node specific resolvers and click *Apply Selection to Nodes* to select the selected
-resolvers and priorities for all nodes. This can be useful if only the priority differs between nodes.
-
-.. figure:: images/realm_create_page.png
-   :width: 500
-
-   *Create a node-specific realm on the create page*
-
 .. _edit_realm:
 
 Edit Realm
@@ -166,21 +149,13 @@ Edit Realm
 
 .. index:: realm edit
 
-In the realm list, you can click *Edit realm* to edit an existing realm.
-The resolvers and priorities can be selected in place, for each node separately. A realm can contain several resolvers.
+In the realm list, the edit button of a realm switches its row to edit mode. The resolvers and priorities can be
+selected in place, for each node separately. A realm can contain several resolvers. The save button stores the changes.
 
-.. figure:: images/realm_edit_list_one_node.png
+.. figure:: images/realm_edit_list.png
    :width: 500
 
    *Edit a realm directly in the realm list*
-
-In the previous WebUI, if multiple nodes exist, you are forwarded to an edit page, similar to the create page, where
-you can edit the realm for each node.
-
-.. figure:: images/realm_edit_page.png
-   :width: 500
-
-   *Edit a realm on a separate page*
 
 
 .. _resolver_priority:
@@ -195,6 +170,11 @@ the order in which resolvers are searched when looking up a user.
 If a user with the same login name exists in more than one resolver, the user
 will be taken from the resolver with the lowest priority number (i.e. the
 highest priority).
+
+If a resolver fails to answer the lookup, for example because its user store
+is not reachable or returns an error, the lookup stops with an error. The
+resolvers with a lower priority are not asked, as they could hold another user
+with the same login name.
 
 Priorities are numbers between 1 and 999. The lower the number the higher the
 priority. If no priority is set, the resolver defaults to priority 1000.
@@ -222,8 +202,9 @@ This affects:
   the user from the highest-priority resolver. The duplicate in the
   lower-priority resolver is suppressed.
 * **Policies**: By default, policies only match the resolver where the
-  user was found (the highest-priority one). See the ``check_all_resolvers``
-  option in :ref:`policies` to also match lower-priority resolvers.
+  user was found (the highest-priority one). See
+  :ref:`Check all possible resolvers of a user <check_all_resolvers>` to also
+  match the lower-priority resolvers that contain the user.
 
 **Example**:
 
@@ -240,29 +221,45 @@ security group "Domain Admins".
 
 .. _autocreate_realm:
 
-Autocreate Realm
-................
+Creating the First Realm
+........................
 
 .. index:: realm autocreation
 
-.. figure:: images/ask-create-realm.png
-   :scale: 80%
+If you have a fresh installation, no resolver and no realm is defined.
+The previous WebUI asked at each administrator login whether it should
+automatically create a first realm named ``defrealm`` with a resolver
+``deflocal`` containing all users from ``/etc/passwd``.
 
-If you have a fresh installation, no resolver and no realm is
-defined. To get you up and running faster, the previous WebUI
-asks you whether it should create the first realm for you.
-The current WebUI does not offer this.
+The current WebUI does not offer this anymore, since in most modern
+deployments (e.g. containers) ``/etc/passwd`` only contains system
+accounts that are of no use for enrolling tokens. In addition, the
+automatically created realm ``defrealm`` became the default realm, so
+authentication requests without a realm were resolved against the local
+system accounts, which often caused surprising results.
 
-If you select *Create Realm*, it will create a resolver named ``deflocal``
-that contains all users from ``/etc/passwd`` and a realm named
-``defrealm`` with this very resolver.
+Instead, a dialog appears at each administrator login as long as no
+realm exists and the administrator is allowed to create resolvers. If no
+resolver exists either, the dialog tells the administrator to create a
+resolver first, because a resolver is the source of the users, and
+offers a button *Create resolver* that leads directly to the resolver
+creation. If a resolver already exists, the dialog explains that a realm
+is needed to enroll tokens for users and offers a button *Create realm*
+that leads to the realm management. The button *Later* closes the dialog
+without any action. Nothing is created automatically. Create your first
+resolver and realm pointing to your actual user store (e.g. LDAP, Active
+Directory or SQL) in the WebUI under *Users*.
 
-Thus you can immediately start assigning and enrolling tokens.
+If you still want a realm based on ``/etc/passwd`` for a quick start or
+demo setup, you can create it on the command line:
 
-The dialog is shown at each administrator login as long as no realm
-exists.
+.. code-block:: bash
 
-.. note:: The realm ``defrealm`` will be the default realm.
-   So if you create a new realm manually and want this new
+   echo '{"fileName": "/etc/passwd"}' > deflocal.conf
+   pi-manage config resolver create deflocal passwdresolver deflocal.conf
+   pi-manage config realm create defrealm deflocal
+
+.. note:: The first realm you create will be the default realm.
+   So if you create another realm later and want this new
    realm to be the default realm, you need to set this new
    realm to be default manually.

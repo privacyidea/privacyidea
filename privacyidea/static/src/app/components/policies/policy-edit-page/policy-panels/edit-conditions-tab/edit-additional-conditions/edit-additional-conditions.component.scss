@@ -1,5 +1,4 @@
-@use "styles";
-@use "buttons";
+@use "styles-api" as styles;
 @use "@angular/material";
 @use "../edit-conditions-tab.component.scss";
 

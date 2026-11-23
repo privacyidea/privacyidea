@@ -22,8 +22,10 @@ downgraded in practice.
 import os
 
 import pytest
+from sqlalchemy import text
+from sqlalchemy.engine import Engine
 
-from tests.migration_test_utils import MigrationTestBase, quote_identifier
+from tests.migration_test_utils import MigrationTestBase, is_mariadb, is_oracle, is_postgres, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -96,13 +98,14 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_u2f_token(engine, 1001, "U2F_MIGR_001")
         self._insert_u2f_token(engine, 1002, "U2F_MIGR_002")
+        u2f_tokens = self._count_tokens_of_type(engine, "u2f")
         engine.dispose()
 
         self._upgrade()
 
         engine = self._engine()
         self.assertEqual_(self._count_tokens_of_type(engine, "u2f"), 0)
-        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), 2)
+        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), u2f_tokens)
         self.assertEqual_(self._fetch_token_type(engine, 1001), "deprecated")
         self.assertEqual_(self._fetch_token_type(engine, 1002), "deprecated")
         engine.dispose()
@@ -175,18 +178,93 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         self.assertEqual_(self._fetch_tokeninfo_value(engine, 1001, "appId"), "https://example.com")
         engine.dispose()
 
-    def test_upgrade_is_noop_when_no_u2f_tokens(self, flask_app):
-        """upgrade() must not error when there are no u2f tokens."""
+    def test_upgrade_deprecates_only_u2f_tokens(self, flask_app):
+        """
+        upgrade() must leave the tokens of other types as they are, and must not fail when there are no u2f tokens at
+        all, as in the v3.9 seed.
+        """
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_other_token(engine, 1002, "HOTP_MIGR_001", "hotp")
+        u2f_tokens = self._count_tokens_of_type(engine, "u2f")
         engine.dispose()
 
-        self._upgrade()  # must not raise
+        self._upgrade()
 
         engine = self._engine()
-        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), 0)
+        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), u2f_tokens)
         self.assertEqual_(self._fetch_token_type(engine, 1002), "hotp")
+        engine.dispose()
+
+    def _remove_tokeninfo_id_default(self, engine: Engine) -> None:
+        """
+        Give tokeninfo.id no default, like the table "pi-manage setup create_tables" creates on the databases that
+        have sequences. MySQL has none and creates the column with AUTO_INCREMENT, so this layout does not exist there.
+        """
+        if is_postgres():
+            statement = "ALTER TABLE tokeninfo ALTER COLUMN id DROP DEFAULT"
+        elif is_oracle():
+            statement = "ALTER TABLE tokeninfo MODIFY (id DEFAULT NULL)"
+        elif is_mariadb():
+            statement = "ALTER TABLE tokeninfo MODIFY id INTEGER NOT NULL"
+        else:
+            pytest.skip("MySQL creates the tokeninfo id with AUTO_INCREMENT")
+        with engine.connect() as conn:
+            conn.execute(text(statement))
+            conn.commit()
+
+    def _count_markers(self, engine: Engine, token_id: int, key: str) -> int:
+        key_col = quote_identifier("Key")
+        return self._fetch_scalar(
+            engine,
+            f"SELECT COUNT(*) FROM tokeninfo WHERE token_id = :tid AND {key_col} = :key",
+            {"tid": token_id, "key": key},
+        )
+
+    @pytest.mark.parametrize("id_default", ["seed", "none"])
+    def test_upgrade_leaves_room_for_new_token_info(self, flask_app, id_default):
+        """
+        The marker rows take their ids the way the model does, so a row added through the models after the upgrade gets
+        an unused id. "none" is a tokeninfo table without a default on its id column, as created by
+        "pi-manage setup create_tables"; "seed" keeps the default of the seed.
+        """
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        if id_default == "none":
+            self._remove_tokeninfo_id_default(engine)
+        self._insert_u2f_token(engine, 1001, "U2F_MIGR_001")
+        self._insert_u2f_token(engine, 1002, "U2F_MIGR_002")
+        engine.dispose()
+
+        self._upgrade()
+
+        engine = self._engine()
+        self.assertEqual_(self._fetch_tokeninfo_value(engine, 1001, "original_tokentype"), "u2f")
+        self.assertEqual_(self._fetch_tokeninfo_value(engine, 1002, "deprecated_in"), "3.14")
+        engine.dispose()
+
+        self._assert_every_table_accepts_a_row_at_head()
+
+    def test_upgrade_runs_again_after_failing_midway(self, flask_app):
+        """
+        After the upgrade stopped right after its first marker insert, it runs again and leaves every u2f token with one
+        row of each marker and the stashed active state.
+        """
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        self._insert_u2f_token(engine, 1001, "U2F_MIGR_001", active=True)
+        self._insert_u2f_token(engine, 1002, "U2F_MIGR_002", active=False)
+        engine.dispose()
+
+        self._upgrade_failing_after(r"INSERT INTO tokeninfo")
+        self._upgrade()
+
+        engine = self._engine()
+        for token_id, original_active in ((1001, "1"), (1002, "0")):
+            for marker in ("original_tokentype", "original_active", "deprecated_in"):
+                self.assertEqual_(self._count_markers(engine, token_id, marker), 1)
+            self.assertEqual_(self._fetch_tokeninfo_value(engine, token_id, "original_active"), original_active)
+            self.assertEqual_(self._fetch_token_type(engine, token_id), "deprecated")
         engine.dispose()
 
     # -----------------------------------------------------------------

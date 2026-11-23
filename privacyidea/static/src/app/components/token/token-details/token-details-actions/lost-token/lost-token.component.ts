@@ -24,6 +24,7 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { LostTokenData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -43,6 +44,7 @@ export class LostTokenComponent extends AbstractDialogComponent<
 > {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   lostTokenData?: LostTokenData;
   protected readonly dialogTitle = computed(
     () => $localize`:@@token.tokenSerialLost:Token ${this.data.tokenSerial()}:SERIAL: is lost?`
@@ -81,7 +83,7 @@ export class LostTokenComponent extends AbstractDialogComponent<
       return;
     }
     this.dialogRef.close();
-    this.data.tokenSerial.set(tokenSerial);
+    this.contentService.tokenSelected(tokenSerial);
   }
 
   onCloseAction(): void {

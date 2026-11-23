@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { disabled, form, FormField, validate } from "@angular/forms/signals";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
@@ -30,12 +31,26 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { hasError } from "@utils/form-state.utils";
+
+const DEFAULT_FILE_TYPE = "OATH CSV";
+const DEFAULT_PSK_VALIDATION = "check_fail_hard";
+const PSK_LENGTH_ERROR = "pskLength";
+
+interface TokenImportModel {
+  fileType: string;
+  preSharedKey: string;
+  pskPassword: string;
+  pskValidation: string;
+  selectedRealms: string[];
+}
 
 @Component({
   selector: "app-token-import",
   templateUrl: "./token-import.component.html",
   styleUrl: "./token-import.component.scss",
   imports: [
+    FormField,
     MatFormField,
     MatSelect,
     MatOption,
@@ -57,35 +72,37 @@ export class TokenImportComponent implements OnDestroy, OnInit {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
+  protected readonly hasError = hasError;
+  protected readonly PSK_LENGTH_ERROR = PSK_LENGTH_ERROR;
   fileTypes: Record<string, string> = {
     "OATH CSV": $localize`:@@token.csvFileOathTokens:CSV File for OATH Tokens`,
     "Yubikey CSV": $localize`:@@token.csvFileYubikey:CSV File for Yubikey Tokens`,
     pskc: $localize`:@@token.pskcFile:PSKC File`,
     "aladdin-xml": $localize`:@@token.xmlFileFromAladdin:XML File from Aladdin or SafeNet`
   };
-  fileType = signal<string>("OATH CSV");
   fileName = signal("");
   file = signal<string | File>("");
-  preSharedKey = signal("");
-  readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
-  readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
-  pskPassword = signal("");
   pskValidationOptions: Record<string, string> = {
     no_check: $localize`:@@token.doNotVerifyAuthenticity:Do not verify the authenticity`,
     check_fail_soft: $localize`:@@token.skipTokensNot:Skip tokens that can not be verified`,
     check_fail_hard: $localize`:@@token.abortOperation:Abort operation on unverifiable token`
   };
-  pskValidation = signal("check_fail_hard");
-  selectedRealms = signal<string[]>(this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []);
+  importModel = signal<TokenImportModel>({
+    fileType: DEFAULT_FILE_TYPE,
+    preSharedKey: "",
+    pskPassword: "",
+    pskValidation: DEFAULT_PSK_VALIDATION,
+    selectedRealms: this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []
+  });
+  // The pre shared key only applies to PSKC files, so it is exempt from validation for every other file type.
+  importForm = form(this.importModel, (f) => {
+    disabled(f.preSharedKey, () => this.importModel().fileType !== "pskc");
+    validate(f.preSharedKey, (ctx) => ([0, 32].includes(ctx.value().length) ? [] : [{ kind: PSK_LENGTH_ERROR }]));
+  });
+  readonly canImport = computed(() => !!this.file() && this.importForm().valid());
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.fileName() !== "" ||
-        this.pskPassword() !== "" ||
-        this.fileType() !== "OATH CSV" ||
-        this.pskValidation() !== "check_fail_hard"
-    );
+    this.pendingChangesService.registerHasChanges(() => this.fileName() !== "" || this.importForm().dirty());
   }
 
   ngOnDestroy(): void {
@@ -103,21 +120,20 @@ export class TokenImportComponent implements OnDestroy, OnInit {
   }
 
   importTokens() {
-    if (this.formValid()) {
+    if (this.canImport()) {
+      const { fileType, preSharedKey, pskPassword, pskValidation, selectedRealms } = this.importModel();
       const formData = new FormData();
       formData.append("file", this.file() as File);
-      formData.append("type", this.fileType());
-      if (this.selectedRealms()) {
-        formData.append("tokenrealms", this.selectedRealms().join(","));
-      }
-      if (this.fileType() === "pskc") {
-        if (this.pskPassword()) {
-          formData.append("password", this.pskPassword());
+      formData.append("type", fileType);
+      formData.append("tokenrealms", selectedRealms.join(","));
+      if (fileType === "pskc") {
+        if (pskPassword) {
+          formData.append("password", pskPassword);
         }
-        if (this.preSharedKey()) {
-          formData.append("psk", this.preSharedKey());
+        if (preSharedKey) {
+          formData.append("psk", preSharedKey);
         }
-        formData.append("pskcValidateMAC", this.pskValidation());
+        formData.append("pskcValidateMAC", pskValidation);
       }
 
       this.tokenService.importTokens(this.fileName(), formData).subscribe({

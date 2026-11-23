@@ -1,5 +1,9 @@
 """v3.14: Set empty rollout_state to 'enrolled' in token table
 
+The downgrade leaves the rollout_state as it is. 3.13 treats an empty rollout_state and 'enrolled' alike once a token
+is enrolled, and sets 'enrolled' itself for several token types. The upgrade does not record which tokens it changed,
+so setting 'enrolled' back to empty would also change the tokens that had it before.
+
 Revision ID: 3cafe2771cdd
 Revises: a1e0ba6ad9dc
 Create Date: 2026-03-20 12:22:44.365016
@@ -25,9 +29,4 @@ def upgrade():
 
 
 def downgrade():
-    token = sa.table('token', sa.column('rollout_state', sa.Unicode(10)))
-    op.execute(
-        token.update()
-        .where(token.c.rollout_state == 'enrolled')
-        .values(rollout_state='')
-    )
+    pass

@@ -25,6 +25,7 @@ import re
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.policyhelper import hide_tokeninfo_per_token
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
                                            resolver_realm_access,
                                            check_admin_tokenlist, check_container_action,
@@ -165,6 +166,8 @@ def list_containers():
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
         container was created from (case-sensitive, ``*`` wildcard).
+    :query has_template: ``true`` or ``false`` to limit the result to
+        containers created with or without a template.
     :query realm: filter by the realm of the assigned user (exact,
         case-insensitive). May be given without ``user`` to list the
         containers of all users of that realm; a realm that does not exist
@@ -220,6 +223,9 @@ def list_containers():
         ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
+    has_template = get_optional(param, "has_template")
+    if has_template is not None:
+        has_template = is_true(has_template)
     realm, has_realm = get_realm_presence_filter(param, "container_realm")
     description = get_optional(param, "description")
     resolver = get_optional(param, "resolver")
@@ -250,13 +256,15 @@ def list_containers():
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, ctype_exact=ctype_exact,
                                 token_serial=token_serial,
                                 realm=realm, has_realm=has_realm, allowed_realms=allowed_container_realms,
-                                template=template,
+                                template=template, has_template=has_template,
                                 description=description, resolver=resolver, assigned=assigned, info=info,
                                 last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
                                 sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
                                        hide_container_info=hide_container_info, hide_token_info=hide_token_info)
+    for container in containers:
+        hide_tokeninfo_per_token(g, container.get("tokens") or [])
     result["containers"] = containers
 
     g.audit_object.log({"success": True,
@@ -376,9 +384,17 @@ def init():
         to use.
     :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
         ``result.value``; ``tokens`` is only present when a template
-        was used.
-    :status 400: invalid type, serial collision, or both ``template``
-        and ``template_name`` supplied.
+        was used and contains only the tokens that were created. If a
+        template token was not created because a policy or its
+        enrollment failed, ``result.value`` also contains
+        ``tokens_not_created``, a list of
+        ``{"type": ..., "error": ..., "serial": ...}`` with one entry
+        per such token. The ``serial`` is only present if it is known.
+        The key is missing if all tokens were created.
+    :status 400: invalid type, serial collision, both ``template``
+        and ``template_name`` supplied, or ``change_pin_on_first_use``
+        of a token in a ``template`` of the container type is not a
+        boolean.
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -396,7 +412,11 @@ def init():
     # Template handling
     template_tokens = init_res["template_tokens"]
     if template_tokens:
-        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role)
+        tokens_not_created = []
+        res["tokens"] = create_container_tokens_from_template(serial, template_tokens, request, user_role,
+                                                              tokens_not_created=tokens_not_created)
+        if tokens_not_created:
+            res["tokens_not_created"] = tokens_not_created
 
     # Audit log
     owners = container.get_users()
@@ -820,7 +840,7 @@ def set_container_info(container_serial, key):
     :status 200: ``True`` on success in ``result.value``.
     :status 403: the key is reserved as ``PI_INTERNAL``.
     """
-    value = get_required(request.all_data, "value")
+    value = get_required(request.all_data, "value", allow_empty=True)
     res = add_container_info(container_serial, key, value)
 
     # Audit log
@@ -1427,7 +1447,8 @@ def get_template():
         {
           "templates": [
             {"name": "template1", "container_type": "smartphone",
-             "template_options": {"tokens": [{"type": "hotp", "genkey": true}, ...]}},
+             "template_options": {"tokens": [{"type": "hotp", "genkey": true,
+                                              "change_pin_on_first_use": false}, ...]}},
             {"name": "template2", "container_type": "yubikey", ...}
           ],
           "count": 25,
@@ -1473,10 +1494,16 @@ def create_template_with_name(container_type, template_name):
         (most importantly ``tokens`` — the list of token specs to
         create when a container is built from this template).
         Defaults to an empty dict.
+        If the optional boolean ``change_pin_on_first_use`` of a token is
+        ``true``, the PIN of the token must be changed on first use. The
+        default is ``false``. Then the policy ``change_pin_on_first_use``
+        decides, as for a single token enrollment.
     :jsonparam default: ``True`` to mark this template as the default
         for the container type.
     :status 200: ``{"template_id": <id>}`` in ``result.value``.
-    :status 400: ``template_options`` is not a dictionary.
+    :status 400: ``template_options`` is not a dictionary, a token
+        type is not supported for the container type or
+        ``change_pin_on_first_use`` of a token is not a boolean.
     """
     params = request.all_data
     template_options = get_optional(params, "template_options") or {}
@@ -1520,8 +1547,8 @@ def create_template_with_name(container_type, template_name):
 @log_with(log)
 def delete_template(template_name):
     """
-    Delete a container template. Existing containers that were
-    created from this template are not affected.
+    Delete a container template. Existing containers that were created from this template keep their tokens, but are
+    no longer linked to a template.
 
     Requires authentication and the policy action
     :ref:`policy_container_template_delete`.

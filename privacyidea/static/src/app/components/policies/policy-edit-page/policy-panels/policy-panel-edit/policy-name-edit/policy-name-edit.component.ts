@@ -18,11 +18,13 @@
  **/
 
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, model } from "@angular/core";
-import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { Component, computed, effect, input, model } from "@angular/core";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-policy-name-edit",
@@ -33,8 +35,28 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 })
 export class PolicyNameEditComponent {
   readonly policyName = model.required<string>();
+
+  /** Set by the parent while another policy already carries the entered name. */
+  readonly nameTaken = input<boolean>(false);
+
   readonly nameField = form(this.policyName, (f) => {
-    required(f);
-    pattern(f, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f);
+    validate(f, () => (this.nameTaken() ? [{ kind: ERR.nameTaken }] : []));
   });
+
+  /** True while the name satisfies every rule, the collision reported by the parent included. */
+  readonly valid = computed(() => this.nameField().valid());
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+
+  constructor() {
+    // Save is disabled for a taken name, so the reason shows at once, also for a name that a template filled in.
+    effect(() => {
+      if (this.nameTaken()) {
+        this.nameField().markAsTouched();
+      }
+    });
+  }
 }

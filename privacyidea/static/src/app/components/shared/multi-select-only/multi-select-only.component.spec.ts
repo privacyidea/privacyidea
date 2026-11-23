@@ -39,6 +39,32 @@ describe("MultiSelectOnlyComponent", () => {
     fixture.detectChanges();
   });
 
+  describe("error text", () => {
+    const hint = (): HTMLElement | null => fixture.nativeElement.querySelector(".error-hint");
+
+    it("shows no hint without an error text", () => {
+      expect(hint()).toBeNull();
+    });
+
+    it("shows the error text under the field", () => {
+      fixture.componentRef.setInput("errorText", "Select at least one option.");
+      fixture.componentRef.setInput("errorId", "pick-error");
+      fixture.detectChanges();
+
+      expect(hint()?.textContent?.trim()).toBe("Select at least one option.");
+      expect(hint()?.id).toBe("pick-error");
+    });
+
+    it("removes the hint once the error text is cleared", () => {
+      fixture.componentRef.setInput("errorText", "Select at least one option.");
+      fixture.detectChanges();
+      fixture.componentRef.setInput("errorText", "");
+      fixture.detectChanges();
+
+      expect(hint()).toBeNull();
+    });
+  });
+
   describe("Computed Signals & State", () => {
     it("should remove duplicates from items", () => {
       fixture.componentRef.setInput("items", ["A", "B", "A", "C", "B"]);
@@ -68,6 +94,15 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.componentRef.setInput("selectedItems", []);
       fixture.detectChanges();
       expect(component.triggerValue()).toBe("");
+    });
+
+    it("should show the hint below the select and describe the select with it", () => {
+      expect(fixture.nativeElement.querySelector("mat-hint")).toBeNull();
+      fixture.componentRef.setInput("hint", "Only some items");
+      fixture.detectChanges();
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint");
+      expect(hint.textContent!.trim()).toBe("Only some items");
+      expect(fixture.nativeElement.querySelector("mat-select").getAttribute("aria-describedby")).toContain(hint.id);
     });
   });
 

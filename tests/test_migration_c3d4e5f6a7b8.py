@@ -14,6 +14,7 @@ downgrade() — no-op (challenges are ephemeral; nothing to restore)
 import os
 
 import pytest
+from sqlalchemy import text
 
 from tests.migration_test_utils import MigrationTestBase
 
@@ -105,7 +106,10 @@ class TestMigrationC3d4e5f6a7b8(MigrationTestBase):
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
-            assert self._count_challenges(engine) == 0
+            # The release seeds have challenges
+            with engine.connect() as conn:
+                conn.execute(text("DELETE FROM challenge"))
+                conn.commit()
         finally:
             engine.dispose()
 

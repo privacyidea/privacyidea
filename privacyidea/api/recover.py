@@ -40,6 +40,7 @@ from privacyidea.lib.passwordreset import (create_recoverycode,
                                            check_recoverycode)
 from ..lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import prepolicy, check_anonymous_user
+from privacyidea.webui.login import is_new_webui_served
 
 
 log = logging.getLogger(__name__)
@@ -64,8 +65,8 @@ def get_recover_code():
     (case-insensitive); otherwise the request is rejected.
 
     The recovery link is built from the configured ``PI_BASE_URL`` (see
-    ``pi.cfg``). If ``PI_BASE_URL`` is not configured, this endpoint refuses
-    to operate.
+    ``pi.cfg``) and opens the reset page of the WebUI that is served. If
+    ``PI_BASE_URL`` is not configured, this endpoint refuses to operate.
 
     This endpoint is anonymous — no authentication header is required.
 
@@ -79,7 +80,8 @@ def get_recover_code():
     user_obj = get_user_from_param(param, False)
     email = get_required(param, "email")
     # The recovery link must be built from a trusted, configured base URL
-    r = create_recoverycode(user_obj, email, base_url=get_base_url(required=True))
+    r = create_recoverycode(user_obj, email, base_url=get_base_url(required=True),
+                            legacy_webui=not is_new_webui_served())
     g.audit_object.log({"success": r,
                         "info": f"{user_obj!s}"})
     return send_result(r)

@@ -19,6 +19,7 @@
 import json
 import logging
 import re
+from typing import Any
 
 import cryptography.x509
 from cryptography.hazmat._oid import NameOID
@@ -28,11 +29,12 @@ from flask_babel import lazy_gettext
 from webauthn import (generate_registration_options,
                       options_to_json, verify_registration_response, verify_authentication_response)
 from webauthn.authentication.verify_authentication_response import VerifiedAuthentication
-from webauthn.helpers import bytes_to_base64url, base64url_to_bytes, parse_attestation_object
+from webauthn.helpers import bytes_to_base64url, base64url_to_bytes, parse_attestation_object, parse_cbor
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidAuthenticationResponse, InvalidJSONStructure
-from webauthn.helpers.structs import (AttestationConveyancePreference, AuthenticatorSelectionCriteria,
-                                      ResidentKeyRequirement,
+from webauthn.helpers.structs import (AttestationConveyancePreference, AttestationFormat,
+                                      AuthenticatorSelectionCriteria, AuthenticatorAttachment,
+                                      AuthenticatorTransport, ResidentKeyRequirement,
                                       PublicKeyCredentialDescriptor, UserVerificationRequirement, AttestationObject,
                                       PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
@@ -49,6 +51,7 @@ from privacyidea.lib.fido2.util import (hash_credential_id, save_credential_id_h
                                         credential_id_is_registered_to_other_token)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
+from privacyidea.lib.utils import is_true
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import create_challenge
@@ -70,6 +73,97 @@ USER_LABEL_MAX_BYTES = 64
 # A user label tag has the form {tagname}, where tagname consists of word characters.
 USER_LABEL_TAG_PATTERN = re.compile(r"\{(\w+)\}")
 
+# Without attestation, the client can change the extension outputs in the authenticator data. A larger map of
+# extension outputs is not saved in the token info.
+EXTENSION_OUTPUTS_MAX_LENGTH = 1024
+
+# The token info that a registration writes only if the value is known, for example if the authenticator or the
+# client reports it. A new registration of the token removes the entries that it does not write, so that no value
+# of the previous credential stays.
+OPTIONAL_REGISTRATION_TOKENINFO_KEYS = (FIDO2TokenInfo.ATTESTATION_CERTIFICATE, FIDO2TokenInfo.HMAC_SECRET,
+                                        FIDO2TokenInfo.EXTENSION_OUTPUTS, FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT,
+                                        FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED,
+                                        FIDO2TokenInfo.PRF_REQUESTED)
+
+
+def _extension_outputs_to_json_value(value: Any) -> Any:
+    """
+    Convert a value of the CBOR map of extension outputs to a value that JSON can encode. Byte strings are encoded
+    as base64url, also if they are keys of a map.
+    """
+    if isinstance(value, bytes):
+        return bytes_to_base64url(value)
+    if isinstance(value, dict):
+        return {bytes_to_base64url(key) if isinstance(key, bytes) else str(key): _extension_outputs_to_json_value(item)
+                for key, item in value.items()}
+    if isinstance(value, list):
+        return [_extension_outputs_to_json_value(item) for item in value]
+    return value
+
+
+def get_extension_outputs_token_info(extension_outputs: bytes | None, serial: str) -> dict:
+    """
+    Get the token info for the extension outputs in the authenticator data of a registration. The complete map is
+    saved as JSON. The output of hmac-secret, which a CTAP2 authenticator returns if the registration requests the
+    prf extension, is also saved separately: it tells whether the authenticator created the secret for the prf
+    extension.
+
+    :param extension_outputs: The CBOR encoded extension outputs of the authenticator data, if there are any
+    :param serial: The serial of the token for the log
+    :return: The token info entries
+    """
+    if not extension_outputs:
+        return {}
+    outputs = parse_cbor(extension_outputs)
+    if not isinstance(outputs, dict):
+        log.warning(f"The extension outputs of the passkey {serial} are not a map and are not saved.")
+        return {}
+    token_info = {}
+    if isinstance(outputs.get("hmac-secret"), bool):
+        token_info[FIDO2TokenInfo.HMAC_SECRET] = outputs["hmac-secret"]
+    try:
+        # NaN and Infinity are not valid JSON
+        outputs_json = json.dumps(_extension_outputs_to_json_value(outputs), sort_keys=True, default=str,
+                                  allow_nan=False)
+    except ValueError as exception:
+        log.warning(f"The extension outputs of the passkey {serial} are not saved, they cannot be encoded as JSON: "
+                    f"{exception}")
+        return token_info
+    if len(outputs_json) <= EXTENSION_OUTPUTS_MAX_LENGTH:
+        token_info[FIDO2TokenInfo.EXTENSION_OUTPUTS] = outputs_json
+    else:
+        log.warning(f"The extension outputs of the passkey {serial} have {len(outputs_json)} characters and are "
+                    f"not saved, the maximum is {EXTENSION_OUTPUTS_MAX_LENGTH}.")
+    return token_info
+
+
+def get_client_registration_token_info(param: dict) -> dict:
+    """
+    Get the token info for the values that only the client reports about a registration: the authenticator
+    attachment, the transports of the authenticator and whether the prf extension is enabled. Nothing signs these
+    values, so only values that the WebAuthn library knows are saved.
+
+    :param param: The parameters of the registration request
+    :return: The token info entries
+    """
+    token_info = {}
+    authenticator_attachment = get_optional(param, "authenticatorAttachment")
+    # The WebAuthn library ignores an authenticator attachment that is not a string
+    if (isinstance(authenticator_attachment, str)
+            and authenticator_attachment in {attachment.value for attachment in AuthenticatorAttachment}):
+        token_info[FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT] = authenticator_attachment
+    transports = get_optional(param, "transports")
+    if isinstance(transports, list):
+        known_transports = {transport.value for transport in AuthenticatorTransport}
+        reported_transports = sorted({transport for transport in transports
+                                      if isinstance(transport, str) and transport in known_transports})
+        if reported_transports:
+            token_info[FIDO2TokenInfo.TRANSPORTS] = ",".join(reported_transports)
+    prf = get_optional(param, "prf")
+    if isinstance(prf, dict) and isinstance(prf.get("enabled"), bool):
+        token_info[FIDO2TokenInfo.PRF_ENABLED] = prf["enabled"]
+    return token_info
+
 
 class PasskeyTokenClass(TokenClass):
     """
@@ -90,7 +184,12 @@ class PasskeyTokenClass(TokenClass):
                                       FIDO2TokenInfo.BACKED_UP, FIDO2TokenInfo.CREDENTIAL_ID_HASH,
                                       FIDO2TokenInfo.DEVICE_TYPE, FIDO2TokenInfo.PUBLIC_KEY,
                                       FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME,
-                                      FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID})
+                                      FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID,
+                                      FIDO2TokenInfo.HMAC_SECRET, FIDO2TokenInfo.EXTENSION_OUTPUTS,
+                                      FIDO2TokenInfo.ATTESTATION_FORMAT, FIDO2TokenInfo.USER_VERIFIED,
+                                      FIDO2TokenInfo.ORIGIN, FIDO2TokenInfo.AUTHENTICATOR_ATTACHMENT,
+                                      FIDO2TokenInfo.TRANSPORTS, FIDO2TokenInfo.PRF_ENABLED,
+                                      FIDO2TokenInfo.PRF_REQUESTED})
     # A passkey is one of the token types the offline machine application supports. It can be offline on
     # several machines, so the token that authorizes a refill is stored per machine name. Removing one only
     # revokes the refill for that machine, so an administrator may do it.
@@ -198,6 +297,15 @@ class PasskeyTokenClass(TokenClass):
                                   "so this does not keep out an authenticator that reports a wrong device type. By "
                                   "default both types are accepted."),
                         'group': 'WebAuthn'
+                    },
+                    PasskeyAction.DisablePrf: {
+                        'type': 'bool',
+                        'desc': _("Do not request the WebAuthn extension 'prf' (pseudo-random function) during the "
+                                  "passkey registration. By default, privacyIDEA requests it, so that a client "
+                                  "application can derive a secret from the passkey at login. Some authenticators "
+                                  "only create this secret if the registration requests it. The client can still "
+                                  "request the extension itself."),
+                        'group': 'WebAuthn'
                     }
                 }
             }
@@ -218,6 +326,12 @@ class PasskeyTokenClass(TokenClass):
         - FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
         - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PasskeyAction.AttestationConveyancePreference (default: NONE)
+
+        The user verification requirement is stored in the data of the challenge. The second step checks the
+        registration against this stored requirement.
+
+        The registration options request the prf extension, unless PasskeyAction.DisablePrf is set in params. The
+        data of the challenge stores whether the options request it.
         """
         if self.token.rollout_state == RolloutState.CLIENTWAIT:
             token_user = self.user or user
@@ -228,14 +342,26 @@ class PasskeyTokenClass(TokenClass):
             rp_id = get_required(params, FIDO2PolicyAction.RELYING_PARTY_ID)
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
 
+            # User Verification
+            user_verification: UserVerificationRequirement = UserVerificationRequirement.PREFERRED
+            if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in params:
+                user_verification = UserVerificationRequirement(params[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT])
+
             response_detail: dict = TokenClass.get_init_detail(self, params, token_user)
             response_detail['rollout_state'] = self.token.rollout_state
             nonce_base64 = fido2.challenge.get_fido2_nonce()
             challenge_validity: int = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                                           get_from_config('DefaultChallengeValidityTime', 120)))
+            # Request the prf extension, so that the client can derive secrets from the passkey at login. A CTAP2
+            # authenticator only has to create the secret of a credential if the registration requests it. The
+            # challenge stores the decision, so that the second step saves it in the token info.
+            request_prf = not is_true(get_optional(params, PasskeyAction.DisablePrf))
+            challenge_data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification.value,
+                              FIDO2TokenInfo.PRF_REQUESTED: request_prf}
             challenge = create_challenge(self.token.serial,
                                          transaction_id=None,
                                          challenge=nonce_base64,
+                                         data=challenge_data,
                                          session="",
                                          validitytime=challenge_validity)
 
@@ -254,11 +380,6 @@ class PasskeyTokenClass(TokenClass):
             pub_key_algorithms = get_optional(params, FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                               default=[COSEAlgorithmIdentifier.ECDSA_SHA_256,
                                                        COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256])
-
-            # User Verification
-            user_verification: UserVerificationRequirement = UserVerificationRequirement.PREFERRED
-            if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in params:
-                user_verification = UserVerificationRequirement(params[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT])
 
             # Attestation (None is recommended for passkeys)
             attestation: AttestationConveyancePreference = AttestationConveyancePreference.NONE
@@ -294,7 +415,11 @@ class PasskeyTokenClass(TokenClass):
                 token_user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(fido2_user_id))
 
             options_json: str = options_to_json(registration_options)
-            response_detail["passkey_registration"] = json.loads(options_json)
+            passkey_registration: dict = json.loads(options_json)
+            # The WebAuthn library does not support extensions in the registration options
+            if request_prf:
+                passkey_registration["extensions"] = {"prf": {}}
+            response_detail["passkey_registration"] = passkey_registration
             response_detail["transaction_id"] = challenge.transaction_id
 
             # Add RP ID, Name and user_id to the token info
@@ -366,6 +491,15 @@ class PasskeyTokenClass(TokenClass):
         - transaction_id
         - HTTP_ORIGIN
         - FIDO2PolicyAction.RELYING_PARTY_ID ("webauthn_relying_party_id")
+
+        The registration is checked against the user verification requirement that the first step stored in the
+        challenge. If it is "required", the registration is only accepted if the authenticator data has the user
+        verified flag.
+
+        The following parameters are optional in param:
+        - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT ("webauthn_user_verification_requirement"): Only used if
+          the challenge has no stored user verification requirement.
+        - PasskeyAction.AllowedAuthenticatorDeviceTypes: A list of the allowed credential device types.
         """
         response_detail = {"details": {"serial": self.token.serial}}
 
@@ -401,6 +535,18 @@ class PasskeyTokenClass(TokenClass):
             if not len(challenges):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
             challenge = challenges[0]
+            challenge_data = challenge.get_data()
+
+            # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
+            # The registration options only ask the browser for user verification. The user verified flag in the
+            # signed authenticator data shows whether the authenticator verified the user. The requirement is the
+            # one that the first step stored in the challenge, so the policy at the start of the enrollment applies.
+            # A challenge without a stored requirement, for example one created before an update, uses the value in
+            # param. Every API path that completes a registration runs the prepolicy fido2_enroll, and it sets this
+            # value from the current enroll policy.
+            user_verification = (challenge_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+                                 or get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT))
+            require_user_verification = user_verification == UserVerificationRequirement.REQUIRED
             try:
                 registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
@@ -416,6 +562,7 @@ class PasskeyTokenClass(TokenClass):
                     expected_challenge=challenge.challenge.encode("utf-8"),
                     expected_origin=expected_origin,
                     expected_rp_id=expected_rp_id,
+                    require_user_verification=require_user_verification,
                 )
             except InvalidRegistrationResponse as ex:
                 log.error(f"Invalid registration response: {ex}")
@@ -448,9 +595,8 @@ class PasskeyTokenClass(TokenClass):
 
             # Return info if this enroll_via_multichallenge or not
             evm_value = False
-            data = challenge.get_data()
-            if data and isinstance(data, dict) and PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
-                evm_value = data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]
+            if PolicyAction.ENROLL_VIA_MULTICHALLENGE in challenge_data:
+                evm_value = challenge_data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]
             response_detail.update({PolicyAction.ENROLL_VIA_MULTICHALLENGE: evm_value})
 
             # Verification successful, set the token to enrolled and save information returned by the authenticator
@@ -466,8 +612,18 @@ class PasskeyTokenClass(TokenClass):
                 FIDO2TokenInfo.PUBLIC_KEY: bytes_to_base64url(registration_verification.credential_public_key),
                 FIDO2TokenInfo.AAGUID: registration_verification.aaguid,
                 FIDO2TokenInfo.SIGN_COUNT: registration_verification.sign_count,
-                FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash
+                FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash,
+                # The library declares the format as AttestationFormat, but returns the string of the attestation
+                FIDO2TokenInfo.ATTESTATION_FORMAT: AttestationFormat(registration_verification.fmt).value,
+                FIDO2TokenInfo.USER_VERIFIED: registration_verification.user_verified,
+                # The library verified that the origin in the client data is this one
+                FIDO2TokenInfo.ORIGIN: expected_origin
             }
+            token_info.update(get_client_registration_token_info(param))
+            # A challenge that an older version created does not store whether the registration requested prf
+            prf_requested = challenge_data.get(FIDO2TokenInfo.PRF_REQUESTED)
+            if isinstance(prf_requested, bool):
+                token_info[FIDO2TokenInfo.PRF_REQUESTED] = prf_requested
             # Save the credential_id hash to an extra table to be able to find the token faster
             save_credential_id_hash(credential_id_hash, self.token.id)
 
@@ -476,6 +632,7 @@ class PasskeyTokenClass(TokenClass):
             if registration_verification.attestation_object:
                 attestation_object: AttestationObject = parse_attestation_object(
                     registration_verification.attestation_object)
+                token_info.update(get_extension_outputs_token_info(attestation_object.auth_data.extensions, serial))
                 if attestation_object.att_stmt and attestation_object.att_stmt.x5c:
                     attestation_certificate: Certificate = cryptography.x509.load_der_x509_certificate(
                         attestation_object.att_stmt.x5c[0])
@@ -487,6 +644,9 @@ class PasskeyTokenClass(TokenClass):
                             NameOID.COMMON_NAME)
                         if attributes:
                             self.set_description(attributes[0].value)
+            # add_tokeninfo_dict commits the delete together with the new token info
+            self.remove_tokeninfo_keys([key for key in OPTIONAL_REGISTRATION_TOKENINFO_KEYS if key not in token_info],
+                                       commit_db_session=False)
             self.add_tokeninfo_dict(token_info)
             self.token.active = True
             self.token.save()
@@ -648,6 +808,16 @@ class PasskeyTokenClass(TokenClass):
             return True, message, transaction_id, challenge_details
         else:
             return False, "", transactionid, {}
+
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        A passkey challenge is only triggered with the passkey_trigger_by_pin policy. Otherwise the passkey uses the
+        open challenge of /validate/initialize.
+
+        :param options: The request options
+        :return: True if passkey_trigger_by_pin is set
+        """
+        return bool(options.get(PasskeyAction.EnableTriggerByPIN))
 
     @log_with(log)
     def use_for_authentication(self, options):

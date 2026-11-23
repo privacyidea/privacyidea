@@ -2,7 +2,9 @@
 # SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 # Restore the privacyIDEA database from a backup archive.
-# Run from anywhere — the script resolves paths relative to deploy/docker/.
+# Run from anywhere — the script resolves paths relative to the deployment
+# directory. It restores the bundled MariaDB only: an external database
+# (compose.external-db.yaml) is restored with its own tools.
 #
 # Usage:
 #   ./scripts/restore.sh <backup-file.tar.gz>
@@ -30,8 +32,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_DIR="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="${BASE_DIR}/compose.yaml"
+# shellcheck source=SCRIPTDIR/common.sh
+. "${SCRIPT_DIR}/common.sh"
 SECRETS_DIR="${BASE_DIR}/secrets"
 
 ASSUME_YES="${PI_RESTORE_ASSUME_YES:-0}"
@@ -81,11 +83,14 @@ if [[ ! -f "${BACKUP_FILE}" ]]; then
     exit 1
 fi
 
-# Read the list first and match on it: "grep -q" would exit on the first match and,
-# with "pipefail" set above, the writer failing on the closed pipe would take the
-# whole pipeline down. Wrapped in newlines so "db" matches a whole service name.
-running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null)"$'\n'
-if [[ "${running_services}" != *$'\ndb\n'* ]]; then
+if ! has_service db; then
+    echo "ERROR: the database is external (compose.external-db.yaml), and this script"
+    echo "       restores the bundled MariaDB only. Restore the database with its own"
+    echo "       tools, and the keys of the archive by hand (README.Docker.md, section"
+    echo "       \"Disaster recovery on a fresh host\")."
+    exit 1
+fi
+if ! is_running db; then
     echo "ERROR: the db service is not running. Start the stack before restoring."
     exit 1
 fi
@@ -193,7 +198,9 @@ if [[ "${confirm}" != "YES" ]]; then
 fi
 
 echo "[restore] Importing database..."
-docker compose -f "${COMPOSE_FILE}" exec -T db \
+# The $(...) has to expand in the container, where the secret is mounted.
+# shellcheck disable=SC2016
+compose exec -T db \
     sh -c 'mariadb -uroot -p"$(cat /run/secrets/mariadb_root_password)"' \
     < "${TEMP_DIR}/database.sql"
 
@@ -203,9 +210,9 @@ docker compose -f "${COMPOSE_FILE}" exec -T db \
 # same version, and migrates the data up when restoring an older backup onto a
 # newer image. (Restore only onto the same or a newer privacyIDEA version.)
 echo "[restore] Applying database migrations..."
-docker compose -f "${COMPOSE_FILE}" run --rm --no-deps pi pi-manage db upgrade
+compose run --rm --no-deps pi pi-manage db upgrade
 
 echo "[restore] Done."
 echo ""
 echo "Restart the privacyIDEA services to pick up the restored data:"
-echo "  docker compose -f compose.yaml restart pi pi-cron"
+echo "  make restart"

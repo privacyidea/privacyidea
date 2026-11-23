@@ -2,7 +2,9 @@
 # SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 # Backup the privacyIDEA database and all critical secrets.
-# Run from anywhere — the script resolves paths relative to deploy/docker/.
+# Run from anywhere — the script resolves paths relative to the deployment
+# directory. With an external database (compose.external-db.yaml) the archive
+# holds the keys only; back the database up with its own tools.
 #
 # Usage:
 #   ./scripts/backup.sh [OPTIONS]
@@ -15,7 +17,7 @@
 # Output (encrypted):    backups/privacyidea_YYYYMMDD_HHMMSS.tar.gz.age
 #
 # Archive contents:
-#   database.sql       — full logical dump of the pi database
+#   database.sql       — full logical dump of the pi database (bundled MariaDB only)
 #   enckey             — PrivacyIDEA token encryption key
 #   pi_pepper          — password hashing pepper
 #   secret_key         — Flask session signing key
@@ -30,8 +32,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_DIR="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="${BASE_DIR}/compose.yaml"
+# shellcheck source=SCRIPTDIR/common.sh
+. "${SCRIPT_DIR}/common.sh"
 SECRETS_DIR="${BASE_DIR}/secrets"
 BACKUP_DIR="${BASE_DIR}/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -70,29 +72,38 @@ if [[ "${ENCRYPT}" == "true" ]] && ! command -v age &>/dev/null; then
     exit 1
 fi
 
-# Read the list first and match on it: "grep -q" would exit on the first match and,
-# with "pipefail" set above, the writer failing on the closed pipe would take the
-# whole pipeline down. Wrapped in newlines so "db" matches a whole service name.
-running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null)"$'\n'
-if [[ "${running_services}" != *$'\ndb\n'* ]]; then
+# compose.external-db.yaml takes the db service out of the stack. Its database is
+# backed up with that database's own tools; the archive then holds the keys only.
+EXTERNAL_DB=false
+if ! has_service db; then
+    EXTERNAL_DB=true
+fi
+
+if [[ "${EXTERNAL_DB}" == "false" ]] && ! is_running db; then
     echo "ERROR: the db service is not running. Start the stack before taking a backup."
     exit 1
 fi
 
 mkdir -p "${BACKUP_WORK}"
 
-echo "[backup] Dumping database..."
-docker compose -f "${COMPOSE_FILE}" exec -T db \
-    sh -c 'mariadb-dump \
-        -uroot \
-        -p"$(cat /run/secrets/mariadb_root_password)" \
-        --single-transaction \
-        --skip-lock-tables \
-        --routines \
-        --triggers \
-        --add-drop-database \
-        --databases pi' \
-    > "${BACKUP_WORK}/database.sql"
+if [[ "${EXTERNAL_DB}" == "true" ]]; then
+    echo "[backup] The database is external: not dumped. Back it up with its own tools."
+else
+    echo "[backup] Dumping database..."
+    # The $(...) has to expand in the container, where the secret is mounted.
+    # shellcheck disable=SC2016
+    compose exec -T db \
+        sh -c 'mariadb-dump \
+            -uroot \
+            -p"$(cat /run/secrets/mariadb_root_password)" \
+            --single-transaction \
+            --skip-lock-tables \
+            --routines \
+            --triggers \
+            --add-drop-database \
+            --databases pi' \
+        > "${BACKUP_WORK}/database.sql"
+fi
 
 echo "[backup] Copying secrets..."
 cp "${SECRETS_DIR}/enckey"     "${BACKUP_WORK}/enckey"
@@ -125,6 +136,10 @@ fi
 BACKUP_SIZE=$(du -sh "${ARCHIVE}" | cut -f1)
 echo "[backup] Done: ${ARCHIVE} (${BACKUP_SIZE})"
 echo ""
+if [[ "${EXTERNAL_DB}" == "true" ]]; then
+    echo "NOTE: This archive holds the keys only. The external database needs its own"
+    echo "      backup, and that backup is useless without these keys."
+fi
 if [[ "${ENCRYPT}" == "false" ]]; then
     echo "WARNING: This archive is NOT encrypted and contains sensitive key material."
     echo "         Consider using --encrypt or moving it to encrypted storage."

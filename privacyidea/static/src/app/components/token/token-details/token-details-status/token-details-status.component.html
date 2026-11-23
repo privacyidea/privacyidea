@@ -43,8 +43,7 @@
               type="button"
               class="status-toggle"
               (click)="toggleActive()"
-              aria-label="Toggle Status"
-              i18n-aria-label="@@token.toggleStatus">
+              [matTooltip]="toggleActiveHint()">
               <span
                 [ngClass]="[
                   tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })

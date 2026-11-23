@@ -235,6 +235,12 @@ class ResolverError(PrivacyIDEAError):
         PrivacyIDEAError.__init__(self, description=description, id=eid)
 
 
+class ResolverTransportError(ResolverError):
+    """The user store of a resolver could not be reached at all, so it answered no request"""
+    def __init__(self, description="resolver transport error!", eid=Error.RESOLVER):
+        ResolverError.__init__(self, description=description, eid=eid)
+
+
 class NoLongerSupportedError(PrivacyIDEAError):
     """Raised when an operation targets a token type that is no longer supported."""
     def __init__(self, description="This token is no longer supported!", id=Error.PARAMETER):

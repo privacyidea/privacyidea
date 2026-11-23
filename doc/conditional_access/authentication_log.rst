@@ -63,6 +63,11 @@ entry.
 Success
    ``LOGIN_SUCCESS``
      the authentication completed.
+   ``OFFLINE_REFILL_SUCCESS``
+     an offline client refilled its OTP values or renewed its refilltoken, see
+     :ref:`application_offline`. A refill is not a login, so a policy counting
+     ``LOGIN_SUCCESS`` does not count it, and it does not reset a counter that
+     starts over after the last successful login.
 
 Pending
    ``CHALLENGE_TRIGGERED``
@@ -83,28 +88,40 @@ Failure
    ``TOKEN_ONLY_FAIL``
      no PIN was required, and the OTP value was wrong.
    ``MFA_FAIL``
-     the first factor was correct but the second failed. Also used for a failed
-     passkey authentication, where the cause cannot be determined.
+     the first factor was correct but the second failed.
    ``USER_UNKNOWN``
      the login name was not found in any resolver of the given realm (or default realm if none were given).
+   ``LOGIN_NAME_NOT_UNIQUE``
+     the credential identified its user, but the login name and realm a session carries do not lead back to them:
+     another user of the realm has the same login name and the realm's resolver order finds them first. Recorded for
+     a WebUI login with a passkey and without a username, which is the login that identifies its user by the
+     credential rather than by name.
+   ``USER_STORE_UNAVAILABLE``
+     the user store failed to answer the lookup of the login name, for example because the LDAP server was busy, the
+     SQL query failed or the HTTP user store answered with a server error. The login failed without anything being
+     decided about the user, so the entry carries the login name and realm but no resolver or user ID. Recorded for
+     ``/validate/`` endpoints and ``/auth``. A conditional access policy cannot count it.
    ``NO_TOKEN``
      the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
-     no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``
-     whenever no challenge was triggered - also when the user has tokens, but none that is active, not revoked, not
-     locked and able to do challenge-response. A user whose only token is disabled therefore gets ``NO_TOKEN`` there,
-     not ``NO_USABLE_TOKEN``.
+     no token, or a token of another user than the one named in the request.
    ``NO_USABLE_TOKEN``
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
-     over the failcount.
+     over the failcount. At ``/validate/triggerchallenge`` also when none of them can be triggered there: a token type
+     without challenge mode, or a passkey without :ref:`policy_passkey_trigger_by_pin`.
    ``INVALID_TOKEN_TYPE``
      the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
    ``CHALLENGE_ANSWERED_FAIL``
-     the challenge response was wrong or expired, or the transaction ID is unknown.
+     the challenge response was wrong or expired, or the transaction ID is unknown. A passkey or WebAuthn answer
+     that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
-     ``/validate/initialize`` could not create the passkey challenge, for
-     example because the :ref:`policy_webauthn_enroll_relying_party_id` policy
-     is missing.
+     a challenge was asked for but none could be created. At ``/validate/check``
+     and ``/auth`` the PIN matched, and at ``/validate/triggerchallenge`` a
+     usable challenge token was found, but no token got a challenge; the reasons
+     name why, for example ``CHALLENGE_NOT_DELIVERED`` or a token state such as
+     ``TOKEN_FAILCOUNT_EXCEEDED``. ``/validate/initialize`` could not create the
+     passkey challenge, for example because the
+     :ref:`policy_webauthn_enroll_relying_party_id` policy is missing.
    ``CHALLENGE_DECLINED``
      a challenge was rejected out of band, for example a push notification
      declined in the authenticator app, without the app saying why. Either it is
@@ -139,10 +156,21 @@ Failure
      required enrollment policy is missing, or the registration data from the
      authenticator was rejected. The ready-made failure rate limits leave it out.
    ``NOT_AUTHORIZED``
-     an authorization policy or the server configuration refused the authentication.
+     an authorization policy or the server configuration refused the authentication. A policy that refuses the token
+     used, like :ref:`tokentype <tokentype_policy>`, may also refuse an authentication that failed, e.g. with a wrong
+     OTP. The request is then answered with the policy's refusal, so it is recorded as ``NOT_AUTHORIZED`` as well. What
+     was found about the token, e.g. ``WRONG_OTP``, is still shown in the details.
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``POST_AUTHENTICATION_FAIL``
+     the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
+     example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
+     keeps the type of that failure instead, and records the error message as well if the error was not the failure's
+     own response. The error message is recorded in the other info as ``error``. The ready-made failure rate limits
+     leave it out: the authentication itself succeeded, and the error mostly comes from the configuration, e.g.
+     conflicting policies, rather than from the user or an attack. Counting it would lock users out who give correct
+     credentials. A wrong credential is still counted, since a failed authentication keeps its own type.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.
@@ -151,6 +179,9 @@ Failure
      unauthenticated by that key. This entry is written in addition to the entry of the request itself, on whatever
      endpoint the request was sent to - also outside authentication, for example ``/token``. It names no user; the
      client is recorded in the other info as ``client_id``. A conditional access policy cannot count it.
+   ``OFFLINE_REFILL_FAIL``
+     an offline refill was refused. The reasons say why: one of the token states, ``WRONG_OTP`` or one of the offline
+     refill reasons below.
 
 Three further types are written by conditional access itself, when it refuses a
 request before any credentials are checked: ``USER_LOCKED`` (a user lock was in
@@ -159,8 +190,8 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They and ``SUSPENDED_API_KEY_USED`` are, however, the only types a
-conditional access policy cannot count.
+effect. They, ``SUSPENDED_API_KEY_USED`` and ``USER_STORE_UNAVAILABLE`` are,
+however, the only types a conditional access policy cannot count.
 
 .. _authentication_log_reasons:
 
@@ -190,14 +221,23 @@ The state of a token
    ``TOKEN_TYPE_DISABLED``
      a policy disabled this token's whole type for the request.
    ``TOKEN_NOT_APPLICABLE``
-     the token excluded itself from this request, for example an
-     application-specific password whose service does not match.
+     the token excluded itself from this request, for example an application-specific password whose service does not
+     match, or a passkey at ``/validate/triggerchallenge`` without :ref:`policy_passkey_trigger_by_pin`.
+   ``TOKEN_NO_CHALLENGE_MODE``
+     the token type has no challenge mode, so ``/validate/triggerchallenge``
+     can not create a challenge for it, for example a simple pass token.
 
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the next three are authorization decisions too,
-     each naming the specific limit that was hit.
+     (``authorized=deny``); the others below are authorization decisions too,
+     each naming the specific policy or limit that refused the request.
+   ``TOKENTYPE_NOT_ALLOWED``
+     the type of the token used is not one the :ref:`tokentype <tokentype_policy>` policy allows.
+   ``SERIAL_NOT_ALLOWED``
+     the serial of the token used does not match the :ref:`policy_serial` policy.
+   ``TOKENINFO_MISMATCH``
+     a tokeninfo field of the token used does not match the :ref:`policy_tokeninfo` policy.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
      :ref:`policy_auth_max_fail`.
@@ -220,7 +260,15 @@ The credentials
      ``MFA_FAIL`` alone would not tell a wrong OTP apart from a token the
      request never got to check.
 
+     On ``OFFLINE_REFILL_FAIL``, ``WRONG_OTP`` means the OTP the client
+     reported is not one of the offline values issued to it: a wrong value, or
+     a client whose OTP list is out of sync with the server.
+
 Challenge-response
+   ``CHALLENGE_NOT_DELIVERED``
+     the challenge could not be sent: the SMS or email gateway failed, or a
+     push token has no push gateway or its push gateway failed while polling is
+     not allowed.
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
    ``CHALLENGE_UNKNOWN_TRANSACTION``
@@ -239,6 +287,16 @@ Challenge-response
      the challenge was rejected on the device. Carried by all three decline
      event types and says only where the refusal came from; which refusal it was
      is what the event type names.
+
+Offline refill
+   ``REFILLTOKEN_MISMATCH``
+     the refilltoken the client sent is not the one stored for the token: a
+     client that missed a rotation, or a refilltoken replayed by someone else.
+   ``NOT_AN_OFFLINE_TOKEN``
+     the token is not attached to any machine with the offline application.
+   ``MACHINE_NOT_IDENTIFIED``
+     a WebAuthn or passkey refill whose user agent names no machine, so no
+     refilltoken can be looked up for it.
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
@@ -261,9 +319,9 @@ as one with a wrong PIN, leaves the entry without one.
 
 No reason is picked out as the one that counts: they are listed in the order
 the vocabulary above declares them - the token states, then the authorization
-decisions, then the credentials, then challenge-response - so that the same
-findings always read the same way. The order carries no ranking; each reason is
-recorded and each is filterable on its own.
+decisions, then the credentials, then challenge-response, then offline refill -
+so that the same findings always read the same way. The order carries no
+ranking; each reason is recorded and each is filterable on its own.
 
 Which token failed for which reason is not lost either: the details of the
 entry keep the finding of every token under ``reason_detail.reasons``, keyed by
@@ -294,6 +352,9 @@ request path:
   a challenge triggered by an administrator.
 ``/validate/initialize``
   the anonymous bootstrap of a FIDO2/passkey challenge before login.
+``/validate/offlinerefill``
+  an offline client refilling its OTP values or renewing its refilltoken, see
+  :ref:`application_offline`.
 ``/validate/remember_device``
   an application asking whether a device is remembered, so that it may skip the
   second factor. This is not an authentication and writes no entry of its own

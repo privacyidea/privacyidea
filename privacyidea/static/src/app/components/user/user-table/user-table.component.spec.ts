@@ -43,6 +43,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { UserTableComponent } from "./user-table.component";
+import { axe } from "@testing/axe";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;
@@ -151,6 +152,38 @@ describe("UserTableComponent", () => {
     });
   });
 
+  describe("the username column", () => {
+    const usernameLinks = (): HTMLAnchorElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll('td a[href^="/users/details/"]'));
+
+    const showUsers = (usernames: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+      mockUserService.usersResource.set(
+        MockPiResponse.fromValue(usernames.map((username) => ({ username, resolver: "ldap1" })) as UserData[]) as never
+      );
+      fixture.detectChanges();
+    };
+
+    it("links to the user details of the realm the table shows", () => {
+      mockUserService.selectedUserRealm.set("themis");
+      showUsers(["alice"]);
+
+      expect(usernameLinks().map((link) => link.getAttribute("href"))).toEqual([
+        ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis"
+      ]);
+    });
+
+    it("keeps a login with parentheses or a realm with spaces in one piece", () => {
+      mockUserService.selectedUserRealm.set("r 1");
+      showUsers(["a(b)@c"]);
+
+      expect(usernameLinks().map((link) => link.getAttribute("href"))).toEqual([
+        ROUTE_PATHS.USERS_DETAILS + "/a%28b%29@c?realm=r%201"
+      ]);
+    });
+  });
+
   describe("the resolver column", () => {
     const resolverCellLinks = (): HTMLAnchorElement[] =>
       Array.from(fixture.nativeElement.querySelectorAll('td a[href^="/users/resolvers/details/"]'));
@@ -185,18 +218,6 @@ describe("UserTableComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
-  });
-
-  it("linkLabel should build a link label from the given label", () => {
-    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("user1")).toContain("user1");
-  });
-
-  it("onClickUsername stores username and the selected realm", () => {
-    mockUserService.selectedUserRealm.set("themis");
-    component.onClickUsername({ username: "alice" } as never);
-
-    expect(mockUserService.detailsUser().username).toBe("alice");
-    expect(mockUserService.detailsUser().realm).toBe("themis");
   });
 
   it("offers every advanced keyword alongside the plain column filters to an admin who may list tokens", () => {
@@ -319,5 +340,11 @@ describe("UserTableComponent", () => {
 
       expect(mockUserService.activeFilter().getValueOfKey("resolver")).toBe("ldap1");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

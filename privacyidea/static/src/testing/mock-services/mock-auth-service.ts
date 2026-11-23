@@ -68,10 +68,12 @@ export class MockAuthService implements AuthServiceInterface {
   readonly showSeed = computed(() => this.authData()?.show_seed ?? false);
   readonly showNode = computed(() => this.authData()?.show_node ?? "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status ?? 0);
+  readonly hasSubscription = computed(() => this.authData()?.has_subscription ?? false);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android ?? null);
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios ?? null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom ?? null);
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url ?? "");
+  readonly supportMail = computed(() => this.authData()?.supportmail ?? "");
   readonly requireDescription = computed(() => this.authData()?.require_description ?? []);
   readonly rssAge = computed(() => this.authData()?.rss_age ?? 0);
   readonly containerWizard = computed(
@@ -92,6 +94,9 @@ export class MockAuthService implements AuthServiceInterface {
     .fn()
     .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
   acceptAuthentication = jest.fn();
+  updateSubscriptionStatus = jest.fn().mockImplementation((status: number) =>
+    this.authData.update((data) => (data ? { ...data, subscription_status: status } : data))
+  );
   logout = jest.fn();
   actionAllowed = jest.fn().mockImplementation((action: string) => this.rights().includes(action));
   actionsAllowed = jest.fn().mockReturnValue(true);

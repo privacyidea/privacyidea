@@ -28,6 +28,7 @@ import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService, MockMachineService, MockTableUtilsService } from "@testing/mock-services";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { axe } from "@testing/axe";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -97,17 +98,23 @@ describe("MachinesComponent", () => {
 
   it("should navigate to details page", () => {
     const router = TestBed.inject(Router);
-    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const machine = machineServiceMock.machines()[0];
     component.openDetailsDialog(machine);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS, machine.id], {
+      queryParams: { resolver: machine.resolver_name }
+    });
   });
 
   it("should initialize paginator page size to the second page size option", () => {
     expect(component.paginator()!.pageSize).toBe(component.pageSizeOptions()[1]);
     expect(component.paginator()!.pageSize).toBe(10);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

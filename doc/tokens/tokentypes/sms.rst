@@ -8,12 +8,6 @@ SMS Token
 The token type *sms* sends the OTP value via an SMS service. You can
 configure the SMS service in :ref:`sms_token_config`.
 
-
-.. figure:: images/enroll_sms.png
-   :width: 500
-
-   *Enroll an SMS token*
-
 When enrolling an SMS token, you only need to specify the mobile phone number,
 or let the token read the number from the user store at each authentication
 (WebUI: *Read number dynamically from user source on each request*, API
