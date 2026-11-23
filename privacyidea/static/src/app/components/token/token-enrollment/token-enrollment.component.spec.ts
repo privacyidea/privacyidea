@@ -575,6 +575,22 @@ describe("TokenEnrollmentComponent", () => {
         expect(notificationServiceMock.error).not.toHaveBeenCalled();
       });
 
+      it("keeps the unsaved-changes guard when the enrollment request fails", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        tokenService.enrollToken.mockReturnValue(Promise.reject(new Error("rejected")));
+        pendingChangesService.clearAllRegistrations.mockClear();
+
+        await expect(component.enrollToken()).resolves.toBe(false);
+
+        expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      });
+
       it("warns when the strategy cannot build the enrollment arguments", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
         installStrategy(component, { buildEnrollmentArgs: jest.fn().mockReturnValue(null) });
@@ -866,6 +882,33 @@ describe("TokenEnrollmentComponent", () => {
         expect(component["inputsGeneration"]()).toBe(generation + 1);
         expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
         expect(component.canReopenEnrollmentDialog()).toBe(true);
+      });
+
+      it("clears the unsaved-changes guard before the first step of push opens", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        let clearedWhileStepOpen = 0;
+        let registeredWhileStepOpen = 0;
+        installStrategy(component, {
+          buildEnrollmentArgs: strategyArgs("push"),
+          onEnrollmentResponse: jest.fn().mockImplementation(async () => {
+            clearedWhileStepOpen = pendingChangesService.clearAllRegistrations.mock.calls.length;
+            registeredWhileStepOpen = pendingChangesService.registerHasChanges.mock.calls.length;
+            return null;
+          }),
+          reopenDialog: signal(jest.fn())
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPU0003", rollout_state: "clientwait" } })
+        );
+        component.descriptionForm().controlValue.set("first token");
+        pendingChangesService.clearAllRegistrations.mockClear();
+        pendingChangesService.registerHasChanges.mockClear();
+
+        await component.enrollToken();
+
+        expect(clearedWhileStepOpen).toBe(1);
+        expect(registeredWhileStepOpen).toBe(0);
+        expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
       });
 
       it("keeps the inputs for the next token when a push enrollment finishes on reopen", async () => {
