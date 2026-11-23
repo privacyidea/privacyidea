@@ -1187,6 +1187,11 @@ send the hashlib gets the value of the token configuration (``hotp.hashlib``, ``
 ``daypassword.hashlib``), or *sha1* if it is not set there. The current WebUI presets *sha1* in the
 HOTP and TOTP forms (the token configuration value in the DayPassword form) and always sends it.
 
+If an administrator enrolls a token without a user and realm-specific policies of the same priority define
+different values, the enrollment fails with the policy error "There are policies with conflicting actions".
+The current WebUI shows this message before the enrollment and disables *Enroll*.
+Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
+
 .. _admin_policy_otplen:
 
 hotp_otplen, totp_otplen and daypassword_otplen
@@ -1197,6 +1202,11 @@ type: ``integer``
 Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified OTP length.
 The corresponding input selector will be disabled in the web UI. This policy takes precedence over the value given on the System Config page (OTP length of newly enrolled tokens).
 Possible values are *6* or *8*, default is *6*.
+
+If an administrator enrolls a token without a user and realm-specific policies of the same priority define
+different values, the enrollment fails with the policy error "There are policies with conflicting actions".
+The current WebUI shows this message before the enrollment and disables *Enroll*.
+Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
 
 .. _admin_policy_force-server-generate:
 
@@ -1224,6 +1234,11 @@ Possible values are *30* or *60*. Without this policy, a request that does not s
 gets the value of the token configuration (``totp.timeStep``), or *30* if it is not set there.
 The current WebUI presets *30* in the form and always sends it.
 
+If an administrator enrolls a token without a user and realm-specific policies of the same priority define
+different values, the enrollment fails with the policy error "There are policies with conflicting actions".
+The current WebUI shows this message before the enrollment and disables *Enroll*.
+Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
+
 .. _admin_policy_daypassword_timestep:
 
 daypassword_timestep
@@ -1233,6 +1248,11 @@ type: ``string``
 
 Enforce the time step of the DayPassword token, for example ``24h``. The value is a number followed by one
 of the units *y*, *d*, *h*, *m* or *s*.
+
+If an administrator enrolls a token without a user and realm-specific policies of the same priority define
+different values, the enrollment fails with the policy error "There are policies with conflicting actions".
+The current WebUI shows this message before the enrollment and disables *Enroll*.
+Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
 
 .. _policy_system_documentation:
 

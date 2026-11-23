@@ -62,6 +62,13 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **The enrollment form of the current WebUI now applies the policies of the selected user and realm.** It used to
+  preset the hash algorithm, OTP length, time step, 2step, server-side key, SMS gateways and required description with
+  the policies of all realms of the administrator. A newly enrolled token can therefore get other parameters. A
+  `hotp_hashlib` policy that exists only for `realm1` no longer applies to a `realm2` user, who gets the default value.
+  If you need the previous result, set the policy for this realm as well. `GET /token/init/policies` returns these
+  values.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
