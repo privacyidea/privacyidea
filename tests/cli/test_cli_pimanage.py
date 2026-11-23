@@ -64,7 +64,7 @@ from privacyidea.models.conditional_access_policy import (BlockList, Conditional
                                                           ConditionalAccessPolicyStage, UserLockState)
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
-from ..base import _reset_database
+from ..base import _reset_database, connections_of_new_engines
 from ..base import PWFILE
 
 
@@ -480,6 +480,58 @@ class PIManageAuditTestCase(CliTestCase):
             res = self._rotate("--age", "5", "--chunksize", chunksize)
             self.assertEqual(2, res.exit_code, res.output)
             self.assertIn("--chunksize", res.output)
+
+    def test_21_rotate_closes_its_database_connections(self):
+        # Every mode closes all connections of its own engine when the command ends, also when it deletes nothing
+        # and the session still has an open transaction.
+        modes = {"watermarks": ["--highwatermark", "4", "--lowwatermark", "2"],
+                 "watermarks dryrun": ["--highwatermark", "1", "--lowwatermark", "1", "--dryrun"],
+                 "watermarks below the high watermark": ["--highwatermark", "100"],
+                 "age": ["--age", "5"],
+                 "age in chunks": ["--age", "5", "--chunksize", "1"],
+                 "age dryrun": ["--age", "5", "--dryrun"],
+                 "config": ["--config"],
+                 "config dryrun": ["--config", "--dryrun"]}
+        for mode, arguments in modes.items():
+            with self.subTest(mode=mode):
+                self._insert_config_entries()
+                connections = connections_of_new_engines("privacyidea.cli.pimanage.audit.create_engine")
+                with connections as (opened, closed):
+                    if arguments[0] == "--config":
+                        res = self._rotate_with_config(*arguments[1:])
+                    else:
+                        res = self._rotate(*arguments)
+
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertTrue(opened, "The command opened no connection, so the test proves nothing.")
+                self.assertEqual({id(connection) for connection in opened},
+                                 {id(connection) for connection in closed})
+
+    def test_22_rotate_closes_its_database_connections_after_an_error(self):
+        self._insert(age_days=10)
+        failed_delete = sa.exc.OperationalError("DELETE", {}, Exception("connection lost"))
+        with (connections_of_new_engines("privacyidea.cli.pimanage.audit.create_engine") as (opened, closed),
+              mock.patch("privacyidea.cli.pimanage.audit.delete_matching_rows", side_effect=failed_delete)):
+            res = self._rotate("--age", "5")
+
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIsInstance(res.exception, sa.exc.OperationalError)
+        self.assertTrue(opened, "The command opened no connection, so the test proves nothing.")
+        self.assertEqual({id(connection) for connection in opened}, {id(connection) for connection in closed})
+
+    def test_23_dump_closes_its_database_connections(self):
+        # The SQL audit module closes its connection in a finalizer. A command has no request, so the finalizer
+        # runs when the application context of the command ends. The test class keeps one application context for
+        # all its tests, so the command gets one of its own here.
+        self._insert(age_days=1)
+        with connections_of_new_engines("privacyidea.lib.auditmodules.sqlaudit.create_engine") as (opened, closed):
+            with self.app.app_context():
+                res, rows = self._dump()
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertEqual(1, len(rows), rows)
+                self.assertTrue(opened, "The command opened no connection, so the test proves nothing.")
+
+        self.assertEqual({id(connection) for connection in opened}, {id(connection) for connection in closed})
 
 
 class PIManageBackupTestCase(CliTestCase):
@@ -3064,6 +3116,23 @@ class PIManageConfigCRUDTestCase(CliTestCase):
             self.assertFalse(policy["check_all_resolvers"])
         finally:
             delete_policy("clikeeppol")
+
+    def test_27_resolver_create_internal_closes_its_database_connections(self):
+        # The command creates the user table through an engine of its own and closes its connections when it ends.
+        runner = self.app.test_cli_runner()
+        try:
+            # The command imports create_engine when it runs, so it gets the recording one.
+            with connections_of_new_engines("sqlalchemy.create_engine") as (opened, closed):
+                result = runner.invoke(pi_manage, ["config", "resolver", "create_internal", "cliinternal"])
+
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("users_cliinternal", sa.inspect(db.engine).get_table_names())
+            self.assertTrue(opened, "The command opened no connection, so the test proves nothing.")
+            self.assertEqual({id(connection) for connection in opened}, {id(connection) for connection in closed})
+        finally:
+            delete_resolver("cliinternal")
+            sa.Table("users_cliinternal", sa.MetaData()).drop(db.engine, checkfirst=True)
+            db.session.commit()
 
 
 class PIManageAuthLogTestCase(CliTestCase):

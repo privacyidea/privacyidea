@@ -643,7 +643,8 @@ def export(ctx, export_format, b32, file, user):
         if _is_interactive() and click.confirm('Do you want to save the key to a file?', default=False, err=True):
             key_file = click.prompt('Please enter the file name to save the key to',
                                     type=click.File('w'), err=True)
-            key_file.write(key)
+            with key_file:
+                key_file.write(key)
             click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
 
     if not _is_stdout(file):

@@ -18,6 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import gc
 import hashlib
 import os
 import shutil
@@ -355,6 +356,47 @@ def _no_app_context_left_by_the_class(request: pytest.FixtureRequest) -> Iterato
     if flask.has_app_context() and not context_was_active:
         pytest.fail(f"{request.node.nodeid} leaves the app context of {flask.current_app.name} active. Pop it in "
                     "tearDownClass, for example with super().tearDownClass().", pytrace=False)
+
+
+@pytest.fixture(autouse=True)
+def _finalizers_called_at_the_end_of_the_test() -> Iterator[None]:
+    """
+    Call the remaining finalizers at the end of each test.
+
+    In production, every request and every command has an app context of its own, which calls the remaining
+    finalizers when it ends. A test class keeps one app context for all its tests, so this ends each test the same
+    way. Without this, the objects of all tests of a class keep their database connections open until the class ends.
+    """
+    import flask
+    from privacyidea.lib.lifecycle import call_app_context_finalizers, call_finalizers
+    yield
+    if flask.has_app_context():
+        call_finalizers()
+        call_app_context_finalizers()
+
+
+@pytest.fixture(scope="class", autouse=True)
+def _no_unclosed_resource_left_by_the_class() -> Iterator[None]:
+    """
+    Fail a test class that leaves a database connection, a socket or a file open.
+
+    Python reports an unclosed resource with a ``ResourceWarning`` when the garbage collector frees it, and the
+    ``filterwarnings`` in pyproject.toml turn this warning into an error. In production, such a connection stays open
+    until the process exits, and the database server logs it as an aborted connection.
+
+    A resource that only the reference counting frees fails the test that leaves it open. A resource in a reference
+    cycle, for example an SQLAlchemy session with its engine, needs a collection, and without the collection here it
+    would fail a random test of a later class. The collection runs once per class and not per test, because a full
+    collection takes about 0.1 seconds. It runs twice, because freeing a session can give its connection back to the
+    pool of the engine, which only the next collection frees. Use ``python -X tracemalloc`` to see where the
+    resource was opened.
+
+    SQLite reports an unclosed connection from Python 3.13 on. Sockets, for example of MySQL connections, and files
+    are reported on all supported versions.
+    """
+    yield
+    gc.collect()
+    gc.collect()
 
 
 CAKEY = "cakey.pem"

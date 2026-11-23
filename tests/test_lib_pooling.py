@@ -6,19 +6,20 @@ lib/pooling.py
 
 and the teardown contract its consumers depend on - the SQL audit module, the SQL monitoring
 module and the SQL resolver, each of which disposes an engine of its own but leaves a shared
-one alone.
+one alone. The shared ones are disposed when the process exits.
 """
 import shutil
 import tempfile
+from unittest import mock
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from privacyidea.app import create_app
 from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.monitoringmodules.sqlstats import Monitoring
-from privacyidea.lib.pooling import (get_engine, get_registry, engines_are_shared,
+from privacyidea.lib.pooling import (get_engine, get_registry, engines_are_shared, dispose_registry_engines,
                                      SharedEngineRegistry, NullEngineRegistry)
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.models import db, save_config_timestamp
@@ -107,6 +108,17 @@ class SharedPoolingTestCase(MyTestCase, EngineHolders):
                 self.assertIs(pool, holder.engine.pool)
                 self.assertFalse(holder.session.in_transaction())
 
+    def test_05_dispose_registry_engines_disposes_shared_engines(self):
+        # The holders never dispose a shared engine, so its connections stay in the pool until
+        # the process exits and disposes all engines of the registry.
+        with self.app.test_request_context("/"):
+            holders = self._engine_holders()
+        pools = [holder.engine.pool for holder in holders]
+        dispose_registry_engines()
+        for holder, pool in zip(holders, pools):
+            with self.subTest(holder=type(holder).__module__):
+                self.assertIsNot(pool, holder.engine.pool)
+
 
 class NullPoolingTestCase(MyTestCase, EngineHolders):
     """ Test Null pooling. This is the default in the testing configuration. """
@@ -135,9 +147,6 @@ class NullPoolingTestCase(MyTestCase, EngineHolders):
     def test_04_teardown_disposes_owned_engines(self):
         with self.app.test_request_context("/"):
             holders = self._engine_holders()
-            teardown = get_request_local_store().get("call_on_teardown", [])
-            for holder in holders:
-                self.assertIn(holder._finalize_session, teardown)
             pools = [holder.engine.pool for holder in holders]
         for holder, pool in zip(holders, pools):
             with self.subTest(holder=type(holder).__module__):
@@ -147,11 +156,40 @@ class NullPoolingTestCase(MyTestCase, EngineHolders):
                 self.assertFalse(holder.session.in_transaction())
                 self.assertIsNot(pool, holder.engine.pool)
 
-    def test_05_no_finalizer_outside_a_request(self):
-        # Nothing tears a bare application context down - pi-manage, a cron job, a background
-        # thread - so a finalizer registered there would never run. It would only keep the
-        # holder, and with it an open connection, alive for the lifetime of the process.
-        store = get_request_local_store()
-        registered = list(store.get("call_on_teardown", []))
-        self._engine_holders()
-        self.assertEqual(registered, store.get("call_on_teardown", []))
+    def test_05_end_of_the_application_context_disposes_owned_engines(self):
+        # Outside a request, for example in pi-manage, the finalizers run when the application
+        # context ends. The test class keeps one application context for all its tests, so the
+        # holders get one of their own here.
+        with self.app.app_context():
+            holders = self._engine_holders()
+            pools = [holder.engine.pool for holder in holders]
+        for holder, pool in zip(holders, pools):
+            with self.subTest(holder=type(holder).__module__):
+                self.assertTrue(holder._owns_engine)
+                self.assertFalse(holder.session.in_transaction())
+                self.assertIsNot(pool, holder.engine.pool)
+
+    def test_06_dispose_registry_engines_without_a_registry(self):
+        # At exit, an application that never used an engine from the registry gets none
+        # created just to dispose it.
+        with mock.patch.dict(get_app_local_store()):
+            get_app_local_store().pop("engine_registry", None)
+            dispose_registry_engines()
+            self.assertNotIn("engine_registry", get_app_local_store())
+
+    def test_07_a_session_used_again_after_the_teardown_is_closed_again(self):
+        # For example, a streamed response reads its lines after the teardown of the request. The
+        # session then opens a new connection, which the end of the application context closes.
+        with self.app.app_context():
+            with self.app.test_request_context("/"):
+                holders = self._engine_holders()
+            for holder in holders:
+                self.assertFalse(holder.session.in_transaction())
+            for holder in holders:
+                holder.session.execute(text("SELECT 1"))
+                self.assertTrue(holder.session.in_transaction())
+            pools = [holder.engine.pool for holder in holders]
+        for holder, pool in zip(holders, pools):
+            with self.subTest(holder=type(holder).__module__):
+                self.assertFalse(holder.session.in_transaction())
+                self.assertIsNot(pool, holder.engine.pool)

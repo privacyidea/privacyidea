@@ -223,8 +223,9 @@ def _request_metric_buffer() -> dict | None:
     name, label set and window collapse into a single row update - and written by one
     finalizer at the end of the request.
 
-    Returns ``None`` outside a request: no teardown would run there, so the caller has
-    to write its observation through immediately.
+    Returns ``None`` outside a request, and the caller writes its observation through
+    immediately. There, the finalizers only run when the application context ends, which
+    for a command line tool is when the whole command ends.
 
     The buffer is only written at teardown, so a request whose worker is killed before
     that (a uWSGI harakiri on a request hung in a resolver, a worker recycle) takes its

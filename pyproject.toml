@@ -196,6 +196,10 @@ markers = [
 ]
 filterwarnings = [
     "once::DeprecationWarning",
+    # A test that leaves a database connection, a socket or a file open fails. See the fixture
+    # _no_unclosed_resource_left_by_the_test in tests/conftest.py.
+    "error::ResourceWarning",
+    "error::pytest.PytestUnraisableExceptionWarning",
 ]
 
 [tool.coverage.run]

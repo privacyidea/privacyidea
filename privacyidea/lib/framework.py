@@ -47,8 +47,9 @@ def is_request_context() -> bool:
     Check whether the current code runs while a request is being handled.
 
     The request-local store of :py:func:`get_request_local_store` is also available in a
-    bare application context (``pi-manage``, a cron job, a background thread), but nothing
-    tears such a context down at the end of a request. Code that defers work to a finalizer
+    bare application context (``pi-manage``, a cron job), but such a context has no request
+    that ends. Its finalizers only run when the application context ends, which for a
+    command line tool is when the whole command ends. Code that defers work to a finalizer
     needs to know the difference.
 
     :return: True if a request is being handled

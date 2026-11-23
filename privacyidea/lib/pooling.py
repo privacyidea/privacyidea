@@ -54,6 +54,12 @@ class BaseEngineRegistry:
         """
         raise NotImplementedError()
 
+    def dispose_engines(self) -> None:
+        """
+        Close the connections of all engines this registry holds. A registry that holds no
+        engines has nothing to close.
+        """
+
 
 class NullEngineRegistry(BaseEngineRegistry):
     """
@@ -89,6 +95,13 @@ class SharedEngineRegistry(BaseEngineRegistry):
                 log.info(f"Creating a new engine and connection pool for key {key!s}")
                 self._engines[key] = creator()
             return self._engines[key]
+
+    def dispose_engines(self) -> None:
+        # The owners of the engines never dispose them, so their connections stay in the pools
+        # until this is called.
+        with self._engine_lock:
+            for engine in self._engines.values():
+                engine.dispose()
 
 
 ENGINE_REGISTRY_CLASSES = {
@@ -144,3 +157,17 @@ def engines_are_shared() -> bool:
     :return: True if engines are shared between callers
     """
     return get_registry().shares_engines
+
+
+def dispose_registry_engines() -> None:
+    """
+    Close the connections of all engines in the engine registry of the current application.
+
+    Call this when the process exits. A shared engine keeps its connections in the pool after
+    each use, and the process would otherwise exit with them still open. The database server
+    then logs each of them as an aborted connection. If no registry exists yet, this does not
+    create one.
+    """
+    registry = get_app_local_store().get("engine_registry")
+    if registry is not None:
+        registry.dispose_engines()

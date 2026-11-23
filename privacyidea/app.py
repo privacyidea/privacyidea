@@ -94,7 +94,9 @@ from privacyidea.lib import queue
 from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.lifecycle import init_finalizers
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.lib.pooling import dispose_registry_engines
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
@@ -280,7 +282,7 @@ def _register_blueprints(app):
 def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     # Setup logging
     log_read_func = {
-        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x).read())),
+        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(Path(x).read_text())),
         'cfg': lambda x: logging.config.fileConfig(x, disable_existing_loggers=False)
     }
     have_config = False
@@ -672,6 +674,7 @@ def create_app(config_name="development",
     _setup_database_engine_options(app)
     db.init_app(app)
     init_ca_session(app)
+    init_finalizers(app)
 
     # The migrations are part of the package, next to this module, in a source tree as in an installed or editable
     # package. The pi-manage db commands use them.
@@ -722,6 +725,7 @@ def create_app(config_name="development",
         # Destroy the engine pool and close all open database connections on exit
         with app.app_context():
             db.engine.dispose()
+            dispose_registry_engines()
 
     atexit.register(exit_func)
 
@@ -784,6 +788,7 @@ def create_docker_app():
     _setup_database_engine_options(app)
     db.init_app(app)
     init_ca_session(app)
+    init_finalizers(app)
 
     app.jinja_env.filters["versioned"] = versioned_asset
 
@@ -822,6 +827,7 @@ def create_docker_app():
         # Destroy the engine pool and close all open database connections on exit
         with app.app_context():
             db.engine.dispose()
+            dispose_registry_engines()
 
     atexit.register(exit_func)
 
