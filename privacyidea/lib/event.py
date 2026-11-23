@@ -307,8 +307,10 @@ def enable_event(event_id, enable=True):
     return r
 
 
-def set_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
-              ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+def set_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+              action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+              options: dict | None = None, id: int | None = None, active: bool | None = True,
+              position: str | None = "post", abort_on_error: bool | None = None) -> int:
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
@@ -353,8 +355,10 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     return event_id
 
 
-def _stage_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
-                 ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+def _stage_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+                 action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+                 options: dict | None = None, id: int | None = None, active: bool | None = True,
+                 position: str | None = "post", abort_on_error: bool | None = None) -> int:
     """
     Write the event handler like :func:`set_event`, but neither save the config timestamp nor commit, so that several
     event handlers can be written in one transaction.
@@ -489,7 +493,7 @@ def export_event(name=None):
 
 
 @register_import('event')
-def import_event(data, name=None):
+def import_event(data: list[dict], name: str | None = None) -> None:
     """
     Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
     by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
