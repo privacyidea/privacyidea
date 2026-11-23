@@ -70,7 +70,7 @@ def get_required(dictionary: dict, key: str, allow_empty: bool = False) -> Any:
     return ret
 
 
-def _parse_timestamp(value: str, key: str) -> datetime:
+def parse_timestamp(value: str, key: str) -> datetime:
     """
     Parse an ISO 8601 value, reporting a malformed one as a ParameterError naming *key*.
 
@@ -92,7 +92,7 @@ def get_required_timestamp(param: dict, key: str) -> datetime:
     :raises ParameterError: if the key is missing, empty, or not a valid ISO 8601 timestamp
     :return: the parsed value, timezone-aware if the value carried an offset
     """
-    return _parse_timestamp(get_required(param, key), key)
+    return parse_timestamp(get_required(param, key), key)
 
 
 def get_optional_timestamp(param: dict, key: str, default: datetime | None = None) -> datetime | None:
@@ -111,7 +111,7 @@ def get_optional_timestamp(param: dict, key: str, default: datetime | None = Non
     value = get_optional(param, key)
     if value is None or value == "":
         return default
-    return _parse_timestamp(value, key)
+    return parse_timestamp(value, key)
 
 
 def get_required_one_of(param: dict, keys: Iterable[str], allow_empty: bool = False) -> Any:

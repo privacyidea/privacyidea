@@ -60,11 +60,10 @@ from collections import OrderedDict
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import TimeInterval
-from privacyidea.lib.conditional_access.authentication_log import naive_utc
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import _parse_timestamp
-from privacyidea.lib.utils import parse_timedelta, get_module_class
+from privacyidea.lib.params import parse_timestamp
+from privacyidea.lib.utils import naive_utc, parse_timedelta, get_module_class
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +102,7 @@ def _read_interval_bound(value: str, key: str) -> datetime.datetime | None:
     value = _SPACE_BEFORE_OFFSET.sub("", value.strip())
     if not value:
         return None
-    return naive_utc(_parse_timestamp(value, key))
+    return naive_utc(parse_timestamp(value, key))
 
 
 def read_time_intervals(param: dict) -> None:
@@ -115,8 +114,8 @@ def read_time_intervals(param: dict) -> None:
     UTC. An end in whole seconds includes its whole second.
 
     :param param: The filter parameters, changed in place
-    :raises ParameterError: if an interval has more than one ``/``, a leading ``!``, a ``*`` or a bound
-        that is not a valid ISO 8601 timestamp
+    :raises ParameterError: if an interval has more than one ``/``, a leading ``!``, a ``*``, a bound
+        that is not a valid ISO 8601 timestamp or a start after its end
     """
     for key in ("startdate", "date"):
         value = param.get(key)
@@ -132,6 +131,9 @@ def read_time_intervals(param: dict) -> None:
         if start is None and end is None:
             param.pop(key)
             continue
+        if start is not None and end is not None and start > end:
+            raise ParameterError(f"Invalid ISO 8601 time interval for {key}: {value!r}. The start of a time "
+                                 f"interval can not lie after its end.")
         end_exclusive = end is not None and end.microsecond == 0
         if end_exclusive:
             end += datetime.timedelta(seconds=1)
@@ -139,7 +141,8 @@ def read_time_intervals(param: dict) -> None:
 
 
 @log_with(log)
-def search(config, param=None, admin_params: dict | None = None, exact_params: dict[str, str] | None = None):
+def search(config: dict, param: dict | None = None, admin_params: dict | None = None,
+           exact_params: dict[str, str] | None = None) -> dict:
     """
     Returns a list of audit entries, supports pagination
 

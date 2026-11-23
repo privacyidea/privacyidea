@@ -20,6 +20,8 @@
 import datetime
 import re
 import sys
+from typing import TextIO
+
 import click
 import yaml
 from flask import current_app
@@ -53,8 +55,8 @@ audit_cli = AppGroup("audit", help="Manage Audit log")
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--debug', is_flag=True,
               help="Detailed logging output for the filtering process when using the --config option.")
-def rotate_audit(highwatermark, lowwatermark, age, config,
-                 dryrun, chunksize, debug):
+def rotate_audit(highwatermark: int, lowwatermark: int, age: int, config: TextIO | None,
+                 dryrun: bool, chunksize: int | None, debug: bool) -> None:
     """
     Clean the SQL audit log.
 
@@ -165,7 +167,7 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
         cutoff = (utc_now() - delta).replace(tzinfo=datetime.UTC)
         click.echo(f"Deleting entries older than {cutoff!s}")
         # Every entry that is not newer, each measured on its own clock
-        criterion = not_(SQLAudit._newer_than(delta, has_entry_version))
+        criterion = not_(SQLAudit.newer_than(delta, has_entry_version))
         if dryrun:
             r = session.query(LogEntry.id).filter(criterion).count()
             click.echo(f"Would delete {r!s} entries.")

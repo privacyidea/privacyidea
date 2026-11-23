@@ -36,7 +36,6 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            NON_REPRESENTATIVE_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
-from privacyidea.lib.conditional_access.authentication_log import naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
                                                            policy_conditions_are_scopable,
@@ -44,7 +43,7 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
-from privacyidea.lib.utils import canonical_client_ip
+from privacyidea.lib.utils import canonical_client_ip, naive_utc
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
                                 ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
                                 ConditionalAccessStageAction, UserLockState)

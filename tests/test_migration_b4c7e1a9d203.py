@@ -15,6 +15,8 @@ import os
 from datetime import datetime
 
 import pytest
+import sqlalchemy as sa
+from flask import Flask
 
 from tests.migration_test_utils import MigrationTestBase
 
@@ -31,7 +33,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
     REVISION = "b4c7e1a9d203"
     PARENT_REVISION = "56529818c956"
 
-    def _insert_cache_entries(self, engine, first_id: int = 1001) -> None:
+    def _insert_cache_entries(self, engine: sa.engine.Engine, first_id: int = 1001) -> None:
         self._insert_rows(engine, "usercache", [
             {"id": first_id, "username": "cornelius", "used_login": "cornelius", "resolver": "resolver1",
              "user_id": "1000", "timestamp": datetime(2026, 1, 1, 12, 0, 0)},
@@ -39,7 +41,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
              "user_id": "1001", "timestamp": datetime(2026, 1, 2, 12, 0, 0)},
         ])
 
-    def _insert_auth_cache_entry(self, engine, entry_id: int = 2001) -> None:
+    def _insert_auth_cache_entry(self, engine: sa.engine.Engine, entry_id: int = 2001) -> None:
         self._insert_rows(engine, "authcache", [
             {"id": entry_id, "first_auth": datetime(2026, 1, 1, 12, 0, 0),
              "last_auth": datetime(2026, 1, 1, 12, 0, 0), "username": "cornelius", "resolver": "resolver1",
@@ -47,13 +49,13 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
              "authentication": "hash"},
         ])
 
-    def _usercache_count(self, engine) -> int:
+    def _usercache_count(self, engine: sa.engine.Engine) -> int:
         return self._fetch_scalar(engine, "SELECT COUNT(*) FROM usercache")
 
-    def _authcache_count(self, engine) -> int:
+    def _authcache_count(self, engine: sa.engine.Engine) -> int:
         return self._fetch_scalar(engine, "SELECT COUNT(*) FROM authcache")
 
-    def test_upgrade_empties_the_usercache(self, flask_app):
+    def test_upgrade_empties_the_usercache(self, flask_app: Flask):
         """Every cache entry is deleted, whatever its timestamp."""
         engine = self._engine()
         try:
@@ -67,7 +69,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_upgrade_with_an_empty_usercache_succeeds(self, flask_app):
+    def test_upgrade_with_an_empty_usercache_succeeds(self, flask_app: Flask):
         """An already empty cache is no error."""
         engine = self._engine()
         try:
@@ -80,7 +82,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_upgrade_leaves_other_tables_untouched(self, flask_app):
+    def test_upgrade_leaves_other_tables_untouched(self, flask_app: Flask):
         """The authentication cache is a different table and keeps its rows."""
         engine = self._engine()
         try:
@@ -95,7 +97,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_downgrade_does_not_restore_the_usercache(self, flask_app):
+    def test_downgrade_does_not_restore_the_usercache(self, flask_app: Flask):
         """The deleted entries stay deleted and unrelated rows stay in place."""
         engine = self._engine()
         try:
@@ -111,7 +113,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_downgrade_keeps_entries_written_after_the_upgrade(self, flask_app):
+    def test_downgrade_keeps_entries_written_after_the_upgrade(self, flask_app: Flask):
         """downgrade() does nothing, so a cache entry written in between survives it."""
         engine = self._engine()
         try:
@@ -125,7 +127,7 @@ class TestMigrationB4c7e1a9d203(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_round_trip_empties_the_usercache_again_on_the_second_upgrade(self, flask_app):
+    def test_round_trip_empties_the_usercache_again_on_the_second_upgrade(self, flask_app: Flask):
         """upgrade, downgrade, upgrade: entries written after the downgrade are removed by the second upgrade."""
         engine = self._engine()
         try:

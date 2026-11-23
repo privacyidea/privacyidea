@@ -467,7 +467,7 @@ def _setup_database_engine_options(app: Flask):
         sys.stderr.write(f"Database engine options: {engine_options}\n")
 
 
-def _setup_node_configuration(app: Flask):
+def _setup_node_configuration(app: Flask) -> None:
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
         # TODO: this is not multi-process-safe since every process runs its own `create_app()`

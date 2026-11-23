@@ -223,7 +223,7 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     last_update: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
     description: Mapped[str | None] = mapped_column(UnicodeText())
 
-    def __init__(self, object_id, name="", object_type="", description=""):
+    def __init__(self, object_id: int, name: str = "", object_type: str = "", description: str = "") -> None:
         self.name = name
         self.object_type = object_type
         self.object_id = object_id

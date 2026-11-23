@@ -125,7 +125,7 @@ NO_STORE_ENDPOINTS = frozenset({
 # at the application, so it's sufficient to call them only for one blueprint.
 # The decorated functions are called before and after *every* request.
 @token_blueprint.before_app_request
-def log_begin_request():
+def log_begin_request() -> None:
     log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
     g.startdate = utc_now()
 

@@ -59,6 +59,7 @@ from privacyidea.lib.clients import create_client
 from privacyidea.lib.token import get_one_token, remove_token
 from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
                                 Realm, RememberedDevice)
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC
 from privacyidea.models.metric_aggregate import MetricAggregate
 from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
                                                           ConditionalAccessPolicyStage, UserLockState)
@@ -516,13 +517,13 @@ class PIManageAuditTestCase(CliTestCase):
                 self.assertEqual(2, self._entry_count(audit_engine))
 
     def _insert_entries_around_one_day(self) -> dict[str, int]:
-        # Entries marked with entry_version 2 are written in UTC, unmarked ones in local time of the server. Of each
-        # kind one entry is 22 hours old and one 26 hours old, each on its own clock.
+        # Entries marked with AUDIT_ENTRY_VERSION_UTC are written in UTC, unmarked ones in local time of the server.
+        # Of each kind one entry is 22 hours old and one 26 hours old, each on its own clock.
         utc = utc_now()
         local = dt.datetime.now()
         entry_ids = {}
-        for action, date, entry_version in (("marked_younger", utc - dt.timedelta(hours=22), 2),
-                                            ("marked_older", utc - dt.timedelta(hours=26), 2),
+        for action, date, entry_version in (("marked_younger", utc - dt.timedelta(hours=22), AUDIT_ENTRY_VERSION_UTC),
+                                            ("marked_older", utc - dt.timedelta(hours=26), AUDIT_ENTRY_VERSION_UTC),
                                             ("unmarked_younger", local - dt.timedelta(hours=22), None),
                                             ("unmarked_older", local - dt.timedelta(hours=26), None)):
             entry = Audit(action=action, date=date, entry_version=entry_version)

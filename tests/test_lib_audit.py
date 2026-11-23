@@ -15,7 +15,7 @@ import types
 import unittest
 
 from unittest import mock
-from sqlalchemy import event, text, update
+from sqlalchemy import Row, event, text, update
 from sqlalchemy.pool import NullPool
 
 from privacyidea.config import TestingConfig
@@ -25,9 +25,10 @@ from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules import sqlaudit
 from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length, LogEntry
 from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC
 from privacyidea.models.utils import utc_now, utc_isoformat
 from .base import MyTestCase, OverrideConfigTestCase, non_utc_time_zone
-from testfixtures import log_capture
+from testfixtures import LogCapture, log_capture
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
@@ -756,7 +757,7 @@ class AuditTestCase(MyTestCase):
             audit._truncate_data()
             self.assertEqual(500, len(audit.audit_data.get("serial")))
 
-    def _latest_row(self, audit):
+    def _latest_row(self, audit: SQLAudit) -> Row | None:
         """Date, start date, duration and marker of the newest audit row, read without the ORM entity"""
         return audit.session.query(LogEntry.date, LogEntry.startdate, LogEntry.duration,
                                    LogEntry.entry_version).order_by(LogEntry.id.desc()).first()
@@ -808,7 +809,7 @@ class AuditTestCase(MyTestCase):
             now = utc_now()
             row = self._latest_row(self.Audit)
         self.assertIsNotNone(row)
-        self.assertEqual(2, row.entry_version)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, row.entry_version)
         self.assertLess(abs(now - row.date), datetime.timedelta(seconds=10))
 
     def test_18_entries_are_written_in_utc_and_marked(self):
@@ -823,9 +824,9 @@ class AuditTestCase(MyTestCase):
         self.assertLess(abs(now - row.date), limit)
         self.assertLess(abs(now - row.startdate), limit)
         self.assertLess(row.duration, limit)
-        self.assertEqual(2, row.entry_version)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, row.entry_version)
 
-    def _write_entry(self, action, marked=True):
+    def _write_entry(self, action: str, marked: bool = True) -> Row:
         """Write one entry through a fresh audit object, marked in UTC or the old way in local time"""
         audit = getAudit(self.app.config)
         audit.log({"action": action, "success": True})
@@ -839,11 +840,11 @@ class AuditTestCase(MyTestCase):
         return self.Audit.session.query(LogEntry.id, LogEntry.date, LogEntry.startdate,
                                         LogEntry.entry_version).filter(LogEntry.action == action).one()
 
-    def _set_entry_version(self, entry_id, value):
+    def _set_entry_version(self, entry_id: int, value: int | None) -> None:
         self.Audit.session.execute(update(LogEntry).where(LogEntry.id == entry_id).values(entry_version=value))
         self.Audit.session.commit()
 
-    def _sig_check(self, action):
+    def _sig_check(self, action: str) -> str | None:
         audit_log = getAudit(self.app.config).search({"action": action})
         self.assertEqual(1, audit_log.total, action)
         return audit_log.auditdata[0].get("sig_check")
@@ -852,7 +853,7 @@ class AuditTestCase(MyTestCase):
         marked = self._write_entry("marked_entry")
         unmarked = self._write_entry("unmarked_entry", marked=False)
         self._write_entry("untouched_unmarked_entry", marked=False)
-        self.assertEqual(2, marked.entry_version)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, marked.entry_version)
         self.assertIsNone(unmarked.entry_version)
         self.assertEqual("OK", self._sig_check("marked_entry"))
         self.assertEqual("OK", self._sig_check("unmarked_entry"))
@@ -861,7 +862,7 @@ class AuditTestCase(MyTestCase):
         self._set_entry_version(marked.id, None)
         self.assertEqual("FAIL", self._sig_check("marked_entry"))
         # Setting the marker would make a local time entry read as UTC
-        self._set_entry_version(unmarked.id, 2)
+        self._set_entry_version(unmarked.id, AUDIT_ENTRY_VERSION_UTC)
         self.assertEqual("FAIL", self._sig_check("unmarked_entry"))
         # An old entry nobody changed keeps verifying
         self.assertEqual("OK", self._sig_check("untouched_unmarked_entry"))
@@ -891,7 +892,7 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(unmarked.startdate.isoformat(),
                          csv_by_action["unmarked_entry"][columns.index("startdate")])
 
-    def _insert_entries_of_different_age(self):
+    def _insert_entries_of_different_age(self) -> None:
         """
         A marked entry is measured against the UTC clock, an old one against the local clock of
         the server. One young and one old entry of each kind, the young ones are one hour old,
@@ -901,8 +902,8 @@ class AuditTestCase(MyTestCase):
         local = datetime.datetime.now()
         hour = datetime.timedelta(hours=1)
         self.Audit.session.bulk_insert_mappings(LogEntry, [
-            {"action": "young_marked", "date": utc - hour, "entry_version": 2, "signature": ""},
-            {"action": "old_marked", "date": utc - 3 * hour, "entry_version": 2, "signature": ""},
+            {"action": "young_marked", "date": utc - hour, "entry_version": AUDIT_ENTRY_VERSION_UTC, "signature": ""},
+            {"action": "old_marked", "date": utc - 3 * hour, "entry_version": AUDIT_ENTRY_VERSION_UTC, "signature": ""},
             {"action": "young_unmarked", "date": local - hour, "entry_version": None, "signature": ""},
             {"action": "old_unmarked", "date": local - 3 * hour, "entry_version": None, "signature": ""}])
         self.Audit.session.commit()
@@ -926,7 +927,7 @@ class AuditTestCase(MyTestCase):
         from privacyidea.lib.auditmodules.base import TimeInterval
         from privacyidea.lib.error import ParameterError
 
-        def read(value):
+        def read(value: str) -> TimeInterval | str | None:
             param = {"startdate": value, "date": value, "action": "enroll"}
             read_time_intervals(param)
             self.assertEqual("enroll", param["action"])
@@ -955,6 +956,14 @@ class AuditTestCase(MyTestCase):
                     read_time_intervals({key: value})
         with self.assertRaisesRegex(ParameterError, "Invalid ISO 8601 timestamp for date"):
             read_time_intervals({"date": "foo/"})
+
+        # A start after the end is refused, a start equal to the end is allowed
+        for key in ("startdate", "date"):
+            with self.assertRaisesRegex(ParameterError, f"Invalid ISO 8601 time interval for {key}.*start .*after"):
+                read_time_intervals({key: "2026-11-05T11:00:00Z/2026-11-05T10:59:59Z"})
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10), datetime.datetime(2026, 11, 5, 10, 0, 1),
+                                      True),
+                         read("2026-11-05T10:00:00Z/2026-11-05T10:00:00Z"))
 
     def test_24_add_to_log(self):
         self.Audit.log({"info": "first"})
@@ -1099,7 +1108,7 @@ class AuditFileTestCase(OverrideConfigTestCase):
         self.assertEqual(r.total, 0)
 
     @log_capture()
-    def test_30_logger_audit_qualname(self, capture):
+    def test_30_logger_audit_qualname(self, capture: LogCapture):
         # Check that the default qualname is 'privacyidea.lib.auditmodules.loggeraudit'
         # The audit log runs 2 seconds - mocked
         current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)

@@ -3,6 +3,7 @@ This test file tests the lib.clientapplicaton.py
 """
 from unittest import mock
 from datetime import datetime, timedelta
+from collections.abc import Iterator
 from contextlib import contextmanager
 
 from sqlalchemy import event
@@ -106,7 +107,7 @@ class ClientApplicationTestCase(MyTestCase):
                 yield
 
         @contextmanager
-        def _fake_time(t):
+        def _fake_time(t: datetime) -> Iterator[None]:
             """ context manager that fakes the current time that is written to the ``lastseen`` column """
             with mock.patch("privacyidea.lib.clientapplication.utc_now") as mock_now:
                 mock_now.return_value = t

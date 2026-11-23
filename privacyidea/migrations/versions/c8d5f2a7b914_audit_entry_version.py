@@ -31,14 +31,14 @@ def _has_column() -> bool:
     return COLUMN_NAME in {column["name"] for column in inspect(op.get_bind()).get_columns(TABLE_NAME)}
 
 
-def upgrade():
+def upgrade() -> None:
     if _has_column():
         print(f"Ok, column '{COLUMN_NAME}' already exists in table '{TABLE_NAME}'.")
         return
     op.add_column(TABLE_NAME, sa.Column(COLUMN_NAME, sa.Integer(), nullable=True))
 
 
-def downgrade():
+def downgrade() -> None:
     if not _has_column():
         print(f"Ok, column '{COLUMN_NAME}' does not exist in table '{TABLE_NAME}'.")
         return

@@ -73,7 +73,7 @@ class Audit(AuditBase):
         self.qualname = self.config.get('PI_AUDIT_LOGGER_QUALNAME', __name__)
         self.logger = logging.getLogger(self.qualname)
 
-    def finalize_log(self):
+    def finalize_log(self) -> None:
         """
         This method is used to log the data
         e.g. write the data to a file.

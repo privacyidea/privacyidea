@@ -55,6 +55,9 @@ audit_column_length = {"signature": 1100,
                        "container_type": 100}
 
 AUDIT_TABLE_NAME = 'pidea_audit'
+# The format of an audit entry in the column entry_version: NULL for an entry with timestamps in the local time of
+# the server (written before privacyIDEA 3.15), this value for an entry with UTC timestamps (since 3.15)
+AUDIT_ENTRY_VERSION_UTC = 2
 
 
 class Audit(MethodsMixin, db.Model):
@@ -92,5 +95,5 @@ class Audit(MethodsMixin, db.Model):
                                                         default="default")
     thread_id: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
     policies: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("policies")), default="")
-    # 2 for entries written with UTC timestamps, NULL for entries written in local time
+    # AUDIT_ENTRY_VERSION_UTC for entries written with UTC timestamps, NULL for entries written in local time
     entry_version: Mapped[int | None] = mapped_column(Integer, deferred=True)

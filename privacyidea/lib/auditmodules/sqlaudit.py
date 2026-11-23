@@ -49,14 +49,16 @@ import logging
 import re
 import traceback
 from collections import OrderedDict
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text, insert
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy import create_engine
+from sqlalchemy import ColumnElement, Engine, Select, create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import sessionmaker, scoped_session, undefer
+from sqlalchemy.orm import InstrumentedAttribute, sessionmaker, scoped_session, undefer
+from sqlalchemy.sql.compiler import SQLCompiler
 from sqlalchemy.sql.expression import FunctionElement
 
 from privacyidea.config import ConfigKey
@@ -69,9 +71,12 @@ from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.utils import (is_true, convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
-from privacyidea.models.audit import AUDIT_TABLE_NAME
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC, AUDIT_TABLE_NAME
 from privacyidea.models.utils import utc_now, utc_isoformat
 from privacyidea.models import audit_column_length as column_length
+
+if TYPE_CHECKING:
+    from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -154,26 +159,26 @@ class to_isodate(FunctionElement):
 
 @compiles(to_isodate, 'oracle')
 @compiles(to_isodate, 'postgresql')
-def fn_to_isodate_oracle_pg(element, compiler, **kw):
+def fn_to_isodate_oracle_pg(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # YYYY is the calendar year. IYYY would be the year of the ISO week, which is a different one for up to three
     # days around New Year.
     return f"to_char({compiler.process(element.clauses, **kw)}, 'YYYY-MM-DD HH24:MI:SS')"
 
 
 @compiles(to_isodate, 'sqlite')
-def fn_to_isodate_sqlite(element, compiler, **kw):
+def fn_to_isodate_sqlite(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # sqlite does not have a DateTime type, they are already in ISO format
     return f"{compiler.process(element.clauses, **kw)}"
 
 
 @compiles(to_isodate)
-def fn_to_isodate_default(element, compiler, **kw):
+def fn_to_isodate_default(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # %% escapes a literal % past the DBAPI driver's pyformat paramstyle.
     return "date_format({}, '%%Y-%%m-%%d %%H:%%i:%%s')".format(compiler.process(
         element.clauses, **kw))
 
 
-def _now():
+def _now() -> datetime.datetime:
     """
     Returns the current date and time in UTC as a naive datetime.
     This function is required to be able to mock the current time in tests.
@@ -181,7 +186,7 @@ def _now():
     return utc_now()
 
 
-def _utc_to_local(value):
+def _utc_to_local(value: datetime.datetime | None) -> datetime.datetime | None:
     """
     Convert a naive UTC datetime to the naive local time of the server, which is how audit
     entries without the entry_version column are written.
@@ -194,7 +199,7 @@ def _utc_to_local(value):
     return value.replace(tzinfo=datetime.UTC).astimezone().replace(tzinfo=None)
 
 
-def has_entry_version_column(engine) -> bool:
+def has_entry_version_column(engine: Engine) -> bool:
     """
     Whether the audit table has the entry_version column, which marks the entries written in
     UTC. Only a table whose columns are known and lack it counts as not migrated. If the
@@ -394,7 +399,7 @@ class Audit(AuditBase):
         return has_entry_version_column(self.engine)
 
     @staticmethod
-    def _newer_than(delta: datetime.timedelta, has_entry_version: bool = True):
+    def newer_than(delta: datetime.timedelta, has_entry_version: bool = True) -> ColumnElement[bool]:
         """
         Condition for audit entries younger than ``delta``. Marked entries are written in UTC
         and measured on that clock, unmarked entries in local time of the server, as before.
@@ -410,7 +415,8 @@ class Audit(AuditBase):
                    and_(LogEntry.entry_version.is_(None), local_condition))
 
     @staticmethod
-    def _time_interval(column, interval: TimeInterval, has_entry_version: bool = True):
+    def _time_interval(column: InstrumentedAttribute[datetime.datetime | None], interval: TimeInterval,
+                       has_entry_version: bool = True) -> ColumnElement[bool]:
         """
         Condition for audit entries whose ``column`` lies in ``interval``. Marked entries are compared
         in UTC, unmarked entries against the bounds in local time of the server, as they are written.
@@ -419,7 +425,7 @@ class Audit(AuditBase):
         :param interval: The interval with bounds as naive UTC datetimes
         :param has_entry_version: Whether the audit table has the entry_version column
         """
-        def compare(start, end):
+        def compare(start: datetime.datetime | None, end: datetime.datetime | None) -> ColumnElement[bool]:
             conditions = []
             if start is not None:
                 conditions.append(column >= start)
@@ -450,7 +456,7 @@ class Audit(AuditBase):
     @staticmethod
     def _create_filter(param: dict, admin_params: dict | None = None,
                        timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None,
-                       has_entry_version: bool = True):
+                       has_entry_version: bool = True) -> ColumnElement[bool]:
         """
         create a filter condition for the logentry
 
@@ -556,7 +562,7 @@ class Audit(AuditBase):
             conditions.append(getattr(LogEntry, search_key) == search_value)
 
         if timelimit:
-            conditions.append(Audit._newer_than(timelimit, has_entry_version))
+            conditions.append(Audit.newer_than(timelimit, has_entry_version))
         # Combine them with or to a BooleanClauseList
         if conditions:
             filter_condition = and_(*conditions)
@@ -584,7 +590,7 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    def finalize_log(self):
+    def finalize_log(self) -> None:
         """
         This method is used to log the data.
         It should hash the data and do a hash chain and sign the data
@@ -634,7 +640,7 @@ class Audit(AuditBase):
                                 thread_id=self.audit_data.get("thread_id")
                                 )
             if self.has_entry_version:
-                entry_version = 2
+                entry_version = AUDIT_ENTRY_VERSION_UTC
                 le = LogEntry(**entry_values, entry_version=entry_version)
                 self.session.add(le)
                 self.session.commit()
@@ -761,7 +767,7 @@ class Audit(AuditBase):
         return res
 
     @staticmethod
-    def _log_to_string(le, entry_version: int | None = None):
+    def _log_to_string(le: LogEntry, entry_version: int | None = None) -> str:
         """
         This function creates a string from the logentry so
         that this string can be signed.
@@ -793,7 +799,7 @@ class Audit(AuditBase):
             s += f",v={entry_version}"
         return s
 
-    def _select_entries(self):
+    def _select_entries(self) -> Select[tuple[LogEntry]]:
         """
         Select statement for whole audit entries, which loads the marker along with them if the
         audit table has it. Without the column, the marker stays unloaded and must not be read.
@@ -840,8 +846,8 @@ class Audit(AuditBase):
                     'container_type': LogEntry.container_type}
         return sortname.get(key)
 
-    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user=None,
-                      timelimit: datetime.timedelta | None = None):
+    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user: "User | None" = None,
+                      timelimit: datetime.timedelta | None = None) -> Iterator[str]:
         """
         Returns the audit log as csv file.
 
@@ -911,7 +917,8 @@ class Audit(AuditBase):
                 # export and undo the point of reading it in rounds.
                 self.session.expunge(entry)
 
-    def get_count(self, search_dict, timedelta=None, success=None, exact_params: dict[str, str] | None = None):
+    def get_count(self, search_dict: dict, timedelta: datetime.timedelta | None = None, success: bool | None = None,
+                  exact_params: dict[str, str] | None = None) -> int:
         # create filter condition
         filter_condition = self._create_filter(search_dict, exact_params=exact_params)
         conditions = [filter_condition]
@@ -919,7 +926,7 @@ class Audit(AuditBase):
             conditions.append(LogEntry.success == int(is_true(success)))
 
         if timedelta is not None:
-            conditions.append(self._newer_than(timedelta, self.has_entry_version))
+            conditions.append(self.newer_than(timedelta, self.has_entry_version))
 
         if conditions:
             filter_condition = and_(*conditions)
@@ -985,7 +992,7 @@ class Audit(AuditBase):
 
     def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
                      sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None,
-                     exact_params: dict[str, str] | None = None):
+                     exact_params: dict[str, str] | None = None) -> Iterator[LogEntry]:
         """
         This function returns the audit log as an iterator on the result
 

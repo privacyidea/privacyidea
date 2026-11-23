@@ -3,9 +3,10 @@ This test file tests the lib.usercache
 
 The lib.usercache.py only depends on the database model
 """
+from collections.abc import Iterator
 from contextlib import contextmanager
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from sqlalchemy import select
 
 from privacyidea.lib.error import UserError
@@ -289,7 +290,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
         self._delete_realm()
 
-    def _populate_cache(self):
+    def _populate_cache(self) -> None:
         self.assertEqual(UserCache.query.count(), 0)
         # initially populate the cache with three entries
         timestamp = utc_now()
@@ -385,7 +386,8 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         self._delete_sql_realm()
 
     @contextmanager
-    def _patch_utc_now(self, target="privacyidea.lib.usercache.utc_now", delta=timedelta(days=1)):
+    def _patch_utc_now(self, target: str = "privacyidea.lib.usercache.utc_now",
+                       delta: timedelta = timedelta(days=1)) -> Iterator[MagicMock]:
         with patch(target) as mock_utc_now:
             mock_utc_now.side_effect = lambda: utc_now() + delta
             yield mock_utc_now

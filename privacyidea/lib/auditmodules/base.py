@@ -105,7 +105,7 @@ class Audit:  # pragma: no cover
 
     is_readable = False
 
-    def __init__(self, config=None, startdate=None):
+    def __init__(self, config: dict | None = None, startdate: datetime.datetime | None = None) -> None:
         """
         Create a new audit object.
 

@@ -65,13 +65,12 @@ a space before the offset, e.g. ``2026-11-05 14:30:00 +01:00``, is accepted too.
 
 Both bounds are inclusive. If the end is given in whole seconds, the whole
 second is included. If the end is only a date, it means 00:00:00 of that day.
-If a bound has no offset, it is taken as UTC. In a URL, send a ``+`` as
-``%2B``.
+If a bound has no offset, it is taken as UTC.
 
 Leave out a bound for an open end, e.g. ``start/`` or ``/end``. A ``/`` alone
 is no filter. A value without ``/`` is a text filter as before. The API returns
-HTTP 400 if an interval contains ``!`` or ``*``, if it has more than one ``/``
-or if a bound is invalid.
+HTTP 400 if an interval contains ``!`` or ``*``, if it has more than one ``/``,
+if a bound is invalid or if the start lies after the end.
 
 An interval on ``startdate`` selects requests by their start. An interval on
 ``date`` selects requests by their end.
@@ -87,12 +86,18 @@ local day of that entry.
 
 The filter text shows the range as one ``startdate`` value with the offset of
 the browser, e.g.
-``startdate: "2026-11-05 00:00:00 +01:00/2026-11-05 23:59:59 +01:00"``.
+``startdate: "2026-11-05 00:00:00 +01:00/2026-11-05 23:59:59 +01:00"``. If
+you type a bound without an offset in a ``startdate`` or ``date`` interval,
+the WebUI reads it as the local time of the browser. A typed end that is only
+a date includes that whole day.
 
 Entries written by privacyIDEA 3.15 or later store ``date`` and ``startdate``
 in UTC. The API returns them with the offset ``+00:00``. The current WebUI
 shows them in the local time of the browser. Older entries keep the local time
-of the server that wrote them. The API returns them without an offset.
+of the server that wrote them. The API returns them without an offset. The
+column ``entry_version`` of the audit table tells the two kinds apart. It holds
+``2`` for an entry in UTC and is empty (``NULL``) for an older entry in the
+local time of the server.
 
 A time interval compares older entries in the local time of the server. A text
 filter on ``date`` or ``startdate`` compares the stored value. It matches older

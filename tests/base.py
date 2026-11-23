@@ -34,7 +34,7 @@ PWFILE2 = "tests/testdata/passwd"
 
 
 @contextmanager
-def non_utc_time_zone(name: str = "Asia/Shanghai"):
+def non_utc_time_zone(name: str = "Asia/Shanghai") -> Iterator[None]:
     """Run the enclosed code with the process time zone set to ``name``.
 
     ``datetime.now()`` and ``time.localtime()`` then differ from UTC even on a
@@ -53,9 +53,12 @@ def non_utc_time_zone(name: str = "Asia/Shanghai"):
         else:
             os.environ.pop("TZ", None)
         time.tzset()
-        # The shared config stored its load time as naive local time of ``name``, drop it so the next access reloads
+        # The shared config stored its load and check times as naive local time of ``name``, drop them so the next
+        # access compares the database timestamp again and reloads
         if has_app_context():
-            get_shared_config_object().timestamp = None
+            shared_config = get_shared_config_object()
+            shared_config.timestamp = None
+            shared_config.last_check_time = None
             invalidate_config_object()
 
 
@@ -401,7 +404,7 @@ class MyTestCase(unittest.TestCase):
         for key in list(iter(self.app_context.g)):
             self.app_context.g.pop(key)
 
-    def assert_valid_until_is_utc(self, valid_until: str, validity: int, before) -> None:
+    def assert_valid_until_is_utc(self, valid_until: str, validity: int, before: datetime) -> None:
         """
         Assert that a challenge ``valid_until`` string is an ISO-8601 timestamp with the UTC offset ``+00:00``,
         which lies ``validity`` seconds after a moment between ``before`` and now (both from ``utc_now()``).

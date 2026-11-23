@@ -278,7 +278,8 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         return self.check_pin(passw, user=user, options=options)
 
     @log_with(log)
-    def create_challenge(self, transactionid=None, options=None):
+    def create_challenge(self, transactionid: str | None = None,
+                         options: dict | None = None) -> tuple[bool, str, str | None, dict]:
         """
         create a challenge, which is submitted to the user
 

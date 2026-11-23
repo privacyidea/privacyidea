@@ -124,7 +124,7 @@ def _note_write(client_key: tuple, interval: int) -> None:
 
 
 @log_with(log)
-def save_clientapplication(ip: IPAddress | str, clienttype: str):
+def save_clientapplication(ip: IPAddress | str, clienttype: str) -> None:
     """
     Save (or update) the IP and the clienttype to the database table.
 
@@ -179,7 +179,8 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
 
 
 @log_with(log)
-def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
+def get_clientapplication(ip: IPAddress | str | None = None, clienttype: str | None = None,
+                          group_by: str = "clienttype") -> dict:
     """
     Return ClientApplications.
 

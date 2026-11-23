@@ -36,7 +36,7 @@ policy action :ref:`policy_auditlog`; the CSV download by
 look. The :ref:`policy_hide_audit_columns` policy is applied only to the
 search endpoint, not to the CSV download.
 """
-from flask import (Blueprint, request, current_app, stream_with_context)
+from flask import (Blueprint, Response, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
 from ..api.lib.policyhelper import hide_audit_columns_per_entry
 from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age, hide_audit_columns
@@ -58,7 +58,7 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.AUDIT)
 @prepolicy(auditlog_age, request)
 @prepolicy(hide_audit_columns, request)
-def search_audit():
+def search_audit() -> Response:
     """
     Return a paginated page of audit entries. All filter parameters are
     accepted as query parameters; column names from the audit schema can be
@@ -123,7 +123,7 @@ def search_audit():
 @prepolicy(check_base_action, request, PolicyAction.AUDIT_DOWNLOAD)
 @prepolicy(auditlog_age, request)
 @admin_required
-def download_csv(csvfile=None):
+def download_csv(csvfile: str | None = None) -> Response:
     """
     Stream the audit log as a CSV file. The path component is the desired
     download filename (e.g. ``audit.csv``); the actual filter is given by

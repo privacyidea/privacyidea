@@ -18,11 +18,11 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> None:
     # No lib or ORM code is used on purpose, the statement only needs the table name.
     op.execute(sa.text("DELETE FROM usercache"))
 
 
-def downgrade():
+def downgrade() -> None:
     # The deleted entries cannot be restored, and the cache refills itself.
     pass

@@ -39,10 +39,11 @@ from sqlalchemy.sql import ColumnElement
 from privacyidea.models import AuthenticationLog, ConditionalAccessOutcome
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, outcome_of
 from privacyidea.lib.conditional_access.authentication_log import (AuthenticationLogVisibilityScope,
-                                                                   filter_conditions, match_condition, naive_utc,
+                                                                   filter_conditions, match_condition,
                                                                    visibility_condition)
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
+from privacyidea.lib.utils import naive_utc
 
 #: Bins a statistics query splits its window into when the caller names no number.
 DEFAULT_STATISTICS_BINS = 48

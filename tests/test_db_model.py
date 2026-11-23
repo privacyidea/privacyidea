@@ -19,7 +19,6 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Test the models of the privacyIDEA database."""
 import os
-import time
 import warnings
 from datetime import datetime
 from datetime import timedelta
@@ -53,7 +52,7 @@ from privacyidea.models import (Token,
                                 ConditionalAccessPolicyStage, ConditionalAccessStageAction, AuthenticationLog,
                                 AuthenticationLogReason, ConditionalAccessOutcome)
 from privacyidea.models.utils import utc_now
-from .base import MyTestCase, non_utc_time_zone
+from .base import MyTestCase, clock_moved_forward, non_utc_time_zone
 from .compare_helpers import recorded_compare_digest
 
 
@@ -851,12 +850,16 @@ class ResolverRealmTestCase(MyTestCase):
     def test_02_nodename_lastseen_default_is_taken_per_row(self):
         node1 = NodeName(id="3f0d1c52-6a3b-4d1e-9c55-0a1b2c3d4e51", name="Node02a")
         node2 = NodeName(id="3f0d1c52-6a3b-4d1e-9c55-0a1b2c3d4e52", name="Node02b")
+        # The default is the utc_now callable, evaluated on every INSERT, not a value frozen at import time
+        lastseen_default = NodeName.__table__.c.lastseen.default
+        self.assertTrue(lastseen_default.is_callable, lastseen_default.arg)
+        self.assertIs(utc_now, lastseen_default.arg.__wrapped__)
         db.session.add(node1)
         db.session.flush()
-        # MySQL stores whole seconds only, so the pause must be longer than one second
-        time.sleep(1.1)
-        db.session.add(node2)
-        db.session.flush()
+        # MySQL stores whole seconds only, so the second row is written two seconds later on a moved clock
+        with clock_moved_forward(2):
+            db.session.add(node2)
+            db.session.flush()
         self.assertIsNone(node1.lastseen.tzinfo)
         self.assertIsNone(node2.lastseen.tzinfo)
         self.assertNotEqual(node1.lastseen, node2.lastseen)
