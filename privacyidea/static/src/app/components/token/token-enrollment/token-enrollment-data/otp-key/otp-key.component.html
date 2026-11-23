@@ -19,7 +19,9 @@
 <mat-accordion class="otpkey-expansion">
   <mat-expansion-panel>
     <mat-expansion-panel-header>
-      <mat-panel-title i18n="@@token.otpKey">OTP Key</mat-panel-title>
+      <mat-panel-title class="otpkey-title"
+        ><mat-icon aria-hidden="true">key</mat-icon><span i18n="@@token.otpKey">OTP Key</span></mat-panel-title
+      >
     </mat-expansion-panel-header>
     <p class="otpkey-p">Hex: {{ otpKeyHex() }}</p>
     @if (otpKeyBase32()) {

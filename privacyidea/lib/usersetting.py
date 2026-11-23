@@ -66,6 +66,7 @@ KNOWN_SETTING_KEYS = {
     "depth",
     "light_source",
     "corner_radius",
+    "status_colors",
     "starting_page",
     "token_columns",
     "dashboard",
@@ -364,7 +365,7 @@ def find_orphaned_user_settings(orphaned_on_error: bool = False) -> list[UserSet
             orphans.append(row)
             continue
         try:
-            login = resolver.getUsername(row.user_id)
+            login = resolver.lookup_username(row.user_id)
         except Exception:
             if orphaned_on_error:
                 orphans.append(row)

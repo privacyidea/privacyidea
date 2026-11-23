@@ -27,8 +27,7 @@
       cdkTextareaAutosize
       [cdkAutosizeMinRows]="3"
       [cdkAutosizeMaxRows]="6"
-      [value]="description()"
-      (input)="updatePolicyDescription($any($event.target).value)"
+      [formField]="descriptionField"
       i18n-placeholder="@@policy.optionalEnter"
       placeholder="(optional) Enter a description for this policy...">
     </textarea>

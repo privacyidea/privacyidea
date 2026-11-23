@@ -107,6 +107,36 @@ describe("TableUtilsService", () => {
     });
   });
 
+  describe("canToggleActive", () => {
+    const grant = (rights: string[]): void =>
+      authService.jwtData.set({
+        username: "",
+        realm: "",
+        nonce: "",
+        role: "",
+        authtype: "",
+        exp: 0,
+        rights
+      } as JwtData);
+
+    it("needs the disable right for an active token and the enable right for an inactive one", () => {
+      grant(["disable"]);
+      expect(service.canToggleActive({ active: true })).toBe(true);
+      expect(service.canToggleActive({ active: false })).toBe(false);
+
+      grant(["enable"]);
+      expect(service.canToggleActive({ active: true })).toBe(false);
+      expect(service.canToggleActive({ active: false })).toBe(true);
+    });
+
+    it("refuses revoked and locked tokens and rows without an active state", () => {
+      grant(["enable", "disable"]);
+      expect(service.canToggleActive({ active: true, revoked: true })).toBe(false);
+      expect(service.canToggleActive({ active: true, locked: true })).toBe(false);
+      expect(service.canToggleActive({ active: "" })).toBe(false);
+    });
+  });
+
   describe("getClassForColumn", () => {
     it("returns highlight-disabled when locked", () => {
       expect(service.getClassForColumn("any", { locked: true })).toBe("highlight-disabled");
@@ -129,6 +159,12 @@ describe("TableUtilsService", () => {
       authService.jwtData.set(jwtData as JwtData);
       expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true-clickable");
       expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false-clickable");
+    });
+
+    it("marks the active state clickable only in the direction the rights allow", () => {
+      authService.jwtData.set({ ...authService.jwtData(), rights: ["disable"] } as JwtData);
+      expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true-clickable");
+      expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false");
     });
 
     it("returns the correct class for failcount column", () => {
@@ -271,19 +307,6 @@ describe("TableUtilsService", () => {
 
   describe("column classes", () => {
     it.each([
-      // TODO should be true once these links are reachable
-      ["username", false],
-      ["realms", false],
-      ["unknown", false]
-    ])('isLink("%s") → %s', (key, expected) => {
-      expect(service.isLink(key)).toBe(expected);
-    });
-
-    it('isLink("container_serial") → true', () => {
-      expect(service.isLink("container_serial")).toBe(true);
-    });
-
-    it.each([
       ["description", "details-scrollable-container"],
       ["maxfail", "details-value"],
       ["count_window", "details-value"],
@@ -308,11 +331,14 @@ describe("TableUtilsService", () => {
       expect(service.getChildClassForColumnKey("active")).toBe("");
     });
 
+    it('getTdClassForKey("description") has no fixed row height', () => {
+      expect(service.getTdClassForKey("description")).toEqual(["details-value-cell-width"]);
+    });
+
     it.each([
-      ["description", "height-127"],
-      ["realms", "height-78"],
-      ["tokengroup", "height-78"],
-      ["id", "height-53"]
+      ["realms", "details-row-height-tall"],
+      ["tokengroup", "details-row-height-tall"],
+      ["id", "details-row-height"]
     ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
       expect(service.getTdClassForKey(key)).toContain(expectedPart);
     });

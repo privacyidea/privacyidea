@@ -30,7 +30,9 @@ The user store stays the single source of truth. This is a read-through cache
 with an authoritative origin: a miss is always answered by asking the resolver,
 nothing is ever written here that does not come from a resolver, and dropping
 the whole keyspace at any moment costs nothing but a few extra lookups. That is
-what makes it safe to be aggressive about invalidation - see below.
+what makes it safe to be aggressive about invalidation - see below. Only
+``read_cached_usernames`` leaves a miss to its caller, which asks the resolver
+itself.
 
 Configuration (pi.cfg or environment)::
 
@@ -152,13 +154,18 @@ def _segment(value) -> str:
     return quote(f"{value}", safe="")
 
 
+def _login_key(resolver_name: str, user_id: str) -> str:
+    """Return the name of the key that holds the login name of ``user_id`` in the given resolver."""
+    return _LOGIN_KEY.format(_segment(resolver_name), _segment(user_id))
+
+
 def _keys_of_user(resolver_name: str, login: str = None, user_id: str = None) -> list[str]:
     """Return the key names that hold what is cached about one user."""
     keys = []
     if login:
         keys.append(_USER_ID_KEY.format(_segment(resolver_name), _segment(login)))
     if user_id not in (None, ""):
-        keys.append(_LOGIN_KEY.format(_segment(resolver_name), _segment(user_id)))
+        keys.append(_login_key(resolver_name, user_id))
         keys.append(_USER_INFO_KEY.format(_segment(resolver_name), _segment(user_id)))
     return keys
 
@@ -204,6 +211,46 @@ def _read(client, resolver_name: str, key: str) -> str | None:
         _unlink(client, resolver_name, [key])
         return None
     return value
+
+
+def _read_many(client, resolver_name: str, keys: list[str]) -> dict[str, str]:
+    """
+    Return the decrypted values stored under the given keys, by key, with one round trip.
+
+    A key the cache has nothing to offer for is absent from the result, for the same reasons
+    :py:func:`_read` returns None, and is handled the same way: the name of an entry that is gone
+    leaves the resolver's index, and a value that can not be decrypted is dropped. Both happen for
+    the whole batch at once, since one command per key is what this function exists to avoid.
+    """
+    try:
+        raw_values = client.mget(keys)
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+        return {}
+    values = {}
+    expired_keys = []
+    undecryptable_keys = []
+    for key, raw in zip(keys, raw_values):
+        if raw is None:
+            expired_keys.append(key)
+            continue
+        try:
+            value = decryptPassword(raw)
+        except Exception as error:
+            log.warning(f"Could not decrypt a user cache entry, ignoring it: {error}")
+            continue
+        if value == FAILED_TO_DECRYPT_PASSWORD:
+            log.warning(f"Could not decrypt a user cache entry, dropping it: {key}")
+            undecryptable_keys.append(key)
+            continue
+        values[key] = value
+    if expired_keys:
+        try:
+            client.srem(_INDEX_KEY.format(_segment(resolver_name)), *expired_keys)
+        except redis_lib.exceptions.RedisError as error:
+            _disable_redis(error)
+    _unlink(client, resolver_name, undecryptable_keys)
+    return values
 
 
 def _write(client, resolver_name: str, key: str, value: str) -> None:
@@ -301,7 +348,7 @@ def cached_username(resolver, resolver_name: str, user_id: str) -> str:
     if client is None or user_id in (None, ""):
         return resolver.getUsername(user_id)
 
-    key = _LOGIN_KEY.format(_segment(resolver_name), _segment(user_id))
+    key = _login_key(resolver_name, user_id)
     cached = _read(client, resolver_name, key)
     if cached is not None:
         log.debug(f"Read the login name of {user_id!r} in {resolver_name!r} from the cache.")
@@ -311,6 +358,57 @@ def cached_username(resolver, resolver_name: str, user_id: str) -> str:
     if login:
         _write(client, resolver_name, key, login)
     return login
+
+
+def read_cached_usernames(resolver_name: str, user_ids: list[str]) -> dict[str, str]:
+    """
+    Return the login names of the given users of one resolver that the cache holds, with one round
+    trip and without asking the resolver for the ones it does not hold.
+
+    :param resolver_name: The name of the resolver
+    :param user_ids: The IDs of the users in the resolver. Empty user IDs are skipped.
+    :return: The login name by user ID, only for the users the cache holds
+    """
+    client = _cache_client()
+    user_id_by_key = {_login_key(resolver_name, user_id): user_id
+                      for user_id in user_ids if user_id not in (None, "")}
+    if client is None or not user_id_by_key:
+        return {}
+    logins = _read_many(client, resolver_name, list(user_id_by_key))
+    return {user_id_by_key[key]: login for key, login in logins.items()}
+
+
+def write_cached_usernames(resolver_name: str, login_by_user_id: dict[str, str]) -> None:
+    """
+    Store the login names of several users of one resolver with one round trip, like
+    :py:func:`cached_username` stores the login name of a single user after asking the resolver.
+    Nothing here may raise, see :py:func:`_write`.
+
+    :param resolver_name: The name of the resolver
+    :param login_by_user_id: The login name by user ID. Empty login names and user IDs are not stored.
+    """
+    client = _cache_client()
+    entries = {_login_key(resolver_name, user_id): login
+               for user_id, login in login_by_user_id.items() if login and user_id not in (None, "")}
+    if client is None or not entries:
+        return
+    ttl = _ttl_seconds()
+    index_key = _INDEX_KEY.format(_segment(resolver_name))
+    try:
+        ciphertexts = {key: encryptPassword(login) for key, login in entries.items()}
+    except Exception as error:
+        log.warning(f"Could not encrypt the user cache entries, they were not cached: {error}")
+        return
+    try:
+        pipe = client.pipeline()
+        for key, ciphertext in ciphertexts.items():
+            pipe.set(key, ciphertext, ex=ttl)
+        pipe.sadd(index_key, *ciphertexts)
+        pipe.expire(index_key, ttl, nx=True)
+        pipe.expire(index_key, ttl, gt=True)
+        pipe.execute()
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
 
 
 def cached_user_info(resolver, resolver_name: str, user_id: str, attributes: list[str] = None) -> dict:

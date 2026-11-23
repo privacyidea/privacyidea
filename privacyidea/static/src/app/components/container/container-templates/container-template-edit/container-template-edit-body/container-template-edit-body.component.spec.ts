@@ -81,6 +81,27 @@ describe("ContainerTemplateEditBodyComponent", () => {
     expect(component.template().template_options.tokens[0].type).toBe("totp");
   });
 
+  it("onDeleteToken keeps the unsaved checkboxes of the remaining rows", () => {
+    component["tokenRows"]()[1].changePinOnFirstUse.set(true);
+
+    component["onDeleteToken"](0);
+    fixture.detectChanges();
+
+    const rows = component["tokenRows"]();
+    expect(rows.length).toBe(1);
+    expect(rows[0].tokenEnrollmentPayload().type).toBe("totp");
+    expect(rows[0].changePinOnFirstUse()).toBe(true);
+    expect(component.hasRowChanges()).toBe(true);
+  });
+
+  it("hasRowChanges is true while a row has an unsaved checkbox change", () => {
+    expect(component.hasRowChanges()).toBe(false);
+
+    component["tokenRows"]()[0].userAssign.set(true);
+
+    expect(component.hasRowChanges()).toBe(true);
+  });
+
   it("collectTokens aggregates every row's getCurrentPayload result", () => {
     const fakeRows = [
       { getCurrentPayload: () => ({ type: "hotp", user: false }) },

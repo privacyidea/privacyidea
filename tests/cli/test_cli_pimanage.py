@@ -16,10 +16,12 @@
 # SPDX-FileCopyrightText: 2024 Paul Lettich <paul.lettich@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import base64
 import contextlib
 import copy
 import csv
 import datetime as dt
+import errno
 import io
 import json
 import os
@@ -45,14 +47,17 @@ from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
-from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
+from privacyidea.lib.policy import SCOPE, delete_policy, get_policies, set_policy
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.lib.clients import create_client
+from privacyidea.lib.token import get_one_token, remove_token
 from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
                                 Realm, RememberedDevice)
 from privacyidea.models.metric_aggregate import MetricAggregate
@@ -97,6 +102,40 @@ class PIManageAdminTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("List all administrators.",
                       result.output, result)
+
+    def test_02_delete_unknown_admin_fails_cleanly(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "delete", "unknown_cli_admin"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("unknown_cli_admin", result.output)
+
+    def test_03_add_admin_with_empty_password_is_refused(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "add", "cli_nopw_admin", "--password", ""])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("password", result.output.lower())
+        self.assertIsNone(get_db_admin("cli_nopw_admin"))
+
+    def test_04_change_admin_with_empty_password_keeps_the_password(self):
+        create_db_admin("cli_change_admin", "old@example.com", "secret")
+        password_hash = get_db_admin("cli_change_admin").password
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "change", "cli_change_admin", "-e", "new@example.com",
+                                           "--password", ""])
+        self.assertEqual(0, result.exit_code, result.output)
+        admin = get_db_admin("cli_change_admin")
+        self.assertEqual("new@example.com", admin.email)
+        self.assertEqual(password_hash, admin.password)
+        delete_db_admin("cli_change_admin")
+
+    def test_05_change_unknown_admin_with_empty_password_is_refused(self):
+        # change creates an unknown administrator, but not one without a password
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "change", "cli_new_nopw_admin", "--password", ""])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("password", result.output.lower())
+        self.assertIsNone(get_db_admin("cli_new_nopw_admin"))
 
 
 class PIManageAuditTestCase(CliTestCase):
@@ -408,6 +447,40 @@ class PIManageAuditTestCase(CliTestCase):
 
         self.assertEqual(2, res.exit_code, res.output)
         self.assertIn("Could not parse timelimit (five days)", res.output)
+
+    def test_18_dump_refuses_an_audit_module_that_can_not_be_read(self):
+        # The logger audit module only writes, it has no entries to dump.
+        import unittest.mock as mock
+
+        with mock.patch.dict(self.app.config, {"PI_AUDIT_MODULE": "privacyidea.lib.auditmodules.loggeraudit"}):
+            res = self.app.test_cli_runner().invoke(pi_manage, ["audit", "dump"])
+
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIsInstance(res.exception, SystemExit, res.exception)
+        self.assertIn("privacyidea.lib.auditmodules.loggeraudit can not be dumped", res.output)
+
+    def test_19_rotate_uses_the_engine_options_of_the_audit_module(self):
+        # Like the SQL audit module, rotate takes the engine options from PI_AUDIT_SQL_OPTIONS and falls back to
+        # SQLALCHEMY_ENGINE_OPTIONS. pool_pre_ping is understood by every database the tests run against.
+        import unittest.mock as mock
+
+        for config_key in ["PI_AUDIT_SQL_OPTIONS", "SQLALCHEMY_ENGINE_OPTIONS"]:
+            with self.subTest(config_key=config_key), \
+                    mock.patch.dict(self.app.config, {config_key: {"pool_pre_ping": True}}), \
+                    mock.patch("privacyidea.cli.pimanage.audit.create_engine",
+                               wraps=sa.create_engine) as create_engine:
+                if config_key == "SQLALCHEMY_ENGINE_OPTIONS":
+                    self.app.config.pop("PI_AUDIT_SQL_OPTIONS", None)
+                res = self._rotate("--age", "5")
+
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertIs(True, create_engine.call_args.kwargs.get("pool_pre_ping"))
+
+    def test_20_rotate_rejects_a_chunksize_below_one(self):
+        for chunksize in ["0", "-1"]:
+            res = self._rotate("--age", "5", "--chunksize", chunksize)
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
 
 
 class PIManageBackupTestCase(CliTestCase):
@@ -1168,6 +1241,65 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertFalse(dump_file.exists(), "the dump was extracted despite the refusal")
             self.assertFalse((tmp / "outside" / "data.sqlite").exists())
 
+    def test_16g_archive_with_a_special_file_is_refused_before_extracting(self):
+        """
+        A backup holds regular files, directories and links. An archive that also contains e.g. a FIFO is refused
+        before any of its files is extracted.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            restore_dir = tmp / "restore"
+            config_content = f"SQLALCHEMY_DATABASE_URI = {f'sqlite:///{tmp}/data.sqlite'!r}\n".encode()
+            dump_content = b"-- sql dump placeholder\n"
+            archive_file = tmp / "backup.tgz"
+            with tarfile.open(archive_file, "w:gz") as archive:
+                for name, content in [("pi.cfg", config_content), ("dbdump-20240101-1200.sqlite", dump_content)]:
+                    member = tarfile.TarInfo(str(restore_dir / name).lstrip("/"))
+                    member.size = len(content)
+                    archive.addfile(member, io.BytesIO(content))
+                fifo = tarfile.TarInfo(str(restore_dir / "fifo").lstrip("/"))
+                fifo.type = tarfile.FIFOTYPE
+                archive.addfile(fifo)
+
+            runner = self.app.test_cli_runner()
+            result = runner.invoke(pi_manage, ["backup", "restore", str(archive_file)])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("nothing was restored", result.output, result.output)
+            self.assertIn("fifo: not a regular file, directory or link", result.output, result.output)
+            self.assertFalse(restore_dir.exists(), "files were extracted despite the refusal")
+
+    def test_16h_extraction_keeps_links_to_absolute_paths_and_permissions(self):
+        """
+        A configuration can link to a file outside of it by its absolute path, e.g. the certificates of a FreeRADIUS
+        configuration. Such a link is restored, and so are the permissions of the files, e.g. of the encryption key.
+        """
+        from privacyidea.cli.pimanage.backup import _extract_backup, _refused_member
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            restore_dir = tmp / "restore"
+            key_content = b"0123456789abcdef"
+            archive_file = tmp / "backup.tgz"
+            with tarfile.open(archive_file, "w:gz") as archive:
+                link = tarfile.TarInfo(str(restore_dir / "ca.pem").lstrip("/"))
+                link.type = tarfile.SYMTYPE
+                link.linkname = "/etc/ssl/certs/ca-certificates.crt"
+                archive.addfile(link)
+                key = tarfile.TarInfo(str(restore_dir / "enckey").lstrip("/"))
+                key.size = len(key_content)
+                key.mode = 0o400
+                archive.addfile(key, io.BytesIO(key_content))
+
+            with tarfile.open(archive_file, "r:gz") as archive:
+                self.assertEqual([None, None], [_refused_member(member) for member in archive])
+                _extract_backup(archive)
+
+            self.assertTrue((restore_dir / "ca.pem").is_symlink())
+            self.assertEqual("/etc/ssl/certs/ca-certificates.crt", os.readlink(restore_dir / "ca.pem"))
+            self.assertEqual(key_content, (restore_dir / "enckey").read_bytes())
+            self.assertEqual(0o400, (restore_dir / "enckey").stat().st_mode & 0o777)
+
     def test_16f_archived_config_that_is_no_python_is_refused(self):
         """
         A pi.cfg in the archive that cannot be parsed is reported together with
@@ -1275,6 +1407,256 @@ class PIManageBackupTestCase(CliTestCase):
             # A successful restore consumes the extracted dump.
             self.assertFalse(sqlfile.exists())
 
+    def _run_mysql_backup_create(self, backup_dir: pathlib.Path, config_dir: pathlib.Path,
+                                 enc_file: pathlib.Path, *args: str) -> Result:
+        """Run ``backup create`` against a MySQL URI with a mocked mysqldump."""
+
+        def fake_dump(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+            pathlib.Path(cmd[cmd.index("-r") + 1]).write_text("-- dump\n")
+            result = mock.MagicMock()
+            result.returncode = 0
+            return result
+
+        runner = self.app.test_cli_runner()
+        with mock.patch.dict(self.app.config, {
+                "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
+                "PI_ENCFILE": str(enc_file)}):
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run", side_effect=fake_dump):
+                return runner.invoke(pi_manage, ["backup", "create", "-d", str(backup_dir),
+                                                 "-c", str(config_dir), *args])
+
+    def test_18_backup_create_twice_in_the_same_minute(self):
+        """
+        The archive name has a resolution of one minute. A second backup within
+        that minute must fail with a clear message instead of a traceback, keep
+        the first archive and leave no unencrypted database dump behind.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            with mock.patch("privacyidea.cli.pimanage.backup.datetime") as fake_datetime:
+                fake_datetime.now.return_value = dt.datetime(2024, 1, 1, 12, 0)
+                first = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                self.assertEqual(0, first.exit_code, first.output)
+                archive = backup_dir / "privacyidea-backup-20240101-1200.tgz"
+                archive_content = archive.read_bytes()
+
+                second = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertEqual(2, second.exit_code, second.output)
+            self.assertIn("already exists", second.output, second.output)
+            self.assertEqual(archive_content, archive.read_bytes())
+            self.assertEqual([], list(backup_dir.glob("dbdump-*")))
+
+    def test_18c_concurrent_backup_in_the_same_minute_keeps_the_other_dump(self):
+        """
+        A second backup that starts while the first one of the same minute still
+        writes its archive stops before it writes a dump, so it can not destroy
+        the dump of the first one.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            backup_dir.mkdir()
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            # The first backup has created its archive and its dump, but has not finished yet
+            (backup_dir / "privacyidea-backup-20240101-1200.tgz").write_bytes(b"in progress")
+            other_dump = backup_dir / "dbdump-20240101-1200.sql"
+            other_dump.write_text("-- dump of the first backup\n")
+            exists = pathlib.Path.exists
+
+            def archive_not_there_yet(path):
+                return False if path.suffix == ".tgz" else exists(path)
+
+            with mock.patch("privacyidea.cli.pimanage.backup.datetime") as fake_datetime, \
+                    mock.patch.object(pathlib.Path, "exists", archive_not_there_yet):
+                fake_datetime.now.return_value = dt.datetime(2024, 1, 1, 12, 0)
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("already exists", result.output, result.output)
+            self.assertEqual("-- dump of the first backup\n", other_dump.read_text())
+
+    def test_18e_archive_in_the_config_directory_does_not_contain_itself(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            (config_dir / "pi.cfg").write_text("# config\n")
+            backup_dir = config_dir / "backup"
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+            self.assertEqual(0, result.exit_code, result.output)
+            archive = next(backup_dir.glob("*.tgz"))
+            with tarfile.open(archive) as tf:
+                names = tf.getnames()
+            self.assertFalse([name for name in names if name.endswith(".tgz")], names)
+            self.assertTrue([name for name in names if name.endswith("pi.cfg")], names)
+
+    def test_18f_archive_in_the_config_directory_leaves_out_earlier_backups(self):
+        # The archive contains the dump once and no earlier archive or dump from the backup directory,
+        # also if the backup directory is the config directory itself
+        for backup_subdirectory in ["backup", ""]:
+            with self.subTest(backup_subdirectory=backup_subdirectory), tempfile.TemporaryDirectory() as tmp_dir:
+                tmp = pathlib.Path(tmp_dir)
+                config_dir = tmp / "config"
+                config_dir.mkdir()
+                (config_dir / "pi.cfg").write_text("# config\n")
+                (config_dir / "notes-backup.tgz").write_text("not written by backup create\n")
+                backup_dir = config_dir / backup_subdirectory
+                backup_dir.mkdir(exist_ok=True)
+                (backup_dir / "privacyidea-backup-20200101-0000.tgz").write_bytes(b"earlier archive")
+                (backup_dir / "dbdump-20200101-0000.sql").write_text("-- earlier dump\n")
+                enc_file = tmp / "enckey"
+                enc_file.write_bytes(b"x" * 96)
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                self.assertEqual(0, result.exit_code, result.output)
+                archive = next(path for path in backup_dir.glob("privacyidea-backup-*.tgz")
+                               if "20200101" not in path.name)
+                with tarfile.open(archive) as tf:
+                    file_names = [pathlib.PurePosixPath(name).name for name in tf.getnames()]
+                self.assertEqual(1, len([name for name in file_names if name.startswith("dbdump-")]), file_names)
+                self.assertNotIn("dbdump-20200101-0000.sql", file_names)
+                self.assertNotIn("privacyidea-backup-20200101-0000.tgz", file_names)
+                self.assertIn("pi.cfg", file_names)
+                self.assertIn("notes-backup.tgz", file_names)
+
+    def test_18d_dump_is_only_readable_by_its_owner(self):
+        # The dump holds the token seeds unencrypted, also inside the archive
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            old_umask = os.umask(0o022)
+            try:
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                # The umask of the process is restored afterwards
+                self.assertEqual(0o022, os.umask(0o022))
+            finally:
+                os.umask(old_umask)
+            self.assertEqual(0, result.exit_code, result.output)
+            archive = next(backup_dir.glob("*.tgz"))
+            with tarfile.open(archive) as tf:
+                dump_member = next(m for m in tf.getmembers() if "dbdump-" in m.name)
+            self.assertEqual(0o600, dump_member.mode & 0o777)
+
+    def test_18b_failed_backup_leaves_no_archive(self):
+        """
+        The archive holds pi.cfg and the database dump. It is only readable by
+        its owner while it is written, and a partial archive is removed if
+        writing it fails.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            archive_modes = []
+            add = tarfile.TarFile.add
+
+            def failing_add(tf, name, *args, **kwargs):
+                archive_modes.extend(p.stat().st_mode & 0o777 for p in backup_dir.glob("*.tgz"))
+                if pathlib.Path(name) == config_dir:
+                    raise OSError("No space left on device")
+                return add(tf, name, *args, **kwargs)
+
+            with mock.patch.object(tarfile.TarFile, "add", failing_add):
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertNotEqual(0, result.exit_code, result.output)
+            self.assertTrue(archive_modes)
+            self.assertEqual({0o600}, set(archive_modes))
+            self.assertEqual([], list(backup_dir.iterdir()))
+
+    def test_19_enckey_outside_the_config_directory_is_reported(self):
+        """
+        With --enckey, the key is only part of the archive if it lies in the
+        config directory. Otherwise the operator must be told it is missing.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            outside_key = tmp / "enckey"
+            outside_key.write_bytes(b"x" * 96)
+            inside_key = config_dir / "enckey"
+            inside_key.write_bytes(b"x" * 96)
+
+            result = self._run_mysql_backup_create(tmp / "backup1", config_dir, outside_key, "-e")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("Including encryption key in backup", result.output, result.output)
+            self.assertIn(f"{outside_key} is not in the config directory", result.output, result.output)
+
+            result = self._run_mysql_backup_create(tmp / "backup2", config_dir, inside_key, "-e")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("Including encryption key in backup", result.output, result.output)
+
+    def test_20_keep_db_uri_without_live_config_warns(self):
+        """
+        --keep-db-uri without a config file at the restore location falls back
+        to the URI of the backup, which the operator must be told about.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            live_pi_cfg = pathlib.Path(tmp_dir) / "pi.cfg"
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
+                    result = runner.invoke(pi_manage, ["backup", "restore", "--keep-db-uri", "fake.tgz"])
+
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn(f"--keep-db-uri: no live config found at {live_pi_cfg}", result.output, result.output)
+            self.assertIn("Using database URI from backup", result.output, result.output)
+
+    def test_21_restore_extraction_failure_is_reported(self):
+        """
+        A file that cannot be written during extraction (e.g. a read-only key
+        file when not running as root) aborts the restore with a clear message
+        instead of a traceback, before the database is touched.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            live_pi_cfg = pathlib.Path(tmp_dir) / "pi.cfg"
+            fake_open = self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")
+
+            # The dump is extracted before the extraction fails
+            dump = pathlib.Path(tmp_dir) / "dbdump-20240101-1200.sqlite"
+
+            def extract_the_dump_and_fail(*args: Any, **kwargs: Any) -> None:
+                dump.write_text("seeds")
+                raise PermissionError(13, "Permission denied", "/etc/privacyidea/enckey")
+
+            @contextlib.contextmanager
+            def failing_extract(*args: Any, **kwargs: Any) -> Iterator[mock.MagicMock]:
+                with fake_open(*args, **kwargs) as tf:
+                    tf.extractall = mock.MagicMock(side_effect=extract_the_dump_and_fail)
+                    yield tf
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open", side_effect=failing_extract):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile") as copyfile:
+                    result = runner.invoke(pi_manage, ["backup", "restore", "fake.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("Extracting the backup file failed", result.output, result.output)
+            self.assertIn("/etc/privacyidea/enckey", result.output, result.output)
+            copyfile.assert_not_called()
+            # The unencrypted dump is not left behind
+            self.assertFalse(dump.exists())
+
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
@@ -1303,6 +1685,11 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("Realm 'realm1' successfully deleted.", result.output, result)
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
+        self.assertEqual(0, result.exit_code, result.output)
+        # A realm that does not exist is reported with a non-zero exit code, so that a script notices it
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
+        self.assertIn("Could not delete realm 'realm2'", result.output, result)
+        self.assertEqual(1, result.exit_code, result.output)
         delete_resolver("resolver1")
 
     def test_03_pimanage_realm_delete_custom_attributes(self):
@@ -1315,10 +1702,11 @@ class PIManageRealmTestCase(CliTestCase):
         runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
         User("cornelius", "realm1").set_attribute("department", "sales")
 
-        # Declining the confirmation leaves the realm in place.
+        # Declining the confirmation leaves the realm in place and is reported with a non-zero exit code.
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"], input="n\n")
         self.assertIn("custom user attributes", result.output, result.output)
         self.assertIn("department", result.output, result.output)
+        self.assertEqual(1, result.exit_code, result.output)
         self.assertEqual(1, CustomUserAttribute.query.filter_by(Key="department").count())
 
         # The flag deletes the realm and its custom attributes together.
@@ -1327,6 +1715,54 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("Realm 'realm1' successfully deleted.", result.output, result.output)
         self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="department").count())
         delete_resolver("resolver1")
+
+    def test_04_pimanage_realm_delete_ca_policy_reference(self):
+        from privacyidea.lib.conditional_access.policy import delete_conditional_access_policy
+        from privacyidea.lib.realm import get_realms
+        from privacyidea.lib.user import User
+        save_resolver({"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("carealm", [{"name": "resolver1"}])
+        policy_id = create_conditional_access_policy(
+            name="cli_ca_realm_pol", time_window_seconds=3600, counter_types_to_track=["MFA_FAIL"],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600}}]}],
+            target="user", priority=4711,
+            conditions=[{"condition_type": "USER_REALM", "operator": "IN", "value": ["carealm"]}])
+        runner = self.app.test_cli_runner()
+        try:
+            # Declining the confirmation keeps the realm and exits non-zero without a traceback
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm"], input="n\n")
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIsInstance(result.exception, SystemExit, result.exception)
+            self.assertIn("cli_ca_realm_pol", result.output, result.output)
+            self.assertIn("carealm", get_realms())
+
+            # Both confirmations (custom attributes, then conditional-access policies) in one go
+            User("cornelius", "carealm").set_attribute("department", "sales")
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm"], input="y\ny\n")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("Realm 'carealm' successfully deleted.", result.output, result.output)
+            self.assertNotIn("carealm", get_realms())
+
+            # The flags delete the realm without asking
+            set_realm("carealm", [{"name": "resolver1"}])
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm",
+                                               "--ignore-conditional-access-policies"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("carealm", get_realms())
+        finally:
+            delete_conditional_access_policy(policy_id)
+            if "carealm" in get_realms():
+                delete_realm("carealm", delete_custom_attributes=True, confirm_ca_policies=True)
+            delete_resolver("resolver1")
+
+    def test_05_pimanage_realm_unknown_is_reported(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "nosuchrealm"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("Could not", result.output, result.output)
+        result = runner.invoke(pi_manage, ["config", "realm", "set_default", "nosuchrealm"])
+        self.assertIn("Could not", result.output, result.output)
 
 
 class PIManageBaseTestCase(CliTestCase):
@@ -1376,6 +1812,69 @@ class PIManageTokenTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["token"])
         self.assertIn("Commands to manage token in privacyIDEA", result.output, result)
         self.assertIn("Import tokens from a file", result.output, result)
+
+    def test_02_pimanage_token_import_into_realms(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        set_realm("realm2", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath",
+                                           "-t", "realm1", "-t", "realm2"])
+        self.assertEqual(0, result.exit_code, result.output)
+        for serial in ["token01", "token02", "token03"]:
+            self.assertEqual(["realm1", "realm2"], sorted(get_one_token(serial=serial).get_realms()))
+            remove_token(serial)
+        delete_realm("realm1")
+        delete_realm("realm2")
+        delete_resolver("resolver1")
+
+    def test_03_pimanage_token_import_into_unknown_realm_fails(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath",
+                                           "-t", "realm1", "-t", "unknown_realm"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("unknown_realm", result.output)
+        # Nothing was imported
+        for serial in ["token01", "token02", "token03"]:
+            self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
+        delete_realm("realm1")
+        delete_resolver("resolver1")
+
+    def test_04_pimanage_token_import_unknown_token_type_fails(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as import_file:
+            import_file.write("token01, 3132333435363738393031323334353637383930, hotp, 6\n"
+                              "token02, 3132333435363738393031323334353637383930, unknowntype, 6\n")
+        try:
+            runner = self.app.test_cli_runner()
+            result = runner.invoke(pi_manage, ["token", "import", import_file.name])
+        finally:
+            os.unlink(import_file.name)
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("Unknown token type 'unknowntype' of token token02.", result.output)
+        self.assertRaises(ResourceNotFoundError, get_one_token, serial="token01")
+
+    def test_05_pimanage_token_import_into_realm_given_in_upper_case(self):
+        # Realm names are case-insensitive, the tokens get the realm also if the name is given in another case
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath", "-t", "Realm1"])
+        self.assertEqual(0, result.exit_code, result.output)
+        for serial in ["token01", "token02", "token03"]:
+            self.assertEqual(["realm1"], get_one_token(serial=serial).get_realms())
+            remove_token(serial)
+        delete_realm("realm1")
+        delete_resolver("resolver1")
 
 
 @pytest.fixture(scope="function")
@@ -1510,6 +2009,157 @@ class TestPIManageSetupClass:
         assert "Generating a new PGP key, the existing keys are kept." in result.output
         gpg.gen_key.assert_called_once()
         gpg.delete_keys.assert_not_called()
+
+    def test_07_create_pgp_keys_creates_the_key_directory_only_accessible_by_the_owner(self, app, tmp_path):
+        gpg_home = tmp_path / "gpg"
+        result, _gpg = self._create_pgp_keys(app, gpg_home, [], [])
+
+        assert result.exit_code == 0, result.output
+        assert gpg_home.stat().st_mode & 0o777 == 0o700
+
+    @pytest.mark.parametrize("enckey_b64", [base64.b64encode(b"x" * 32).decode(), "no+valid+base64!"])
+    def test_08_create_enckey_rejects_an_invalid_key_without_writing_the_key_file(self, app, tmp_path, enckey_b64):
+        enckey = tmp_path / "enckey"
+        runner = app.test_cli_runner()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            result = runner.invoke(pi_manage, ["setup", "create_enckey", "--enckey_b64", enckey_b64])
+            assert result.exit_code == 1, result.output
+            assert isinstance(result.exception, SystemExit), result.exception
+            assert not enckey.exists()
+
+            # A retry with a valid key is not refused
+            valid_key = os.urandom(96)
+            result = runner.invoke(pi_manage, ["setup", "create_enckey",
+                                               "--enckey_b64", base64.b64encode(valid_key).decode()])
+            assert result.exit_code == 0, result.output
+            assert enckey.read_bytes() == valid_key
+
+    def test_08c_create_enckey_creates_the_key_file_read_only(self, app, tmp_path):
+        # The key file is created with its final permissions, it is never readable for others in between
+        enckey = tmp_path / "enckey"
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}), \
+                mock.patch.object(pathlib.Path, "chmod"):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "create_enckey"])
+        assert result.exit_code == 0, result.output
+        assert enckey.stat().st_mode & 0o777 == 0o400
+        assert len(enckey.read_bytes()) == 96
+
+    def test_08b_create_enckey_accepts_a_wrapped_base64_key(self, app, tmp_path):
+        # The base64 command wraps its output after 76 characters
+        enckey = tmp_path / "enckey"
+        valid_key = os.urandom(96)
+        wrapped = base64.encodebytes(valid_key).decode()
+        assert "\n" in wrapped.strip()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "create_enckey", "--enckey_b64", wrapped])
+        assert result.exit_code == 0, result.output
+        assert enckey.read_bytes() == valid_key
+
+    def test_08d_create_enckey_removes_the_key_file_if_the_write_fails(self, app, tmp_path):
+        # A key file that could not be written is removed, so that a second run can create the key
+        enckey = tmp_path / "enckey"
+        real_fdopen = os.fdopen
+
+        class FullDiskFile:
+            def __init__(self, fd: int) -> None:
+                self.fd = fd
+
+            def __enter__(self) -> "FullDiskFile":
+                return self
+
+            def __exit__(self, *exc_info: object) -> None:
+                os.close(self.fd)
+
+            def write(self, data: bytes) -> int:
+                raise OSError(errno.ENOSPC, "No space left on device")
+
+        def fdopen_on_full_disk(fd: int, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+            if mode == "wb":
+                return FullDiskFile(fd)
+            return real_fdopen(fd, mode, *args, **kwargs)
+
+        runner = app.test_cli_runner()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            with mock.patch("privacyidea.cli.pimanage.pi_setup.os.fdopen", side_effect=fdopen_on_full_disk):
+                result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+            assert result.exit_code == 1, result.output
+            assert isinstance(result.exception, SystemExit), result.exception
+            assert "Could not write the encryption key" in result.output
+            assert not enckey.exists()
+
+            result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+            assert result.exit_code == 0, result.output
+            assert len(enckey.read_bytes()) == 96
+
+    def test_09_encrypt_enckey_restricts_the_permissions_of_a_new_output_file(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        enckey.write_bytes(os.urandom(96))
+        outfile = tmp_path / "enckey.enc"
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(outfile),
+                                           "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert outfile.read_text().strip()
+        assert outfile.stat().st_mode & 0o777 == 0o600
+
+        # The owner can write the file again, e.g. with a new password
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(outfile),
+                                           "--password", "other1234"])
+        assert result.exit_code == 0, result.output
+        assert outfile.stat().st_mode & 0o777 == 0o600
+
+    def test_09b_encrypt_enckey_keeps_owner_and_permissions_of_an_existing_output_file(self, app, tmp_path):
+        # The server may read the file through its group, so the permissions of an existing file are kept
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        outfile = tmp_path / "enckey.enc"
+        outfile.write_text("old")
+        outfile.chmod(0o640)
+        inode = outfile.stat().st_ino
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "-o", str(outfile), "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(outfile.read_text().strip(), "test1234") == key
+        assert outfile.stat().st_mode & 0o777 == 0o640
+        assert outfile.stat().st_ino == inode
+
+    def test_09d_encrypt_enckey_refuses_to_write_into_the_key_file(self, app, tmp_path):
+        # The key would be lost if writing the encrypted key into the key file failed
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        runner = app.test_cli_runner()
+        for target in [enckey, tmp_path / "." / "enckey"]:
+            result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(target),
+                                               "--password", "test1234"])
+            assert result.exit_code == 1, result.output
+            assert "key file itself" in result.output
+            assert enckey.read_bytes() == key
+
+    def test_09e_encrypt_enckey_reports_an_output_file_it_can_not_write(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        enckey.write_bytes(os.urandom(96))
+        outfile = tmp_path / "missing" / "enckey.enc"
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "-o", str(outfile), "--password", "test1234"])
+        assert result.exit_code == 1, result.output
+        assert "Could not write the encrypted key" in result.output
+        assert isinstance(result.exception, SystemExit), result.exception
+
+    def test_09c_encrypt_enckey_writes_to_stdout(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(result.stdout.strip(), "test1234") == key
+
+    def test_10_deprecated_dropdb_names_the_new_command(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["dropdb", "--help"])
+        assert "Please use 'pi-manage setup drop_tables' instead." in result.output
 
 
 class TestPIManageDotenv:
@@ -2287,6 +2937,80 @@ class TestPIManageConfigImport:
         finally:
             _cli_imp_cleanup(app)
 
+    def test_09_import_smtp_and_radius_continue_after_invalid_identifier(self, app, tmp_path):
+        # An identifier the API can not address is rejected, but the servers
+        # after it in the same file are still imported.
+        smtp = {"server": "mail.example", "sender": "pi@example.com"}
+        radius = {"server": "1.2.3.4", "secret": "testing123", "dictionary": "tests/testdata/dictionary"}
+        infile = tmp_path / "servers.json"
+        infile.write_text(json.dumps({
+            "smtpserver": {"cligood": smtp, "cli/relay": smtp, "cliafter": smtp},
+            "radiusserver": {"cligood": radius, "cli/relay": radius, "cliafter": radius}}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        # Both types have the same import priority, so their order is not fixed
+        failed_types = result.output.split("Failed configuration types: ")[1].split(".")[0].split(", ")
+        assert sorted(failed_types) == ["radiusserver", "smtpserver"]
+        assert 'Could not import the following SMTP servers: "cli/relay"' in result.output
+        assert 'Could not import the following RADIUS servers: "cli/relay"' in result.output
+        from privacyidea.lib.radiusserver import delete_radius, list_radiusservers
+        from privacyidea.lib.smtpserver import delete_smtpserver, list_smtpservers
+        with app.app_context():
+            for servers in (list_smtpservers(), list_radiusservers()):
+                assert "cligood" in servers
+                assert "cliafter" in servers
+                assert "cli/relay" not in servers
+            for name in ("cligood", "cliafter"):
+                delete_smtpserver(name)
+                delete_radius(name)
+
+    def test_20_import_python_literal_keeps_none(self, app, tmp_path):
+        # A python dict literal is also valid YAML. It must be parsed as python,
+        # otherwise None would be imported as the string "None".
+        infile = tmp_path / "policy.py"
+        infile.write_text("{'policy': [{'name': 'clipypol', 'scope': 'admin', "
+                          "'action': 'enable', 'realm': None, 'active': True}]}")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        from privacyidea.lib.policy import PolicyClass, delete_policy
+        with app.app_context():
+            pols = {p["name"]: p for p in PolicyClass().match_policies()}
+            assert "clipypol" in pols
+            assert pols["clipypol"]["realm"] == [], pols["clipypol"]["realm"]
+            delete_policy("clipypol")
+
+    def test_21_import_non_dict_data_exits(self, app, tmp_path):
+        # Plain text is a valid YAML scalar, but not an importable configuration
+        infile = tmp_path / "plain.txt"
+        infile.write_text("hello world, this is no policy")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        assert "Could not determine input format" in result.output
+
+    def test_22_import_yaml_the_python_parser_can_not_handle(self, app, tmp_path):
+        # This is valid YAML, but too deeply nested for the Python parser, which is tried before YAML
+        infile = tmp_path / "nested.yaml"
+        infile.write_text("{'nothing': " + "-" * 100000 + "1}")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        assert result.exception is None, result.exception
+
+    @pytest.mark.parametrize("content", ["{}", "--- {}\n"])
+    def test_23_import_empty_dict_has_nothing_to_import(self, app, tmp_path, content):
+        # An empty dictionary is a valid input in every format, it only contains nothing to import
+        infile = tmp_path / "empty.txt"
+        infile.write_text(content)
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        assert result.exception is None, result.exception
+        assert "The input is an empty dictionary. There is nothing to import." in result.output
+        assert "Could not determine input format" not in result.output
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """
@@ -2373,6 +3097,16 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertNotIn("Deleting expired challenges", res.output, res.output)
         self.assertIn("3 entries deleted", res.output, res.output)
         self.assertEqual(0, Challenge.query.count())
+
+    def test_06_chunksize_below_one_is_rejected(self):
+        self._init_challenges()
+        runner = self.app.test_cli_runner()
+
+        for chunksize in ["0", "-1"]:
+            res = runner.invoke(pi_manage, ["config", "challenge", "cleanup", "--chunksize", chunksize])
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
+            self.assertEqual(3, Challenge.query.count())
 
 
 class PIManageAuthCacheTestCase(CliTestCase):
@@ -2752,6 +3486,150 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         finally:
             os.unlink(pol_path)
 
+    def test_20_resolver_list_verbose_censors_secrets(self):
+        # Every secret of a resolver is censored, not only "bindpw"/"password"
+        save_resolver({"resolver": "cliscimres", "type": "scimresolver",
+                       "Authserver": "https://auth.example", "Resourceserver": "https://res.example",
+                       "Client": "cliclient", "Secret": "scimsupersecret"})
+        runner = self.app.test_cli_runner()
+        try:
+            result = runner.invoke(pi_manage, ["config", "resolver", "list", "-v"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("cliscimres", result.output)
+            self.assertIn("cliclient", result.output)
+            self.assertNotIn("scimsupersecret", result.output)
+        finally:
+            delete_resolver("cliscimres")
+
+    def test_21_ca_list_verbose_censors_secrets(self):
+        from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+        save_caconnector({"caconnector": "climsca", "type": "microsoft",
+                          "hostname": "ca.example", "port": "50061",
+                          "ssl_client_key_password": "mscakeypassword"})
+        runner = self.app.test_cli_runner()
+        try:
+            result = runner.invoke(pi_manage, ["config", "ca", "list", "-v"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("ca.example", result.output)
+            self.assertNotIn("mscakeypassword", result.output)
+        finally:
+            delete_caconnector("climsca")
+
+    def test_22_ca_unknown_and_existing_name(self):
+        from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "ca", "create_crl", "nosuchca"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("nosuchca", result.output, result.output)
+
+        save_caconnector({"caconnector": "cliexistingca", "type": "microsoft",
+                          "hostname": "ca.example", "port": "50061"})
+        try:
+            result = runner.invoke(pi_manage, ["config", "ca", "create", "cliexistingca"])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("already exists", result.output, result.output)
+        finally:
+            delete_caconnector("cliexistingca")
+
+    def test_23_policy_create_invalid_without_file(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "policy", "create", "clibadpol", "admin", "nosuchaction"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("Could not create the policy", result.stderr, result.output)
+        self.assertIn("nosuchaction", result.stderr, result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "create", "clibadpol", "nosuchscope", "enable"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        result = runner.invoke(pi_manage, ["config", "policy", "list"])
+        self.assertNotIn("clibadpol", result.output)
+
+    def test_24_unknown_policy_and_event_are_reported(self):
+        runner = self.app.test_cli_runner()
+        for cmd in ("enable", "disable", "delete"):
+            result = runner.invoke(pi_manage, ["config", "policy", cmd, "nosuchpolicy"])
+            self.assertIn("Could not", result.output, result.output)
+            result = runner.invoke(pi_manage, ["config", "event", cmd, "987654"])
+            self.assertIn("Could not", result.output, result.output)
+
+    def test_25_policy_create_from_file_same_values_message(self):
+        # Values in the file that equal the CLI arguments are not reported as missing
+        runner = self.app.test_cli_runner()
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'name': 'clisamepol', 'scope': 'admin', 'action': 'enable'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "clisamepol", "admin", "enable", "-f", pol_path])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("not defined in file", result.output)
+        finally:
+            os.unlink(pol_path)
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'scope': 'admin', 'action': 'enable'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "clisamepol", "admin", "enable", "-f", pol_path])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("name not defined in file", result.output)
+            self.assertNotIn("scope not defined in file", result.output)
+        finally:
+            delete_policy("clisamepol")
+            os.unlink(pol_path)
+
+    def test_26_policy_create_keeps_the_values_of_an_existing_policy(self):
+        # 'policy create' for an existing policy keeps every value that the arguments or the file leave out
+        runner = self.app.test_cli_runner()
+        set_policy("clikeeppol", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, active=False,
+                   check_all_resolvers=True, description="keep me")
+        kept_values = {"active": False, "check_all_resolvers": True, "description": "keep me"}
+
+        def create_from_file(content: str) -> Result:
+            with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+                pol_file.write(content)
+                pol_path = pol_file.name
+            try:
+                return runner.invoke(pi_manage, ["config", "policy", "create",
+                                                 "clikeeppol", "admin", "enable", "-f", pol_path])
+            finally:
+                os.unlink(pol_path)
+
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create", "clikeeppol", "admin", "enable"])
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertIn(PolicyAction.ENABLE, policy["action"])
+            self.assertEqual(kept_values, {key: policy.get(key) for key in kept_values})
+
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'tokenlist'}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertIn(PolicyAction.TOKENLIST, policy["action"])
+            self.assertEqual(kept_values, {key: policy.get(key) for key in kept_values})
+
+            # The values in the file are set
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'tokenlist', "
+                                      "'active': True, 'check_all_resolvers': False}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertTrue(policy["active"])
+            self.assertFalse(policy["check_all_resolvers"])
+            self.assertEqual("keep me", policy["description"])
+        finally:
+            delete_policy("clikeeppol")
+
+        # A new policy from a file without these values is active and does not check all resolvers
+        try:
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'enable'}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertTrue(policy["active"])
+            self.assertFalse(policy["check_all_resolvers"])
+        finally:
+            delete_policy("clikeeppol")
+
 
 class PIManageAuthLogTestCase(CliTestCase):
     """
@@ -2842,6 +3720,16 @@ class PIManageAuthLogTestCase(CliTestCase):
 
         self.assertEqual(0, res.exit_code, res.output)
         self.assertEqual(2, ConditionalAccessOutcome.query.count(), "--dryrun must not delete anything")
+
+    def test_08_chunksize_below_one_is_rejected(self):
+        self._insert(age_days=10)
+        runner = self.app.test_cli_runner()
+
+        for chunksize in ["0", "-1"]:
+            res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7", "--chunksize", chunksize])
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
+            self.assertEqual(1, AuthenticationLog.query.count())
 
 
 class PIManageConditionalAccessTestCase(CliTestCase):

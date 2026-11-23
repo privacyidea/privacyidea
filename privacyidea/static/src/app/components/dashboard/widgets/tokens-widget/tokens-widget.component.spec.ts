@@ -33,6 +33,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { of, Subject, throwError } from "rxjs";
 import { TokensWidgetComponent } from "./tokens-widget.component";
+import { axe } from "@testing/axe";
 
 function makeCountResponse(count: number) {
   return {
@@ -69,6 +70,7 @@ describe("TokensWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokensWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
@@ -144,7 +146,7 @@ describe("TokensWidgetComponent", () => {
     expect(labels).toContain("Software");
     expect(labels).toContain("Unassigned Hardware");
     expect(labels).toContain("Unassigned Software");
-    expect(labels).toContain("Users with tokens");
+    expect(labels).toContain("Users with Tokens");
   });
 
   it("should display the fetched counts", () => {
@@ -388,6 +390,32 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it.each([
+      { name: "offers to create the first realm when the admin may, linking to the realm table", rights: ["tokenlist", "userlist", "resolverwrite"], offered: true },
+      { name: "does not offer realm creation without the resolverwrite right", rights: null, offered: false }
+    ])("$name", ({ rights, offered }) => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      if (rights) {
+        authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      }
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      const button = fixture2.nativeElement.querySelector("button.create-realm");
+      expect(fixture2.componentInstance.noRealm()).toBe(true);
+      if (offered) {
+        expect(button).not.toBeNull();
+        expect(button.textContent).toContain("Create realm");
+      } else {
+        expect(button).toBeNull();
+      }
+      fixture2.destroy();
+    });
+
     it("reads the realm from the widget instance settings", () => {
       const scoped: WidgetInstance = { ...instance, settings: { realm: "realm1" } };
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
@@ -563,8 +591,8 @@ describe("TokensWidgetComponent", () => {
       const labels = Array.from(fixture2.nativeElement.querySelectorAll("td:first-child")).map((td) =>
         (td as Element).textContent?.trim()
       );
-      expect(labels).not.toContain("Users with tokens");
-      expect(labels).not.toContain("Users without tokens");
+      expect(labels).not.toContain("Users with Tokens");
+      expect(labels).not.toContain("Users without Tokens");
       fixture2.destroy();
     });
 
@@ -572,7 +600,7 @@ describe("TokensWidgetComponent", () => {
       const links = Array.from(fixture.nativeElement.querySelectorAll("a")) as HTMLAnchorElement[];
       const userLinks = links.filter((link) => link.textContent?.includes("Users "));
 
-      expect(userLinks.map((link) => link.textContent?.trim())).toEqual(["Users with tokens", "Users without tokens"]);
+      expect(userLinks.map((link) => link.textContent?.trim())).toEqual(["Users with Tokens", "Users without Tokens"]);
       expect(userLinks.every((link) => link.search === "?realm=realm1")).toBe(true);
     });
 
@@ -583,5 +611,11 @@ describe("TokensWidgetComponent", () => {
       component.showUsers(false);
       expect(userMock.presetFilter()?.getValueOfKey("has_tokens")).toBe("False");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

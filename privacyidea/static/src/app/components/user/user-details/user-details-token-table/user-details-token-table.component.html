@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="User Details Token Table"
-  class="user-details-token-table-layout"
-  i18n-aria-label="@@user.userDetailsToken">
+<div class="user-details-token-table-layout">
   <div class="flex-column">
     <div class="details-header">
       <h4 i18n="@@user.tokensUser">Tokens of User</h4>
@@ -51,7 +48,7 @@
             <span i18n="@@common.unassign">Unassign</span>
           </button>
         }
-        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+        @if (authService.actionAllowed("enable") || authService.actionAllowed("disable")) {
           <button
             (click)="toggleActiveSelected()"
             [disabled]="!selector.hasSelection()"
@@ -71,6 +68,16 @@
             <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
           </button>
         }
+        @if (authService.actionAllowed("container_add_token")) {
+          <button
+            (click)="addToContainerSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>add_box</mat-icon>
+            <span i18n="@@common.addToContainer">Add to Container</span>
+          </button>
+        }
       </div>
     }
     @if (tableState.showTable()) {
@@ -87,6 +94,8 @@
               class="table-checkbox"
               mat-header-cell>
               <mat-checkbox
+                aria-label="Select all rows"
+                i18n-aria-label="@@common.selectAllRows"
                 (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
                 [checked]="selector.allRowsSelected()"
                 [disabled]="!selector.hasVisibleRows()"
@@ -97,6 +106,8 @@
               class="table-checkbox"
               mat-cell>
               <mat-checkbox
+                aria-label="Select row"
+                i18n-aria-label="@@common.selectRow"
                 (change)="selector.setRowSelected(row, $event.checked)"
                 (click)="$event.stopPropagation()"
                 [checked]="selector.isRowSelected(row)"
@@ -107,11 +118,13 @@
             <ng-container [matColumnDef]="column.key">
               <th
                 *matHeaderCellDef
+                [ngClass]="columnWidthClass(column.key)"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="flex">
                     <button
+                      [attr.aria-label]="column.label | sortByLabel"
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       class="sort-button"
                       mat-icon-button
@@ -123,36 +136,30 @@
               </th>
               <td
                 *matCellDef="let element"
-                [ngClass]="{ 'input-width-l': column.key === 'description' }"
+                [ngClass]="columnWidthClass(column.key)"
                 mat-cell>
                 <ng-container>
-                  <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                  <div
+                    appScrollFocusable
+                    [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                     @switch (column.key) {
                       @case ("serial") {
-                        <app-copyable [copyText]="element.serial">
-                          <a
-                            (click)="contentService.tokenSelected(element.serial)"
-                            (keydown.enter)="contentService.tokenSelected(element.serial)"
-                            [attr.aria-label]="linkLabel(column.label)"
-                            role="button"
-                            tabindex="0">
-                            {{ element[column.key] }}
-                          </a>
-                        </app-copyable>
+                        @if (element.serial) {
+                          <app-copyable [copyText]="element.serial">
+                            <a
+                              (click)="contentService.tokenSelected(element.serial)"
+                              (keydown.enter)="contentService.tokenSelected(element.serial)"
+                              role="button"
+                              tabindex="0">
+                              {{ element[column.key] }}
+                            </a>
+                          </app-copyable>
+                        }
                       }
                       @case ("active") {
-                        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                          <span
-                            (click)="toggleActive(element)"
-                            (keydown.enter)="toggleActive(element)"
-                            (keydown.space)="$event.preventDefault(); toggleActive(element)"
-                            [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                            role="button"
-                            tabindex="0">
-                            {{ tableUtilsService.getDisplayText(column.key, element) }}
-                          </span>
-                        }
+                        <app-token-active-toggle
+                          (toggled)="tokenService.userTokenResource.reload()"
+                          [token]="element" />
                       }
                       @case ("failcount") {
                         @if (authService.actionAllowed("reset")) {
@@ -165,15 +172,18 @@
                             tabindex="0">
                             {{ tableUtilsService.getDisplayText(column.key, element) }}
                           </span>
+                        } @else {
+                          <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                            {{ tableUtilsService.getDisplayText(column.key, element) }}
+                          </span>
                         }
                       }
                       @case ("container_serial") {
-                        @if (authService.actionAllowed("container_list")) {
+                        @if (element[column.key] && authService.actionAllowed("container_list")) {
                           <app-copyable [copyText]="element[column.key]">
                             <a
                               (click)="contentService.navigateContainerDetails(element[column.key])"
                               (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
-                              [attr.aria-label]="linkLabel(column.label)"
                               role="button"
                               tabindex="0">
                               {{ element[column.key] }}

@@ -36,7 +36,7 @@ import json
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, UTC
 from collections.abc import Generator, Callable
 
 import click
@@ -47,9 +47,10 @@ from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
 from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
-from privacyidea.lib.error import PolicyError, ResolverError
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
+from privacyidea.lib.token import (unassign_token, remove_token, get_tokens_paginated_generator, export_tokens,
+                                   get_orphaned_serials)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import parse_legacy_time, parse_timedelta
 from privacyidea.models import Token, TokenContainer
@@ -133,7 +134,7 @@ def _compare_greater_than(given_value: int | str) -> Callable[[int], bool]:
     :return: a function which returns True if its parameter (converted to an integer)
              is greater than *given_value_string* (converted to an integer).
     """
-    given_value = int(given_value)
+    given_value = _try_convert_to_integer(given_value)
 
     def comparator(value: int) -> bool:
         try:
@@ -149,7 +150,7 @@ def _compare_less_than(given_value: int | str) -> Callable[[int], bool]:
     :return: a function which returns True if its parameter (converted to an integer)
              is less than *given_value_string* (converted to an integer).
     """
-    given_value = int(given_value)
+    given_value = _try_convert_to_integer(given_value)
 
     def comparator(value: int) -> bool:
         try:
@@ -421,24 +422,24 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     # Unable to resolve user, no filter applicable
                     add = False
             if tokencontainer_filter:
+                # The filter keys are the columns of the container table, so they are read from the database row
+                db_containers = token_obj.token.container
                 for tokencontainer_key, tokencontainer_comparator in tokencontainer_filter:
-                    container = find_container_for_token(token_obj.token.serial)
-                    if container is not None:
-                        if value := getattr(container, tokencontainer_key, None):
-                            if not tokencontainer_comparator(value):
-                                add = False
-                        else:
-                            add = False
-                    else:
+                    value = getattr(db_containers[0], tokencontainer_key, None) if db_containers else None
+                    if isinstance(value, datetime):
+                        # The timestamps are stored in UTC without a timezone
+                        value = value.replace(tzinfo=UTC).isoformat()
+                    if value is None or not tokencontainer_comparator(value):
                         add = False
-            if orphaned is not None:
-                if token_obj.is_orphaned(orphaned_on_error) != orphaned:
-                    add = False
-
 
             if add:
                 # if everything matched, we append the token object
                 filtered_list.append(token_obj)
+
+        if orphaned is not None:
+            orphaned_serials = get_orphaned_serials(filtered_list, orphaned_on_error)
+            filtered_list = [token_obj for token_obj in filtered_list
+                             if (token_obj.token.serial in orphaned_serials) == orphaned]
 
         yield filtered_list
 
@@ -480,6 +481,9 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
     """
     if range_of_serial:
         range_of_serial = range_of_serial.split("-")
+        if len(range_of_serial) != 2 or not all(range_of_serial):
+            raise click.ClickException('The range of serial numbers requires the syntax '
+                                       '"<first serial>-<last serial>", e.g. HOTP10000000-HOTP20000000')
     ta_filter = []
     if tokenattributes:
         for tokenattribute in tokenattributes:
@@ -731,10 +735,9 @@ def set_tokeninfo(ctx, tokeninfo):
     """
     Sets the tokeninfo of the found tokens.
 
-    Only the free-form entries of the tokeninfo can be set. Every token type also keeps entries of its own
-    there, e.g. the public key of a passkey or the server a RADIUS token forwards to, which are written by the
-    token itself and are skipped here. The type specific ones can be set at enrollment or with the
-    /token/set endpoint.
+    This includes the entries a token type keeps there itself, e.g. "hashlib", "next_pin_change" or the
+    acceptance window "timeWindow" of a TOTP token. The command runs on the server, so it is not restricted to
+    the free-form entries the token info endpoints of the API may write.
     """
     # The value is everything after the first "=", so it can hold dates, spaces or further "=" characters
     match = re.match(r"\s*(\w+)\s*=\s*(\S.*?)\s*$", tokeninfo)
@@ -745,13 +748,7 @@ def set_tokeninfo(ctx, tokeninfo):
     tokeninfo_value = match.group(2)
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            try:
-                token_obj.add_tokeninfo(tokeninfo_key, tokeninfo_value)
-            except PolicyError as error:
-                # Keep going through the remaining tokens, the run may cover token types that do and types
-                # that do not maintain this key themselves
-                click.echo(f"Skipped token {token_obj.token.serial}: {error!s}")
-                continue
+            token_obj.write_tokeninfo(tokeninfo_key, tokeninfo_value)
             token_obj.save()
             click.echo(f"Set tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}={tokeninfo_value}")
 
@@ -763,19 +760,15 @@ def remove_tokeninfo(ctx, tokeninfo_key):
     """
     Remove the tokeninfo of the found tokens.
 
-    An entry a token type maintains itself, e.g. the public key of a passkey, is skipped, because the token
-    needs it to work. An offline refill token is an exception: removing it revokes the ability to refill
-    offline OTP values and is allowed.
+    This includes the entries a token type keeps there itself. Removing one the token needs to work, e.g. the
+    public key of a passkey, makes the token unusable.
     """
+    if not tokeninfo_key:
+        # An empty key would remove the whole tokeninfo of every found token
+        raise click.BadParameter("The key must not be empty.", param_hint="'--tokeninfo_key'")
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            try:
-                token_obj.delete_tokeninfo(tokeninfo_key)
-            except PolicyError as error:
-                # Keep going through the remaining tokens, the run may cover token types that do and types
-                # that do not maintain this key themselves
-                click.echo(f"Skipped token {token_obj.token.serial}: {error!s}")
-                continue
+            token_obj.remove_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
 

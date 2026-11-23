@@ -31,7 +31,7 @@ authentication_log_cli = AppGroup("authlog", help="Manage authentication log dat
 @authentication_log_cli.command("cleanup", help="Clean up old authentication log entries.")
 @click.option('--age', type=int, required=True,
               help="Delete authentication log entries older than this number of days.")
-@click.option('--chunksize', type=int,
+@click.option('--chunksize', type=click.IntRange(min=1),
               help="Delete entries in chunks of the given size to avoid deadlocks.")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")

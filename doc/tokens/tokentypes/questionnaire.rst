@@ -15,6 +15,8 @@ many questions as specified by the administrator with answers only he knows.
 .. figure:: images/enroll_questionnaire.png
    :width: 500
 
+   *Answer the questions during the enrollment*
+
 This token is a challenge response token.
 During authentication the user gives the token PIN before he is presented with a random
 question to which he defined the answer during the token rollout.

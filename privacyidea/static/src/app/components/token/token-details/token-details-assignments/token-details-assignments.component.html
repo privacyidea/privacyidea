@@ -89,26 +89,36 @@
         <div class="container-serial-row">
           @if (containerField.isEditing()) {
             <mat-form-field
-              class="input-width-m height-52"
+              appearance="fill"
+              class="input-width-m details-field-height"
               subscriptSizing="dynamic">
               <mat-label i18n="@@token.enterContainer">Enter Container</mat-label>
               <app-clearable-input
-                (clearButtonClick)="containerService.selectedContainerSerial.set('')"
-                [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                (clearButtonClick)="clearField(containerForm, '')"
+                [showClearButton]="containerInput() !== ''">
                 <input
-                  [value]="containerService.selectedContainerSerial()"
-                  (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
+                  [formField]="containerForm"
                   [matAutocomplete]="containerAuto"
                   appAutofocus
                   matInput />
               </app-clearable-input>
-              <mat-autocomplete
-                #containerAuto="matAutocomplete"
-                (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
+              <mat-autocomplete #containerAuto="matAutocomplete">
+                @if (containerCreatable()) {
+                  <mat-option
+                    class="create-container-option"
+                    [value]="containerInput()"
+                    (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
+                    <mat-icon>add</mat-icon>
+                    <span i18n="@@container.createNewContainerOption">Create new container</span>
+                  </mat-option>
+                }
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-autocomplete>
+              @if (hasError(containerForm, ERR.required)) {
+                <mat-error i18n="@@token.containerSerialRequired">Container serial is required.</mat-error>
+              }
             </mat-form-field>
             @if (!selfService()) {
               <mat-checkbox
@@ -122,14 +132,7 @@
           } @else if (selfService()) {
             <app-copyable [copyText]="containerSerial()">
               @if (containerService.containerBelongsToUser(containerSerial())) {
-                <a
-                  (click)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
-                  aria-label="Container Serial Link"
-                  i18n-aria-label="@@token.containerSerial"
-                  role="button"
-                  tabindex="0">
+                <a [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, containerSerial()]">
                   {{ containerSerial() }}
                 </a>
               } @else {
@@ -138,17 +141,10 @@
             </app-copyable>
           } @else {
             <div class="flex-row flex-nowrap ali-center">
-              <a
-                (click)="contentService.navigateContainerDetails(containerSerial())"
-                (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
-                aria-label="Container Serial Link"
-                i18n-aria-label="@@token.containerSerial"
-                role="button"
-                tabindex="0">
-                {{ containerSerial() }}
-              </a>
               @if (containerSerial() !== "") {
+                <a [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, containerSerial()]">
+                  {{ containerSerial() }}
+                </a>
                 <app-copy-button [copyText]="containerSerial()"></app-copy-button>
               }
             </div>

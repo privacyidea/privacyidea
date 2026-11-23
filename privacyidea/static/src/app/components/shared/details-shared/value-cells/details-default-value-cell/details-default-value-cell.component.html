@@ -18,7 +18,8 @@
 -->
 @if (isEditing() && isNumber()) {
   <mat-form-field
-    class="input-width-m height-52"
+    appearance="fill"
+    class="input-width-m details-field-height"
     subscriptSizing="dynamic">
     <input
       [value]="value()"
@@ -28,6 +29,7 @@
   </mat-form-field>
 } @else if (isEditing()) {
   <mat-form-field
+    appearance="fill"
     class="input-width-m"
     subscriptSizing="dynamic">
     <textarea

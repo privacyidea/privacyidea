@@ -28,12 +28,20 @@ for enrollment.
 Passkeys are eligible for offline use as specified here :ref:`application_offline` as well as
 :ref:`policy_enroll_via_multichallenge`. However, these features also have to be implemented in the client application.
 
-Using passkeys in different browsers and environments can yield different user experiences. Most, if not all browsers,
-will not allow enrollment of a passkey to an authenticator which does not have a PIN set, i.e. user verification is
-always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
-affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
-the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
-requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
+Using passkeys in different browsers and environments can yield different user experiences. With the default value
+``preferred`` of :ref:`policy_webauthn_enroll_user_verification_requirement`, the browser and the authenticator
+decide whether the enrollment asks for user verification, for example a PIN. To make user verification mandatory for
+the enrollment, set this policy to ``required``. privacyIDEA then requests user verification and completes the
+enrollment only if the authenticator reports that it verified the user. The policy
+:ref:`policy_webauthn_authn_user_verification_requirement` in the scope authentication applies to passkey
+authentication. A login to the WebUI with a passkey always requires user verification, and so does a login to the
+WebUI without a username with a WebAuthn token.
+
+.. note:: A login without a username identifies the user by the passkey alone, while every request afterwards looks
+    the user up by the login name and realm of the session. In a realm where the same login name exists in several
+    resolvers, only the user that the realm's resolver order finds first can log in this way; a passkey of another
+    user with that login name is refused, and the authentication log records ``LOGIN_NAME_NOT_UNIQUE``. The same
+    applies to a login name that ends in ``@`` and the name of a defined realm while ``splitAtSign`` is switched on.
 
 .. note:: If user verification is **not** required on authentication and a user has multiple discoverable credentials
     for the same relying party on one authenticator (typically an external FIDO2 security key with several passkeys
@@ -144,6 +152,82 @@ Tokens that have been **revoked** are excluded from this list, so the same authe
 the user after revocation. Tokens that are merely **disabled** are still included, since disabling is reversible
 and the underlying credential is still bound to the user. Tokens whose enrollment never finished
 (rollout state ``clientwait``) are also excluded.
+
+.. _passkey_prf:
+
+PRF extension
+~~~~~~~~~~~~~
+
+During passkey enrollment, privacyIDEA requests the WebAuthn extension ``prf`` (pseudo-random function). With this
+extension, a client application can derive a secret from the passkey at login, for example a key to encrypt local
+data. For an authenticator that uses CTAP2, for example a FIDO2 security key, the browser requests the CTAP2
+extension ``hmac-secret``. To turn off the request, set the enrollment policy :ref:`policy_passkey_disable_prf`.
+
+The extension has an effect only if the browser and the authenticator support it. Otherwise, they ignore it and the
+enrollment continues without it. The secret stays with the client. privacyIDEA does not receive it and does not use
+it.
+
+The WebUI passes the extension request to the browser. Other client applications that enroll passkeys, for example
+with :ref:`policy_enroll_via_multichallenge`, must pass the ``extensions`` of the registration options to the
+browser or the authenticator.
+
+A CTAP2 authenticator must create the secret of a credential only if the registration requests it. If a passkey
+was enrolled without this request, the client possibly cannot use the PRF of that passkey. Enroll the passkey again
+to make sure that it has the secret.
+
+A CTAP2 authenticator reports in the extension output ``hmac-secret`` whether it created the secret. privacyIDEA
+saves this value in the token info as ``hmac_secret``. ``True`` means that the passkey has the secret, and ``False``
+means that the authenticator did not create it. If the token info has no ``hmac_secret``, the authenticator did
+not report the extension output. This is the case for passkeys that were enrolled without the request, and for
+authenticators that implement the PRF without CTAP2. For these authenticators, the browser can report the PRF state
+in ``prf_enabled``.
+
+The token info entry ``prf_requested`` shows whether the registration requested the extension. ``False`` means that
+the policy :ref:`policy_passkey_disable_prf` turned off the request. See :ref:`passkey_registration_token_info`.
+
+.. _passkey_registration_token_info:
+
+Registration details in the token info
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After a successful registration, privacyIDEA saves details about the credential and the authenticator in the token
+info. privacyIDEA uses only some of these values for authentication. The other values are for information.
+
+The authenticator reports these values in the authenticator data and the attestation:
+
+* ``public_key``, ``credential_id_hash`` and ``sign_count``: privacyIDEA uses them to verify an authentication.
+* ``device_type`` and ``backed_up``: see :ref:`passkey_device_type`.
+* ``aaguid`` and ``attestation_certificate``: see the section about attestation above.
+* ``attestation_format``: the format of the attestation, for example ``none``, ``packed``, ``apple`` or ``tpm``.
+* ``user_verified``: ``True`` if the authenticator verified the user during the registration.
+* ``extension_outputs``: all extension outputs of the authenticator as JSON. Binary values are base64url encoded.
+  An authenticator usually reports an extension output only if the registration requests the extension. If the JSON
+  has more than 1024 characters, privacyIDEA does not save it.
+* ``hmac_secret``: the extension output ``hmac-secret``, see the PRF extension above.
+
+privacyIDEA saves this value from the enrollment request:
+
+* ``prf_requested``: ``True`` if the registration options requested the PRF extension. The token info has no such
+  entry for a registration that started before the update to this version.
+
+The client reports these values:
+
+* ``origin``: the origin of the page that did the registration. privacyIDEA makes sure that it is the origin of
+  the request.
+* ``authenticator_attachment``: ``platform`` for an authenticator that is part of the device, or ``cross-platform``
+  for an authenticator like a security key or a phone.
+* ``transports``: the transports of the authenticator as a comma-separated list, for example ``nfc,usb`` or
+  ``hybrid,internal``. privacyIDEA saves only the transports that the WebAuthn library knows.
+* ``prf_enabled``: ``True`` if the browser reports that the PRF extension is enabled for the credential.
+
+The WebUI sends the parameters ``transports`` and ``prf`` in the second enrollment request. ``transports`` is a list
+of strings, and ``prf`` is an object with the boolean ``enabled``. Other client applications can send the same
+parameters. Without these parameters, the token info has no ``transports`` and no ``prf_enabled``.
+
+With the default :ref:`policy_passkey_attestation_conveyance_preference` ``none``, nothing in the registration is
+signed. The client that relays the registration can change all of these values, so they are for information only.
+The values show the state at the registration. A new registration of the token replaces them, and removes the
+values that the new registration does not report. The token info endpoints cannot change these entries.
 
 Relationship to the WebAuthn token
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

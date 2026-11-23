@@ -20,6 +20,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -31,6 +32,8 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService, MockDialogService, MockRadiusService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { RadiusServersComponent } from "./radius-servers.component";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
@@ -110,10 +113,10 @@ describe("RadiusServersComponent", () => {
   });
 
   it("should navigate to details route on onEditServer", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const server = radiusServiceMock.radiusServers()[0];
     component.onEditServer(server);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS, server.identifier]);
   });
 
   it("should delete server after confirmation", () => {
@@ -127,5 +130,139 @@ describe("RadiusServersComponent", () => {
     confirmClosed.complete();
 
     expect(radiusServiceMock.deleteRadiusServer).toHaveBeenCalledWith("server1");
+  });
+
+  describe("toolbar actions", () => {
+    it("offers create and delete in that order", () => {
+      expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
+      expect(toolbarAction(component, "create").label).toBe("Create RADIUS Server");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
+    });
+
+    it("shows both actions with radiusserver_write", () => {
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+
+      expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
+      expect(toolbarButton(fixture, "Create RADIUS Server")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without radiusserver_write", () => {
+      setRights(fixture, ["radiusserver_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create RADIUS Server")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+    });
+
+    it("offers row selection only with radiusserver_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["radiusserver_read"]);
+      expect(selectColumn()).toBeNull();
+    });
+
+    it("draws no toolbar while the read right is denied", () => {
+      setRights(fixture, []);
+
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
+      expect(toolbarButton(fixture, "Create RADIUS Server")).toBeUndefined();
+    });
+
+    it("keeps create enabled and disables delete until a row is selected", () => {
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create RADIUS Server")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
+
+      component.selector.selectRow(radiusServiceMock.radiusServers()[0]);
+      fixture.detectChanges();
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
+    });
+
+    it("runs create by opening the new-entry route", () => {
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarAction(component, "create").run?.();
+
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW);
+    });
+
+    it("runs delete by confirming and then deleting the selected row", () => {
+      component.selector.selectRow(radiusServiceMock.radiusServers()[0]);
+
+      toolbarAction(component, "delete").run?.();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+      expect(radiusServiceMock.deleteRadiusServer).not.toHaveBeenCalled();
+      confirmClosed.next(true);
+      confirmClosed.complete();
+
+      expect(radiusServiceMock.deleteRadiusServer).toHaveBeenCalledTimes(1);
+      expect(radiusServiceMock.deleteRadiusServer).toHaveBeenCalledWith("server1");
+    });
+
+    it("runs create from its rendered button", () => {
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarButton(fixture, "Create RADIUS Server")?.click();
+
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW);
+    });
+
+    it("runs delete from its rendered button once a row is selected", () => {
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+      component.selector.selectRow(radiusServiceMock.radiusServers()[0]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "Delete")?.click();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      radiusServiceMock.radiusServers.set([]);
+    });
+
+    it("offers the create button and hint with radiusserver_write", () => {
+      setRights(fixture, ["radiusserver_read", "radiusserver_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create RADIUS Server");
+      expect(state.textContent).toContain("Create a RADIUS server to forward authentication requests to it.");
+    });
+
+    it("offers neither button nor hint without radiusserver_write", () => {
+      setRights(fixture, ["radiusserver_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create a RADIUS server to forward authentication requests to it.");
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

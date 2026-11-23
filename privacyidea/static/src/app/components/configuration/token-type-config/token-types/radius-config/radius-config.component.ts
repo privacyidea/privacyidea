@@ -16,39 +16,43 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
-
+import { Component, input } from "@angular/core";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { RADIUS_SERVER } from "@constants/token.constants";
+import { clearField } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-radius-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
+  imports: [
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    RouterLink,
+    ClearButtonComponent,
+    FormField
+  ],
   templateUrl: "./radius-config.component.html"
 })
 export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly RADIUS_SERVER = RADIUS_SERVER;
 
-  formData = input.required<Record<string, string | undefined>>();
-  formDataChange = output<Record<string, string | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
   radiusServers = input.required<string[]>();
   radiusServersListable = input.required<boolean>();
   expanded = input<boolean>(false);
 
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
-
-  clearField(fieldName: string): void {
-    this.updateFormData(fieldName, "");
+  clearValue(field: FieldTree<string>): void {
+    clearField(field, "");
   }
 }

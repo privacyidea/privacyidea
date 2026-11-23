@@ -26,7 +26,7 @@
           <mat-form-field
             subscriptSizing="dynamic"
             class="table-filter">
-            <mat-label i18n="@@machine.filterMachines">Filter Machines...</mat-label>
+            <mat-label i18n="@@machine.filterMachines">Filter Machines</mat-label>
             <app-clearable-input
               (clearButtonClick)="resetFilter()"
               [showClearButton]="filterString().length > 0">
@@ -55,6 +55,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Machines"
+        i18n-aria-label="@@common.machines"
         [dataSource]="machineDataSource()"
         class="machines-table"
         mat-table

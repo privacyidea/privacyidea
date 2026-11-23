@@ -16,8 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { FieldTree, form } from "@angular/forms/signals";
 import { AuthService } from "@services/auth/auth.service";
+import { applyActionRules } from "@services/conditional-access/conditional-access-policy-form";
 import {
   ConditionalAccessPolicyService,
   ConditionalAccessActionType,
@@ -29,16 +32,39 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessActionItemComponent", () => {
   let component: ConditionalAccessActionItemComponent;
   let fixture: ComponentFixture<ConditionalAccessActionItemComponent>;
   let authService: MockAuthService;
   let smtpService: MockSmtpService;
+  let model: WritableSignal<{ target: ConditionalAccessTarget; actions: ConditionalAccessStageAction[] }>;
+  let actionFields: FieldTree<ConditionalAccessStageAction[]>;
 
+  // The action in the policy form the item is bound to, judged by the rules of the form.
   function setAction(action: ConditionalAccessStageAction): void {
-    fixture.componentRef.setInput("action", action);
+    model.update((current) => ({ ...current, actions: [{ ...action }] }));
+    fixture.componentRef.setInput("action", actionFields[0]);
     fixture.detectChanges();
+  }
+
+  // The target of the policy the action belongs to, which the form rules and the select options both read.
+  function setTarget(target: ConditionalAccessTarget): void {
+    model.update((current) => ({ ...current, target }));
+    fixture.componentRef.setInput("target", target);
+  }
+
+  // The action as the form holds it.
+  const stored = (): ConditionalAccessStageAction => model().actions[0];
+
+  // A new item, as the editor creates one for an action it loads - the unit is picked from the first duration it shows.
+  function createWithAction(action: ConditionalAccessStageAction): void {
+    // The earlier item is still bound to the action this one replaces, and a field of a replaced action cannot be read.
+    fixture.destroy();
+    fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);
+    component = fixture.componentInstance;
+    setAction(action);
   }
 
   function setRights(rights: string[]): void {
@@ -69,6 +95,16 @@ describe("ConditionalAccessActionItemComponent", () => {
       ]
     }).compileComponents();
 
+    const policyServiceMock = TestBed.inject(
+      ConditionalAccessPolicyService
+    ) as unknown as MockConditionalAccessPolicyService;
+    model = signal({
+      target: "user" as ConditionalAccessTarget,
+      actions: [{ action_type: "LOCK_USER" as const, action_value: 600 }]
+    });
+    actionFields = TestBed.runInInjectionContext(() =>
+      form(model, (p) => applyActionRules(p.actions, p.target, policyServiceMock))
+    ).actions;
     fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -112,7 +148,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("flags an action that is not allowed for the current target", () => {
-      fixture.componentRef.setInput("target", "source_ip");
+      setTarget("source_ip");
       setAction({ action_type: "LOCK_USER", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(false);
       // the stale type stays selectable so the user can change it
@@ -120,7 +156,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("accepts an action that is allowed for the current target", () => {
-      fixture.componentRef.setInput("target", "source_ip");
+      setTarget("source_ip");
       setAction({ action_type: "BLOCK_IP", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
@@ -128,16 +164,16 @@ describe("ConditionalAccessActionItemComponent", () => {
     it("does not flag while the allowed list is still empty", () => {
       policyServiceMock.actionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
       policyServiceMock.actionTypes.set([]);
-      fixture.componentRef.setInput("target", "source_ip");
+      setTarget("source_ip");
       setAction({ action_type: "LOCK_USER", action_value: 600 });
       expect(component.isActionAllowedForTarget()).toBe(true);
     });
   });
 
-  // The component's own job here is forwarding siblingActions/actionIndex/target to the policy service and
-  // mapping its verdict to the disabled-types set / conflict message. The rules themselves (which actions are
-  // repeatable, which pairs are exclusive) are the policy service's, and are covered once, against the real
-  // implementation, in conditional-access-policy.service.spec.ts.
+  // The component's own job here is showing the verdict the form rules reached for this action and mapping the
+  // sibling list to the disabled-types set. The rules themselves (which actions are repeatable, which pairs are
+  // exclusive) are the policy service's, and are covered once, against the real implementation, in
+  // conditional-access-policy.service.spec.ts.
   describe("stage action combinations", () => {
     let policyServiceMock: MockConditionalAccessPolicyService;
     const action = (actionType: ConditionalAccessActionType) => ({ action_type: actionType, action_value: null });
@@ -148,33 +184,39 @@ describe("ConditionalAccessActionItemComponent", () => {
       ) as unknown as MockConditionalAccessPolicyService;
     });
 
+    // The item at `index` of a stage carrying `siblings`.
     const withSiblings = (siblings: ConditionalAccessStageAction[], index: number) => {
-      fixture.componentRef.setInput("siblingActions", siblings);
+      model.update((current) => ({ ...current, actions: siblings.map((sibling) => ({ ...sibling })) }));
+      fixture.componentRef.setInput("action", actionFields[index]);
+      fixture.componentRef.setInput("siblingActions", model().actions);
       fixture.componentRef.setInput("actionIndex", index);
-      setAction(siblings[index]);
+      fixture.detectChanges();
     };
 
-    it("forwards siblingActions/actionIndex/target and surfaces a duplicate verdict", () => {
-      const siblings = [action("LOCK_USER"), action("LOCK_USER")];
+    it("shows the message for a duplicate and asks about the action at its own index", () => {
       policyServiceMock.actionConflict.mockReturnValue("duplicate");
-      withSiblings(siblings, 1);
-      expect(component.actionConflict()).toBe("duplicate");
-      expect(component.conflictMessage()).not.toBe("");
-      expect(policyServiceMock.actionConflict).toHaveBeenCalledWith(siblings, 1, component.target());
+      withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
+      expect(component.conflictMessage()).toContain("already on this stage");
+      expect(fixture.nativeElement.querySelector(".ca-action-target-error").textContent).toContain(
+        "already on this stage"
+      );
+      const [actionsAsked, indexAsked, targetAsked] = policyServiceMock.actionConflict.mock.calls.at(-1)!;
+      expect(actionsAsked.map((asked) => asked.action_type)).toEqual(["LOCK_USER", "LOCK_USER"]);
+      expect([indexAsked, targetAsked]).toEqual([1, "user"]);
     });
 
-    it("surfaces a null verdict as no message", () => {
+    it("shows no message for an action that conflicts with nothing", () => {
       policyServiceMock.actionConflict.mockReturnValue(null);
       withSiblings([action("EMAIL_ADMIN"), action("EMAIL_ADMIN")], 1);
-      expect(component.actionConflict()).toBeNull();
       expect(component.conflictMessage()).toBe("");
+      expect(fixture.nativeElement.querySelector(".ca-action-target-error")).toBeNull();
     });
 
-    it("surfaces an exclusive verdict", () => {
+    it("shows the message for an exclusive pair and flags the action", () => {
       policyServiceMock.actionConflict.mockReturnValue("exclusive");
       withSiblings([action("LOCK_USER"), action("PERMANENT_LOCK_USER")], 1);
-      expect(component.actionConflict()).toBe("exclusive");
-      expect(component.conflictMessage()).not.toBe("");
+      expect(component.conflictMessage()).toContain("contradicts");
+      expect(fixture.nativeElement.querySelector(".ca-action-warn-icon")).toBeTruthy();
     });
 
     it("forwards the unavailable-types set from the policy service as disabledActionTypes", () => {
@@ -185,22 +227,65 @@ describe("ConditionalAccessActionItemComponent", () => {
       expect(disabled.has("LOCK_USER")).toBe(true);
       expect(disabled.has("PERMANENT_LOCK_USER")).toBe(true);
       expect(disabled.has("EMAIL_ADMIN")).toBe(false);
-      expect(policyServiceMock.unavailableActionTypes).toHaveBeenCalledWith(siblings, component.target(), 1);
+      expect(policyServiceMock.unavailableActionTypes).toHaveBeenCalledWith(
+        component["siblingActions"](),
+        component.target(),
+        1
+      );
     });
 
     it("does not judge while no rules have been served", () => {
       policyServiceMock.actionConflict.mockReturnValue(null);
       policyServiceMock.unavailableActionTypes.mockReturnValue(new Set());
       withSiblings([action("LOCK_USER"), action("LOCK_USER")], 1);
-      expect(component.actionConflict()).toBeNull();
+      expect(component.conflictMessage()).toBe("");
       expect(component.disabledActionTypes().size).toBe(0);
     });
   });
 
   describe("duration", () => {
     it("should read a plain-number duration", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
-      expect(component.durationValue()).toBe("600");
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
+      expect(component.durationValue()).toBe("90");
+    });
+
+    it("should show a stored duration in the coarsest unit it is a whole number of", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      expect(component.durationUnit()).toBe("hours");
+      expect(component.durationValue()).toBe("2");
+    });
+
+    it("should keep the unit while typing a value a coarser unit divides", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      expect(component.durationUnit()).toBe("seconds");
+      component.onDurationInput("60");
+      expect(component.durationUnit()).toBe("seconds");
+      expect(component.durationValue()).toBe("60");
+    });
+
+    it("should pick the unit afresh for another action's duration, even one the current unit divides", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      setAction({ action_type: "BLOCK_IP", action_value: 7200 });
+      expect(component.durationUnit()).toBe("hours");
+      expect(component.durationValue()).toBe("2");
+    });
+
+    it("should show a stored zero in seconds", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 0 });
+      expect(component.durationUnit()).toBe("seconds");
+    });
+
+    it("should keep the unit when the field is cleared", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      expect(component.durationUnit()).toBe("hours");
+    });
+
+    it("should pick the unit afresh for a duration the current unit does not divide", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
+      expect(component.durationUnit()).toBe("seconds");
+      expect(component.durationValue()).toBe("90");
     });
 
     it("should read a nested duration_seconds", () => {
@@ -208,20 +293,34 @@ describe("ConditionalAccessActionItemComponent", () => {
       expect(component.durationValue()).toBe("30");
     });
 
-    it("should emit the parsed integer on input and null when cleared", () => {
-      const spy = jest.spyOn(component.updateAction, "emit");
+    it("should write the parsed integer on input and null when cleared", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
       component.onDurationInput("45");
-      expect(spy).toHaveBeenCalledWith({ action_value: 45 });
+      expect(stored().action_value).toBe(45);
       component.onDurationInput("");
-      expect(spy).toHaveBeenCalledWith({ action_value: null });
+      expect(stored().action_value).toBeNull();
+    });
+
+    it("should write a typed duration from the field", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      const input = fixture.nativeElement.querySelector(".ca-action-value input") as HTMLInputElement;
+      input.value = "30";
+      input.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      expect(stored().action_value).toBe(30);
+    });
+
+    it("should keep the type and the retrigger choice of an action whose duration is edited", () => {
+      setAction({ action_type: "BLOCK_IP", action_value: 90, retrigger_above_threshold: true });
+      component.onDurationInput("45");
+      expect(stored()).toMatchObject({ action_type: "BLOCK_IP", action_value: 45, retrigger_above_threshold: true });
     });
 
     it("should convert the entered value to seconds using the selected unit", () => {
       setAction({ action_type: "LOCK_USER", action_value: null });
-      const spy = jest.spyOn(component.updateAction, "emit");
       component.durationUnit.set("minutes");
       component.onDurationInput("5");
-      expect(spy).toHaveBeenCalledWith({ action_value: 300 });
+      expect(stored().action_value).toBe(300);
     });
 
     it("should display the stored seconds in the selected unit", () => {
@@ -231,26 +330,24 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should keep the entered number and re-scale to seconds on unit change", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 120 });
-      const spy = jest.spyOn(component.updateAction, "emit");
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
       component.onDurationUnitChange("minutes");
       expect(component.durationUnit()).toBe("minutes");
-      // "120" kept and re-interpreted as 120 minutes = 7200s.
-      expect(spy).toHaveBeenCalledWith({ action_value: 7200 });
+      // "90" kept and re-interpreted as 90 minutes = 5400s.
+      expect(stored().action_value).toBe(5400);
     });
 
-    it("should not emit on unit change when there is no value", () => {
+    it("should not write on unit change when there is no value", () => {
       setAction({ action_type: "LOCK_USER", action_value: null });
-      const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationUnitChange("hours");
-      expect(spy).not.toHaveBeenCalled();
+      expect(stored().action_value).toBeNull();
     });
 
     // A policy written through the API may store the duration as a string; the field must show it rather
     // than looking empty and inviting the admin to overwrite a value that is already there.
     it("should read a numeric-string duration", () => {
-      setAction({ action_type: "LOCK_USER", action_value: "600" });
-      expect(component.durationValue()).toBe("600");
+      setAction({ action_type: "LOCK_USER", action_value: "90" });
+      expect(component.durationValue()).toBe("90");
     });
   });
 
@@ -308,17 +405,37 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should merge a field into the value object", () => {
-      const spy = jest.spyOn(component.updateAction, "emit");
       setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
       component.onEmailFieldInput("body", "Hello {user}");
-      expect(spy).toHaveBeenCalledWith({ action_value: { subject: "Hi", body: "Hello {user}" } });
+      expect(stored().action_value).toEqual({ subject: "Hi", body: "Hello {user}" });
     });
 
     it("should drop an emptied non-mimetype field", () => {
-      const spy = jest.spyOn(component.updateAction, "emit");
       setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi", body: "x" } });
       component.onEmailFieldInput("body", "");
-      expect(spy).toHaveBeenCalledWith({ action_value: { subject: "Hi" } });
+      expect(stored().action_value).toEqual({ subject: "Hi" });
+    });
+
+    it("should keep an emptied mimetype instead of dropping it", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi", mimetype: "html" } });
+      component.onEmailFieldInput("mimetype", "");
+      expect(stored().action_value).toEqual({ subject: "Hi", mimetype: "" });
+    });
+
+    it("should store no value once every field is emptied", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
+      component.onEmailFieldInput("subject", "");
+      expect(stored().action_value).toBeNull();
+    });
+
+    it("should clear the missing-value message once the subject and body are written", () => {
+      setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
+      expect(component.actionValueError()).not.toBeNull();
+      component.onEmailFieldInput("subject", "Hi");
+      component.onEmailFieldInput("body", "Hello");
+      fixture.detectChanges();
+      expect(component.actionValueError()).toBeNull();
+      expect(fixture.nativeElement.querySelector(".ca-action-value-error")).toBeNull();
     });
 
     describe("SMTP server", () => {
@@ -386,17 +503,15 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should reset the value when the type changes to another mode", () => {
-    const spy = jest.spyOn(component.updateAction, "emit");
     setAction({ action_type: "EMAIL_ADMIN", action_value: { subject: "Hi" } });
     component.onActionTypeChange("LOCK_USER");
-    expect(spy).toHaveBeenCalledWith({ action_type: "LOCK_USER", action_value: null });
+    expect(stored()).toMatchObject({ action_type: "LOCK_USER", action_value: null });
   });
 
   it("should keep the value when the type stays in the same mode", () => {
-    const spy = jest.spyOn(component.updateAction, "emit");
     setAction({ action_type: "LOCK_USER", action_value: 600 });
     component.onActionTypeChange("BLOCK_IP");
-    expect(spy).toHaveBeenCalledWith({ action_type: "BLOCK_IP" });
+    expect(stored()).toMatchObject({ action_type: "BLOCK_IP", action_value: 600 });
   });
 
   it("should emit removeAction", () => {
@@ -406,12 +521,18 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   describe("retrigger", () => {
-    it("should emit updateAction when the checkbox toggles", () => {
-      const spy = jest.spyOn(component.updateAction, "emit");
+    it("should write the retrigger choice when the checkbox toggles", () => {
       component.onRetriggerChange(true);
-      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: true });
+      expect(stored().retrigger_above_threshold).toBe(true);
       component.onRetriggerChange(false);
-      expect(spy).toHaveBeenCalledWith({ retrigger_above_threshold: false });
+      expect(stored().retrigger_above_threshold).toBe(false);
+    });
+
+    it("should write the retrigger choice from the checkbox", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 600 });
+      (fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement).click();
+      fixture.detectChanges();
+      expect(stored().retrigger_above_threshold).toBe(true);
     });
 
     it("should default the checkbox by action type when unset", () => {
@@ -429,5 +550,11 @@ describe("ConditionalAccessActionItemComponent", () => {
       setAction({ action_type: "LOCK_USER", action_value: 600, retrigger_above_threshold: true });
       expect(component.retriggerChecked()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

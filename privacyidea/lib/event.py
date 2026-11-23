@@ -33,7 +33,7 @@ from privacyidea.lib.conditional_access.request_context import recheck_condition
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
                                 audit_column_length)
 
@@ -61,20 +61,21 @@ def _handler_failure_info(e_handler_def: dict, exception: Exception) -> str:
     return info[:audit_column_length.get("info")]
 
 
-def _aborts_on_error(e_handler_def: dict, exception: Exception) -> bool:
+def _aborts_on_error(e_handler_def: dict, exception: Exception | None) -> bool:
     """
     Return whether the failure of an event handler must abort the request.
 
     A failing handler is best-effort by default: the failure is logged and audited, and the request continues
     without it. That is wrong for a handler whose result the request itself consumes - a response mangler that
     does not run leaves the data it was configured to remove in the response - so such a binding can be
-    configured to abort instead. A handler that raises ``HandlerAbortError`` always aborts, regardless of the
-    configuration, which is how a handler decides by its own options (see the Script handler's ``raise_error``)
-    that the request must not succeed.
+    configured to abort instead. This holds for a handler that raises as well as for one that reports that it
+    could not do what it is configured for. A handler that raises ``HandlerAbortError`` always aborts, regardless
+    of the configuration, which is how a handler decides by its own options (see the Script handler's
+    ``raise_error``) that the request must not succeed.
 
     :param e_handler_def: The definition of the event handler
-    :param exception: The exception raised by the handler
-    :return: True if the exception should be re-raised
+    :param exception: The exception raised by the handler, None for a handler that reported a failure
+    :return: True if the request has to be aborted
     """
     return isinstance(exception, HandlerAbortError) or is_true(e_handler_def.get("abort_on_error"))
 
@@ -105,7 +106,8 @@ class event:
         event_audit_data = dict(self.g.audit_object.audit_data)
         event_audit_data["action"] = (f"{position} {self.eventname}>>"
                                       f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+        # The options are listed by their names: a value can hold a credential, like the URL of a WebHook
+        event_audit_data["action_detail"] = ", ".join(sorted(e_handler_def.get("options") or {}))
         event_audit_data["info"] = e_handler_def.get("name")
         return event_audit, event_audit_data
 
@@ -139,7 +141,8 @@ class event:
         Evaluate the conditions of one event handler and run its action.
 
         A failure of either is logged, rolled back and audited. Whether it also aborts the request is decided
-        by the configuration of the handler, see ``_aborts_on_error``. Evaluating the conditions is part of
+        by the configuration of the handler, see ``_aborts_on_error``, also for a handler that returns False because
+        it could not do what it is configured for. Evaluating the conditions is part of
         this: an error while checking them is a failure of the handler, not an unmet condition, and a handler
         that is configured to be best-effort must not fail the request because its conditions could not be
         evaluated.
@@ -155,7 +158,9 @@ class event:
         try:
             if not event_handler.check_condition(options=options):
                 return False
-            log.debug(f"{position} handling event {self.eventname} with options {options}")
+            log.debug(f"{position} handling event {self.eventname} with the event handler "
+                      f"{e_handler_def.get('name')!r} ({e_handler_def.get('handlermodule')}, "
+                      f"action {e_handler_def.get('action')})")
             event_audit, event_audit_data = self._new_handler_audit(position, e_handler_def)
             event_audit.log(event_audit_data)
             result = event_handler.do(e_handler_def.get("action"), options=options)
@@ -179,6 +184,13 @@ class event:
         # set audit object to success
         event_audit.log({"success": result})
         event_audit.finalize_log()
+        if result is False and _aborts_on_error(e_handler_def, None):
+            # The handler could not do what it is configured for, which fails the request like an error does. The
+            # reason is in the audit entry of the handler.
+            log.warning(f"{position.capitalize()} handler {e_handler_def.get('name')!r} "
+                        f"({e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}) failed: "
+                        f"{event_handler.run_details}")
+            raise HandlerAbortError(f"The event handler {e_handler_def.get('name')!r} failed.")
         return True
 
     def __call__(self, func):
@@ -198,27 +210,25 @@ class event:
             # do Pre-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname, position="pre")
             for e_handler_def in e_handles:
-                log.debug(f"Pre-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Pre-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
-                user_before_handler = getattr(self.request, "User", None)
                 self._run_handler(event_handler, e_handler_def, options, "PRE-EVENT")
-                if getattr(self.request, "User", None) != user_before_handler:
-                    # The handler replaced the user after the conditional-access gate checked the one the request
-                    # named, so the new user is gated before any later handler or the view acts for them.
-                    rejection = recheck_conditional_access_gate()
-                    if rejection is not None:
-                        return rejection
+                # The handler may have changed who the request is for after the conditional-access gate checked it,
+                # so a changed identity is gated before any later handler or the view acts for it.
+                rejection = recheck_conditional_access_gate()
+                if rejection is not None:
+                    return rejection
 
             f_result = func(*args, **kwds)
 
             # Post-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname)
             for e_handler_def in e_handles:
-                log.debug(f"Post-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Post-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
@@ -490,7 +500,7 @@ def import_event(data: list[dict], name: str | None = None) -> None:
     handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
     these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
     """
-    log.debug(f'Import event config: {data!s}')
+    log.debug(f'Import event config: {get_import_names(data)}')
     existing = defaultdict(list)
     for handler_id, handler_name, handlermodule in db.session.execute(
             select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):

@@ -13,18 +13,19 @@ def usage():
 privacyidea-pip-update
 
     -f, --force      do not ask for confirmation
-    -s, --skipstamp  skip the stamping of the database. Use this, if you know
-                     your DB has the correct version.
+    -s, --skipstamp  ignored, the schema update never stamps the database.
     -n, --noschema   do not run the schema update.
     -h, --help       show this help
     """)
 
 
 def update(environment):
-    call(PIP_EXECUTABLE + ["install", "--upgrade", "privacyidea"])
-    # Now we need to run the new requirements of privacyidea
-    # dependencies like ldap3 or pyasn1. This call could downgrade packages
-    call(PIP_EXECUTABLE + ["install", "-r", "{0!s}/lib/privacyidea/requirements.txt".format(environment)])
+    result = call(PIP_EXECUTABLE + ["install", "--upgrade", "privacyidea"])
+    if result == 0:
+        # Now we need to run the new requirements of privacyidea
+        # dependencies like ldap3 or pyasn1. This call could downgrade packages
+        result = call(PIP_EXECUTABLE + ["install", "-r", f"{environment}/lib/privacyidea/requirements.txt"])
+    return result
 
 
 def update_db_schema(environment, skip_stamp=False):
@@ -33,7 +34,7 @@ def update_db_schema(environment, skip_stamp=False):
     if skip_stamp:
         command += " --skipstamp"
     # update the database schema
-    call(command, shell=True)
+    return call(command, shell=True)
 
 
 def main():
@@ -76,10 +77,14 @@ def main():
             print("You canceled the update process.")
             return
 
-    update(environment)
+    result = update(environment)
+    if result != 0:
+        print("The update of the python environment failed, the database schema was not updated.")
+        return result
     if not no_schema:
-        update_db_schema(environment, skip_stamp)
+        return update_db_schema(environment, skip_stamp)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

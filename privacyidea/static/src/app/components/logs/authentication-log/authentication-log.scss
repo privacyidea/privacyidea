@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .authentication-log-table-container {
@@ -31,6 +31,14 @@
   }
 
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
+
+  // The collapse clips the row's content, and the custom range slider sits high enough in it (see
+  // .time-filter-custom-range) that a thumb's focus and hover circle would lose its top. Padding moves the clip edge up
+  // past the circle, and the matching negative margin keeps the row where it was.
+  .actions-row-inner {
+    padding-top: 8px;
+    margin-top: -8px;
+  }
 }
 
 .cell-scroll {
@@ -145,50 +153,10 @@ td.cell-info {
   display: flex;
   flex-direction: column;
 
-  .slider-with-histogram {
-    position: relative;
-  }
-
   .custom-range-label {
     font-size: 12px;
     text-transform: uppercase;
     color: var(--mat-sys-on-surface-variant);
-  }
-
-  // Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
-  .activity-histogram {
-    position: absolute;
-    inset: 8px 12px;
-    display: flex;
-    align-items: flex-end;
-    gap: 1px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .activity-bar {
-    flex: 1 1 0;
-    min-height: 1px;
-    background-color: var(--mat-sys-primary);
-    opacity: 0.4;
-    border-radius: 1px 1px 0 0;
-  }
-
-  .time-range-slider {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    // No side margin, so the slider spans the full block width.
-    margin: 0;
-    // Value hint as a horizontal rounded label sized to its content, so the date/time text (e.g. "Jul 15", "13:45")
-    // fits. Tokens inherit into the slider's internal value indicator across the component boundary.
-    --mat-slider-value-indicator-width: auto;
-    --mat-slider-value-indicator-height: 40px;
-    --mat-slider-value-indicator-padding: 0 10px;
-    --mat-slider-value-indicator-border-radius: 6px;
-    --mat-slider-value-indicator-container-transform: translateX(-50%);
-    --mat-slider-value-indicator-text-transform: none;
-    --mat-slider-value-indicator-transform-origin: center bottom;
   }
 
   // The copy in the "More Filter" menu: a panel of its own under the menu items, rather than squeezed into the row.
@@ -198,17 +166,6 @@ td.cell-info {
     height: auto;
     margin: 0;
     padding: 8px 16px 12px;
-  }
-
-  .range-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 12px;
-    height: 12px;
-    font-variant-numeric: tabular-nums;
-    color: var(--mat-sys-on-surface-variant);
-    white-space: nowrap;
   }
 }
 

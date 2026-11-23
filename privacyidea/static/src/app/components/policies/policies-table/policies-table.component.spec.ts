@@ -43,6 +43,7 @@ import {
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -161,16 +162,17 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
       afterClosed: () => of(null)
     } as unknown as MatDialogRef<never, never>);
 
     component.editPolicy(mockPolicies[0]);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_DETAILS + mockPolicies[0].name);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.POLICIES_DETAILS, mockPolicies[0].name]);
 
     jest.clearAllMocks();
     component.editPolicy({ name: "" } as PolicyDetail);
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it("should filter items", () => {
@@ -243,8 +245,30 @@ describe("PoliciesTableComponent", () => {
     expect(component.getFilterIconName("name")).toBe("filter_alt_off");
   });
 
+  it("hands a sort button click to the shared sort cycle, falling back to priority", () => {
+    const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+
+    component.onSortClick("name");
+
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith("name", component.sort, {
+      active: "priority",
+      direction: "asc"
+    });
+  });
+
+  it("reports the sort of a column as aria-sort", () => {
+    expect(component.ariaSort("priority")).toBe("ascending");
+    expect(component.ariaSort("name")).toBe("none");
+
+    component.sort.set({ active: "name", direction: "desc" });
+    expect(component.ariaSort("name")).toBe("descending");
+
+    component.sort.set({ active: "name", direction: "" });
+    expect(component.ariaSort("name")).toBe("none");
+  });
+
   it("should sort data by priority ascending", () => {
-    component.onSortChange({ active: "priority", direction: "asc" });
+    component.sort.set({ active: "priority", direction: "asc" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();
@@ -254,7 +278,7 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should sort data by priority descending", () => {
-    component.onSortChange({ active: "priority", direction: "desc" });
+    component.sort.set({ active: "priority", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();
@@ -264,7 +288,7 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should return unsorted data if sort direction is empty", () => {
-    component.onSortChange({ active: "priority", direction: "" });
+    component.sort.set({ active: "priority", direction: "" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();
@@ -532,5 +556,11 @@ describe("PoliciesTableComponent", () => {
 
     expect(component.filter().getFilterOfKey("actions")).toBe("=rss_age");
     expect(filterComponent.updateFilterManually).toHaveBeenCalledWith(component.filter());
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

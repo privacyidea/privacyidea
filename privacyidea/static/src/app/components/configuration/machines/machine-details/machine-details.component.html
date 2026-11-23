@@ -98,18 +98,22 @@
         appScrollEdges
         class="table-scroll-region">
         <table
+          aria-label="Attached tokens"
+          i18n-aria-label="@@table.machineTokens"
           [dataSource]="dataSource"
           class="tokens-table"
           mat-table>
           <ng-container matColumnDef="serial">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             i18n="@@common.serial"
             mat-header-cell
             >Serial</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-l"
             mat-cell>
             <div class="flex-row flex-nowrap ali-center">
               <a
@@ -129,12 +133,14 @@
         <ng-container matColumnDef="application">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@common.application"
             mat-header-cell
             >Application</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-s"
             mat-cell>
             {{ token.application }}
           </td>
@@ -143,12 +149,14 @@
         <ng-container matColumnDef="options">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@common.options"
             mat-header-cell
             >Options</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-xl"
             mat-cell>
             @if (!isEditing(token.id)) {
               @for (option of token.options | keyvalue; track option.key) {
@@ -189,12 +197,14 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@common.actions"
             mat-header-cell
             >Actions</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-s"
             mat-cell>
             <div class="flex just-center">
               @if (!isEditing(token.id)) {
@@ -249,19 +259,15 @@
       <h3 i18n="@@machine.attachNewToken">Attach a New Token</h3>
       <div class="flex-row ali-center gap-16">
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@machine.tokenSerial">Token Serial</mat-label>
           <input
-            [value]="newTokenSerial()"
-            (input)="onTokenSerialInput($any($event.target).value)"
+            [formField]="attachForm.serial"
             [matAutocomplete]="tokenSerialAuto"
             matInput
             i18n-placeholder="@@machine.serialExample"
             placeholder="e.g. PIHOTP000001" />
-          <mat-autocomplete
-            #tokenSerialAuto="matAutocomplete"
-            (optionSelected)="onTokenSerialInput($event.option.value)">
+          <mat-autocomplete #tokenSerialAuto="matAutocomplete">
             @for (serial of tokenService.filteredTokenOptions(); track serial) {
               <mat-option [value]="serial">{{ serial }}</mat-option>
             }
@@ -269,12 +275,9 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@common.application">Application</mat-label>
-          <mat-select
-            [value]="selectedApplication()"
-            (selectionChange)="selectedApplication.set($event.value)">
+          <mat-select [formField]="attachForm.application">
             @for (app of applicationOptions; track app) {
               <mat-option [value]="app">
                 {{ app }}
@@ -284,7 +287,7 @@
         </mat-form-field>
 
         <button
-          [disabled]="!newTokenSerial() || !selectedApplication()"
+          [disabled]="!attachForm().valid()"
           class="action-button-primary button-width-s margin-bottom-16"
           mat-stroked-button
           (click)="attachToken()">

@@ -43,6 +43,11 @@ class PasswordTokenClass(TokenClass):
     This Token does use a fixed Password as the OTP value.
     In addition, the OTP PIN can be used with this token.
     This Token can be used for a scenario like losttoken
+
+    The enrollment policies ``<type>.length`` and ``<type>.contents`` define a generated password, see
+    get_password_policy_actions(). The prepolicy applies them to every subclass and ignores request parameters with
+    these names. A subclass must therefore add get_password_policy_definitions() to the enrollment policies in its
+    get_class_info(). Otherwise an administrator can not set these policies and the defaults of the class apply.
     """
 
     password_detail_key = "password"  # nosec B105 # key name
@@ -94,6 +99,35 @@ class PasswordTokenClass(TokenClass):
     def get_class_prefix():
         return "PW"
 
+    @classmethod
+    def get_password_policy_actions(cls) -> tuple[str, str]:
+        """
+        Return the names of the enrollment policy actions, which define the length and the contents of a generated
+        password, e.g. ``("pw.length", "pw.contents")``. The prepolicy passes their values to the token in the
+        request parameters of the same names.
+        """
+        tokentype = cls.get_class_type()
+        return f"{tokentype}.length", f"{tokentype}.contents"
+
+    @classmethod
+    def get_password_policy_definitions(cls, length_desc: str, contents_desc: str) -> dict:
+        """
+        Return the definitions of the enrollment policy actions for the length and the contents of a generated
+        password.
+
+        :param length_desc: The description of the length action
+        :param contents_desc: The description of the contents action
+        :return: The policy definitions
+        """
+        length_action, contents_action = cls.get_password_policy_actions()
+        return {length_action: {'type': 'int',
+                                'value': list(range(1, 32)),
+                                'desc': length_desc,
+                                'group': GROUP.TOKEN},
+                contents_action: {'type': 'str',
+                                  'desc': contents_desc,
+                                  'group': GROUP.TOKEN}}
+
     @staticmethod
     @log_with(log)
     def get_class_info(key=None, ret='all'):
@@ -119,6 +153,13 @@ class PasswordTokenClass(TokenClass):
                'ui_enroll': [],
                'policy': {
                    SCOPE.ENROLL: {
+                       **PasswordTokenClass.get_password_policy_definitions(
+                           _("Set the length of the password of generated password tokens."),
+                           _("Specify the required "
+                             "contents of the password of a password token. "
+                             "(c)haracters, (n)umeric, "
+                             "(s)pecial. Use modifiers +/- or a list "
+                             "of allowed characters [1234567890]")),
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of password tokens assigned."),
@@ -154,24 +195,17 @@ class PasswordTokenClass(TokenClass):
             f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
         if force_genkey or not otp_key:
             param["genkey"] = True
+        # The prepolicy sets the length and the contents for every enrollment, also when the client sets the password.
+        # They only define a generated password, so they are removed here and TokenClass.update does not write them
+        # to the token info.
+        length_param, contents_param = self.get_password_policy_actions()
+        size = param.pop(length_param, self.otp_len)
+        contents = param.pop(contents_param, self.otp_contents)
         genkey = is_true(param.get("genkey"))
         if genkey:
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
-            type_prefix = self.get_class_type()
-            length_param = f"{type_prefix}.length"
-            contents_param = f"{type_prefix}.contents"
-            if length_param in param:
-                size = param[length_param]
-                del param[length_param]
-            else:
-                size = self.otp_len
-            if contents_param in param:
-                contents = param[contents_param]
-                del param[contents_param]
-            else:
-                contents = self.otp_contents
             param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
         if "otpkey" in param:
             param["otplen"] = len(param.get("otpkey"))

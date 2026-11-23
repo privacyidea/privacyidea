@@ -32,4 +32,10 @@ export class NewsListComponent {
   readonly items = input.required<NewsListItem[]>();
   readonly showSummary = input(false);
   readonly maxAgeDays = input(0);
+
+  // The feed's images carry no alt text. They illustrate the summary beside them, so an empty alt marks them
+  // decorative instead of leaving screen readers to announce the file name.
+  protected withImageAlt(summary: string): string {
+    return summary.replace(/<img\b(?![^>]*\balt\s*=)/gi, '<img alt=""');
+  }
 }

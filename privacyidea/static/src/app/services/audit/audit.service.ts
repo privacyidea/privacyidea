@@ -32,6 +32,7 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
+import { downloadBlob } from "@utils/download.utils";
 import { finalize, Observable, Subscription } from "rxjs";
 
 export interface Audit {
@@ -222,13 +223,7 @@ export class AuditService extends FilterableTableService implements AuditService
       .pipe(finalize(() => this.isDownloading.set(false)))
       .subscribe({
         next: (data) => {
-          const blob = new Blob([data], { type: "text/csv" });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "audit.csv";
-          a.click();
-          window.URL.revokeObjectURL(url);
+          downloadBlob(new Blob([data], { type: "text/csv" }), "audit.csv");
         },
         error: () => {
           this.notificationService.error($localize`:@@audit.failedDownload:Failed to download audit log.`);

@@ -3,6 +3,7 @@ This test file tests the lib.caconnector.py and
 lib.caconnectors.localca.py
 """
 import datetime
+import glob
 import os
 import shutil
 import tempfile
@@ -257,8 +258,8 @@ class LocalCATestCase(MyTestCase):
         self.assertEqual("<Name(CN=requester.localdomain,O=privacyidea,ST=Hessen,C=DE)>", f"{cert_obj.subject!r}")
 
         # Check output files
-        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain.pem"))
-        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain.req"))
+        self.assertEqual(1, len(glob.glob(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain_*.pem")))
+        self.assertEqual(1, len(glob.glob(f"{self.ca_path}/DE_Hessen_privacyidea_requester.localdomain_*.req")))
 
         # Fail to revoke certificate due to non-existing-reasing
         self.assertRaises(CAError, cacon.revoke_cert, cert, reason="$(rm -fr)")
@@ -307,8 +308,8 @@ class LocalCATestCase(MyTestCase):
                          "<Name(CN=usercert,O=privacyidea,ST=Hessen,C=DE)>")
 
         # Check output files
-        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_usercert.pem"))
-        self.assertTrue(os.path.isfile(f"{self.ca_path}/DE_Hessen_privacyidea_usercert.req"))
+        self.assertEqual(1, len(glob.glob(f"{self.ca_path}/DE_Hessen_privacyidea_usercert_*.pem")))
+        self.assertEqual(1, len(glob.glob(f"{self.ca_path}/DE_Hessen_privacyidea_usercert_*.req")))
 
     def test_05_templates(self):
         cacon = LocalCAConnector("localCA",

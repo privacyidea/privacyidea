@@ -54,7 +54,7 @@ Flatfile Resolver
 
 .. index:: flatfile resolver
 
-Flatfile resolvers read files like ``/etc/passwd``.
+Flatfile resolvers read files like ``/etc/passwd``. In the WebUI, this resolver type is called *Passwd*.
 
 .. note:: The file ``/etc/passwd`` does not contain the unix password.
    Thus, if you create a flatfile resolver from this file the functionality
@@ -89,8 +89,7 @@ The ``Server URI`` can contain a comma separated list of servers.
 The servers are used to create a server pool [#serverpool]_. By default the
 servers are used round robin; with the parameter ``SERVERPOOL_STRATEGY`` the
 strategy can be set to ``FIRST`` (the first reachable server of the list) or
-``RANDOM``. The previous WebUI offers this setting, the current WebUI does not
-(use the API).
+``RANDOM``.
 
 **Example**::
 
@@ -183,10 +182,10 @@ Modifying Users
 You can define the LDAP resolver as editable.
 I.e. you can create and modify users from within privacyIDEA.
 
-There are two additional configuration parameters for this case.
+There are two additional configuration parameters for this case, shown when *Edit User Store* is checked.
 
-``DN Template`` defines how the DN of the new LDAP object should be created. You can use *username*, *surname*,
-*givenname* and *basedn* to create the distinguished name.
+*DN of a New Created User Object* defines how the DN of the new LDAP object should be created. You can use
+*username*, *surname*, *givenname* and *basedn* to create the distinguished name.
 
 **Examples**::
 
@@ -196,13 +195,16 @@ There are two additional configuration parameters for this case.
 
    uid=<username>,ou=users,o=example,c=com
 
-``Object Classes`` defines which object classes the user should be assigned to. This is a comma separated list.
+*Object Classes of a New Created User Object* defines which object classes the user should be assigned to. This is a comma separated list.
 The usual object classes for Active Directory are::
 
    top, person, organizationalPerson, user, inetOrgPerson
 
 Resolver Settings
 ~~~~~~~~~~~~~~~~~
+
+The presets *OpenLDAP* and *Active Directory* fill in the login name attribute, the search filter, the attribute
+mapping and the UID type with the usual values of these directories.
 
 Loginname Attribute
 """""""""""""""""""
@@ -288,6 +290,10 @@ Active Directory only returns the direct group memberships of a user. If you are
 in all group memberships, you can use this option. The resolver will then perform another search to retrieve all groups
 of the user, according to the defined search filter.
 
+With the recursive search enabled, *Search Filter for User Groups*, *Group Name Attribute*
+and *User Info Key* are required in the WebUI. If one of them is missing (e.g. in a resolver
+created through the API), the recursive search is skipped with only an info entry in the log.
+
 **Base DN of User Groups**
 
 Define the groups container base DN. If your groups are located under the same base DN as defined in ``Base DN`` for
@@ -321,10 +327,6 @@ e.g., ``distinguishedName``.
 **User Info Key**
 
 The key to store the groups in the user info (attribute mapping key).
-
-*Search Filter for User Groups*, *Group Name Attribute* and *User Info Key* are all required. If one of them is empty,
-the recursive search is not performed, without an error (only an info entry in the log). The WebUIs do not mark them
-as required.
 
 No anonymous referral chasing
 """""""""""""""""""""""""""""
@@ -385,18 +387,18 @@ The *Database Encoding* (default ``latin1``) is used to decode column values
 that the database driver returns as bytes.
 
 In the *Table, Mapping, Pool & Editable* section you can specify how the users are
-identified.
+identified. The presets, e.g. *Wordpress* or *OTRS*, fill in the table and the mapping of these applications.
 
-The ``Database table`` contains the users.
+The *Table* contains the users.
 
 .. note:: At the moment, only one table
    is supported, i.e. if some of the user data like email address or telephone
    number is located in a second table, those data cannot be retrieved.
 
-The ``Limit`` is the SQL limit for a userlist request. This can be important
+The *Limit* is the SQL limit for a userlist request. This can be important
 if you have several thousand user entries in the table.
 
-The ``Attribute mapping`` defines which table column should be mapped to
+The *Mapping* defines which table column should be mapped to
 which privacyIDEA attribute. The known attributes are:
 
  * userid *(mandatory)*,
@@ -420,18 +422,17 @@ database.
    (``$2a$``, ``$2b$``, ``$2y$``), SHA-256-crypt (``$5$``), SHA-512-crypt
    (``$6$``), and hashes of 64 hex characters as OTRS SHA-256.
 
-You can mark the users as ``Editable``. The ``Password_Hash_Type`` determines
+You can mark the users as editable with *Edit user store*. The *Password Hash for Editable Users* determines
 the hash that is written when the password of an editable user is set:
 ``PHPASS``, ``SHA``, ``SSHA``, ``SSHA256`` (default), ``SSHA512``, ``OTRS``,
-``SHA256CRYPT``, ``SHA512CRYPT`` or ``MD5CRYPT``. The current WebUI does not
-offer ``SHA256CRYPT``.
+``SHA256CRYPT``, ``SHA512CRYPT`` or ``MD5CRYPT``.
 
-You can add an additional ``Where statement`` if you do not want to use
+You can add an additional *Where Statement* if you do not want to use
 all users from the table.
 
-The ``poolSize`` and ``poolTimeout`` determine the pooling behavior. The
-``poolSize`` (default 5) determines how many connections are kept open in the
-pool. The ``poolTimeout`` (default 10) specifies how long the application
+The *Pool Size* and *Pool Timeout* determine the pooling behavior. The
+*Pool Size* (default 5) determines how many connections are kept open in the
+pool. The *Pool Timeout* (default 10) specifies how long the application
 waits to get a connection from the pool.
 
 .. note:: The pooling parameters only have an effect if the ``PI_ENGINE_REGISTRY_CLASS``
@@ -491,6 +492,9 @@ of web service API. There are four types of HTTP resolvers:
       ID.
     * :ref:`keycloak_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Keycloak.
 
+In the WebUI, the type *HTTP* offers the basic and the advanced HTTP resolver, selected with *Basic* and *Advanced*
+under *HTTP Settings*. The Entra ID and the Keycloak resolver are types of their own.
+
 .. _basic_http_resolver:
 
 Basic HTTP Resolver
@@ -535,13 +539,14 @@ for parsing, e.g.
 For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
 the request as unsuccessful if the response contains certain content.
 
-The above configuration image will throw an error for a response
+For example, an API answers a request for an unknown user with ``200 OK`` and the response
 
 .. code-block:: json
 
    { "success": false, "message": "There was an error!" }
 
-because privacyIDEA will match ``{ "success": false }``.
+To treat this response as an error, check ``Special error handling`` and enter ``{ "success": false }`` in
+``Response Contains``.
 
 .. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
 
@@ -575,14 +580,14 @@ are configured. Below that, you can set up the user store API endpoint for each 
             * mobile
             * email
 
-    * **Groups**: Enable this option to perform a separate request to retrieve the user's groups. Parameters to
+    * **User Groups**: *Enable* performs a separate request to retrieve the user's groups. Parameters to
       configure:
 
             * *privacyIDEA User Groups Key*: The key to store the groups in the user info (attribute mapping key).
               By default, this is ``groups``.
-            * *User Store Group Attribute*: The groups attribute from the user store to be used as identifier for the group,
+            * *User Store Attribute*: The groups attribute from the user store to be used as identifier for the group,
               e.g. ``name`` or ``id``.
-            * *HTTP Method*: The HTTP method to use for the request to retrieve the groups (GET, POST, PUT, PATCH,
+            * *Method*: The HTTP method to use for the request to retrieve the groups (GET, POST, PUT, PATCH,
               DELETE).
             * *Endpoint*: The endpoint of the user store API to retrieve the groups of the user. It will be
               concatenated with the base URL except if a full URL starting with ``http`` is specified. Possible tags:
@@ -680,8 +685,14 @@ Possible tag: ``{userid}``
 
 **Get User by Name**
 
-Configure the endpoint to retrieve a single user for the username. If an error occurs, the resolver will only log it
-and not throw an exception.
+Configure the endpoint to retrieve a single user for the username. The user does not exist if the endpoint answers
+with ``404 Not Found`` or with a successful (``2xx``) response that matches the *Special error handling*. Any other
+error status, e.g. a server error or a failed authorization, and an unreachable user store make the lookup fail with
+an error, and so does the request that needed the user.
+
+.. note:: A ``404 Not Found`` is also the answer to an endpoint that does not exist, e.g. a typo in the configured
+   path. privacyIDEA can not tell this apart from a user that does not exist, so every user would be unknown. Use
+   *Test Connection* with a *Test Username* to check the endpoint after changing it.
 
 For example, this is used when a user tries to authenticate against privacyIDEA. To resolve the complete user and
 evaluate if the user exists, this endpoint is used.
@@ -723,23 +734,23 @@ if you want to change the default configuration.
 The configuration is similar to the advanced HTTP resolver. In the following, only the differences and some default
 settings are described.
 
-.. figure:: images/entraid_resolver.png
-   :width: 500
-
 **Generic Settings**
 
     * **Base URL**: The base URL of the Microsoft Graph API. It will be concatenated with the ``Endpoint`` in the
       detailed configurations. By default, this is ``https://graph.microsoft.com/v1.0``.
     * **Attribute Mapping**: The mapping between privacyIDEA user attributes and the ones used by Entra ID is already
       prefilled. If you do not need all of them, you can remove them.
-    * **Groups**: Receive the group memberships when getting the user information.
-      Optionally, you can define the *privacyIDEA user groups key* to store the groups in the user info. By default,
-      this is ``groups``. You can also define the *user store group attribute* to specify which Entra ID attribute
+    * **User Groups**: Receive the group memberships when getting the user information.
+      Optionally, you can define the *privacyIDEA User Groups Key* to store the groups in the user info. By default,
+      this is ``groups``. You can also define the *Group Identifier* to specify which Entra ID attribute
       should be used as an identifier for the group. By default, this is ``displayName``.
     * **Edit user store**: By default, editing the users in Entra ID is not enabled. If you want to enable this option,
       you need to ensure that the required write permissions are granted to the privacyIDEA server in Entra ID.
     * **Verify TLS**: By default, the TLS certificate of the Entra ID server is verified. Usually, there is no need to
       add a custom certificate.
+
+.. figure:: images/entraid_resolver.png
+   :width: 500
 
 **Authorization**
 
@@ -811,13 +822,14 @@ In the privacyIDEA WebUI, in the authorization section of the Entra ID resolver,
 settings:
 
     * **Authority**: The URL of Microsoft where the application needs to authenticate to receive an access token.
-      This is usually ``https://login.microsoftonline.com/{tenant}``, where ``{tenant}`` is the name of your tenant.
-      You can use the tenant tag and define the tenant name below.
-    * **Tenant**: The name of your Microsoft Entra ID tenant
+      This is usually ``https://login.microsoftonline.com/{tenant}``, where ``{tenant}`` is your tenant ID.
+      You can use the tenant tag and define the tenant ID below.
+    * **Tenant ID**: The ID of your Microsoft Entra ID tenant, for example ``12345678-1234-1234-1234-123456789012``.
+      A domain name of the tenant also works.
     * **Client ID**: The application (client) ID of the registered application in Entra ID. In the Microsoft Entra admin
       center, browse to *Applications > App registrations > All applications* and select your privacyIDEA server. On
       the application overview page, you can find the application (client) ID.
-    * **Client Credential**: The client credential to authenticate the privacyIDEA server against the Microsoft Entra
+    * **Client Credential Type**: The client credential to authenticate the privacyIDEA server against the Microsoft Entra
       ID. Depending on the selected authentication method, you can either select "certificate" or "secret" for the type.
 
         * **Secret**: Enter the client secret you created in the Microsoft Entra admin center.
@@ -825,7 +837,7 @@ settings:
 
             * **Path to the private key file**: The path to the private key file you used to generate the certificate.
               The key must be in PEM format.
-            * **Password of the private key**: If the private key is encrypted, enter the password here; otherwise,
+            * **Password for the private key**: If the private key is encrypted, enter the password here; otherwise,
               leave the field empty.
             * **Thumbprint of the certificate**: The thumbprint of the certificate you uploaded in Entra ID. You can find
               the thumbprint also in the Microsoft Entra admin center on the application page. There, you need to browse
@@ -875,7 +887,6 @@ the following required parameters are set in the request mapping:
           multifactor authentication (MFA) before being forced to change their password.
 
 
-
 .. _keycloak_resolver:
 
 Keycloak Resolver
@@ -890,9 +901,6 @@ if you want to change the default configuration.
 The configuration is similar to the advanced HTTP resolver. In the following, only the differences and some default
 settings are described.
 
-.. figure:: images/keycloak_resolver.png
-   :width: 500
-
 **Generic Settings**
 
     * **Base URL**: The base URL of the Keycloak server. It will be concatenated with the ``Endpoint`` in the detailed
@@ -904,6 +912,9 @@ settings are described.
       you need to ensure that the required write permissions are granted to the privacyIDEA server in Keycloak.
     * **Verify TLS**: By default, the TLS certificate of the Keycloak server is verified. If you have a self-signed
       certificate, you can add the certificate of the CA here.
+
+.. figure:: images/keycloak_resolver.png
+   :width: 500
 
 **Authorization**
 

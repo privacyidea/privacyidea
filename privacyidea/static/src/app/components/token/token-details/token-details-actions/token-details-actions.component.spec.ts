@@ -34,6 +34,7 @@ import {
     MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 
 describe("TokenDetailsActionsComponent", () => {
@@ -69,9 +70,7 @@ describe("TokenDetailsActionsComponent", () => {
     component = fixture.componentInstance;
 
     component.tokenType = signal("hotp");
-    component.setPinValue = signal("");
-    component.repeatPinValue = signal("");
-    component.passkeyTestResult = signal(null);
+    fixture.componentRef.setInput("token", mockTokenDetails());
 
     fixture.detectChanges();
   });
@@ -80,11 +79,13 @@ describe("TokenDetailsActionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("emits testPasskey when triggered", () => {
-    const spy = jest.fn();
-    component.testPasskey.subscribe(spy);
-    component.testPasskey.emit();
-    expect(spy).toHaveBeenCalled();
+  it("renders the passkey test only for a passkey token", () => {
+    expect(fixture.nativeElement.querySelector("app-test-passkey-action")).toBeNull();
+
+    component.tokenType.set("passkey");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("app-test-passkey-action")).not.toBeNull();
   });
 
   describe("hasAnyAction", () => {
@@ -100,12 +101,6 @@ describe("TokenDetailsActionsComponent", () => {
 
     it("returns true when token type is passkey", () => {
       component.tokenType = signal("passkey");
-      expect(component["hasAnyAction"]).toBe(true);
-    });
-
-    it("returns true when rollout_state is verify", () => {
-      component.tokenType = signal("webauthn");
-      fixture.componentRef.setInput("token", { rollout_state: "verify" } as TokenDetails);
       expect(component["hasAnyAction"]).toBe(true);
     });
 
@@ -126,18 +121,9 @@ describe("TokenDetailsActionsComponent", () => {
       expect(component["hasAnyAction"]).toBe(true);
     });
 
-    it("returns false for webauthn when no actions are allowed and not in verify state", () => {
+    it("returns false for webauthn when no actions are allowed", () => {
       component.tokenType = signal("webauthn");
       fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
-      const authService = TestBed.inject(AuthService);
-      jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
-      jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);
-      expect(component["hasAnyAction"]).toBe(false);
-    });
-
-    it("returns false for webauthn with no token and no actions allowed", () => {
-      component.tokenType = signal("webauthn");
-      fixture.componentRef.setInput("token", undefined);
       const authService = TestBed.inject(AuthService);
       jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
       jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);

@@ -274,13 +274,14 @@ def _compare_date_within_last(date_to_check: str | datetime.datetime, time_delta
         condition_time_delta = parse_timedelta(time_delta)
     except TypeError as error:
         raise CompareError(str(error))
+    if condition_time_delta < datetime.timedelta(0):
+        raise CompareError(f"The duration must not be negative: {time_delta}")
 
     # calculate the true time difference between the time stamp and now
     now = datetime.datetime.now(datetime.UTC)
     true_time_delta = now - date_to_check
 
-    # compare the true time value with the condition time value
-    return true_time_delta < condition_time_delta
+    return datetime.timedelta(0) <= true_time_delta < condition_time_delta
 
 
 def _compare_string_contains(text: str, substring: str) -> bool:

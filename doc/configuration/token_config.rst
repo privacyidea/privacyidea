@@ -5,16 +5,14 @@ Token configuration
 
 .. index:: token configuration
 
-Each of the :ref:`tokentypes` can provide its own configuration dialog.
-
-In this configuration dialog you can define default values for these token
-types. Some tokens additionally require :ref:`configuration` such as the configuration
+Each of the :ref:`tokentypes` can provide its own configuration. Under *Configuration -> Tokentypes*, each token type
+has its own section, in which you can define default values for this token type. Some tokens additionally require :ref:`configuration` such as the configuration
 of an SMTP server.
 
 .. figure:: images/token-config.png
    :width: 500
 
-   *Exemplary token configuration for an SMS Token*
+   *The token type configuration with the TOTP section opened*
 
 .. toctree::
    :glob:

@@ -152,8 +152,32 @@ describe("ResolverService", () => {
     });
   });
 
-  it("should not request the resolvers resource outside of a users route", () => {
+  it("should request the resolvers resource on the policies route", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.POLICIES_NEW);
+    TestBed.tick();
+
+    httpMock.expectOne(resolverService.resolverBaseUrl).flush({ result: { status: true, value: {} } });
+  });
+
+  it("should not request the resolvers resource outside of the users and policies routes", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+    TestBed.tick();
+
+    httpMock.expectNone(resolverService.resolverBaseUrl);
+  });
+
+  it("should request the resolvers resource outside of a users route when loadRequested is set", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+    resolverService.loadRequested.set(true);
+    TestBed.tick();
+
+    httpMock.expectOne(resolverService.resolverBaseUrl).flush(MockPiResponse.fromValue<Resolvers>({}));
+  });
+
+  it("should not request on loadRequested without the resolverread right", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+    (authService.actionAllowed as jest.Mock).mockReturnValue(false);
+    resolverService.loadRequested.set(true);
     TestBed.tick();
 
     httpMock.expectNone(resolverService.resolverBaseUrl);

@@ -21,12 +21,22 @@ import { TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
 import { PiResponse } from "@app/app.component";
-import { AuthResponse, AuthService } from "@services/auth/auth.service";
+import { AuthResponse, AuthService, MultiChallenge, WebAuthnSignRequest } from "@services/auth/auth.service";
 import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockBase64Service, MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { PasskeyCheckParams, ValidateCheckResponse, ValidateService, WebAuthnSignRequest } from "./validate.service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
+import {
+  ChallengeStatus,
+  mergeWebAuthnSignRequests,
+  PasskeyCheckParams,
+  PollTransactionDetail,
+  TriggerChallengeResponse,
+  ValidateCheckResponse,
+  ValidateService
+} from "./validate.service";
 
 interface PasskeyShim {
   isConditionalMediationAvailable?: jest.Mock | (() => Promise<boolean>);
@@ -95,6 +105,51 @@ describe("ValidateService", () => {
     expect(body).toEqual({ otponly: "1", pass: "000000", serial: "HOTP1" });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
     expect(result).toEqual(apiResp);
+  });
+
+  it("testToken should send the transaction ID of an open challenge", () => {
+    postSpy.mockReturnValue(of({}));
+
+    validateService.testToken("QUST1", "test", undefined, "11451135673179897001").subscribe();
+
+    const [url, body] = (http.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/validate/check");
+    expect(body).toEqual({ serial: "QUST1", pass: "test", transaction_id: "11451135673179897001" });
+  });
+
+  describe("triggerChallenge", () => {
+    it("POSTs the serial to /validate/triggerchallenge and returns the API result", () => {
+      const apiResponse = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
+        message: "please enter otp: "
+      });
+      postSpy.mockReturnValue(of(apiResponse));
+
+      let result!: TriggerChallengeResponse;
+      validateService.triggerChallenge("HOTP1").subscribe((response) => (result = response));
+
+      const [url, body, options] = (http.post as jest.Mock).mock.calls[0];
+      expect(url).toBe("/validate/triggerchallenge");
+      expect(body).toEqual({ serial: "HOTP1" });
+      expect(options.headers instanceof HttpHeaders).toBe(true);
+      expect(result).toEqual(apiResponse);
+    });
+
+    it("notifies the API message and rethrows when the request fails", (done) => {
+      postSpy.mockReturnValueOnce(
+        throwError(() => ({ error: { result: { error: { message: "ERR303: Admin actions are defined" } } } }))
+      );
+
+      validateService.triggerChallenge("HOTP1").subscribe({
+        next: () => done.fail("expected error"),
+        error: (error) => {
+          expect((notif.error as jest.Mock).mock.calls[0][0]).toBe(
+            "Failed to trigger a challenge. ERR303: Admin actions are defined"
+          );
+          expect(error).toBeTruthy();
+          done();
+        }
+      });
+    });
   });
 
   describe("authenticatePasskey", () => {
@@ -415,9 +470,7 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest
-          .spyOn(auth, "authenticate")
-          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+        const authSpy = jest.spyOn(auth, "authenticate").mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
         postSpy.mockImplementation(() => {
           throw new Error("should not POST in this branch");
         });
@@ -454,9 +507,7 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest
-          .spyOn(auth, "authenticate")
-          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+        const authSpy = jest.spyOn(auth, "authenticate").mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
 
         await new Promise<void>((resolve) => {
           validateService
@@ -562,5 +613,108 @@ describe("ValidateService", () => {
         });
       });
     });
+
+    describe("pollTransactionStatus", () => {
+      it.each(["accept", "declined", "cancelled", "pending"] as const)(
+        "returns the challenge status %s of the server",
+        (status) => {
+          const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+          httpGet.mockReturnValueOnce(
+            of(
+              MockPiResponse.fromValue<boolean, PollTransactionDetail>(status === "accept", {
+                challenge_status: status
+              })
+            )
+          );
+          const statuses: ChallengeStatus[] = [];
+
+          validateService.pollTransactionStatus("tid").subscribe((result) => statuses.push(result));
+
+          expect(httpGet).toHaveBeenCalledWith(
+            expect.stringContaining("polltransaction"),
+            expect.objectContaining({ params: { transaction_id: "tid" } })
+          );
+          expect(statuses).toEqual([status]);
+        }
+      );
+
+      it("returns pending if the server reports no status", () => {
+        const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+        httpGet.mockReturnValueOnce(of({ result: { value: false } } as unknown as PiResponse<boolean>));
+        const statuses: ChallengeStatus[] = [];
+
+        validateService.pollTransactionStatus("tid").subscribe((result) => statuses.push(result));
+
+        expect(statuses).toEqual(["pending"]);
+      });
+
+      it("notifies and rethrows on GET failure", () => {
+        const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+        httpGet.mockReturnValueOnce(throwError(() => ({ error: { result: { error: { message: "poll failed" } } } })));
+        const errors: unknown[] = [];
+
+        validateService.pollTransactionStatus("tid").subscribe({ error: (error) => errors.push(error) });
+
+        expect(notif.error).toHaveBeenCalledWith("poll failed");
+        expect(errors).toHaveLength(1);
+      });
+    });
+  });
+});
+
+describe("mergeWebAuthnSignRequests", () => {
+  it("should return null if there is no WebAuthn challenge", () => {
+    const hotpChallenge: MultiChallenge = {
+      client_mode: "interactive",
+      message: "please enter otp: ",
+      serial: "OATH00000001",
+      transaction_id: "tx-webauthn",
+      type: "hotp"
+    };
+
+    expect(mergeWebAuthnSignRequests([hotpChallenge], "example.com")).toBeNull();
+  });
+
+  it("should take the rpId from the first entry that fits the host of the page", () => {
+    const challenges = [
+      mockWebAuthnChallenge(
+        "WAN00000001",
+        mockWebAuthnSignRequest("credential-old-domain", { rpId: "old-domain.org" })
+      ),
+      mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2")),
+      mockWebAuthnChallenge("WAN00000003", mockWebAuthnSignRequest("credential-key-3"))
+    ];
+
+    expect(mergeWebAuthnSignRequests(challenges, "login.example.com")).toEqual({
+      ...mockWebAuthnSignRequest("credential-key-2"),
+      allowCredentials: [
+        ...mockWebAuthnSignRequest("credential-key-2").allowCredentials,
+        ...mockWebAuthnSignRequest("credential-key-3").allowCredentials
+      ]
+    });
+  });
+
+  it("should fall back to the first entry if no rpId fits the host of the page", () => {
+    const challenges = [
+      mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1", { rpId: "other-domain.org" })),
+      mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2"))
+    ];
+
+    // "notexample.com" ends with "example.com" but is not a subdomain of it
+    expect(mergeWebAuthnSignRequests(challenges, "notexample.com")).toEqual(
+      mockWebAuthnSignRequest("credential-key-1", { rpId: "other-domain.org" })
+    );
+  });
+
+  it("should leave out entries with another challenge", () => {
+    const challenges = [
+      mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+      mockWebAuthnChallenge(
+        "WAN00000002",
+        mockWebAuthnSignRequest("credential-key-2", { challenge: "other-challenge" })
+      )
+    ];
+
+    expect(mergeWebAuthnSignRequests(challenges, "example.com")).toEqual(mockWebAuthnSignRequest("credential-key-1"));
   });
 });

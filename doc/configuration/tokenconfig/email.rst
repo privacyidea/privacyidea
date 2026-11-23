@@ -6,11 +6,6 @@ Email Token Configuration
 
 .. index:: Email Token
 
-.. figure:: images/email.png
-   :width: 500
-
-   *Email Token configuration*
-
 For the :ref:`email token <email_token>` to work, you have to first set up an :ref:`smtpserver` and link it
 to the Email Token configuration at *Configuration -> Tokentypes -> E-Mail*. The UI warns the user
 if one of these requirements is not fulfilled yet.
@@ -49,3 +44,7 @@ Configuration Parameters
   This is the time in seconds for how long the sent OTP value is valid. If a
   user tries to authenticate with the sent OTP value after this time,
   authentication will fail.
+
+  A value sent automatically after a successful authentication (authentication
+  policy ``emailautosend``) and a value sent to verify the enrollment have no time
+  limit; they stay valid until they are used or a later value is sent or used.

@@ -19,6 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -36,6 +37,8 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { SmsGatewaysComponent } from "./sms-gateways.component";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
@@ -105,9 +108,10 @@ describe("SmsGatewaysComponent", () => {
   });
 
   it("should navigate to edit page when editing a gateway", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const gateway = smsGatewayServiceMock.smsGateways()[0];
     component.onEditGateway(gateway);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS, gateway.name]);
   });
 
   it("should only select the gateways left by the filter", async () => {
@@ -134,5 +138,139 @@ describe("SmsGatewaysComponent", () => {
   it("should not open the dialog when nothing is selected", () => {
     component.deleteSelected();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+  });
+
+  describe("toolbar actions", () => {
+    it("offers create and delete in that order", () => {
+      expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
+      expect(toolbarAction(component, "create").label).toBe("Create SMS Gateway");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
+    });
+
+    it("shows both actions with smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+
+      expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+    });
+
+    it("offers row selection only with smsgateway_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["smsgateway_read"]);
+      expect(selectColumn()).toBeNull();
+    });
+
+    it("draws no toolbar while the read right is denied", () => {
+      setRights(fixture, []);
+
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeUndefined();
+    });
+
+    it("keeps create enabled and disables delete until a row is selected", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create SMS Gateway")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
+
+      component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
+      fixture.detectChanges();
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
+    });
+
+    it("runs create by opening the new-entry route", () => {
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarAction(component, "create").run?.();
+
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
+    });
+
+    it("runs delete by confirming and then deleting the selected row", () => {
+      component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
+
+      toolbarAction(component, "delete").run?.();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+      expect(smsGatewayServiceMock.deleteSmsGateway).not.toHaveBeenCalled();
+      confirmClosed.next("discard");
+      confirmClosed.complete();
+
+      expect(smsGatewayServiceMock.deleteSmsGateway).toHaveBeenCalledTimes(1);
+      expect(smsGatewayServiceMock.deleteSmsGateway).toHaveBeenCalledWith("gw1");
+    });
+
+    it("runs create from its rendered button", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarButton(fixture, "Create SMS Gateway")?.click();
+
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
+    });
+
+    it("runs delete from its rendered button once a row is selected", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+      component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "Delete")?.click();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      smsGatewayServiceMock.smsGateways.set([]);
+    });
+
+    it("offers the create button and hint with smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create SMS Gateway");
+      expect(state.textContent).toContain("Create an SMS gateway to send one-time passwords by text message.");
+    });
+
+    it("offers neither button nor hint without smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create an SMS gateway to send one-time passwords by text message.");
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

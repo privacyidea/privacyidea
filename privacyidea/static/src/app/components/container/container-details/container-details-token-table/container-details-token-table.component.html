@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="Container Details Token Table"
-  class="container-details-token-table-layout"
-  i18n-aria-label="@@container.containerDetailsToken">
+<div class="container-details-token-table-layout">
   <div class="flex-column">
     <!-- The card title keeps its place next to the actions; only the actions themselves,
          which all operate on existing tokens, go away with the table. -->
@@ -41,9 +38,9 @@
         @if (dataSource().data.length > 1) {
           <div class="filter-actions-group">
             <mat-form-field
-              class="container-details-token-table-filter width-50"
+              class="container-details-token-table-filter width-half"
               subscriptSizing="dynamic">
-              <mat-label i18n="@@container.filterToken">Filter Token...</mat-label>
+              <mat-label i18n="@@container.filterToken">Filter Token</mat-label>
               <app-clearable-input
                 (clearButtonClick)="clearFilter()"
                 [showClearButton]="filterInput.value !== ''">
@@ -82,11 +79,13 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="flex">
                   <button
+                    [attr.aria-label]="column.label | sortByLabel"
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
                     mat-icon-button
@@ -98,8 +97,11 @@
             </th>
             <td
               *matCellDef="let element"
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
@@ -108,49 +110,40 @@
                         (element.token.username === authService.username() || authService.role() === "admin")
                       ) {
                         <a
-                          (click)="contentService.tokenSelected(element.token.serial)"
-                          (keydown.enter)="contentService.tokenSelected(element.token.serial)"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          class="cursor-pointer"
-                          role="button"
-                          tabindex="0">
+                          [appTruncationTooltip]="element.token[column.key]"
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.token.serial]"
+                          class="cell-truncate">
                           {{ element.token[column.key] }}
                         </a>
                       } @else {
-                        <span> {{ element.token[column.key] }} </span>
+                        <span
+                          [appTruncationTooltip]="element.token[column.key]"
+                          class="cell-truncate">
+                          {{ element.token[column.key] }}
+                        </span>
                       }
                     </app-copyable>
                   }
                   @case ("active") {
                     @if (element.status !== "missing") {
-                      <span
-                        (click)="toggleActive(element.token)"
-                        (keydown.enter)="toggleActive(element.token)"
-                        [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)"
-                        role="button"
-                        tabindex="0">
-                        {{ tableUtilsService.getDisplayText(column.key, element.token) }}
-                      </span>
+                      <app-token-active-toggle
+                        (toggled)="containerService.containerDetailsResource.reload()"
+                        [token]="element.token" />
                     }
                   }
                   @case ("username") {
                     <div class="flex-row ali-center">
                       @if (element.status !== "missing") {
                         @if (element.token[column.key]) {
-                          <a
-                            (click)="
-                              contentService.userSelected(element.token[column.key], element.token['user_realm'])
-                            "
-                            (keydown.enter)="
-                              contentService.userSelected(element.token[column.key], element.token['user_realm'])
-                            "
-                            [attr.aria-label]="linkLabel(column.label)"
-                            class="cursor-pointer"
-                            role="button"
-                            tabindex="0">
-                            {{ element.token[column.key] }}
-                          </a>
+                          @if (authService.role() === "admin") {
+                            <a
+                              [queryParams]="{ realm: element.token['user_realm'] ?? '' }"
+                              [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element.token[column.key]]">
+                              {{ element.token[column.key] }}
+                            </a>
+                          } @else {
+                            <span>{{ element.token[column.key] }}</span>
+                          }
                         } @else if (containerHasSingleUser()) {
                           <button
                             mat-icon-button
@@ -166,15 +159,7 @@
                   }
                   @default {
                     @if (element.status !== "missing") {
-                      @if (tableUtilsService.isLink(column.key)) {
-                        <a
-                          [attr.aria-label]="linkLabel(column.label)"
-                          href="#">
-                          {{ element.token[column.key] }}
-                        </a>
-                      } @else {
-                        <span> {{ element.token[column.key] }} </span>
-                      }
+                      <span> {{ element.token[column.key] }} </span>
                     } @else if (column.key === "tokentype") {
                       <span> {{ element.token.tokentype }} </span>
                     }
@@ -188,6 +173,7 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-actions"
             mat-header-cell>
             <div
               class="flex just-center"
@@ -197,6 +183,7 @@
           </th>
           <td
             *matCellDef="let element"
+            class="col-actions"
             mat-cell>
             <div class="flex-row just-center">
               @if (element.status !== "missing") {

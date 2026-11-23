@@ -22,6 +22,7 @@ import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 
 import { ReasonDetailDialog } from "../../reason-detail-dialog/reason-detail-dialog";
 import { ReasonCell } from "./reason-cell";
+import { axe } from "@testing/axe";
 
 describe("ReasonCell", () => {
   let component: ReasonCell;
@@ -128,7 +129,7 @@ describe("ReasonCell", () => {
     );
   });
 
-  it("opens the dialog from the placeholder link when the entry has no reason of its own", () => {
+  it("opens the dialog from the placeholder when the entry has no reason of its own", () => {
     fixture.componentRef.setInput("reasons", []);
     fixture.componentRef.setInput("info", {
       reason_detail: { reasons: { OATH0001: "TOKEN_FAILCOUNT_EXCEEDED" }, policies: ["deny_vpn"] }
@@ -179,10 +180,20 @@ describe("ReasonCell", () => {
     expect(button.getAttribute("aria-label")).toBe(component.detailLabel);
   });
 
-  it("names what the placeholder link opens too, since its own text does not say", () => {
+  it("offers the placeholder as a button named by its visible text, since it opens a dialog", () => {
     fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
     fixture.detectChanges();
 
-    expect(placeholder()?.getAttribute("aria-label")).toBe(component.detailLabel);
+    expect(placeholder()?.tagName).toBe("BUTTON");
+    expect(placeholder()?.getAttribute("type")).toBe("button");
+    expect(placeholder()?.hasAttribute("aria-label")).toBe(false);
+    expect(placeholder()?.textContent?.trim()).toBe("see details");
+  });
+
+  it("passes the axe accessibility checks with the placeholder and the detail button", async () => {
+    fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
