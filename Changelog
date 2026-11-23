@@ -1,3 +1,18 @@
+Version 3.15
+
+  Features:
+  * `GET /audit/` and the CSV download accept an ISO 8601 time interval `start/end` in the filters `startdate` and
+    `date`, for example `startdate=2026-11-05T00:00:00Z/2026-11-05T23:59:59Z`. Either bound may be left out for an
+    open end (#6012)
+  * WebUI: The audit log filters by a range of start dates. The filter button in the header of the Start Date column
+    opens a calendar with an optional time of day. A typed time without an offset is the local time of the browser
+    (#6012)
+
+  Enhancements:
+  * privacyIDEA stores its timestamps in UTC, and challenge expiry times in API responses carry a time zone offset.
+    Audit entries written before the update keep their local time and are told apart by the new column
+    `entry_version`, so time filters and the audit rotation still compare them correctly (#6012)
+
 Version 3.14.1
 
   Features:
