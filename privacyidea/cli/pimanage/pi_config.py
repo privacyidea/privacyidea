@@ -213,7 +213,8 @@ def realm_delete(realm, delete_custom_attributes):
 
 @realm_cli.command("set_default")
 @click.argument("realm", type=str)
-def realm_set_default(realm):
+@click.pass_context
+def realm_set_default(ctx, realm):
     """
     Set the given REALM as the default realm
     """
@@ -221,6 +222,7 @@ def realm_set_default(realm):
         set_default_realm(realm)
     except ResourceNotFoundError as e:
         click.secho(f"Could not set realm {realm} as default: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Realm {realm} set as default realm.", fg="green")
 
@@ -391,7 +393,8 @@ def event_list():
 
 @event_cli.command("enable")
 @click.argument("eid", type=int)
-def event_enable(eid):
+@click.pass_context
+def event_enable(ctx, eid):
     """
     Enable event with id EID
     """
@@ -399,13 +402,15 @@ def event_enable(eid):
         r = enable_event(eid)
     except ResourceNotFoundError as e:
         click.secho(f"Could not enable event {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Enabled Event with ID {r}", fg="green")
 
 
 @event_cli.command("disable")
 @click.argument("eid", type=int)
-def event_disable(eid):
+@click.pass_context
+def event_disable(ctx, eid):
     """
     Disable event with id EID
     """
@@ -413,13 +418,15 @@ def event_disable(eid):
         r = enable_event(eid, enable=False)
     except ResourceNotFoundError as e:
         click.secho(f"Could not disable event {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Disabled Event with ID {r}", fg="green")
 
 
 @event_cli.command("delete")
 @click.argument("eid", type=int)
-def event_delete(eid):
+@click.pass_context
+def event_delete(ctx, eid):
     """
     Delete event with id EID
     """
@@ -427,6 +434,7 @@ def event_delete(eid):
         r = delete_event(eid)
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete event with ID {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Deleted Event with ID {r}", fg="green")
 
@@ -452,7 +460,8 @@ def policy_list():
 
 @policy_cli.command("enable")
 @click.argument("name", type=str)
-def policy_enable(name):
+@click.pass_context
+def policy_enable(ctx, name):
     """
     enable the policy NAME.
     """
@@ -460,13 +469,15 @@ def policy_enable(name):
         enable_policy(name)
     except ResourceNotFoundError as e:
         click.secho(f"Could not enable policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully enabled policy '{name}'", fg="green")
 
 
 @policy_cli.command("disable")
 @click.argument("name", type=str)
-def policy_disable(name):
+@click.pass_context
+def policy_disable(ctx, name):
     """
     disable the policy NAME
     """
@@ -474,13 +485,15 @@ def policy_disable(name):
         enable_policy(name, enable=False)
     except ResourceNotFoundError as e:
         click.secho(f"Could not disable policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully disabled policy '{name}'", fg="green")
 
 
 @policy_cli.command("delete")
 @click.argument("name", type=str)
-def policy_delete(name):
+@click.pass_context
+def policy_delete(ctx, name):
     """
     delete the policy NAME
     """
@@ -488,6 +501,7 @@ def policy_delete(name):
         delete_policy(name)
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully deleted policy '{name}'", fg="green")
 

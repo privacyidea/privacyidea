@@ -174,7 +174,8 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
 def _create_container_query(user: User = None, serial: str = None, ctype: str = None,
                             ctype_exact: list[str] = None,
                             token_serial: str = None,
-                            realm: str = None, allowed_realms: list[str] = None, template: str = None,
+                            realm: str = None, has_realm: bool | None = None, allowed_realms: list[str] = None,
+                            template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
                             sortby: str = 'serial', sortdir: str = 'asc') -> Select:
@@ -194,6 +195,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
+    :param has_realm: True to only return containers with at least one realm, False to only return containers
+        without any realm, None for no filtering by realm assignment, optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
         empty list if none is), optional.
         If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
@@ -287,6 +290,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         else:
             # Use the input parameter 'realm' for the exact match filter
             stmt = stmt.where(func.lower(realm1.name) == realm.lower())
+
+    if has_realm is True:
+        stmt = stmt.where(TokenContainer.realms.any())
+    elif has_realm is False:
+        stmt = stmt.where(~TokenContainer.realms.any())
 
     # Use separate alias for each join to avoid conflicts
     realm_alias_allowed = aliased(Realm)
@@ -398,7 +406,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        ctype_exact: list[str] = None,
                        token_serial: str = None,
-                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
+                       realm: str = None, has_realm: bool | None = None, allowed_realms: list[str] = None,
+                       sortby: str = 'serial',
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
@@ -423,6 +432,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
+    :param has_realm: True to only return containers with at least one realm, False to only return containers
+        without any realm, None for no filtering by realm assignment, optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
         empty list if none is), optional.
         If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
@@ -448,8 +459,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     """
     sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, ctype_exact=ctype_exact,
                                                 token_serial=token_serial,
-                                                realm=realm, allowed_realms=allowed_realms, template=template,
-                                                description=description,
+                                                realm=realm, has_realm=has_realm, allowed_realms=allowed_realms,
+                                                template=template, description=description,
                                                 assigned=assigned, resolver=resolver, info=info,
                                                 last_auth_delta=last_auth_delta,
                                                 last_sync_delta=last_sync_delta, state=state, sortby=sortby,

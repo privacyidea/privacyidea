@@ -47,6 +47,21 @@
   start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
   start again for these clients.
 
+* **The realm filter of `GET /token/` and `GET /container/` now tells three cases apart.** `GET /token/?tokenrealm=*`
+  (also `**`) returns only tokens with at least one realm, `tokenrealm=` (empty) only tokens without any realm, and
+  without the parameter all tokens as before. The same applies to `container_realm` on `GET /container/`. Scripts that
+  send `tokenrealm=*` to mean "all tokens" must omit the parameter.
+
+* **More `pi-manage config` commands exit with status 1 for an unknown name.** These commands exit with status 1 if
+  the realm, event or policy does not exist. Before, they printed the error and exited with status 0.
+
+    * `pi-manage config realm set_default`
+    * `pi-manage config event enable`, `disable` and `delete`
+    * `pi-manage config policy enable`, `disable` and `delete`
+
+  A script that runs one of these commands for an object that does not exist now fails. An example is a script that
+  deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

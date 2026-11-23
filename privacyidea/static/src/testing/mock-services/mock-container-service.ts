@@ -47,6 +47,8 @@ export class MockContainerService implements ContainerServiceInterface {
   hiddenApiFilterKeys: string[] = [];
   apiFilterKeyMap: Record<string, string> = {};
   exactMatchKeys = new Set<string>();
+  keepEmptyKeys = new Set<string>();
+  presenceKeys = new Set<string>(["container_realm"]);
   allFilterKeys: Signal<string[]> = signal([
     ...this.apiFilterKeys,
     ...this.advancedApiFilterKeys,

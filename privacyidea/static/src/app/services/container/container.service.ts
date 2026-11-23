@@ -39,7 +39,13 @@ import {
 import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { buildFilterParams, filterParamsEqual, toWildcardParam, withDefaultRealm } from "@utils/filter.utils";
+import {
+  buildFilterParams,
+  filterParamsEqual,
+  toWildcardParam,
+  typedFilterEntries,
+  withDefaultRealm
+} from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { CONTAINER_STATE_VALUES, containerStateLabel } from "@utils/value-label.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
@@ -404,6 +410,7 @@ export class ContainerService extends FilterableTableService implements Containe
   override readonly advancedApiFilterKeys = advancedApiFilterKeys;
   override readonly hiddenApiFilterKeys = hiddenApiFilterKeys;
   override readonly exactMatchKeys = exactMatchKeys;
+  override readonly presenceKeys = new Set(["container_realm"]);
 
   activeFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
@@ -416,8 +423,12 @@ export class ContainerService extends FilterableTableService implements Containe
     () => {
       const allowed = this.allFilterKeys().filter((key) => !CONTAINER_TYPE_FILTER_KEYS.has(key));
 
-      const filterMap = this.activeFilter().filterMap;
-      const params = buildFilterParams(filterMap, allowed, exactMatchKeys);
+      const filter = this.activeFilter();
+      const filterMap = filter.filterMap;
+      const params = buildFilterParams(typedFilterEntries(filter), allowed, exactMatchKeys, {
+        keepEmptyKeys: this.keepEmptyKeys,
+        presenceKeys: this.presenceKeys
+      });
 
       const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
         .flatMap((key) => (filterMap.get(key) ?? "").split(","))

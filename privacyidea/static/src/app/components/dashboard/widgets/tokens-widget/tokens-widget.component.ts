@@ -285,7 +285,9 @@ export class TokensWidgetComponent extends DashboardWidget {
    * filter drops the exact marking.
    */
   private withRealm(filter: FilterValue): FilterValue {
-    return filter.addEntry("tokenrealm", this.realm()).withExactKey("tokenrealm");
+    const realm = this.realm();
+    // Without a realm there is nothing to add: an empty tokenrealm would ask for tokens without a realm.
+    return realm ? filter.addEntry("tokenrealm", realm).withExactKey("tokenrealm") : filter;
   }
 
   /** Dropped, or the entries of every realm ever loaded would be refetched on each refresh. */

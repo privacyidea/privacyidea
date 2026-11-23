@@ -33,6 +33,13 @@ class TestTableService extends FilterableTableService {
   sort = signal<Sort>({ active: "serial", direction: "asc" });
 }
 
+class PresenceTableService extends TestTableService {
+  override readonly apiFilterKeys = ["serial", "user", "type", "tokenrealm"];
+  override readonly hiddenApiFilterKeys = ["container_serial"];
+  override readonly presenceKeys = new Set(["tokenrealm"]);
+  override readonly keepEmptyKeys = new Set(["container_serial"]);
+}
+
 const inputEvent = (value: string) => ({ target: { value } }) as unknown as Event;
 
 describe("FilterableTableService", () => {
@@ -75,6 +82,65 @@ describe("FilterableTableService", () => {
       service.setFilter(new FilterValue({ value: "serial:   OATH" }));
 
       expect(service.filterParams()).toBe(params);
+    });
+  });
+
+  describe("filterParams with keepEmptyKeys and presenceKeys", () => {
+    let presence: PresenceTableService;
+    const paramsFor = (value: string) => {
+      presence.setFilter(new FilterValue({ value }));
+      return presence.filterParams();
+    };
+
+    beforeEach(() => {
+      presence = new PresenceTableService();
+    });
+
+    it("has no keepEmptyKeys and no presenceKeys by default", () => {
+      expect(service.keepEmptyKeys.size).toBe(0);
+      expect(service.presenceKeys.size).toBe(0);
+    });
+
+    it("sends an empty value of a keepEmptyKeys key as key=, bare or quoted", () => {
+      expect(paramsFor("container_serial:")).toEqual({ container_serial: "" });
+      expect(paramsFor("container_serial: \"\"")).toEqual({ container_serial: "" });
+      expect(paramsFor("serial: abc container_serial:")).toEqual({ serial: "*abc*", container_serial: "" });
+    });
+
+    it("sends no parameter for a wildcard-only value of a keepEmptyKeys key", () => {
+      expect(paramsFor("container_serial: *")).toEqual({});
+    });
+
+    it("sends key=* for a wildcard-only value of a presenceKeys key", () => {
+      expect(paramsFor("tokenrealm: *")).toEqual({ tokenrealm: "*" });
+      expect(paramsFor("tokenrealm: **")).toEqual({ tokenrealm: "*" });
+    });
+
+    it("sends key=* for a list that contains a wildcard-only entry", () => {
+      expect(paramsFor("tokenrealm: *,realm1")).toEqual({ tokenrealm: "*" });
+      expect(paramsFor("tokenrealm: realm1, **")).toEqual({ tokenrealm: "*" });
+    });
+
+    it("sends key= for a quoted empty value of a presenceKeys key", () => {
+      expect(paramsFor("tokenrealm: \"\"")).toEqual({ tokenrealm: "" });
+      expect(paramsFor("tokenrealm: \"\" serial: abc")).toEqual({ tokenrealm: "", serial: "*abc*" });
+    });
+
+    it("sends nothing for a bare presenceKeys key", () => {
+      expect(paramsFor("tokenrealm:")).toEqual({});
+      expect(paramsFor("tokenrealm: serial: abc")).toEqual({ serial: "*abc*" });
+    });
+
+    it("sends nothing for a presenceKeys list without entries", () => {
+      expect(paramsFor("tokenrealm: ,")).toEqual({});
+    });
+
+    it("keeps a wildcard-only and an empty value meaning no filter for every other key", () => {
+      expect(paramsFor("tokenrealm: * serial: * user: \"\" type: **")).toEqual({ tokenrealm: "*" });
+    });
+
+    it("leaves keys without a set to the usual rules", () => {
+      expect(paramsFor("serial: OATH type: hotp")).toEqual({ serial: "*OATH*", type: "hotp" });
     });
   });
 

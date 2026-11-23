@@ -33,7 +33,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_client_container_disabled_action, hide_container_info)
 from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
 from privacyidea.lib.params import (get_optional, get_optional_int, get_required,
-                                    get_required_one_of, require_in)
+                                    get_required_one_of, require_in, get_realm_presence_filter)
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -175,7 +175,10 @@ def list_containers():
         of their container, but a container can be in further realms and
         keeps the realm of a user that has been unassigned.
     :query container_realm: filter by the realm of the container itself
-        (case-insensitive, ``*`` wildcard).
+        (case-insensitive, ``*`` wildcard). If the parameter is absent, no
+        filter is applied. If it consists only of wildcards like ``*``, only
+        containers with at least one realm are returned. If it is empty, only
+        containers without any realm are returned.
     :query description: filter by description (case-insensitive,
         ``*`` wildcard).
     :query resolver: filter by the resolver of the assigned user
@@ -217,7 +220,7 @@ def list_containers():
         ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
-    realm = get_optional(param, "container_realm")
+    realm, has_realm = get_realm_presence_filter(param, "container_realm")
     description = get_optional(param, "description")
     resolver = get_optional(param, "resolver")
     assigned = get_optional(param, "assigned")
@@ -246,7 +249,8 @@ def list_containers():
 
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, ctype_exact=ctype_exact,
                                 token_serial=token_serial,
-                                realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                realm=realm, has_realm=has_realm, allowed_realms=allowed_container_realms,
+                                template=template,
                                 description=description, resolver=resolver, assigned=assigned, info=info,
                                 last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
                                 sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)

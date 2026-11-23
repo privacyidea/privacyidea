@@ -4034,6 +4034,45 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(tok_r1.get_serial())
         remove_token(tok_r2.get_serial())
 
+    def test_62b_list_tokens_tokenrealm_presence(self):
+        """GET /token/ tokenrealm presence filter: '*'/'**' only tokens with a
+        realm, empty string only realm-less tokens, no param returns both."""
+        self.setUp_user_realms()
+        serial_r = "TR62BREALM01"
+        serial_n = "TR62BNOREALM01"
+        init_token({"serial": serial_r, "genkey": 1}, tokenrealms=[self.realm1])
+        init_token({"serial": serial_n, "genkey": 1})
+
+        def get_serials(query):
+            with self.app.test_request_context("/token/",
+                                               method="GET",
+                                               query_string=query,
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return [t["serial"] for t in res.json["result"]["value"]["tokens"]]
+
+        try:
+            serials = get_serials(urlencode({"pagesize": 1000}))
+            self.assertIn(serial_r, serials)
+            self.assertIn(serial_n, serials)
+
+            for star in ("*", "**"):
+                serials = get_serials(urlencode({"tokenrealm": star, "pagesize": 1000}))
+                self.assertIn(serial_r, serials, star)
+                self.assertNotIn(serial_n, serials, star)
+
+            serials = get_serials("tokenrealm=&pagesize=1000")
+            self.assertNotIn(serial_r, serials)
+            self.assertIn(serial_n, serials)
+
+            serials = get_serials(urlencode({"tokenrealm": self.realm1, "pagesize": 1000}))
+            self.assertIn(serial_r, serials)
+            self.assertNotIn(serial_n, serials)
+        finally:
+            remove_token(serial_r)
+            remove_token(serial_n)
+
     def test_63_list_tokens_user_role_cannot_escalate(self):
         """A caller with role 'user' must not be able to list tokens of other
         users by passing user= or realm= query parameters."""
@@ -4594,8 +4633,8 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            # Even if we fetch tokenrealm=** we also get all the tokens without a tokenrealm
-            self.assertEqual(self.token_count + 10 + 1, result.get("value").get("count"))
+            # A wildcard-only tokenrealm returns only tokens with at least one realm
+            self.assertEqual(1, result.get("value").get("count"))
 
         with self.app.test_request_context('/token/',
                                            method='GET',

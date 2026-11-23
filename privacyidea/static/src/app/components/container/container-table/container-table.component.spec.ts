@@ -125,6 +125,32 @@ describe("ContainerTableComponent (Jest)", () => {
     expect(row.user_realm).toBe("r1");
   });
 
+  it("realmMenuOptions offers with and without realm only for container_realm", () => {
+    const realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    realmService.realmOptions.set(["realm1"]);
+    expect(component.realmMenuOptions("container_realm").map((o) => o.value)).toEqual([
+      "*",
+      "",
+      "realm1"
+    ]);
+    expect(component.realmMenuOptions("realm").map((o) => o.value)).toEqual(["realm1"]);
+  });
+
+  it("realm menu writes with realm as container_realm: * and without realm as container_realm: \"\"", () => {
+    const realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    realmService.realmOptions.set(["realm1"]);
+    const [withRealm, withoutRealm] = component.realmMenuOptions("container_realm");
+
+    component.onItemSelected("container_realm", withRealm.value);
+    expect(containerService.activeFilter().filterString).toBe("container_realm: *");
+
+    component.onItemSelected("container_realm", withoutRealm.value);
+    expect(containerService.activeFilter().filterString).toBe("container_realm: \"\"");
+
+    component.onItemSelected("container_realm", undefined);
+    expect(containerService.activeFilter().hasKey("container_realm")).toBe(false);
+  });
+
   describe("#handleStateClick", () => {
     it("calls toggleActive and reloads data", () => {
       const element: ContainerDetailData = {

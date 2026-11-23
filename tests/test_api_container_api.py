@@ -1046,6 +1046,35 @@ class APIContainer(APIContainerTest):
             delete_container_by_serial(realm2_serial)
             delete_container_by_serial(unassigned_serial)
 
+    def test_21e_get_all_containers_container_realm_presence(self):
+        # Arrange: one container in realm1 and one without any realm. Other tests leave containers around,
+        # so only the serials created here are asserted.
+        self.setUp_user_realms()
+        with_realm_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+        no_realm_serial = init_container({"type": "generic"})["container_serial"]
+
+        def get_serials(params):
+            result = self.request_assert_success('/container/', {**params, "pagesize": 1000}, self.at, 'GET')
+            return {c["serial"] for c in result["result"]["value"]["containers"]}
+
+        try:
+            # Without container_realm both are returned
+            serials = get_serials({})
+            self.assertIn(with_realm_serial, serials)
+            self.assertIn(no_realm_serial, serials)
+
+            # Wildcard only matches containers that have a realm
+            serials = get_serials({"container_realm": "*"})
+            self.assertIn(with_realm_serial, serials)
+            self.assertNotIn(no_realm_serial, serials)
+
+            # Explicit empty string only matches containers without a realm
+            serials = get_serials({"container_realm": ""})
+            self.assertNotIn(with_realm_serial, serials)
+            self.assertIn(no_realm_serial, serials)
+        finally:
+            delete_container_by_serial(with_realm_serial)
+            delete_container_by_serial(no_realm_serial)
     def test_22_get_all_containers_paginate_invalid_params(self):
         init_container({"type": "generic", "description": "test container"})
 

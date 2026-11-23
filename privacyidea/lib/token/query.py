@@ -8,7 +8,7 @@ from collections.abc import Callable, Iterator
 from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
-from sqlalchemy import and_, false, func, or_, select
+from sqlalchemy import and_, exists, false, func, or_, select
 from sqlalchemy.sql import Select
 
 from privacyidea.lib import _
@@ -73,7 +73,8 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                         description: str | None = None, revoked: bool | None = None,
                         locked: bool | None = None, userid: str | None = None, tokeninfo: dict | None = None,
                         maxfail: bool | None = None, allowed_realms: list[str] | None = None,
-                        container_serial: str | None = None, all_nodes: bool = False) -> Select:
+                        container_serial: str | None = None, all_nodes: bool = False,
+                        has_realm: bool | None = None) -> Select:
     session = db.session
     session.expire_all()
 
@@ -126,6 +127,12 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         realm_ids = select(Realm.id).where(or_(*realm_conditions))
         sql_query = sql_query.where(
             Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
+
+    if has_realm is True:
+        sql_query = sql_query.where(Token.id.in_(select(TokenRealm.token_id)))
+    elif has_realm is False:
+        # NOT IN would be wrong here because TokenRealm.token_id is nullable
+        sql_query = sql_query.where(~exists().where(TokenRealm.token_id == Token.id))
 
     if allowed_realms is not None:
         allowed_realm_ids = select(Realm.id).where(
@@ -785,7 +792,7 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
                         page: int = 1, description: str | None = None, userid: str | None = None,
                         allowed_realms: list[str] | None = None,
                         tokeninfo: dict | None = None, hidden_tokeninfo: list[str] | None = None,
-                        container_serial: str | None = None) -> dict:
+                        container_serial: str | None = None, has_realm: bool | None = None) -> dict:
     """
     This function is used to retrieve a token list, that can be displayed in
     the Web UI. It supports pagination.
@@ -828,6 +835,9 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
     :type hidden_tokeninfo: list
     :param container_serial: The serial number of a container
     :type container_serial: basestring
+    :param has_realm: Returns tokens that are in at least one realm (True) or in no realm at all (False).
+        None applies no filter.
+    :type has_realm: bool or None
     :return: dict with tokens, prev, next and count
     :rtype: dict
     """
@@ -843,7 +853,8 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
                                             resolver=resolver, tokeninfo=tokeninfo,
                                             rollout_state=rollout_state,
                                             description=description, userid=userid,
-                                            allowed_realms=allowed_realms, container_serial=container_serial)
+                                            allowed_realms=allowed_realms, container_serial=container_serial,
+                                            has_realm=has_realm)
 
     if isinstance(sortby, str):
         cols = Token.__table__.columns
