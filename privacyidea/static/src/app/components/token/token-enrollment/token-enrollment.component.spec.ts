@@ -872,8 +872,15 @@ describe("TokenEnrollmentComponent", () => {
         );
         component.descriptionForm().controlValue.set("first token");
         const generation = component["inputsGeneration"]();
+        pendingChangesService.clearAllRegistrations.mockClear();
+        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
 
         await component.enrollToken();
+
+        expect(component.enrollmentFlow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+        expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalledTimes(1);
+        expect(pendingChangesService.registerHasChanges).not.toHaveBeenCalled();
+
         (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
         component.enrollmentFlow.close();
 
@@ -882,33 +889,6 @@ describe("TokenEnrollmentComponent", () => {
         expect(component["inputsGeneration"]()).toBe(generation + 1);
         expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
         expect(component.canReopenEnrollmentDialog()).toBe(true);
-      });
-
-      it("clears the unsaved-changes guard before the first step of push opens", async () => {
-        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
-        let clearedWhileStepOpen = 0;
-        let registeredWhileStepOpen = 0;
-        installStrategy(component, {
-          buildEnrollmentArgs: strategyArgs("push"),
-          onEnrollmentResponse: jest.fn().mockImplementation(async () => {
-            clearedWhileStepOpen = pendingChangesService.clearAllRegistrations.mock.calls.length;
-            registeredWhileStepOpen = pendingChangesService.registerHasChanges.mock.calls.length;
-            return null;
-          }),
-          reopenDialog: signal(jest.fn())
-        });
-        tokenService.enrollToken.mockReturnValueOnce(
-          of({ result: { status: true }, detail: { serial: "PIPU0003", rollout_state: "clientwait" } })
-        );
-        component.descriptionForm().controlValue.set("first token");
-        pendingChangesService.clearAllRegistrations.mockClear();
-        pendingChangesService.registerHasChanges.mockClear();
-
-        await component.enrollToken();
-
-        expect(clearedWhileStepOpen).toBe(1);
-        expect(registeredWhileStepOpen).toBe(0);
-        expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
       });
 
       it("keeps the inputs for the next token when a push enrollment finishes on reopen", async () => {
