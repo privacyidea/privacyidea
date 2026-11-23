@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, linkedSignal, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -30,12 +30,13 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
+import { loadedEnrollmentPolicies } from "@components/token/token-enrollment/enrollment-policy-values";
 import { SMS_GATEWAY } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -75,14 +76,31 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
   wizard = input<boolean>(false);
 
   disabled = input<boolean>(false);
+  enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
-  smsGateway = signal<string>("");
+  private readonly policyGateways = computed(
+    () => loadedEnrollmentPolicies(this.enrollmentPolicies())?.sms_gateways ?? []
+  );
+  private readonly defaultGatewayId = computed<string | undefined>(() =>
+    this.systemService.systemConfigResource.hasValue()
+      ? this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY]
+      : undefined
+  );
+
+  // The enrollment data (rollover, template) first, then the system default gateway if the policies allow it.
+  smsGateway = linkedSignal<string>(() => {
+    const data = this.enrollmentData();
+    if (data) return data.smsGateway ?? "";
+    const defaultId = this.defaultGatewayId();
+    const allowed = this.policyGateways();
+    return defaultId && (allowed.length === 0 || allowed.includes(defaultId)) ? defaultId : "";
+  });
   phoneNumber = signal<string>("");
   readNumberDynamically = signal<boolean>(false);
 
   smsGatewayForm = form(this.smsGateway, (f) => {
     required(f);
-    disabled(f, () => this.disabled());
+    disabled(f, () => this.disabled() || this.enrollmentPolicies().state === "pending");
   });
 
   phoneNumberForm = form(this.phoneNumber, (f) => {
@@ -96,61 +114,26 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
     disabled(f, () => this.disabled() || this.readNumberDynamically());
   });
 
+  // A gateway list from the enrollment policies is offered as it is, otherwise all gateways plus the default.
   smsGatewayOptions = computed(() => {
-    // Find the first right that starts with "sms_gateways="
-    const right = this.authService.rights().find((r) => r.startsWith("sms_gateways="));
-    const defaultId = this.systemService.systemConfigResource.hasValue()
-      ? this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"]
-      : undefined;
-    let gateways: string[] = [];
+    const allowed = this.policyGateways();
+    if (allowed.length > 0) return [...allowed];
 
-    if (right) {
-      const gatewaysStr = right.split("=")[1];
-      if (gatewaysStr) {
-        gateways = gatewaysStr
-          .split(" ")
-          .map((gw) => gw.trim())
-          .filter((gw) => gw.length > 0);
-      }
-    } else {
-      gateways = this.smsGatewayService.smsGateways().map((gw) => gw.name);
-    }
-
+    const gateways = this.smsGatewayService.smsGateways().map((gw) => gw.name);
+    const defaultId = this.defaultGatewayId();
     if (defaultId && !gateways.includes(defaultId)) {
       gateways.push(defaultId);
     }
-
     return gateways;
   });
 
-  defaultSMSGatewayIsSet = computed(() => {
-    if (!this.systemService.systemConfigResource.hasValue()) return false;
-    const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!cfg?.[SMS_GATEWAY];
-  });
-
-  private smsGatewayInitialized = false;
-
-  constructor() {
-    super();
-
-    effect(() => {
-      if (!this.systemService.systemConfigResource.hasValue()) return;
-      const id = this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY];
-      if (id && !this.smsGatewayInitialized) {
-        this.smsGateway.set(id);
-        this.smsGatewayInitialized = true;
-      }
-    });
-  }
+  defaultSMSGatewayIsSet = computed(() => !!this.defaultGatewayId());
 
   ngOnInit(): void {
     const data = this.enrollmentData();
     if (data) {
-      this.smsGateway.set(data.smsGateway ?? "");
       this.readNumberDynamically.set(data.readNumberDynamically ?? false);
       this.phoneNumber.set(data.phoneNumber ?? "");
-      this.smsGatewayInitialized = true;
     }
   }
 

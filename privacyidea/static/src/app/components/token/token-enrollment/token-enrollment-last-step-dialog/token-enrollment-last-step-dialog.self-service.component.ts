@@ -22,6 +22,7 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokenEnrollmentPolicyDeviationNoteComponent } from "@components/token/token-enrollment/token-enrollment-policy-deviation-note/token-enrollment-policy-deviation-note.component";
 import { TokenType } from "@services/token/token.service";
 import { UserData } from "@services/user/user.service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
@@ -39,7 +40,13 @@ export interface TokenEnrollmentLastStepDialogData {
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog-self-service",
-  imports: [MatButtonModule, DialogWrapperComponent, TokenEnrollmentDataComponent, TokenEnrolledTextComponent],
+  imports: [
+    MatButtonModule,
+    DialogWrapperComponent,
+    TokenEnrollmentDataComponent,
+    TokenEnrolledTextComponent,
+    TokenEnrollmentPolicyDeviationNoteComponent
+  ],
   templateUrl: "./token-enrollment-last-step-dialog.self-service.component.html"
 })
 export class TokenEnrollmentLastStepDialogSelfServiceComponent extends TokenEnrollmentLastStepDialogComponent {}

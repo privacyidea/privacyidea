@@ -3,5 +3,9 @@
 .token-enrollment-container {
   @include styles.main-component-style;
   display: grid;
-  min-width: calc(616px + 2 * 16px);
+}
+
+// The inner content (type selector row and token fields) defines the panel width.
+.enrollment-content {
+  width: var(--input-width-xxl);
 }

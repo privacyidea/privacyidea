@@ -24,22 +24,33 @@ import { signal, WritableSignal } from "@angular/core";
 import { ValidationError } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
-import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { SmsGateway, SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SystemConfigResponse, SystemService } from "@services/system/system.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollSmsComponent } from "./enroll-sms.component";
+
+function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
+  return {
+    state: "loaded",
+    policies: {
+      defaults: {},
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false,
+      ...policies
+    }
+  };
+}
 
 type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
   let fixture: ComponentFixture<EnrollSmsComponent>;
-  let authServiceMock: MockAuthService;
   let smsGatewayServiceMock: MockSmsGatewayService;
   let systemServiceMock: MockSystemService;
 
@@ -60,7 +71,6 @@ describe("EnrollSmsComponent", () => {
 
     fixture = TestBed.createComponent(EnrollSmsComponent);
     component = fixture.componentInstance;
-    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     smsGatewayServiceMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
     systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     fixture.detectChanges();
@@ -100,14 +110,14 @@ describe("EnrollSmsComponent", () => {
   });
 
   describe("smsGatewayOptions computed", () => {
-    it("should parse gateways from the sms_gateways right when available", () => {
-      authServiceMock.authData.set({ rights: ["sms_gateways=gw1 gw2 gw3"] } as Partial<AuthData> as AuthData);
+    it("should offer the gateways of the sms_gateways policy when available", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1", "gw2", "gw3"] }));
       const opts = component.smsGatewayOptions();
       expect(opts).toEqual(["gw1", "gw2", "gw3"]);
     });
 
-    it("should fall back to smsGateways service when no right exists", () => {
-      authServiceMock.authData.set({ rights: [] } as Partial<AuthData> as AuthData);
+    it("should fall back to smsGateways service when no policy list applies", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
       (smsGatewayServiceMock as unknown as { smsGateways: WritableSignal<SmsGateway[]> }).smsGateways = signal<
         SmsGateway[]
       >([
@@ -118,15 +128,48 @@ describe("EnrollSmsComponent", () => {
       expect(opts).toEqual(["service-gw1", "service-gw2"]);
     });
 
-    it("should append the default identifier when not already present", () => {
-      authServiceMock.authData.set({ rights: ["sms_gateways=gw1"] } as Partial<AuthData> as AuthData);
-      (
-        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
-      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "default-gw" }));
-      const opts = component.smsGatewayOptions();
-      expect(opts).toContain("default-gw");
-      expect(opts).toContain("gw1");
+    it("should append the default identifier only when no policy list restricts the gateways", () => {
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({ "sms.identifier": "default-gw" })
+      );
+      expect(component.smsGatewayOptions()).toContain("default-gw");
+
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1"] }));
+      expect(component.smsGatewayOptions()).toEqual(["gw1"]);
     });
+  });
+
+  it("offers only the gateways of the enrollment policies", () => {
+    (smsGatewayServiceMock as unknown as { smsGateways: WritableSignal<SmsGateway[]> }).smsGateways = signal<
+      SmsGateway[]
+    >([
+      { name: "gw0", providermodule: "m", options: {}, headers: {} },
+      { name: "gw1", providermodule: "m", options: {}, headers: {} },
+      { name: "gw2", providermodule: "m", options: {}, headers: {} }
+    ]);
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1"] }));
+    (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+      MockPiResponse.fromValue({ "sms.identifier": "gw0" })
+    );
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.smsGatewayOptions()).toEqual(["gw1"]);
+    expect(component.smsGateway()).not.toBe("gw0");
+    expect(component.smsGatewayForm().disabled()).toBe(false);
+
+    fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.smsGatewayForm().disabled()).toBe(true);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.smsGatewayOptions()).toEqual(["gw0", "gw1", "gw2"]);
+    expect(component.smsGatewayForm().disabled()).toBe(false);
   });
 
   describe("defaultSMSGatewayIsSet", () => {

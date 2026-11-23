@@ -113,10 +113,6 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     super();
   }
 
-  override descriptionRequired = computed(() => {
-    return this.authService.requireDescription().includes(this.tokenType().key);
-  });
-
   override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
       this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);

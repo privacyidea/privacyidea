@@ -25,8 +25,22 @@ import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-p
 import { MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { EnrollMotpComponent } from "./enroll-motp.component";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+
+function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
+  return {
+    state: "loaded",
+    policies: {
+      defaults: {},
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false,
+      ...policies
+    }
+  };
+}
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
@@ -68,6 +82,42 @@ describe("EnrollMotpComponent", () => {
     expect(component.generateOnServer()).toBe(true);
     expect(component.otpKey()).toEqual("");
     expect(component.otpKeyForm().disabled()).toBe(true);
+  });
+
+  it("locks generate on server when forced", () => {
+    const generateOnServerCheckbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+    component.generateOnServer.set(false);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(true);
+    expect(generateOnServerCheckbox().disabled).toBe(true);
+    expect(keyInput()).not.toBeNull();
+    expect(keyInput().disabled).toBe(true);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(generateOnServerCheckbox().disabled).toBe(false);
+    expect(keyInput()).not.toBeNull();
+    expect(keyInput().disabled).toBe(true);
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    expect(keyInput()).not.toBeNull();
+
+    fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(generateOnServerCheckbox().disabled).toBe(true);
   });
 
   describe("motpPinForm validation", () => {
@@ -219,6 +269,62 @@ describe("EnrollMotpComponent", () => {
       expect(result).not.toBeNull();
       expect((result!.data as MotpEnrollmentData).otpKey).toBe("ABCDEF");
       expect(result!.data.generateOnServer).toBe(false);
+    });
+  });
+
+  describe("key input visibility", () => {
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+    const checkbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const settle = () => {
+      fixture.detectChanges();
+      TestBed.tick();
+      fixture.detectChanges();
+    };
+
+    it("keeps the key input disabled while generate on server is ticked and enabled when unticked", () => {
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(false);
+      expect(keyInput().disabled).toBe(false);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps the key input disabled when the policy forces server generation", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(checkbox().disabled).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps Enroll disabled while the visible key is empty", () => {
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+
+      component.generateOnServer.set(false);
+      settle();
+      expect(component.fieldsInvalid()).toBe(true);
+
+      component.otpKey.set("12345678901234567890123456789012");
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+    });
+
+    it("does not render the key input in wizard mode", () => {
+      fixture.componentRef.setInput("wizard", true);
+      settle();
+      expect(keyInput()).toBeNull();
     });
   });
 });

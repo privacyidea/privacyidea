@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TokenType } from "@services/token/token.service";
+import type { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import type { EnrollTokenArguments, TokenType } from "@services/token/token.service";
 
 export const tokenTypes: TokenType[] = [
   {
@@ -212,4 +213,107 @@ export function tokenTypeLabel(key: string): string | undefined {
   // Own properties only - a value named "constructor" must not resolve Object.prototype's member.
   const normalized = key.toLowerCase();
   return Object.hasOwn(tokenTypeLabels, normalized) ? tokenTypeLabels[normalized] : undefined;
+}
+
+/** The values a token was actually enrolled with, read from the enrollment URL or the token list. */
+export interface EnrollmentActualValues {
+  otpLength?: number;
+  hashAlgorithm?: string;
+  timeStep?: number | string;
+}
+
+export interface EnrollmentDeviation {
+  field: "otpLength" | "hashAlgorithm" | "timeStep";
+  requested: number | string;
+  actual: number | string;
+}
+
+/** Token types whose enrollment values a policy can change and whose enrollment URL carries them. */
+export const POLICY_DEVIATION_TOKEN_TYPES = ["hotp", "totp", "daypassword"];
+
+const TIME_UNIT_SECONDS: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400, y: 31536000 };
+
+/** Converts a time step like 30, "30", "2h" or "1d" to seconds, undefined if it has another format. */
+function timeStepSeconds(value: number | string): number | undefined {
+  const match = /^\s*(\d+)\s*([smhdy]?)\s*$/i.exec(String(value));
+  if (!match) {
+    return undefined;
+  }
+  return Number(match[1]) * TIME_UNIT_SECONDS[(match[2] || "s").toLowerCase()];
+}
+
+/**
+ * Formats a time step with the largest unit that divides it, e.g. 7200 and "120m" as "2h", so that a requested and an
+ * actual time step read alike. A value in another format is returned unchanged.
+ */
+export function formatTimeStep(value: number | string): string {
+  const seconds = timeStepSeconds(value);
+  if (seconds === undefined) {
+    return String(value);
+  }
+  const unit = ["d", "h", "m"].find((candidate) => seconds > 0 && seconds % TIME_UNIT_SECONDS[candidate] === 0) ?? "s";
+  return `${seconds / TIME_UNIT_SECONDS[unit]}${unit}`;
+}
+
+/**
+ * Reads the values a token was enrolled with from the googleurl of the enrollment response. The server omits the
+ * algorithm for sha1 and the period for hotp. Returns null if the response has no googleurl.
+ */
+export function actualValuesFromEnrollmentUrl(response: EnrollmentResponse | null): EnrollmentActualValues | null {
+  const url = response?.detail?.googleurl?.value;
+  if (!url) {
+    return null;
+  }
+  const query = url.includes("?") ? url.substring(url.indexOf("?") + 1) : "";
+  const params = new URLSearchParams(query);
+  const digits = params.get("digits");
+  const period = params.get("period");
+  return {
+    ...(digits !== null && { otpLength: Number(digits) }),
+    hashAlgorithm: (params.get("algorithm") ?? "sha1").toLowerCase(),
+    ...(period !== null && { timeStep: Number(period) })
+  };
+}
+
+/**
+ * Compares the OTP length, hash algorithm and time step the enrollment requested with the values the token was
+ * actually enrolled with, for example after a policy changed in between. Only hotp, totp and daypassword are compared.
+ * Fields missing on either side are skipped.
+ */
+export function getEnrollmentDeviations(
+  enrollParameters: EnrollTokenArguments,
+  actual: EnrollmentActualValues | null
+): EnrollmentDeviation[] {
+  const data = enrollParameters?.data;
+  if (!actual || !data || !POLICY_DEVIATION_TOKEN_TYPES.includes(data.type)) {
+    return [];
+  }
+  const requested = {
+    otpLength: data["otpLength"] as number | string | undefined,
+    hashAlgorithm: data["hashAlgorithm"] as string | undefined,
+    timeStep: data["timeStep"] as number | string | undefined
+  };
+  const deviations: EnrollmentDeviation[] = [];
+  if (requested.otpLength != null && actual.otpLength != null && Number(requested.otpLength) !== actual.otpLength) {
+    deviations.push({ field: "otpLength", requested: Number(requested.otpLength), actual: actual.otpLength });
+  }
+  if (
+    requested.hashAlgorithm &&
+    actual.hashAlgorithm &&
+    requested.hashAlgorithm.toLowerCase() !== actual.hashAlgorithm.toLowerCase()
+  ) {
+    deviations.push({ field: "hashAlgorithm", requested: requested.hashAlgorithm, actual: actual.hashAlgorithm });
+  }
+  if (data.type !== "hotp" && requested.timeStep != null && requested.timeStep !== "" && actual.timeStep != null) {
+    const requestedSeconds = timeStepSeconds(requested.timeStep);
+    const actualSeconds = timeStepSeconds(actual.timeStep);
+    const differs =
+      requestedSeconds !== undefined && actualSeconds !== undefined
+        ? requestedSeconds !== actualSeconds
+        : String(requested.timeStep) !== String(actual.timeStep);
+    if (differs) {
+      deviations.push({ field: "timeStep", requested: requested.timeStep, actual: actual.timeStep });
+    }
+  }
+  return deviations;
 }

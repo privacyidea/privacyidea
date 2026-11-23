@@ -40,6 +40,12 @@ export type ReopenDialogAction = () => Promise<EnrollmentStepResult> | Observabl
 export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrollmentData> {
   abstract buildEnrollmentArgs(basic: TokenEnrollmentData): EnrollmentArgs<T> | null;
 
+  // Shows the errors of the type's own fields while Enroll is disabled. buildEnrollmentArgs() marks its invalid fields
+  // as touched, a type whose buildEnrollmentArgs() has further side effects overrides this.
+  markFieldsTouched(basic: TokenEnrollmentData): void {
+    this.buildEnrollmentArgs(basic);
+  }
+
   onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentStepResult>;
 
   readonly showEnrollDataInLastStep: boolean = true;
@@ -47,6 +53,9 @@ export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrol
   // Set while the token type cannot be enrolled at all with the admin's rights; the parent disables Enroll and shows
   // the reason on it.
   readonly enrollmentBlockedReason: Signal<string | null> = signal(null);
+
+  // True while one of the type's own required fields is invalid, so the parent keeps Enroll disabled.
+  readonly fieldsInvalid: Signal<boolean> = signal(false);
 
   readonly reopenDialog: WritableSignal<ReopenDialogAction | undefined> = signal<ReopenDialogAction | undefined>(
     undefined

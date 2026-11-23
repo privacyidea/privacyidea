@@ -93,6 +93,13 @@ describe("AuthService", () => {
     expect(authService).toBeTruthy();
   });
 
+  // Enrollment values come from the enrollment policies of the target, never from the rights of /auth.
+  it("does not offer enrollment values from the rights", () => {
+    for (const reader of ["rightsWithValues", "requireDescription", "checkForceServerGenerateOTPKey", "check2Step"]) {
+      expect(reader in authService).toBe(false);
+    }
+  });
+
   describe("rights if token is not set", () => {
     it("actionAllowed should return false if jwt data is not available", () => {
       expect(authService.actionAllowed("enable")).toBe(false);
@@ -197,33 +204,6 @@ describe("AuthService", () => {
     it("adminDashboard should be false for a user", () => {
       authService.jwtData.set(jwtData as JwtData);
       expect(authService.adminDashboard()).toBe(false);
-    });
-  });
-
-  describe("checkForceServerGenerateOTPKey", () => {
-    const jwtData = {
-      username: "alice",
-      realm: "defrealm",
-      nonce: "fake_nonce",
-      role: "user",
-      authtype: "password",
-      exp: 0,
-      rights: ["tokenlist"]
-    };
-
-    it("checkForceServerGenerateOTPKey should return false if right is not set", () => {
-      authService.jwtData.set(jwtData as JwtData);
-      expect(authService.checkForceServerGenerateOTPKey("totp")).toBe(false);
-      expect(authService.checkForceServerGenerateOTPKey("hotp")).toBe(false);
-      expect(authService.checkForceServerGenerateOTPKey("daypassword")).toBe(false);
-    });
-
-    it("checkForceServerGenerateOTPKey should return true only for the respective token type", () => {
-      jwtData.rights.push("totp_force_server_generate");
-      authService.jwtData.set(jwtData as JwtData);
-      expect(authService.checkForceServerGenerateOTPKey("totp")).toBe(true);
-      expect(authService.checkForceServerGenerateOTPKey("hotp")).toBe(false);
-      expect(authService.checkForceServerGenerateOTPKey("daypassword")).toBe(false);
     });
   });
 
@@ -471,66 +451,6 @@ describe("AuthService", () => {
     // token_rollover data not set
     authService.authData.set({} as unknown as AuthData);
     expect(authService.tokenRollover()).toEqual([]);
-  });
-
-  it("rightsWithValues should parse rights with and without values", () => {
-    const authData = {
-      username: "bob",
-      realm: "realm",
-      nonce: "n",
-      role: "admin",
-      authtype: "cookie",
-      exp: 0,
-      rights: ["foo=bar", "baz=qux=quux", "simple"]
-    };
-    authService.authData.set(authData as unknown as AuthData);
-    const result = authService.rightsWithValues();
-    expect(result).toEqual({
-      foo: "bar",
-      baz: "qux=quux",
-      simple: null
-    });
-  });
-
-  describe("check2Step", () => {
-    beforeEach(() => {
-      authService.authData.set({} as unknown as AuthData);
-    });
-
-    it("should return 'allow' if value is 'allow'", () => {
-      authService.authData.set({
-        rights: ["totp_2step=allow"]
-      } as unknown as AuthData);
-      expect(authService.check2Step("totp")).toBe("allow");
-    });
-
-    it("should return 'force' if value is 'force'", () => {
-      authService.authData.set({
-        rights: ["totp_2step=force"]
-      } as unknown as AuthData);
-      expect(authService.check2Step("totp")).toBe("force");
-    });
-
-    it("should return 'disabled' if value is not 'allow' or 'force'", () => {
-      authService.authData.set({
-        rights: ["totp_2step=deny"]
-      } as unknown as AuthData);
-      expect(authService.check2Step("totp")).toBe("disabled");
-    });
-
-    it("should return 'disabled' if right is not present", () => {
-      authService.authData.set({
-        rights: []
-      } as unknown as AuthData);
-      expect(authService.check2Step("totp")).toBe("disabled");
-    });
-
-    it("should keep value if right is present without value", () => {
-      authService.authData.set({
-        rights: ["totp_2step=allow", "totp_2step"]
-      } as unknown as AuthData);
-      expect(authService.check2Step("totp")).toBe("allow");
-    });
   });
 
   describe("session rehydration (restoreSession)", () => {

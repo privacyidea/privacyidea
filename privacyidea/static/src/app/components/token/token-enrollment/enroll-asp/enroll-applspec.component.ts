@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, forwardRef, inject, input, OnInit, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, linkedSignal, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -30,9 +30,10 @@ import {
   ApplspecEnrollmentData
 } from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { loadedEnrollmentPolicies } from "@components/token/token-enrollment/enrollment-policy-values";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
@@ -57,9 +58,20 @@ export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentD
   enrollmentData = input<ApplspecEnrollmentData>();
   wizard = input<boolean>(false);
   disabled = input<boolean>(false);
+  enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
   serviceId = signal<string>("");
-  generateOnServer = signal<boolean>(true);
+  forceServerGenerate = computed(() => !!loadedEnrollmentPolicies(this.enrollmentPolicies())?.force_server_generate);
+  override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
+
+  generateOnServerDisabled = computed(
+    () => this.disabled() || this.enrollmentPolicies().state === "pending" || this.forceServerGenerate()
+  );
+
+  // Policy value first, then the enrollment data (rollover, template), then the default.
+  generateOnServer = linkedSignal(
+    () => this.forceServerGenerate() || (this.enrollmentData()?.generateOnServer ?? true)
+  );
   otpKey = signal<string>("");
 
   serviceIdForm = form(this.serviceId, (f) => {
@@ -68,10 +80,7 @@ export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentD
   });
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(
-      f,
-      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec")
-    );
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.forceServerGenerate());
   });
 
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
@@ -84,7 +93,6 @@ export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentD
   ngOnInit(): void {
     if (this.enrollmentData()) {
       this.serviceId.set(this.enrollmentData()!.serviceId ?? "");
-      this.generateOnServer.set(this.enrollmentData()!.generateOnServer ?? true);
       if (!this.enrollmentData()!.generateOnServer) {
         this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
       }

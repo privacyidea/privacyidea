@@ -41,8 +41,11 @@
       </mat-select>
     </mat-form-field>
     <div class="enroll-button-container margin-left-auto">
-      <!-- A disabled button fires no hover events, so the wrapper carries the tooltip. -->
+      <!-- A disabled button fires no hover events, so the wrapper carries the tooltip and the click on the disabled button. -->
       <span
+        (click)="disabledEnrollClick.emit()"
+        (keydown.enter)="disabledEnrollClick.emit()"
+        tabindex="-1"
         [matTooltip]="enrollBlockedReason() ?? ''"
         [matTooltipDisabled]="!enrollBlockedReason()">
         <button

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, linkedSignal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -24,12 +24,16 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import {
+  loadedEnrollmentPolicies,
+  numericPolicyValue,
+  twoStepMode
+} from "@components/token/token-enrollment/enrollment-policy-values";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -64,21 +68,35 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
   enrollmentData = input<HotpEnrollmentData | null>();
   wizard = input<boolean>(false);
   disabled = input<boolean>(false);
+  enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
-  twoStep = computed(() => this.authService.check2Step("hotp"));
-  twoStepEnabled = signal<boolean>(false);
-  generateOnServer = signal<boolean>(true);
-  otpKey = signal<string>("");
-  otpLength = signal<number>(6);
-  hashAlgorithm = signal<string>("sha1");
+  private readonly policies = computed(() => loadedEnrollmentPolicies(this.enrollmentPolicies()));
+  private readonly policiesPending = computed(() => this.enrollmentPolicies().state === "pending");
+  private readonly hashlibPolicy = computed(() => this.policies()?.defaults.hashlib || undefined);
+  private readonly otpLengthPolicy = computed(() => numericPolicyValue(this.policies()?.defaults.otplen));
 
-  twoStepDisabled = computed(() => this.disabled() || this.twoStep() === "force");
+  twoStep = computed(() => twoStepMode(this.policies()));
+  forceServerGenerate = computed(() => !!this.policies()?.force_server_generate);
+
+  // Policy value first, then the enrollment data (rollover, template), then the default.
+  twoStepEnabled = linkedSignal(() => this.twoStep() === "force" || !!this.enrollmentData()?.twoStepInit);
+  generateOnServer = linkedSignal(
+    () => this.forceServerGenerate() || this.twoStepEnabled() || (this.enrollmentData()?.generateOnServer ?? true)
+  );
+  otpKey = linkedSignal(() => this.enrollmentData()?.otpKey ?? "");
+  otpLength = linkedSignal(() => this.otpLengthPolicy() ?? this.enrollmentData()?.otpLength ?? 6);
+  hashAlgorithm = linkedSignal(() => this.hashlibPolicy() ?? this.enrollmentData()?.hashAlgorithm ?? "sha1");
+
+  twoStepDisabled = computed(() => this.disabled() || this.policiesPending() || this.twoStep() === "force");
+  override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
+
   generateOnServerDisabled = computed(
     () =>
       this.disabled() ||
+      this.policiesPending() ||
       this.twoStep() === "force" ||
       (this.twoStep() === "allow" && this.twoStepEnabled()) ||
-      this.authService.checkForceServerGenerateOTPKey("hotp")
+      this.forceServerGenerate()
   );
 
   otpKeyForm = form(this.otpKey, (f) => {
@@ -89,57 +107,13 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
 
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_OTP_LENGTH]);
+    disabled(f, () => this.disabled() || this.policiesPending() || this.otpLengthPolicy() !== undefined);
   });
 
   hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_HASHLIB]);
+    disabled(f, () => this.disabled() || this.policiesPending() || this.hashlibPolicy() !== undefined);
   });
-
-  constructor() {
-    super();
-
-    effect(() => {
-      const hashlib = this.authService.rightsWithValues()[HOTP_HASHLIB];
-      if (hashlib) this.hashAlgorithm.set(hashlib);
-      const otpLengthPolicy = this.authService.rightsWithValues()[HOTP_OTP_LENGTH];
-      if (otpLengthPolicy) {
-        const parsedLength = parseInt(otpLengthPolicy, 10);
-        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
-      }
-    });
-
-    // Force two-step when policy requires it
-    effect(() => {
-      if (this.twoStep() === "force") {
-        this.twoStepEnabled.set(true);
-        this.generateOnServer.set(true);
-      }
-    });
-
-    // Force generateOnServer when policy requires it
-    effect(() => {
-      if (this.authService.checkForceServerGenerateOTPKey("hotp")) this.generateOnServer.set(true);
-    });
-
-    // When twoStep is enabled with "allow" policy, force generateOnServer=true
-    effect(() => {
-      if (this.twoStep() === "allow" && this.twoStepEnabled()) this.generateOnServer.set(true);
-    });
-
-    // Apply initial enrollment data
-    effect(() => {
-      const data = this.enrollmentData();
-      if (data) {
-        this.generateOnServer.set(data.generateOnServer ?? true);
-        this.otpLength.set(data.otpLength ?? 6);
-        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha1");
-        if (data.twoStepInit) this.twoStepEnabled.set(data.twoStepInit);
-        if (data.otpKey) this.otpKey.set(data.otpKey);
-      }
-    });
-  }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<HotpEnrollmentData> | null {
     const enrollmentData: HotpEnrollmentOptions = {

@@ -23,6 +23,7 @@ import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   BulkResult,
+  EnrollmentPolicies,
   LostTokenResponse,
   TokenCount,
   TokenDetails,
@@ -210,4 +211,15 @@ export class MockTokenService implements TokenServiceInterface {
   getTokengroups = jest.fn();
   setTokengroup = jest.fn();
   importTokens = jest.fn();
+  getEnrollmentPolicies = jest.fn().mockReturnValue(
+    of(
+      MockPiResponse.fromValue<EnrollmentPolicies>({
+        defaults: {},
+        "2step": null,
+        force_server_generate: false,
+        sms_gateways: [],
+        require_description: false
+      })
+    )
+  );
 }

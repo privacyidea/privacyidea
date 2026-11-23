@@ -31,14 +31,21 @@
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
       [formInvalid]="isFormInvalid()"
+      [enrollBlockedReason]="enrollmentBlockedReason()"
       [scrollContainer]="scrollContainer"
-      (reopenDialog)="reopenEnrollmentDialog()" />
-    <div class="responsive-margin-left-1310">
+      (reopenDialog)="reopenEnrollmentDialog()"
+      (disabledEnrollClick)="revealFieldErrors()" />
+    <div class="responsive-margin-left-1310 enrollment-content">
       <div class="width-948 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n="@@token.tokenConfiguration">Token Configuration</h4>
-      <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
+      @if (enrollmentPoliciesError(); as policyError) {
+        <p class="inline-warning">{{ policyError }}</p>
+      }
+      <app-enroll-token-type-switch
+        [tokenTypeKey]="tokenService.selectedTokenType().key"
+        [enrollmentPolicies]="enrollmentPolicyState()" />
       <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n="@@common.description">Description</mat-label>
         <textarea

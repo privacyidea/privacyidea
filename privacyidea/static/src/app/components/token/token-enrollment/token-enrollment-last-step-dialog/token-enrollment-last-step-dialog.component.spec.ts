@@ -19,15 +19,25 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import { config as rxjsConfig, of } from "rxjs";
+import { Type } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
 import { ContentService } from "@services/content/content.service";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponse,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
+import { TokenDetails, TokenEnrollmentDialogData, TokenService, Tokens } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { NotificationService } from "@services/notification/notification.service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog.self-service.component";
 
@@ -72,7 +82,10 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     result: { status: true }
   };
 
-  const setup = async (dialogData: TokenEnrollmentDialogData): Promise<void> => {
+  const setup = async (
+    dialogData: TokenEnrollmentDialogData,
+    beforeCreate?: (tokenService: MockTokenService) => void
+  ): Promise<void> => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogComponent],
@@ -80,10 +93,12 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
         { provide: ContentService, useClass: MockContentService },
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
+    beforeCreate?.(TestBed.inject(TokenService) as unknown as MockTokenService);
     fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -164,6 +179,155 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
 
     expect(component["rollover"]).toBe(true);
     expect(component.title()).toBe("Token Successfully Rolled Over");
+  });
+
+  describe("policy deviation note", () => {
+    const hotpDialogData = (googleurl: string | null): TokenEnrollmentDialogData => ({
+      ...createDialogData(),
+      tokenType: "hotp",
+      response: {
+        type: "hotp",
+        detail: {
+          type: "hotp",
+          serial: "OATH0001",
+          ...(googleurl !== null && { googleurl: { description: "URL", img: "", value: googleurl } })
+        },
+        result: { status: true }
+      },
+      enrollParameters: {
+        data: { type: "hotp", otpLength: 6, hashAlgorithm: "sha1" } as unknown as TokenEnrollmentData,
+        mapper: {} as unknown as BaseApiPayloadMapper
+      }
+    });
+    const tokenList = (tokens: Partial<TokenDetails>[]) =>
+      MockPiResponse.fromValue<Tokens>({ count: tokens.length, current: 1, tokens: tokens as TokenDetails[] });
+    const text = (): string => fixture.nativeElement.textContent ?? "";
+    const render = async (): Promise<void> => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it("shows the policy deviation note from the enrollment URL", async () => {
+      await setup(hotpDialogData("otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=8&issuer=privacyIDEA"));
+      await render();
+      expect(text()).toContain("8 instead of 6");
+
+      await setup(hotpDialogData("otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=6&issuer=privacyIDEA"));
+      await render();
+      expect(text()).not.toContain("instead of");
+    });
+
+    it("shows both time steps of a deviation in the same unit", async () => {
+      await setup({
+        ...createDialogData(),
+        tokenType: "daypassword",
+        response: {
+          type: "daypassword",
+          detail: {
+            type: "daypassword",
+            serial: "DAYP0001",
+            googleurl: {
+              description: "URL",
+              img: "",
+              value:
+                "otpauth://daypassword/DAYP0001?secret=ABC&algorithm=SHA256&period=7200&digits=6&issuer=privacyIDEA"
+            }
+          },
+          result: { status: true }
+        },
+        enrollParameters: {
+          data: {
+            type: "daypassword",
+            otpLength: 6,
+            hashAlgorithm: "sha256",
+            timeStep: "60m"
+          } as unknown as TokenEnrollmentData,
+          mapper: {} as unknown as BaseApiPayloadMapper
+        }
+      });
+      await render();
+
+      expect(text()).toContain("2h instead of 1h");
+    });
+
+    it("falls back to the token list without an enrollment URL", async () => {
+      let tokenService!: MockTokenService;
+      await setup(hotpDialogData(null), (service) => {
+        tokenService = service;
+        service.getTokenDetails.mockReturnValue(of(tokenList([{ otplen: 8, info: { hashlib: "sha1" } }])));
+      });
+      await render();
+
+      expect(tokenService.getTokenDetails).toHaveBeenCalledWith("OATH0001");
+      expect(text()).toContain("8 instead of 6");
+
+      await setup(
+        hotpDialogData("otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=6&issuer=privacyIDEA"),
+        (service) => (tokenService = service)
+      );
+      await render();
+
+      expect(tokenService.getTokenDetails).not.toHaveBeenCalled();
+    });
+
+    it("shows no note when the token list is empty", async () => {
+      // An error thrown in a subscriber is reported asynchronously by rxjs and would not fail the test on its own.
+      const unhandledError = jest.fn();
+      const previousHandler = rxjsConfig.onUnhandledError;
+      rxjsConfig.onUnhandledError = unhandledError;
+      try {
+        let tokenService!: MockTokenService;
+        await setup(hotpDialogData(null), (service) => {
+          tokenService = service;
+          service.getTokenDetails.mockReturnValue(of(tokenList([])));
+        });
+        await render();
+        await new Promise((resolve) => setTimeout(resolve));
+        const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+        expect(tokenService.getTokenDetails).toHaveBeenCalledWith("OATH0001");
+        expect(unhandledError).not.toHaveBeenCalled();
+        expect(text()).not.toContain("instead of");
+        expect(notificationService.error).not.toHaveBeenCalled();
+        expect(notificationService.warning).not.toHaveBeenCalled();
+      } finally {
+        rxjsConfig.onUnhandledError = previousHandler;
+      }
+    });
+
+    const renderVariant = async (variant: Type<unknown>): Promise<string> => {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [variant],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: MatDialogRef, useClass: MockMatDialogRef },
+          {
+            provide: MAT_DIALOG_DATA,
+            useValue: hotpDialogData("otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=8&issuer=privacyIDEA")
+          },
+          { provide: ContentService, useClass: MockContentService },
+          { provide: TokenService, useClass: MockTokenService },
+          { provide: AuthService, useClass: MockAuthService },
+          { provide: NotificationService, useClass: MockNotificationService }
+        ]
+      }).compileComponents();
+      const variantFixture = TestBed.createComponent(variant);
+      variantFixture.detectChanges();
+      await variantFixture.whenStable();
+      variantFixture.detectChanges();
+      return variantFixture.nativeElement.textContent ?? "";
+    };
+
+    it("shows the policy deviation note in the self-service dialog", async () => {
+      expect(await renderVariant(TokenEnrollmentLastStepDialogSelfServiceComponent)).toContain("8 instead of 6");
+    });
+
+    it("shows the policy deviation note in the wizard dialog", async () => {
+      expect(await renderVariant(TokenEnrollmentLastStepDialogWizardComponent)).toContain("8 instead of 6");
+    });
   });
 
   describe("self service", () => {

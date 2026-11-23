@@ -37,22 +37,20 @@
       >Generate the OTP key on the server and show a QR code to scan.</mat-checkbox
     >
     <div class="flex-row gap-16 margin-bottom-16">
-      @if (!this.authService.checkForceServerGenerateOTPKey("hotp")) {
-        <mat-form-field class="input-width-l">
-          <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
-          <input
-            [formField]="otpKeyForm"
-            i18n-placeholder="@@token.enterOtpKey"
-            matInput
-            placeholder="Enter OTP key" />
-          @if (otpKeyForm().errors().some(e => e.kind === 'required') && otpKeyForm().touched()) {
-            <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong></mat-error>
-          }
-          @if (otpKeyForm().errors().some(e => e.kind === 'minlength') && otpKeyForm().touched()) {
-            <mat-error i18n="@@token.otpKeyMustLeast">OTP key must be at least 16 characters</mat-error>
-          }
-        </mat-form-field>
-      }
+      <mat-form-field class="input-width-l">
+        <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
+        <input
+          [formField]="otpKeyForm"
+          i18n-placeholder="@@token.enterOtpKey"
+          matInput
+          placeholder="Enter OTP key" />
+        @if (otpKeyForm().errors().some(e => e.kind === 'required') && otpKeyForm().touched()) {
+          <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong></mat-error>
+        }
+        @if (otpKeyForm().errors().some(e => e.kind === 'minlength') && otpKeyForm().touched()) {
+          <mat-error i18n="@@token.otpKeyMustLeast">OTP key must be at least 16 characters</mat-error>
+        }
+      </mat-form-field>
 
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.otpLength">OTP length</mat-label>

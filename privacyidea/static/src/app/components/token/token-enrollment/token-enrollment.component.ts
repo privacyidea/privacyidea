@@ -27,11 +27,10 @@ import {
   OnDestroy,
   OnInit,
   signal,
-  ViewChild,
   viewChild,
   WritableSignal
 } from "@angular/core";
-import { form, FormField, validate, ValidationError } from "@angular/forms/signals";
+import { form, FormField, required, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
   DateAdapter,
@@ -70,15 +69,21 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
+  EnrollmentPolicies,
+  EnrollmentPolicyState,
+  EnrollmentPolicyTarget,
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface,
-  TokenType
+  TokenType,
+  TokenTypeKey
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { lastValueFrom, Observable } from "rxjs";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { firstValueFrom, lastValueFrom, Observable, of, Subject, switchMap, tap } from "rxjs";
+import { EnrollmentPoliciesLoad, enrollmentPolicyState, loadEnrollmentPolicies } from "./enrollment-policy-values";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import {
   CUSTOM_TOOLTIP_OPTIONS,
@@ -194,15 +199,79 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
   });
   serial = signal<string | null>(null);
-  @ViewChild(UserAssignmentComponent)
-  userAssignmentComponent!: UserAssignmentComponent;
+  protected readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
+
+  /** The owner the token is enrolled for, read once for the policy request and for the enrollment itself. */
+  private readonly enrollmentOwner = computed(() => ({
+    user: this.userService.selectedUser()?.username ?? "",
+    realm: this.userService.selectedUserRealm() ?? "",
+    onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false
+  }));
+
+  /** The target the enrollment policies are evaluated for, as POST /token/init would see it. */
+  readonly enrollmentTarget = computed<EnrollmentPolicyTarget | undefined>(
+    () => {
+      const type = this.tokenService.selectedTokenType()?.key;
+      if (!type) {
+        return undefined;
+      }
+      const owner = this.enrollmentOwner();
+      const serial = this.serial();
+      return {
+        type,
+        ...(owner.user && !owner.onlyAddToRealm && { user: owner.user }),
+        ...(owner.realm && (owner.user || owner.onlyAddToRealm) && { realm: owner.realm }),
+        ...(serial && { serial })
+      };
+    },
+    { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
+  );
+
+  private lastLoadedPolicies: EnrollmentPolicies | undefined;
+  /** Emits when a policy request ended, so an Enroll clicked while loading can go on with the new policies. */
+  private readonly policiesSettled = new Subject<void>();
+
+  /** The enrollment policies of the current target, a new target starts a new request and drops the pending one. */
+  private readonly enrollmentPoliciesLoad = toSignal(
+    toObservable(this.enrollmentTarget).pipe(
+      switchMap((target): Observable<EnrollmentPoliciesLoad> => {
+        if (!target) {
+          return of({ status: "idle" });
+        }
+        return loadEnrollmentPolicies(this.tokenService.getEnrollmentPolicies(target), this.lastLoadedPolicies).pipe(
+          tap((load) => {
+            if (load.status === "loaded") {
+              this.lastLoadedPolicies = load.policies;
+            }
+            if (load.status !== "loading") {
+              this.policiesSettled.next();
+            }
+          })
+        );
+      })
+    ),
+    { initialValue: { status: "idle" } as EnrollmentPoliciesLoad }
+  );
+
+  readonly enrollmentPoliciesLoading = computed(() => this.enrollmentPoliciesLoad().status === "loading");
+
+  /** The server message when the enrollment policies cannot be determined for the target, else null. */
+  readonly enrollmentPoliciesError = computed<string | null>(() => {
+    const load = this.enrollmentPoliciesLoad();
+    return load.status === "error" ? load.message : null;
+  });
+
+  readonly enrollmentPolicyState = computed<EnrollmentPolicyState>(() =>
+    enrollmentPolicyState(this.enrollmentPoliciesLoad())
+  );
 
   enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
+  // While the policies load or fail, Enroll is blocked anyway.
   descriptionRequired = computed(() => {
-    const selectedTokenType = this.tokenService.selectedTokenType();
-    return this.authService.requireDescription().includes(selectedTokenType.key);
+    const state = this.enrollmentPolicyState();
+    return state.state === "loaded" && state.policies.require_description;
   });
 
   isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? ""));
@@ -225,10 +294,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   isDirty = signal<boolean>(false);
 
   descriptionForm = form(this.description, (f) => {
+    // required() also gives the field its required marker, the validator below adds the whitespace-only case.
+    required(f, { when: () => this.descriptionRequired() });
     validate(f, (ctx) => {
       const v = ctx.value();
       const errors: ValidationError[] = [];
-      if (this.descriptionRequired() && !v.trim()) errors.push({ kind: "required" });
+      if (this.descriptionRequired() && v !== "" && !v.trim()) errors.push({ kind: "required" });
       if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: "maxlength" });
       return errors;
     });
@@ -241,14 +312,20 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
   // the mismatch error has nowhere to show, so the enrollment would fail without a reason.
-  enrollmentBlockedReason = computed<string | null>(
-    () => this.enrollSwitch()?.currentStrategy()?.enrollmentBlockedReason() ?? null
-  );
+  enrollmentBlockedReason = computed<string | null>(() => {
+    // Loading alone does not block: enrollToken() waits for the policies instead, so Enroll does not flash disabled.
+    const policyError = this.enrollmentPoliciesError();
+    if (policyError) {
+      return policyError;
+    }
+    return this.enrollSwitch()?.currentStrategy()?.enrollmentBlockedReason() ?? null;
+  });
   isFormInvalid = computed(
     () =>
       !this.descriptionForm().valid() ||
       (this.showPinFields() && !this.repeatPinForm().valid()) ||
-      !!this.enrollmentBlockedReason()
+      !!this.enrollmentBlockedReason() ||
+      !!this.enrollSwitch()?.currentStrategy()?.fieldsInvalid()
   );
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
@@ -328,7 +405,54 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Enroll is disabled while the form is invalid, so a click on it shows every field error instead of submitting.
+  revealFieldErrors(): void {
+    if (!this.isFormInvalid()) return;
+    this.descriptionForm().markAsTouched();
+    this.repeatPinForm().markAsTouched();
+    this.enrollSwitch()
+      ?.currentStrategy()
+      ?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenService.selectedTokenType().key));
+  }
+
+  private basicEnrollmentOptions(tokenTypeKey: TokenTypeKey): TokenEnrollmentData {
+    const owner = this.enrollmentOwner();
+    let validityPeriodStart = "";
+    if (this.selectedStartDate() && this.selectedStartTime()) {
+      validityPeriodStart = this.formatDateTimeOffset(
+        this.selectedStartDate()!,
+        this.selectedStartTime() ?? "00:00",
+        this.selectedTimezoneOffset() ?? "+00:00"
+      );
+    }
+    let validityPeriodEnd = "";
+    if (this.selectedEndDate() && this.selectedEndTime()) {
+      validityPeriodEnd = this.formatDateTimeOffset(
+        this.selectedEndDate()!,
+        this.selectedEndTime() ?? "23:59",
+        this.selectedTimezoneOffset() ?? "+00:00"
+      );
+    }
+
+    return {
+      type: tokenTypeKey,
+      description: this.description().trim(),
+      containerSerial: this.selectedContainer().trim(),
+      validityPeriodStart: validityPeriodStart,
+      validityPeriodEnd: validityPeriodEnd,
+      user: owner.user,
+      realm: owner.realm,
+      onlyAddToRealm: owner.onlyAddToRealm,
+      pin: this.showPinFields() ? (this.setPin() ?? "") : "",
+      serial: this.serial()
+    };
+  }
+
   async enrollToken(): Promise<boolean> {
+    // Never enroll with the policies of the previous target: wait for the ones of the current target.
+    while (this.enrollmentPoliciesLoading()) {
+      await firstValueFrom(this.policiesSettled);
+    }
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
@@ -336,14 +460,15 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    const user = this.userService.selectedUser();
-    if (this.isUserRequired() && !user) {
+    const owner = this.enrollmentOwner();
+    if (this.isUserRequired() && !owner.user) {
       everythingIsValid = false;
     }
 
     if (this.isFormInvalid()) {
       this.descriptionForm().markAsTouched();
       this.repeatPinForm().markAsTouched();
+      this.revealFieldErrors();
       everythingIsValid = false;
     }
 
@@ -362,35 +487,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    let validityPeriodStart = "";
-    if (this.selectedStartDate() && this.selectedStartTime()) {
-      validityPeriodStart = this.formatDateTimeOffset(
-        this.selectedStartDate()!,
-        this.selectedStartTime() ?? "00:00",
-        this.selectedTimezoneOffset() ?? "+00:00"
-      );
-    }
-    let validityPeriodEnd = "";
-    if (this.selectedEndDate() && this.selectedEndTime()) {
-      validityPeriodEnd = this.formatDateTimeOffset(
-        this.selectedEndDate()!,
-        this.selectedEndTime() ?? "23:59",
-        this.selectedTimezoneOffset() ?? "+00:00"
-      );
-    }
-
-    const basicOptions: TokenEnrollmentData = {
-      type: currentTokenType.key,
-      description: this.description().trim(),
-      containerSerial: this.selectedContainer().trim(),
-      validityPeriodStart: validityPeriodStart,
-      validityPeriodEnd: validityPeriodEnd,
-      user: user?.username ?? "",
-      realm: this.userService.selectedUserRealm() ?? "",
-      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
-      pin: this.showPinFields() ? (this.setPin() ?? "") : "",
-      serial: this.serial()
-    };
+    const basicOptions = this.basicEnrollmentOptions(currentTokenType.key);
 
     const enrollmentArgs: EnrollTokenArguments | null = strategy.buildEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) {

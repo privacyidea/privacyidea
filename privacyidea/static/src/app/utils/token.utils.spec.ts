@@ -16,7 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { tokenTypeLabel, tokenTypes } from "./token.utils";
+import {
+  BaseApiPayloadMapper,
+  EnrollmentResponse,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollTokenArguments } from "@services/token/token.service";
+import { actualValuesFromEnrollmentUrl, getEnrollmentDeviations, tokenTypeLabel, tokenTypes } from "./token.utils";
 
 describe("tokenTypeLabel", () => {
   it("returns the display name of a token type key", () => {
@@ -51,5 +57,89 @@ describe("tokenTypeLabel", () => {
 
   it("covers every token type", () => {
     expect(tokenTypes.filter((tokenType) => !tokenTypeLabel(tokenType.key))).toEqual([]);
+  });
+});
+
+describe("getEnrollmentDeviations", () => {
+  const enrollParameters = (data: Record<string, unknown>): EnrollTokenArguments => ({
+    data: data as TokenEnrollmentData,
+    mapper: {} as BaseApiPayloadMapper
+  });
+  const responseWithUrl = (type: "hotp" | "totp" | "daypassword", url: string | null): EnrollmentResponse => ({
+    type,
+    detail: {
+      type,
+      serial: "OATH0001",
+      ...(url !== null && { googleurl: { description: "URL", img: "", value: url } })
+    },
+    result: { status: true }
+  });
+
+  it("reports the OTP length of the enrollment URL that differs from the requested one", () => {
+    const response = responseWithUrl(
+      "hotp",
+      "otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=8&issuer=privacyIDEA"
+    );
+
+    expect(
+      getEnrollmentDeviations(
+        enrollParameters({ type: "hotp", otpLength: 6, hashAlgorithm: "sha1" }),
+        actualValuesFromEnrollmentUrl(response)
+      )
+    ).toEqual([{ field: "otpLength", requested: 6, actual: 8 }]);
+  });
+
+  it("reports nothing when the enrollment URL matches the requested values", () => {
+    const sha1Response = responseWithUrl(
+      "totp",
+      "otpauth://totp/TOTP0001?secret=ABC&period=30&digits=6&issuer=privacyIDEA"
+    );
+    const sha256Response = responseWithUrl(
+      "totp",
+      "otpauth://totp/TOTP0001?secret=ABC&algorithm=SHA256&period=60&digits=8&issuer=privacyIDEA"
+    );
+
+    expect(actualValuesFromEnrollmentUrl(sha256Response)).toEqual({
+      otpLength: 8,
+      hashAlgorithm: "sha256",
+      timeStep: 60
+    });
+    expect(
+      getEnrollmentDeviations(
+        enrollParameters({ type: "totp", otpLength: 6, hashAlgorithm: "sha1", timeStep: 30 }),
+        actualValuesFromEnrollmentUrl(sha1Response)
+      )
+    ).toEqual([]);
+    expect(
+      getEnrollmentDeviations(
+        enrollParameters({ type: "totp", otpLength: 8, hashAlgorithm: "sha256", timeStep: 60 }),
+        actualValuesFromEnrollmentUrl(sha256Response)
+      )
+    ).toEqual([]);
+  });
+
+  it("compares the day password time step in seconds", () => {
+    const response = responseWithUrl(
+      "daypassword",
+      "otpauth://daypassword/DAYP0001?secret=ABC&algorithm=SHA256&period=7200&digits=6&issuer=privacyIDEA"
+    );
+    const params = { type: "daypassword", otpLength: 6, hashAlgorithm: "sha256" };
+
+    expect(
+      getEnrollmentDeviations(enrollParameters({ ...params, timeStep: "2h" }), actualValuesFromEnrollmentUrl(response))
+    ).toEqual([]);
+    expect(
+      getEnrollmentDeviations(enrollParameters({ ...params, timeStep: "1h" }), actualValuesFromEnrollmentUrl(response))
+    ).toEqual([{ field: "timeStep", requested: "1h", actual: 7200 }]);
+  });
+
+  it("reads no values from a response without an enrollment URL", () => {
+    expect(actualValuesFromEnrollmentUrl(responseWithUrl("hotp", null))).toBeNull();
+    expect(actualValuesFromEnrollmentUrl(null)).toBeNull();
+    expect(getEnrollmentDeviations(enrollParameters({ type: "hotp", otpLength: 6 }), null)).toEqual([]);
+  });
+
+  it("reports nothing for other token types", () => {
+    expect(getEnrollmentDeviations(enrollParameters({ type: "spass", otpLength: 6 }), { otpLength: 8 })).toEqual([]);
   });
 });

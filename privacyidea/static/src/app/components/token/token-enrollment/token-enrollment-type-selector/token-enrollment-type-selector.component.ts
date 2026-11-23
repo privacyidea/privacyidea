@@ -61,4 +61,6 @@ export class TokenEnrollmentTypeSelectorComponent {
   enrollBlockedReason = input<string | null>(null);
   canReopenDialog = input<boolean>(false);
   reopenDialog = output<void>();
+  // Emitted when the wrapper around the disabled Enroll button is clicked.
+  disabledEnrollClick = output<void>();
 }

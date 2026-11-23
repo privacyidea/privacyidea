@@ -20,18 +20,22 @@
   @case ("hotp") {
     <app-enroll-hotp
       [enrollmentData]="$any(enrollmentData())"
-      [wizard]="wizard()" />
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("totp") {
     <app-enroll-totp
       [enrollmentData]="$any(enrollmentData())"
-      [wizard]="wizard()" />
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("spass") {
     <app-enroll-spass />
   }
   @case ("motp") {
-    <app-enroll-motp [wizard]="wizard()" />
+    <app-enroll-motp
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("sshkey") {
     <app-enroll-sshkey />
@@ -53,7 +57,8 @@
   @case ("sms") {
     <app-enroll-sms
       [enrollmentData]="$any(enrollmentData())"
-      [wizard]="wizard()" />
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("4eyes") {
     <app-enroll-foureyes [enrollmentData]="$any(enrollmentData())" />
@@ -61,12 +66,14 @@
   @case ("applspec") {
     <app-enroll-applspec
       [enrollmentData]="$any(enrollmentData())"
-      [wizard]="wizard()" />
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("daypassword") {
     <app-enroll-daypassword
       [enrollmentData]="$any(enrollmentData())"
-      [wizard]="wizard()" />
+      [wizard]="wizard()"
+      [enrollmentPolicies]="enrollmentPolicies()" />
   }
   @case ("certificate") {
     <app-enroll-certificate [enrollmentData]="$any(enrollmentData())" />

@@ -67,6 +67,11 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
 
   readonly registrationFailed = signal(false);
 
+  // No own fields, and buildEnrollmentArgs() reports an unsupported browser.
+  override markFieldsTouched(): void {
+    // Nothing to mark.
+  }
+
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<WebAuthnEnrollmentData> | null {
     if (!navigator.credentials?.create) {
       const errorMsg = $localize`:@@token.webauthnNotSupported:WebAuthn is not supported by this browser.`;

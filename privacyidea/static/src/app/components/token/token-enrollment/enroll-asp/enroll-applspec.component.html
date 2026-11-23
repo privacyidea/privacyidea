@@ -20,7 +20,7 @@
   @if (!wizard()) {
     <mat-checkbox
       [checked]="generateOnServer()"
-      [disabled]="authService.checkForceServerGenerateOTPKey('applspec') || disabled()"
+      [disabled]="generateOnServerDisabled()"
       (change)="generateOnServer.set($event.checked)"
       class="server-checkbox"
       i18n="@@token.generateStatic"
@@ -29,7 +29,7 @@
   }
 
   <div class="flex-row gap-16">
-    @if (!authService.checkForceServerGenerateOTPKey("applspec")) {
+    @if (!wizard()) {
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.applicationSpecific">Application Specific Password</mat-label>
         <input

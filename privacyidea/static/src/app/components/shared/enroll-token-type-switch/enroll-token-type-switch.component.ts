@@ -19,6 +19,7 @@
 import { Component, input, viewChild } from "@angular/core";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentPolicyState } from "@services/token/token.service";
 import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
@@ -81,6 +82,8 @@ export class EnrollTokenTypeSwitchComponent {
   readonly tokenTypeKey = input.required<string>();
   readonly wizard = input(false);
   readonly enrollmentData = input<TokenEnrollmentData | null>(null);
+  /** The enrollment policies of the target, unrestricted where no target exists, e.g. in a container template. */
+  readonly enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
   // The active child enrollment component, resolved via DI. Children register themselves as `EnrollTokenBase` via
   // `providers: [{ provide, useExisting }]`.

@@ -20,20 +20,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import { By } from "@angular/platform-browser";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, TokenService } from "@services/token/token.service";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import {
   MockDialogService,
   MockNotificationService,
+  MockPiResponse,
   MockSystemService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
-import { of } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
@@ -209,6 +212,155 @@ describe("TokenRolloverComponent", () => {
     expect(notificationService.warning).toHaveBeenCalledWith(
       "Rollover action is not available for the selected token type."
     );
+  });
+
+  describe("enrollment policies", () => {
+    const policies: EnrollmentPolicies = {
+      defaults: { hashlib: "sha512" },
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false
+    };
+
+    const createRollover = () => {
+      const freshFixture = TestBed.createComponent(TokenRolloverComponent);
+      freshFixture.detectChanges();
+      return freshFixture;
+    };
+
+    it("requests the enrollment policies of the rolled over token", () => {
+      tokenService.getEnrollmentPolicies.mockClear();
+      tokenService.getEnrollmentPolicies.mockReturnValue(of(MockPiResponse.fromValue<EnrollmentPolicies>(policies)));
+      const freshFixture = createRollover();
+
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenCalledWith({ type: "hotp", serial: "ABC123" });
+      const typeSwitch = freshFixture.debugElement.query(By.directive(EnrollTokenTypeSwitchComponent))
+        .componentInstance as EnrollTokenTypeSwitchComponent;
+      expect(typeSwitch.enrollmentPolicies()).toEqual({ state: "loaded", policies });
+    });
+
+    it("blocks the rollover until the policies allow it", () => {
+      const rolloverDisabled = (freshFixture: ComponentFixture<TokenRolloverComponent>) =>
+        freshFixture.componentInstance.dialogActions()[0].disabled;
+
+      tokenService.getEnrollmentPolicies.mockReturnValue(new Subject());
+      expect(rolloverDisabled(createRollover())).toBe(true);
+
+      const message = "There are policies with conflicting actions: ['a', 'b']";
+      tokenService.getEnrollmentPolicies.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({ status: 403, error: { result: { status: false, error: { code: 303, message } } } })
+        )
+      );
+      const failed = createRollover();
+      expect(rolloverDisabled(failed)).toBe(true);
+      expect(failed.nativeElement.textContent).toContain(message);
+
+      tokenService.getEnrollmentPolicies.mockReturnValue(of(MockPiResponse.fromValue<EnrollmentPolicies>(policies)));
+      expect(rolloverDisabled(createRollover())).toBe(false);
+    });
+
+    describe("description input", () => {
+      const withRequirement = (require_description: boolean) =>
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, require_description }))
+        );
+      const field = (f: ComponentFixture<TokenRolloverComponent>) => f.nativeElement.querySelector("textarea");
+
+      it("shows no field when no description is required", () => {
+        withRequirement(false);
+        const f = createRollover();
+        expect(field(f)).toBeNull();
+        expect(f.componentInstance.dialogActions()[0].disabled).toBe(false);
+      });
+
+      it("shows a required field and blocks the rollover while the token has no description", () => {
+        withRequirement(true);
+        const f = createRollover();
+        expect(field(f)).not.toBeNull();
+        expect(field(f).closest("mat-form-field").textContent).toContain("Description");
+        expect(f.componentInstance.dialogActions()[0].disabled).toBe(true);
+
+        f.componentInstance.description.set("   ");
+        f.detectChanges();
+        expect(f.componentInstance.dialogActions()[0].disabled).toBe(true);
+
+        f.componentInstance.description.set("my token");
+        f.detectChanges();
+        expect(f.componentInstance.dialogActions()[0].disabled).toBe(false);
+      });
+
+      it("sends the entered description with the rollover request", async () => {
+        withRequirement(true);
+        const f = createRollover();
+        f.componentInstance.description.set("my token");
+        const buildEnrollmentArgs = jest.fn().mockReturnValue(null);
+        installStrategy(f.componentInstance, { buildEnrollmentArgs });
+
+        await f.componentInstance.rolloverToken();
+
+        expect(buildEnrollmentArgs).toHaveBeenCalledWith(
+          expect.objectContaining({ description: "my token", rollover: true })
+        );
+      });
+
+      it("does not roll over while the required description is empty", async () => {
+        withRequirement(true);
+        const f = createRollover();
+        const buildEnrollmentArgs = jest.fn();
+        installStrategy(f.componentInstance, { buildEnrollmentArgs });
+
+        await f.componentInstance.rolloverToken();
+
+        expect(buildEnrollmentArgs).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("with a token that has a description", () => {
+      beforeEach(async () => {
+        TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+          imports: [TokenRolloverComponent],
+          providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            { provide: TokenService, useClass: MockTokenService },
+            { provide: NotificationService, useClass: MockNotificationService },
+            { provide: DialogService, useClass: MockDialogService },
+            { provide: MAT_DIALOG_DATA, useValue: { token: { ...mockToken, description: "laptop" } } },
+            { provide: MatDialogRef, useValue: dialogRef },
+            { provide: UserService, useClass: MockUserService },
+            { provide: SystemService, useClass: MockSystemService }
+          ]
+        }).compileComponents();
+        tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+      });
+
+      it("does not block the rollover when the token already has the required description", () => {
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, require_description: true }))
+        );
+
+        const f = createRollover();
+        expect(f.componentInstance.dialogActions()[0].disabled).toBe(false);
+        expect(f.nativeElement.querySelector("textarea")).toBeNull();
+      });
+
+      it("sends the existing description with the rollover request", async () => {
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, require_description: true }))
+        );
+        const f = createRollover();
+        const buildEnrollmentArgs = jest.fn().mockReturnValue(null);
+        installStrategy(f.componentInstance, { buildEnrollmentArgs });
+
+        await f.componentInstance.rolloverToken();
+
+        expect(buildEnrollmentArgs).toHaveBeenCalledWith(expect.objectContaining({ description: "laptop" }));
+      });
+    });
   });
 
   describe("handleCompleteEnrollment", () => {
