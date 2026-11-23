@@ -375,6 +375,24 @@ def _finalizers_called_at_the_end_of_the_test() -> Iterator[None]:
         call_app_context_finalizers()
 
 
+@pytest.fixture(autouse=True)
+def _log_files_of_the_test_closed() -> Iterator[None]:
+    """
+    Close the log file handlers that a test attaches to a logger, for example with an app of its own.
+
+    The logging configuration of the next app closes the handlers it knows, and so does the one that alembic loads
+    for a migration. But a handler stays attached to its logger, and a closed file handler opens its file again on
+    the next message. The next logging configuration then frees it with the file still open.
+    """
+    from tests.base import file_handlers_of_all_loggers
+    handlers_before = file_handlers_of_all_loggers()
+    yield
+    for logger, handler in file_handlers_of_all_loggers():
+        if (logger, handler) not in handlers_before:
+            logger.removeHandler(handler)
+            handler.close()
+
+
 @pytest.fixture(scope="class", autouse=True)
 def _no_unclosed_resource_left_by_the_class() -> Iterator[None]:
     """

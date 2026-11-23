@@ -639,7 +639,7 @@ class MyTestCase(unittest.TestCase):
             return res.json["result"]["value"]["auditdata"][0]
 
 
-def _file_handlers_of_all_loggers() -> list[tuple[logging.Logger, logging.Handler]]:
+def file_handlers_of_all_loggers() -> list[tuple[logging.Logger, logging.Handler]]:
     loggers = [logging.getLogger()]
     loggers += [logger for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)]
     return [(logger, handler) for logger in loggers for handler in logger.handlers
@@ -658,7 +658,7 @@ class OverrideConfigTestCase(MyTestCase):
     @classmethod
     def setUpClass(cls):
         """ override privacyidea.config.config["testing"] with the inner config class """
-        cls.file_handlers_before = _file_handlers_of_all_loggers()
+        cls.file_handlers_before = file_handlers_of_all_loggers()
         with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
             MyTestCase.setUpClass()
 
@@ -667,7 +667,7 @@ class OverrideConfigTestCase(MyTestCase):
         # A logging configuration of the inner Config class, for example PI_LOGCONFIG, can attach file handlers to
         # loggers that the logging configuration of the next app does not touch, like the root logger. That one closes
         # them, but leaves them attached, and the next message opens the file again.
-        for logger, handler in _file_handlers_of_all_loggers():
+        for logger, handler in file_handlers_of_all_loggers():
             if (logger, handler) not in cls.file_handlers_before:
                 logger.removeHandler(handler)
                 handler.close()
