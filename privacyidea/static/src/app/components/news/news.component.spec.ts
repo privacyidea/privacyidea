@@ -29,6 +29,7 @@ import { InfoService } from "@services/info/info.service";
 import { MockInfoService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { NewsComponent } from "./news.component";
+import { axe } from "@testing/axe";
 
 describe("NewsComponent", () => {
   let fixture: ComponentFixture<NewsComponent>;
@@ -157,14 +158,20 @@ describe("NewsComponent", () => {
   });
 
   it("should be reachable under the news route for admins", () => {
-    expect(adminRoutes).toContainEqual({ path: "news", component: NewsComponent });
+    expect(adminRoutes).toContainEqual(expect.objectContaining({ path: "news", component: NewsComponent }));
   });
 
   it("should be reachable under the news route in self service", () => {
-    expect(selfServiceRoutes).toContainEqual({ path: "news", component: NewsComponent });
+    expect(selfServiceRoutes).toContainEqual(expect.objectContaining({ path: "news", component: NewsComponent }));
   });
 
   it("should use the news route path constant", () => {
     expect(ROUTE_PATHS.NEWS).toBe("/news");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

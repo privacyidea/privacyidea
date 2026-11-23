@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { LiveAnnouncer } from "@angular/cdk/a11y";
 import {
   Component,
@@ -32,17 +34,14 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
-import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -71,9 +70,10 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-conditional-access",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
-    MatPaginator,
     MatSortModule,
     MatIconModule,
     MatButtonModule,
@@ -87,9 +87,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatInput,
     InfoHintComponent,
     TableStateComponent,
-    ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
-    MatMenuModule
+    ScrollEdgesDirective
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"
@@ -106,7 +104,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
 
   filterString = signal<string>("");
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength = computed(() => this.policyService.policies().length);
   readonly tableState = new TableState({
     resource: this.policyService.policiesResource,
@@ -121,7 +118,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   priorityReorderHint = $localize`:@@conditionalAccess.movePoliciesArrowsPriority:Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
   priorityReorderHintAriaLabel = $localize`:@@conditionalAccess.aboutRearrangingPriorities:About rearranging priorities`;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
@@ -141,7 +137,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   policyDataSource = computed(() => {
     const policies = this.policyService.policies();
     const dataSource = new MatTableDataSource(policies);
-    dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     dataSource.filterPredicate = (policy: ConditionalAccessPolicy, filter: string) =>
       policy.name.toLowerCase().includes(filter) ||
@@ -180,6 +175,87 @@ export class ConditionalAccessComponent implements OnDestroy {
     const baseline = this.baselineOrder();
     const draft = this.draftOrder();
     return draft.length !== baseline.length || draft.some((policy, index) => policy.id !== baseline[index].id);
+  });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => {
+    const canWrite = this.authService.actionAllowed("conditional_access_policy_write");
+    const reordering = this.reorderMode();
+    const noSelection = this.policySelection().length === 0;
+    return [
+      {
+        id: "create",
+        label: $localize`:@@common.newConditionalAccess:New Conditional Access`,
+        tone: "primary",
+        width: "l",
+        icon: "security",
+        iconClass: "icon-badge-pad-3",
+        badge: true,
+        visible: canWrite,
+        run: () => this.onCreatePolicy()
+      },
+      {
+        id: "toggle-enabled",
+        label: $localize`:@@common.deActivate:(De)activate`,
+        tone: "secondary",
+        width: "m",
+        icon: "toggle_on",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.toggleEnabledSelected()
+      },
+      {
+        id: "toggle-dry-run",
+        label: $localize`:@@conditionalAccess.toggleDryRun:Toggle Dry Run`,
+        tone: "secondary",
+        width: "m",
+        icon: "biotech",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.toggleDryRunSelected()
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.deleteSelected()
+      },
+      {
+        id: "save-order",
+        label: $localize`:@@conditionalAccess.saveOrder:Save Order`,
+        tone: "primary",
+        width: "m",
+        icon: "save",
+        pinned: true,
+        visible: canWrite && reordering,
+        disabled: !this.hasOrderChanges() || this.reorderSaving(),
+        run: () => this.saveReorder()
+      },
+      {
+        id: "cancel-reorder",
+        label: $localize`:@@common.cancel:Cancel`,
+        tone: "secondary",
+        width: "m",
+        icon: "close",
+        pinned: true,
+        visible: canWrite && reordering,
+        disabled: this.reorderSaving(),
+        run: () => this.cancelReorder()
+      },
+      {
+        id: "reorder",
+        label: $localize`:@@conditionalAccess.reorderPriorities:Reorder Priorities`,
+        tone: "secondary",
+        width: "m",
+        icon: "swap_vert",
+        visible: canWrite && !reordering,
+        disabled: this.totalLength() < 2,
+        run: () => this.startReorder()
+      }
+    ];
   });
 
   constructor() {
@@ -457,7 +533,7 @@ export class ConditionalAccessComponent implements OnDestroy {
       .openDialog({
         component: ConditionalAccessToggleDialogComponent,
         data: {
-          title: $localize`:@@conditionalAccess.toggleDryRunSelected:Toggle Dry Run For Selected Policies`,
+          title: $localize`:@@conditionalAccess.toggleDryRunSelected:Toggle Dry Run for Selected Policies`,
           intro: $localize`:@@conditionalAccess.dryRunModeFollowing:The dry-run mode of the following policies will be toggled:`,
           onWord: $localize`:@@conditionalAccess.dryRun:dry-run`,
           offWord: $localize`:@@conditionalAccess.enforce:enforce`,
@@ -503,7 +579,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   }
 
   onEditPolicy(policy: ConditionalAccessPolicy): void {
-    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + policy.id);
+    this.router.navigate([ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS, policy.id]);
   }
 
   onToggleEnabled(policy: ConditionalAccessPolicy): void {

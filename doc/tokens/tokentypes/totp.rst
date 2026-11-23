@@ -45,9 +45,4 @@ Enrollment
 Default settings for TOTP tokens can be configured at :ref:`totp_token_config`.
 
 The enrollment is the same as described in :ref:`hotp_token`.
-However, when enrolling a TOTP token, you can specify some additional parameters.
-
-.. figure:: images/enroll_totp.png
-   :width: 500
-
-   *Enroll a TOTP token*
+However, when enrolling a TOTP token, you can additionally specify the *Timestep*.

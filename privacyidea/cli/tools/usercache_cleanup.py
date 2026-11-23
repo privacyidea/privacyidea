@@ -37,6 +37,8 @@ This script deletes expired entries from the user cache.
 __version__ = "0.1"
 
 from flask.cli import with_appcontext, ScriptInfo
+from sqlalchemy.sql import ColumnElement
+from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.usercache import create_filter, get_cache_time
 from privacyidea.lib.utils import get_version_number
 from privacyidea.models import UserCache, db
@@ -46,11 +48,10 @@ import click
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
-def _get_expired_entries():
+def _get_expired_entries(filter_condition: ColumnElement[bool]) -> list[UserCache]:
     """
-    Returns a list of all cache entries that are considered expired.
+    Returns a list of all cache entries that match the given filter for expired entries.
     """
-    filter_condition = create_filter(expired=True)
     return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).all()
 
 
@@ -72,7 +73,9 @@ def delete(noaction=False):
         click.echo('User cache is disabled, not doing anything.')
     else:
         click.echo('Expired entries:')
-        entries = _get_expired_entries()
+        # The listing and the deletion use the same cutoff time
+        filter_condition = create_filter(expired=True)
+        entries = _get_expired_entries(filter_condition)
         if entries:
             click.echo(LIST_FORMAT.format('id', 'username', 'resolver', 'timestamp', 'user id'))
         for entry in entries:
@@ -83,11 +86,8 @@ def delete(noaction=False):
                                           entry.user_id))
         click.echo(f'{len(entries)} entries')
         if not noaction:
-            for entry in entries:
-                click.echo(f'Deleting entry with id={entry.id} ...')
-                entry.delete()
-            click.echo(f'Deleted {len(entries)} expired entries.')
-            db.session.commit()
+            deleted = delete_matching_rows(db.session, UserCache.__table__, filter_condition)
+            click.echo(f'Deleted {deleted} expired entries.')
         else:
             click.echo("'--noaction' was passed, not doing anything.")
 

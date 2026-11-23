@@ -11,8 +11,9 @@ rights for containers to use the REST API :ref:`rest_container`.
 
 Technically, container policies are checked using :ref:`code_policy` and :ref:`code_api_policy`.
 
-The container policies respect all policy conditions. However, since no logged-in user is available in the client
-container requests, instead the user is determined by the container owner.
+In the requests of a container client, no user is logged in. privacyIDEA uses the owner of the container
+instead, if the container has exactly one owner. See :ref:`policy_condition_checks` for the data that each request
+has.
 
 The following actions are available in the scope *container*:
 
@@ -70,7 +71,6 @@ If no value is set, the default is ``True``. It is highly recommended to use SSL
 
 .. versionadded:: 3.11
 
-
 Smartphone
 ..........
 
@@ -120,7 +120,6 @@ registered on the server or this policy changes.
 
 .. versionadded:: 3.11
 
-
 .. _container_policy_disable_client_unregister:
 
 disable_client_container_unregister
@@ -134,7 +133,6 @@ To prevent the user from unregistering the container, this action can be activat
 the container in the authenticator app as long as the smartphone is registered on the server or this policy changes.
 
 .. versionadded:: 3.11
-
 
 .. _container_policy_hide_specific_error_message:
 
@@ -150,3 +148,5 @@ to the endpoints ``/container/register/finalize``, ``/container/register/termina
 
 The corresponding policy for failed authentications is :ref:`policy_hide_specific_error_message` in the
 authentication scope.
+
+.. versionadded:: 3.13

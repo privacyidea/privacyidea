@@ -27,6 +27,8 @@ import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token
 import { EnrollMotpComponent } from "./enroll-motp.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
@@ -134,13 +136,13 @@ describe("EnrollMotpComponent", () => {
     it("should report the required error once touched", () => {
       component.motpPin.set("");
       component.motpPinForm().markAsTouched();
-      expect(component.motpPinError()).toBe("Password is required");
+      expect(component.motpPinError()).toBe("Password is required.");
     });
 
     it("should report the minlength error once touched", () => {
       component.motpPin.set("abc");
       component.motpPinForm().markAsTouched();
-      expect(component.motpPinError()).toBe("Password must be at least 4 characters long");
+      expect(component.motpPinError()).toBe("Password must be at least 4 characters long.");
     });
 
     it("should be empty for a valid touched pin", () => {
@@ -220,5 +222,19 @@ describe("EnrollMotpComponent", () => {
       expect((result!.data as MotpEnrollmentData).otpKey).toBe("ABCDEF");
       expect(result!.data.generateOnServer).toBe(false);
     });
+  });
+
+  it("writes a click on the checkbox to the model and enables the OTP key field", async () => {
+    await clickCheckbox(fixture);
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.generateOnServerForm().dirty()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

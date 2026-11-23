@@ -27,8 +27,9 @@ from flask.cli import AppGroup
 from sqlalchemy import create_engine, desc, MetaData
 from sqlalchemy.orm import sessionmaker
 
+from privacyidea.config import ConfigKey
 from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auditmodules.sqlaudit import LogEntry
+from privacyidea.lib.auditmodules.sqlaudit import LogEntry, get_audit_engine_options
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.utils import parse_timedelta
 
@@ -46,7 +47,7 @@ audit_cli = AppGroup("audit", help="Manage Audit log")
               help="Read config from the specified yaml file.")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
-@click.option('--chunksize', type=int,
+@click.option('--chunksize', type=click.IntRange(min=1),
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--debug', is_flag=True,
               help="Detailed logging output for the filtering process when using the --config option.")
@@ -73,8 +74,6 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     See the documentation for the format of the config file
     """
     metadata = MetaData()
-    if chunksize is not None:
-        chunksize = int(chunksize)
 
     default_module = "privacyidea.lib.auditmodules.sqlaudit"
     token_db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
@@ -90,7 +89,8 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     else:
         click.echo(f"Cleaning up with high: {highwatermark}, low: {lowwatermark}.")
 
-    engine = create_engine(audit_db_uri)
+    # Use the same engine options as the SQL audit module, e.g. connect_args for SSL
+    engine = create_engine(audit_db_uri, **get_audit_engine_options(current_app.config))
     # create a configured "Session" class
     session = sessionmaker(bind=engine)()
     # create a Session
@@ -213,5 +213,11 @@ def _validate_timelimit(_ctx, _param, value):
 def dump_audit(filename, timelimit):
     """Dump the audit log in csv format."""
     audit = getAudit(current_app.config)
-    for line in audit.csv_generator(timelimit=timelimit):
+    lines = audit.csv_generator(timelimit=timelimit)
+    if lines is None:
+        # Audit modules that only write (e.g. the logger audit) do not provide their entries
+        audit_module = current_app.config.get(ConfigKey.AUDIT_MODULE)
+        click.secho(f"The audit module {audit_module} can not be dumped.", fg="red", err=True)
+        sys.exit(1)
+    for line in lines:
         filename.write(line)

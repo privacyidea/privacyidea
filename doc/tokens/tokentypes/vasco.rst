@@ -11,9 +11,6 @@ OneSpan OTP tokens are proprietary OTP tokens. You can import
 the token blobs from a CSV file or the administrator can enroll
 a single token.
 
-.. figure:: images/enroll_vasco.png
-   :width: 500
-
 .. note:: privacyIDEA uses the proprietary VACMAN Controller library from OneSpan to verify
    the OTP values. Please note that you need to license this library from
    OneSpan directly. The privacyIDEA project does not

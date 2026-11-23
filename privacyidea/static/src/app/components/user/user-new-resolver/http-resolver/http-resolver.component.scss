@@ -1,4 +1,3 @@
-@use "styles";
 @use "table";
 
 :host {
@@ -18,20 +17,19 @@
   width: 100%;
   margin-bottom: 1rem;
 
-  .mat-column-privacyideaAttr,
-  .mat-column-userStoreAttr {
-    width: 300px;
+  // The form fields fill their cell: the column tier across and the row, less its 1px divider, down.
+  mat-form-field {
+    width: 100%;
+    height: 57px;
   }
 
   .mat-column-actions {
-    width: 80px;
     text-align: center;
   }
 
   td,
   th {
     background: var(--table-color);
-    --mat-form-field-filled-container-color: var(--table-color);
   }
 }
 
@@ -40,12 +38,6 @@
   gap: 0.25rem;
   justify-content: center;
   align-items: center;
-}
-
-// Sits inside a raised expansion panel, so the shallow recess.
-.auth-panel-body {
-  @include styles.card-recessed(3);
-  padding: 16px;
 }
 
 .auth-description {
@@ -63,13 +55,4 @@
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
-}
-
-.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
-  background-color: var(--mat-sys-primary-base-active);
-  color: white;
-}
-
-.height-57 {
-  height: 57px;
 }

@@ -23,6 +23,7 @@ import { ContentService } from "@services/content/content.service";
 import { MockContentService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button.component";
+import { axe } from "@testing/axe";
 
 describe("NavigationSelfServiceButtonComponent", () => {
   let component: NavigationSelfServiceButtonComponent;
@@ -47,5 +48,19 @@ describe("NavigationSelfServiceButtonComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("marks the link as the current page only while its route is shown", () => {
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector("a");
+    expect(link.hasAttribute("aria-current")).toBe(false);
+
+    (TestBed.inject(ContentService) as unknown as MockContentService).routeUrl.set("tokens");
+    fixture.detectChanges();
+
+    expect(link.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

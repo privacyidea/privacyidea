@@ -1,0 +1,73 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  [actions]="confirmActions()"
+  [title]="title"
+  (actionTriggered)="onAction($event)">
+  @if (ownContainers().length > 0) {
+    <div class="container-picker-buttons">
+      @for (serial of ownContainers(); track serial) {
+        <button
+          type="button"
+          [class.action-button-primary]="trimmedSerial() === serial"
+          [class.action-button-secondary]="trimmedSerial() !== serial"
+          (click)="setContainerSerial(serial)"
+          mat-stroked-button>
+          <mat-icon>folder</mat-icon>
+          {{ serial }}
+        </button>
+      }
+    </div>
+  }
+  <mat-form-field
+    class="input-width-l"
+    subscriptSizing="dynamic">
+    <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
+    <app-clearable-input
+      (clearButtonClick)="setContainerSerial('')"
+      [showClearButton]="containerSerial() !== ''">
+      <input
+        [value]="containerSerial()"
+        (input)="setContainerSerial($any($event.target).value)"
+        [matAutocomplete]="containerAuto"
+        appAutofocus
+        matInput />
+    </app-clearable-input>
+    <mat-autocomplete
+      #containerAuto="matAutocomplete"
+      (optionSelected)="setContainerSerial($event.option.value)">
+      @for (option of suggestions(); track option) {
+        <mat-option [value]="option">{{ option }}</mat-option>
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+  @if (canAssignUser()) {
+    <div class="container-picker-assign">
+      <mat-checkbox
+        [checked]="assignToUser()"
+        (change)="assignToUser.set($event.checked)"
+        i18n="@@container.assignContainerToUser">
+        Assign Container to this user
+      </mat-checkbox>
+    </div>
+  }
+  @if (otherOwnerWarning()) {
+    <div class="container-picker-warning inline-warning">{{ otherOwnerWarning() }}</div>
+  }
+</app-dialog-wrapper>

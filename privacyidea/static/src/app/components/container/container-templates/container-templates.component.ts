@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -25,9 +26,8 @@ import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSortModule, Sort } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -47,6 +47,8 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
@@ -97,10 +99,15 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   })
 ];
 
+const UNSORTED: Sort = { active: "", direction: "" };
+
 @Component({
   selector: "app-container-templates",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
+    SortByLabelPipe,
+    FilterByLabelPipe,
     CommonModule,
     KeyValuePipe,
     MatIconModule,
@@ -108,7 +115,6 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     MatMenuModule,
     MatDividerModule,
     MatTableModule,
-    MatSortModule,
     ContainerTemplatesFilterComponent,
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
@@ -117,8 +123,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     TableStateComponent,
     RouterLink,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
-    MatTooltipModule
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
@@ -157,7 +162,13 @@ export class ContainerTemplatesComponent {
     tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false, width: undefined }
   } as const;
 
-  readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
+  readonly columnKeys = computed(() => {
+    const columns = Object.keys(this.columns);
+    const canActOnSelection =
+      this.authService.actionAllowed("container_template_create") ||
+      this.authService.actionAllowed("container_template_delete");
+    return canActOnSelection ? ["select", ...columns] : columns;
+  });
 
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
@@ -170,9 +181,15 @@ export class ContainerTemplatesComponent {
     allowed: () => this.authService.actionAllowed("container_template_list"),
     resetFilter: () => this.onFilterChange(this.filter().clear())
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_template_create")
+      ? $localize`:@@container.createTemplateRoll:Create a template to roll out containers with a predefined set of tokens.`
+      : ""
+  );
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   readonly activeSort = signal<Sort>({ active: "", direction: "" });
 
   readonly filteredContainerTemplates = computed(() => {
@@ -237,8 +254,16 @@ export class ContainerTemplatesComponent {
 
   readonly keepOrder = () => 0;
 
-  onSortChange(sort: Sort): void {
-    this.activeSort.set(sort);
+  onSortClick(column: string): void {
+    this.tableUtilsService.onSortButtonClick(column, this.activeSort, UNSORTED);
+  }
+
+  ariaSort(column: string): "ascending" | "descending" | "none" {
+    const { active, direction } = this.activeSort();
+    if (active !== column || direction === "") {
+      return "none";
+    }
+    return direction === "asc" ? "ascending" : "descending";
   }
 
   onPageEvent(event: PageEvent): void {
@@ -279,6 +304,6 @@ export class ContainerTemplatesComponent {
 
   onClickTemplateName(template: ContainerTemplate): void {
     if (!template.name) return;
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + template.name);
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS, template.name]);
   }
 }

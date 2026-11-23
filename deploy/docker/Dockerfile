@@ -23,8 +23,6 @@ RUN npm run build
 FROM cgr.dev/chainguard/wolfi-base AS python-builder
 
 ARG PYTHON_VERSION=3.13
-ARG GUNICORN=23.0.0
-ARG PSYCOPG2=2.9.10
 
 # To override the package version since we copy only part of the repository.
 # See https://setuptools-scm.readthedocs.io/en/latest/usage/#with-dockerpodman
@@ -50,10 +48,13 @@ ENV PATH="/opt/privacyidea/bin:$PATH"
 
 RUN pip install --no-cache-dir --upgrade pip setuptools
 
-RUN pip install --no-cache-dir psycopg2-binary==${PSYCOPG2} gunicorn==${GUNICORN}
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# The packages that only the image installs: gunicorn and the drivers for PostgreSQL and Oracle. The file pins them
+# with hashes, and its shared dependencies have the versions of requirements.txt (see requirements-image.in).
+COPY deploy/docker/requirements-image.txt .
+RUN pip install --no-cache-dir -r requirements-image.txt
 
 COPY README.rst MANIFEST.in pyproject.toml ./
 COPY ./.git ./.git
@@ -78,7 +79,9 @@ WORKDIR /opt/privacyidea
 RUN mkdir /etc/privacyidea && \
     chown -R nonroot:nonroot /etc/privacyidea
 
-USER nonroot
+# wolfi-base's nonroot user, given by number: Kubernetes cannot verify runAsNonRoot for a user name and refuses to
+# start the container.
+USER 65532:65532
 
 COPY --chown=nonroot:nonroot ./deploy/privacyidea/NetKnights.pem /etc/privacyidea/
 COPY --chown=nonroot:nonroot ./deploy/privacyidea/dictionary* /etc/privacyidea/
@@ -99,10 +102,31 @@ COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/entrypoint.sh /opt/privac
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/cron-runner.py /opt/privacyidea/
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/enckey-canary.py /opt/privacyidea/
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/opt/privacyidea/entrypoint.sh"]
 
 # Uses stdlib urllib (no `requests` dependency) and the /healthz/readyz endpoint
-# on gunicorn's port 8080. Matches the healthcheck used by ha-compose.yaml for
-# the pi service, so standalone-image users get the same behaviour.
+# on gunicorn's port 8080. The same check as the pi service's healthcheck in
+# compose.yaml, so a container started without compose gets it too. HEALTHCHECK
+# is a Docker extension the OCI image format does not define: tools reading the
+# image as OCI drop it, and Kubernetes ignores it - use /healthz/livez and
+# /healthz/readyz as probes there.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15s \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz/readyz', timeout=3)"
+
+# Without these, the org.opencontainers.image labels of wolfi-base describe this image. GIT_VERSION, when the build
+# passes it, is the version the package was built as (see the python-builder stage); without it, the package takes
+# its version from git and the version label stays empty. The build gets no commit or build time,
+# so the base image's "created" is cleared rather than left behind as a wrong date. Declared last because a
+# changed ARG invalidates the build cache of every RUN that follows it.
+ARG GIT_VERSION
+LABEL org.opencontainers.image.title="privacyIDEA" \
+      org.opencontainers.image.description="privacyIDEA: multifactor authentication management system" \
+      org.opencontainers.image.url="https://privacyidea.org" \
+      org.opencontainers.image.documentation="https://privacyidea.readthedocs.io" \
+      org.opencontainers.image.source="https://github.com/privacyidea/privacyidea" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.authors="privacyIDEA Maintainers <info@privacyidea.org>" \
+      org.opencontainers.image.vendor="privacyIDEA" \
+      org.opencontainers.image.version="${GIT_VERSION}" \
+      org.opencontainers.image.created="" \
+      org.opencontainers.image.base.name="cgr.dev/chainguard/wolfi-base:latest"

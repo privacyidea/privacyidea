@@ -46,6 +46,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("TokenTableSelfServiceComponent", () => {
   let fixture: ComponentFixture<TokenTableSelfServiceComponent>;
@@ -117,6 +118,36 @@ describe("TokenTableSelfServiceComponent", () => {
   it("gates the table on its row count and filter, with no read right of its own", () => {
     // Self service lists the user's own tokens, so the state carries no `allowed` callback.
     expectsTableStateGating({ state: component.tableState });
+  });
+
+  const showToken = () => {
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [], role: "user" });
+    (TestBed.inject(ContainerService) as unknown as MockContainerService).containerBelongsToUser.mockReturnValue(true);
+    const response = MockPiResponse.fromValue<Tokens>({
+      count: 1,
+      current: 1,
+      tokens: [{ serial: "T-1", container_serial: "C-1" }] as TokenDetails[]
+    });
+    tokenServiceMock.tokenResource.set(response);
+    tokenServiceMock.tokenResourceValue.set(response.result!.value!);
+    fixture.detectChanges();
+  };
+
+  it("passes the axe accessibility checks with a token row", async () => {
+    showToken();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
+  it("links the serial and the container serial to their details pages", () => {
+    showToken();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
   });
 
   describe("columns", () => {

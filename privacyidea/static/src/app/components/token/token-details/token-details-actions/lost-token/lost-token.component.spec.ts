@@ -21,12 +21,14 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
-import { MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockTokenService } from "@testing/mock-services";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { Observable, Subject } from "rxjs";
 import { LostTokenComponent } from "./lost-token.component";
+import { axe } from "@testing/axe";
 
 describe("LostTokenComponent", () => {
   let component: LostTokenComponent;
@@ -59,6 +61,7 @@ describe("LostTokenComponent", () => {
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService },
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial, isLost } },
         { provide: MatDialogRef, useValue: dialogRefMock }
       ]
@@ -114,12 +117,11 @@ describe("LostTokenComponent", () => {
     expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
-  it("tokenSelected(value) closes dialog and updates tokenSerial", () => {
-    tokenSerial.set("OLD");
+  it("tokenSelected(value) closes dialog and opens the token through the content service", () => {
     component.tokenSelected("NEW-999");
 
     expect(dialogRefMock.close).toHaveBeenCalledTimes(1);
-    expect(tokenSerial()).toBe("NEW-999");
+    expect(TestBed.inject(ContentService).tokenSelected).toHaveBeenCalledWith("NEW-999");
   });
 
   it("renders end_date as local date/time, not the raw response string", () => {
@@ -132,5 +134,11 @@ describe("LostTokenComponent", () => {
     expect(component.lostTokenData?.end_date).toBe("2025-01-31");
     expect(text).toContain(expectedLocalDateTimeFromInput("2025-01-31"));
     expect(text).not.toContain("2025-01-31");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

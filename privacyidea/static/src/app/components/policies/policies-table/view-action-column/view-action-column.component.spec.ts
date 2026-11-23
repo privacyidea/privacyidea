@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PolicyService } from "@services/policies/policies.service";
 import { ViewActionColumnComponent } from "./view-action-column.component";
+import { axe } from "@testing/axe";
 
 describe("ViewActionColumnComponent", () => {
   let component: ViewActionColumnComponent;
@@ -199,5 +200,12 @@ describe("ViewActionColumnComponent", () => {
     fixture.componentRef.setInput("scope", "user");
     fixture.detectChanges();
     expect(component.actionsList()[0].isBoolean).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("actions", {});
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

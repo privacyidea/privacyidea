@@ -55,7 +55,10 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockApiClientService } from "@testing/mock-services/mock-api-client-service";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsComponent", () => {
   let component: UserDetailsComponent;
@@ -106,6 +109,7 @@ describe("UserDetailsComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: ContainerService, useClass: MockContainerService },
+        { provide: ApiClientService, useClass: MockApiClientService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
@@ -169,15 +173,15 @@ describe("UserDetailsComponent", () => {
   });
 
   it("switches key mode between input/select as expected", () => {
-    expect(component.keyMode()).toBe("select");
+    expect(component.attributeDraft.keyMode()).toBe("select");
 
-    component.switchToCustomKey();
-    expect(component.keyMode()).toBe("input");
-    expect(component.selectedKey()).toBeNull();
+    component.attributeDraft.switchToCustomKey();
+    expect(component.attributeDraft.keyMode()).toBe("input");
+    expect(component.attributeDraft.selectedKey()).toBeNull();
 
-    component.switchToSelectKey();
-    expect(component.keyMode()).toBe("select");
-    expect(component.addKeyInput()).toBe("");
+    component.attributeDraft.switchToSelectKey();
+    expect(component.attributeDraft.keyMode()).toBe("select");
+    expect(component.attributeDraft.addKeyInput()).toBe("");
   });
 
   it("valueOptions / isValueInput / canAddAttribute computed helpers", () => {
@@ -185,62 +189,71 @@ describe("UserDetailsComponent", () => {
       department: ["sales", "finance"],
       customKey: ["2", "1"]
     });
-    component.selectedKey.set("department");
-    expect(component.valueOptions()).toEqual(["sales", "finance"]);
-    expect(component.isValueInput()).toBe(false);
+    component.attributeDraft.selectedKey.set("department");
+    expect(component.attributeDraft.valueOptions()).toEqual(["sales", "finance"]);
+    expect(component.attributeDraft.isValueInput()).toBe(false);
 
-    component.selectedValue.set("sales");
-    expect(component.canAddAttribute()).toBe(true);
+    component.attributeDraft.selectedValue.set("sales");
+    expect(component.attributeDraft.canAddAttribute()).toBe(true);
 
-    component.switchToCustomKey();
-    component.addKeyInput.set("customKey");
-    expect(component.valueOptions()).toEqual(["2", "1"]);
-    expect(component.isValueInput()).toBe(false);
+    component.attributeDraft.switchToCustomKey();
+    component.attributeDraft.addKeyInput.set("customKey");
+    expect(component.attributeDraft.valueOptions()).toEqual(["2", "1"]);
+    expect(component.attributeDraft.isValueInput()).toBe(false);
 
-    component.selectedValue.set("");
-    expect(component.canAddAttribute()).toBe(false);
-    component.selectedValue.set("foo");
-    expect(component.canAddAttribute()).toBe(true);
+    component.attributeDraft.selectedValue.set("");
+    expect(component.attributeDraft.canAddAttribute()).toBe(false);
+    component.attributeDraft.selectedValue.set("foo");
+    expect(component.attributeDraft.canAddAttribute()).toBe(true);
   });
 
-  it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", async () => {
+  it("adding a custom attribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", async () => {
     userServiceMock.attributeSetMap.set({
       department: ["sales", "finance"],
       customKey: ["2", "1"]
     });
-    component.selectedKey.set("department");
-    component.selectedValue.set("sales");
+    component.attributeDraft.selectedKey.set("department");
+    component.attributeDraft.selectedValue.set("sales");
 
     const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
     const reloadSpy = jest.spyOn(userServiceMock.userAttributesResource, "reload");
 
-    const result = await component.addCustomAttribute();
+    const result = await component.attributeDraft.add();
     expect(result).toBe(true);
     expect(setSpy).toHaveBeenCalledWith("department", "sales");
     expect(reloadSpy).toHaveBeenCalledTimes(1);
 
-    expect(component.addKeyInput()).toBe("");
-    expect(component.addValueInput()).toBe("");
-    expect(component.selectedKey()).toBeNull();
-    expect(component.selectedValue()).toBeNull();
+    expect(component.attributeDraft.addKeyInput()).toBe("");
+    expect(component.attributeDraft.addValueInput()).toBe("");
+    expect(component.attributeDraft.selectedKey()).toBeNull();
+    expect(component.attributeDraft.selectedValue()).toBeNull();
   });
 
-  it("deleteCustomAttribute calls deleteUserAttribute and reloads", () => {
+  it("deleting a custom attribute calls deleteUserAttribute and reloads", () => {
     const delSpy = jest.spyOn(userServiceMock, "deleteUserAttribute");
     const reloadSpy = jest.spyOn(userServiceMock.userAttributesResource, "reload");
 
-    component.deleteCustomAttribute("department");
+    component.attributeDraft.delete("department");
     expect(delSpy).toHaveBeenCalledWith("department");
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("showUserAuditLog sets the audit filter to the current user", () => {
+  it("showUserAuditLog filters the audit log for exactly the current user and realm", () => {
     const auditServiceMock = TestBed.inject(AuditService) as unknown as MockAuditService;
     userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
 
     component.showUserAuditLog();
 
-    expect(auditServiceMock.activeFilter().value).toBe("user: Alice");
+    expect(auditServiceMock.activeFilter().value).toBe("user: =Alice realm: =realm1");
+  });
+
+  it("showUserAuditLog leaves the realm out when the user has none", () => {
+    const auditServiceMock = TestBed.inject(AuditService) as unknown as MockAuditService;
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "" });
+
+    component.showUserAuditLog();
+
+    expect(auditServiceMock.activeFilter().value).toBe("user: =Alice");
   });
 
   it("showUserAuthenticationLog sets username and realm filter for the current user", () => {
@@ -549,6 +562,29 @@ describe("UserDetailsComponent", () => {
       expect(component.editMode()).toBe(false);
     });
 
+    it("pending-changes save saves the user data and a pending custom attribute edit", async () => {
+      const fn = getSaveFn();
+      component.editUser();
+      component.onUpdateEditedUser({ ...component.editedUserData(), email: "changed@example.com" });
+      component.attributeDraft.startEdit("department", "finance");
+      userServiceMock.editUser = jest.fn().mockReturnValue(of(true));
+
+      const result = await fn();
+
+      expect(result).toBe(true);
+      expect(userServiceMock.editUser).toHaveBeenCalled();
+      expect(userServiceMock.setUserAttribute).toHaveBeenCalledWith("department", "finance");
+      expect(component.attributeDraft.editingKey()).toBeNull();
+    });
+
+    it("pending-changes validChanges is false in edit mode while a custom attribute edit is empty", () => {
+      const fn = getValidChangesFn();
+      component.editUser();
+      component.attributeDraft.startEdit("department", "");
+
+      expect(fn()).toBe(false);
+    });
+
     it("pending-changes save resolves false when editUser fails in edit mode", async () => {
       const fn = getSaveFn();
       component.editUser();
@@ -614,34 +650,37 @@ describe("UserDetailsComponent", () => {
       const fn = getHasChangesFn();
       expect(fn()).toBe(false);
 
-      component.addKeyInput.set("key");
+      component.attributeDraft.addKeyInput.set("key");
       expect(fn()).toBe(true);
-      component.addKeyInput.set("");
+      component.attributeDraft.addKeyInput.set("");
 
-      component.addValueInput.set("value");
+      component.attributeDraft.addValueInput.set("value");
       expect(fn()).toBe(true);
-      component.addValueInput.set("");
+      component.attributeDraft.addValueInput.set("");
 
-      component.selectedKey.set("k");
+      component.attributeDraft.selectedKey.set("k");
       expect(fn()).toBe(true);
     });
 
     it("validChanges requires both key and value", () => {
       const fn = getValidChangesFn();
-      component.keyMode.set("input");
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("key");
       expect(fn()).toBe(false);
 
-      component.addKeyInput.set("key");
-      expect(fn()).toBe(false);
-
-      component.addValueInput.set("value");
+      component.attributeDraft.addValueInput.set("value");
       expect(fn()).toBe(true);
     });
 
+    it("validChanges is true while editing the user", () => {
+      component.editMode.set(true);
+      expect(getValidChangesFn()()).toBe(true);
+    });
+
     it("save calls setUserAttribute and resolves true on success", async () => {
-      component.keyMode.set("input");
-      component.addKeyInput.set("key");
-      component.addValueInput.set("value");
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("key");
+      component.attributeDraft.addValueInput.set("value");
       const fn = getSaveFn();
       const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
       const result = await fn();
@@ -649,12 +688,54 @@ describe("UserDetailsComponent", () => {
       expect(result).toBe(true);
     });
 
-    it("save resolves false when key or value missing", async () => {
+    it("save resolves false when the value is missing", async () => {
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("key");
       const fn = getSaveFn();
       const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
       const result = await fn();
       expect(setSpy).not.toHaveBeenCalled();
       expect(result).toBe(false);
+    });
+
+    it("counts a value edited in its row as a pending change and saves it under its key", async () => {
+      component.attributeDraft.startEdit("department", "sales");
+      expect(getHasChangesFn()()).toBe(true);
+
+      component.attributeDraft.editValue.set("");
+      expect(getValidChangesFn()()).toBe(false);
+
+      component.attributeDraft.editValue.set("finance");
+      expect(getValidChangesFn()()).toBe(true);
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await getSaveFn()();
+      expect(setSpy).toHaveBeenCalledWith("department", "finance");
+      expect(result).toBe(true);
+    });
+
+    it("saves an open row edit and a typed new attribute together", async () => {
+      component.attributeDraft.startEdit("department", "sales");
+      component.attributeDraft.editValue.set("finance");
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("room");
+      component.attributeDraft.addValueInput.set("live-check-1");
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+
+      expect(getValidChangesFn()()).toBe(true);
+      const result = await getSaveFn()();
+
+      expect(setSpy).toHaveBeenCalledWith("department", "finance");
+      expect(setSpy).toHaveBeenCalledWith("room", "live-check-1");
+      expect(result).toBe(true);
+    });
+
+    it("rejects save and exit while a typed new attribute next to an open row edit is incomplete", () => {
+      component.attributeDraft.startEdit("department", "sales");
+      component.attributeDraft.editValue.set("finance");
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("room");
+
+      expect(getValidChangesFn()()).toBe(false);
     });
 
     it("ngOnDestroy clears all pending-changes registrations", () => {
@@ -862,5 +943,13 @@ describe("UserDetailsComponent", () => {
     component.resetUserLock();
 
     expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+    // The spec runs on fake timers; axe itself needs real ones.
+    jest.useRealTimers();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -9,12 +9,14 @@ privacyIDEA ships a set of policy templates with the WebUI. The WebUI policy
 :ref:`policy_template_url` can point to a different location.
 The templates are then fetched from the given URL during runtime.
 
+The policy templates are JSON files, which can contain common settings that
+can be used to start your own policies. When creating a new policy, *Policy Templates*
+lists the available templates. Selecting one pre-fills the new policy.
+
 .. figure:: images/default_templates.png
    :width: 500
 
-The policy templates are JSON files, which can contain common settings that
-can be used to start your own policies. When creating a new policy, you can
-select an existing policy template as a starting point.
+   *The policy templates on the page to create a policy*
 
 You may also provide your own policy templates at a URL of your choice and set
 this URL with the policy :ref:`policy_template_url`.

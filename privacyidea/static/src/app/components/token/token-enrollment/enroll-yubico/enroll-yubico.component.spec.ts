@@ -25,6 +25,7 @@ import { SystemService } from "@services/system/system.service";
 import { MockContentService, MockSystemService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 import { ContentService } from "@services/content/content.service";
+import { axe } from "@testing/axe";
 
 describe("EnrollYubicoComponent", () => {
   let component: EnrollYubicoComponent;
@@ -49,5 +50,11 @@ describe("EnrollYubicoComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

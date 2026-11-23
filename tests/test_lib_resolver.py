@@ -11,23 +11,36 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 import datetime
+import hashlib
 import json
 import logging
+import os
 import shutil
+import socket
 import ssl
 import tempfile
+import threading
+import unittest
 import uuid
 from contextlib import contextmanager
 
 import ldap3
 from unittest import mock
 import responses
-from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
+import yaml
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
+from ldap3.core.exceptions import (LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError,
+                                   LDAPSocketOpenError)
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from testfixtures import LogCapture
 
 from privacyidea.lib.crypto import decryptPassword, encryptPassword
+from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
@@ -45,7 +58,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver,
 from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.models import ResolverConfig, Resolver, db, save_config_timestamp
 from . import ldap3mock
@@ -190,6 +203,7 @@ class SQLResolverTestCase(MyTestCase):
     def tearDownClass(cls):
         # Remove temporary work directory
         shutil.rmtree(cls.parameters["Server"])
+        super().tearDownClass()
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -554,6 +568,27 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(resolver.checkPass(uid, "test8"))
         self.assertFalse(resolver.checkPass(uid, "test"))
 
+        # OTRS (unsalted hex sha256)
+        parameters["Password_Hash_Type"] = "OTRS"
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
+                                            "password": "test10"}))
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
+        self.assertEqual(hashlib.sha256(b"test10").hexdigest(), stored_password)
+        self.assertTrue(resolver.checkPass(uid, "test10"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
+
+        # the type is case-insensitive
+        parameters["Password_Hash_Type"] = "sha256crypt"
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
+                                            "password": "test11"}))
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
+        self.assertTrue(stored_password.startswith("$5$rounds="), stored_password)
+        self.assertTrue(resolver.checkPass(uid, "test11"))
+
         # TODO: check unknown hash type
         parameters["Password_Hash_Type"] = "UNKNOWN"
         resolver.loadConfig(parameters)
@@ -736,8 +771,13 @@ class SQLResolverTestCase(MyTestCase):
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
 
         # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
-        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
+        unresolvable_ids = set()
+        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"],
+                                                     unresolvable_ids=unresolvable_ids)
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
+        # Such a user does not exist, as for a single lookup, so the ID is not reported as unresolvable
+        self.assertSetEqual(set(), unresolvable_ids)
+        self.assertEqual("", resolver.getUsername("not-a-number"))
 
         # With every ID of a chunk skipped there is nothing left to ask the database for
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
@@ -768,6 +808,28 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual(1, mock_execute.call_count)
         self.assertDictEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
         self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
+
+    def test_13g_get_usernames_batch_with_a_padded_user_id(self) -> None:
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        padded_user_id = "0003"
+
+        # An integer userid column matches a padded ID, so a single lookup finds the user
+        self.assertEqual("cornelius", resolver.getUsername(padded_user_id))
+
+        # The batch has to map the row back to the ID it was asked for, not to the one the column holds
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([padded_user_id], unresolvable_ids=unresolvable_ids)
+        self.assertDictEqual({padded_user_id: "cornelius"}, login_map)
+        self.assertSetEqual(set(), unresolvable_ids)
+
+        # Both spellings of the ID point at the same row, and one answer may not displace the other
+        login_map = resolver.get_usernames_batch(["3", padded_user_id])
+        self.assertDictEqual({"3": "cornelius", padded_user_id: "cornelius"}, login_map)
+
+        # A user ID without a row still maps to the empty string
+        login_map = resolver.get_usernames_batch([padded_user_id, "04242"])
+        self.assertDictEqual({padded_user_id: "cornelius", "04242": ""}, login_map)
 
     def test_13a_get_user_info_batch_propagates_a_db_error(self):
         resolver = SQLResolver()
@@ -801,12 +863,67 @@ class SQLResolverTestCase(MyTestCase):
                 self.assertRaises(Exception, resolver.get_user_info, "1", attributes=["username"])
         mock_rollback.assert_called_once()
 
+    def test_13c_get_user_id_raises_on_a_db_error(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A failed query is not a user that does not exist
+        with mock.patch.object(resolver.session, "rollback", wraps=resolver.session.rollback) as mock_rollback:
+            with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
+                with self.assertRaises(ResolverError) as error:
+                    resolver.getUserId("cornelius")
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+        mock_rollback.assert_called_once()
+
+        # The session can be used afterwards
+        self.assertEqual("3", resolver.getUserId("cornelius"))
+        self.assertEqual("", resolver.getUserId("unknown_user"))
+
+    def test_13e_load_config_raises_when_the_database_is_not_reachable(self):
+        # Loading the table is the first time the resolver connects to the database
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+            with self.assertRaises(ResolverError) as error:
+                SQLResolver().loadConfig(self.parameters)
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+    def test_13f_a_resolver_that_fails_to_load_is_not_cached(self):
+        save_resolver({"resolver": "sql_failing_load", "type": "sqlresolver", **self.parameters})
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                # Every call of the request tries again, instead of handing out a resolver without its table
+                for _ in range(2):
+                    self.assertRaises(ResolverError, get_resolver_object, "sql_failing_load")
+            self.assertEqual("3", get_resolver_object("sql_failing_load").getUserId("cornelius"))
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_resolver("sql_failing_load")
+
+    def test_13d_get_user_id_of_a_row_without_user_id(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        for user_id in [None, ""]:
+            with mock.patch.object(resolver.session, "execute") as mock_execute:
+                mock_execute.return_value.mappings.return_value.all.return_value = [
+                    {"id": user_id, "username": "cornelius"}]
+                self.assertEqual("", resolver.getUserId("cornelius"), user_id)
+
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
         result = resolver.testconnection(self.parameters)
         self.assertTrue(result[0] == -1, result)
         self.assertEqual("Failed to retrieve users.", result[1], result)
+
+    def test_100_config_for_documentation(self):
+        # The SQL resolver is documented by its driver, not by the database, the account or the table
+        documented = SQLResolver.get_config_for_documentation(
+            {"Driver": "postgresql+psycopg2", "Server": "db.example.com", "Database": "users", "User": "service",
+             "Password": "service-password", "Table": "users", "Editable": "1", "conParams": "sslpassword=secret"})
+        self.assertEqual({"editable": True, "driver": "postgresql+psycopg2"}, documented)
 
 
 class SCIMResolverTestCase(MyTestCase):
@@ -1587,6 +1704,59 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(r, "hans\\28\\29")
         r = LDAPResolver._escape_loginname("hans\\/")
         self.assertEqual(r, "hans\\5c\\2f")
+        self.assertEqual("hans\\00", LDAPResolver._escape_loginname("hans\x00"))
+
+    @ldap3mock.activate
+    def test_10b_search_error_is_not_an_unknown_user(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({"LDAPURI": "ldap://localhost", "LDAPBASE": "o=test",
+                             "BINDDN": "cn=manager,ou=example,o=test", "BINDPW": "ldaptest",
+                             "LOGINNAMEATTRIBUTE": "cn", "LDAPSEARCHFILTER": "(cn=*)",
+                             "USERINFO": '{"username": "cn", "email": "mail"}', "UIDTYPE": "DN",
+                             "CACHE_TIMEOUT": 0})
+        self.assertEqual("cn=alice,ou=example,o=test", resolver.getUserId("alice"))
+        self.assertEqual("", resolver.getUserId("unknown_user"))
+
+        def search_with_result(result_code: int, description: str, response: list[dict] | None = None):
+            # ldap3 without raise_exceptions reports the result of the operation only in connection.result
+            def search(connection, *args, **kwargs):
+                connection.response = response or []
+                connection.result = {"result": result_code, "description": description, "message": ""}
+                return False
+            return search
+
+        for result_code, description in [(1, "operationsError"), (3, "timeLimitExceeded"), (10, "referral"),
+                                         (32, "noSuchObject"), (50, "insufficientAccessRights"), (51, "busy"),
+                                         (52, "unavailable")]:
+            with mock.patch.object(ldap3mock.Connection, "search", search_with_result(result_code, description)):
+                with self.assertRaises(ResolverError, msg=description) as error:
+                    resolver.getUserId("bob")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # The other reads of the user do not pass on the details of the LDAP server either
+        with mock.patch.object(ldap3mock.Connection, "search", search_with_result(51, "busy")):
+            with self.assertRaises(ResolverError) as error:
+                resolver.get_user_info("cn=bob,ou=example,o=test")
+            self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A receive timeout or a connection dropped after the bind raises, whatever raise_exceptions is set to
+        with mock.patch.object(ldap3mock.Connection, "search", side_effect=LDAPSocketReceiveError("timed out")):
+            for read in [lambda: resolver.getUserId("bob"),
+                         lambda: resolver.get_user_info("cn=bob,ou=example,o=test")]:
+                with self.assertRaises(ResolverError) as error:
+                    read()
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A size limit answers with the entries up to the limit, which is no error
+        bob = {"type": "searchResEntry", "dn": "cn=bob,ou=example,o=test", "attributes": {"cn": "bob"}}
+        with mock.patch.object(ldap3mock.Connection, "search",
+                               search_with_result(RESULT_SIZE_LIMIT_EXCEEDED, "sizeLimitExceeded", [bob])):
+            self.assertEqual("cn=bob,ou=example,o=test", resolver.getUserId("bob"))
+
+        # The DN of a user who was deleted from the directory does not exist any longer
+        with mock.patch.object(ldap3mock.Connection, "search", search_with_result(32, "noSuchObject")):
+            self.assertDictEqual({}, resolver.get_user_info("cn=deleted,ou=example,o=test"))
 
     @ldap3mock.activate
     def test_11_extended_userinfo(self):
@@ -1883,6 +2053,7 @@ class LDAPResolverTestCase(MyTestCase):
         # 1) start_tls has actually been called!
         self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
@@ -1912,19 +2083,24 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
+            # Without TLS_VERSION, the resolver allows only TLS v1.3
+            self.assertEqual(ssl.PROTOCOL_TLS_CLIENT, kwargs['tls'].version)
+            self.assertEqual({ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2},
+                             set(kwargs['tls'].ssl_options))
             ldap3_tls_config = kwargs['tls'].__str__()
-            self.assertIn("protocol: 2", ldap3_tls_config)
             self.assertIn("CA certificates file: present", ldap3_tls_config)
             self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
                             or "verify mode: 2" in ldap3_tls_config
                             or "verify mode: True" in ldap3_tls_config)
 
     def test_24b_tls_options(self):
+        # No type hints: ldap3mock.activate rebuilds the signature as text and cannot parse annotations
         @ldap3mock.activate
-        def check_tls_version_ldap3(tls_version_pi, tls_version_ldap3):
+        def check_tls_version_ldap3(tls_version_pi, expected_protocol, expected_options):
 
             # Check that START_TLS and TLS_VERIFY are actually passed to the ldap3 Connection
             ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -1949,18 +2125,37 @@ class LDAPResolverTestCase(MyTestCase):
             # 1) start_tls has actually been called!
             self.assertTrue(start_tls_resolver.connection.start_tls_called)
             # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
+            self.assertTrue(ldap3mock.get_server_mock().call_args_list)
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
                 self.assertFalse(kwargs['use_ssl'])
-                ldap3_tls_config = kwargs['tls'].__str__()
-                self.assertIn(tls_version_ldap3, ldap3_tls_config)
+                self.assertEqual(expected_protocol, kwargs['tls'].version)
+                self.assertEqual(expected_options, set(kwargs['tls'].ssl_options))
 
-        tls_versions = {"": "protocol: 2",
-                        "5": "protocol: 5",
-                        "1234": "protocol: 1234"}
-        for tls_version_pi, tls_version_ldap3 in tls_versions.items():
-            check_tls_version_ldap3(tls_version_pi, tls_version_ldap3)
-        self.assertRaises(ValueError, check_tls_version_ldap3, "version is nonsense", "nothing to check")
+        only_tls_1_3 = {ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2}
+        only_tls_1_2 = {ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_3}
+        # TLS v1.2 and TLS v1.3 use the generic client protocol and switch off all other versions.
+        # TLS v1.0 and TLS v1.1 keep their fixed-version protocol numbers.
+        # An empty value and 0 mean that TLS_VERSION is not set
+        tls_versions = {"": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "0": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        0: (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "2": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_3),
+                        "5": (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
+                        5: (ssl.PROTOCOL_TLS_CLIENT, only_tls_1_2),
+                        "4": (4, set()),
+                        "3": (3, set())}
+        for tls_version_pi, (expected_protocol, expected_options) in tls_versions.items():
+            check_tls_version_ldap3(tls_version_pi, expected_protocol, expected_options)
+        for unsupported_version in ("1234", "16", "1", "version is nonsense"):
+            # Loading the configuration fails like for any other resolver that cannot load its configuration
+            with self.assertRaises(ResolverError) as context:
+                check_tls_version_ldap3(unsupported_version, None, None)
+            self.assertIn(f"Unsupported TLS version '{unsupported_version}'", context.exception.message)
+            # The connection test reports the parameter
+            with self.assertRaises(ParameterError) as context:
+                LDAPResolver.testconnection({"LDAPURI": "ldaps://localhost", "TLS_VERSION": unsupported_version})
+            self.assertIn(f"Unsupported TLS version '{unsupported_version}'", context.exception.message)
 
     @ldap3mock.activate
     def test_24c_no_tls_verify(self):
@@ -1988,10 +2183,12 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
-            self.assertEqual(2, kwargs['tls'].version, kwargs['tls'])
+            # Without TLS_VERSION, the resolver uses the generic client protocol for TLS v1.3
+            self.assertEqual(ssl.PROTOCOL_TLS_CLIENT, kwargs['tls'].version, kwargs['tls'])
             # the ca_certs_file should be None since we passed a non-existing path
             self.assertIsNone(kwargs['tls'].ca_certs_file, kwargs['tls'])
             self.assertEqual(ssl.CERT_NONE, kwargs['tls'].validate, kwargs['tls'])
@@ -3061,9 +3258,9 @@ class LDAPResolverTestCase(MyTestCase):
         search_filters = []
         original_search = LDAPResolver._search
 
-        def counting_search(self, search_base, search_filter, attributes):
+        def counting_search(self, search_base, search_filter, attributes, **kwargs):
             search_filters.append(search_filter)
-            return original_search(self, search_base, search_filter, attributes)
+            return original_search(self, search_base, search_filter, attributes, **kwargs)
 
         with mock.patch.object(LDAPResolver, "_search", counting_search):
             yield search_filters
@@ -3207,6 +3404,15 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertSetEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
 
+        # The skipped id is reported, so that a caller does not take it for a user that does not exist
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([objectGUIDs[0], "not-a-guid"], unresolvable_ids=unresolvable_ids)
+        self.assertSetEqual({"not-a-guid"}, unresolvable_ids)
+        self.assertDictEqual({objectGUIDs[0]: "alice", "not-a-guid": ""}, login_map)
+        # A single lookup of that id fails in the same way
+        with self.assertRaises(ValueError):
+            resolver.getUsername("not-a-guid")
+
     @ldap3mock.activate
     def test_50a_get_user_info_batch_ignores_referrals_and_matches_the_uid_case(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -3249,10 +3455,10 @@ class LDAPResolverTestCase(MyTestCase):
         resolver = self._get_batch_resolver()
         original_search = LDAPResolver._search
 
-        def truncating_search(self, search_base, search_filter, attributes):
+        def truncating_search(self, search_base, search_filter, attributes, **kwargs):
             # A server that applies a size limit answers with a part of the result set and reports
             # it in the result code, it does not raise
-            result = original_search(self, search_base, search_filter, attributes)
+            result = original_search(self, search_base, search_filter, attributes, **kwargs)
             if len(result) > 1:
                 self.connection.result = {"result": RESULT_SIZE_LIMIT_EXCEEDED}
                 return result[:1]
@@ -3278,6 +3484,258 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertDictEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
         self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
+
+    def test_53_resolvers_with_the_same_attribute_mapping(self):
+        # Two resolvers parse the same USERINFO text. Each puts the first attribute of its own LOGINNAMEATTRIBUTE
+        # into its user info, and the attribute mapping of both keeps the configured "username" attribute.
+        config = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "USERINFO": '{"username": "cn", "email": "mail"}',
+                  "UIDTYPE": "DN"}
+        uid_resolver = LDAPResolver()
+        uid_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "uid"})
+        mail_resolver = LDAPResolver()
+        mail_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "mail"})
+        # A resolver that loads the same text again does not change the first two
+        LDAPResolver().loadConfig(config | {"LOGINNAMEATTRIBUTE": "sAMAccountName"})
+
+        self.assertEqual("uid", uid_resolver.userinfo["username"])
+        self.assertEqual("mail", mail_resolver.userinfo["username"])
+        self.assertEqual("cn", uid_resolver.map["username"])
+        self.assertEqual("cn", mail_resolver.map["username"])
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+        mail_resolver.multivalueattributes.append("email")
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+
+    def test_54_saved_serverpool_strategy_is_used_for_the_server_pool(self):
+        save_resolver({"resolver": "strategy_resolver",
+                       "type": "ldapresolver",
+                       "LDAPURI": "ldap://server1, ldap://server2",
+                       "LDAPBASE": "o=test",
+                       "LOGINNAMEATTRIBUTE": "cn",
+                       "LDAPSEARCHFILTER": "(cn=*)",
+                       "USERINFO": '{"username": "cn"}',
+                       "UIDTYPE": "DN",
+                       "SERVERPOOL_STRATEGY": "FIRST"})
+
+        self.assertEqual("FIRST", get_resolver_config("strategy_resolver").get("SERVERPOOL_STRATEGY"))
+        resolver = get_resolver_object("strategy_resolver")
+        self.assertEqual("FIRST", resolver.get_serverpool_instance().strategy)
+        delete_resolver("strategy_resolver")
+
+    @ldap3mock.activate
+    def test_55_testconnection_uses_serverpool_strategy(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "BINDDN": "cn=manager,ou=example,o=test",
+                  "BINDPW": "ldaptest",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_STRATEGY": "RANDOM"}
+
+        with mock.patch.object(LDAPResolver, "create_serverpool",
+                               wraps=LDAPResolver.create_serverpool) as create_serverpool:
+            success, desc = LDAPResolver.testconnection(params)
+
+        self.assertTrue(success, desc)
+        self.assertEqual("RANDOM", create_serverpool.call_args.kwargs["strategy"])
+
+    def test_56_persistent_serverpool_per_strategy(self):
+        # Resolvers that differ only in the strategy must not share a persistent server pool, so that a changed
+        # strategy takes effect without a restart.
+        config = {"LDAPURI": "ldap://server1, ldap://server2",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        first_resolver = LDAPResolver()
+        first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+        random_resolver = LDAPResolver()
+        random_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "RANDOM"})
+        other_first_resolver = LDAPResolver()
+        other_first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+
+        first_pool = first_resolver.get_serverpool_instance()
+        random_pool = random_resolver.get_serverpool_instance()
+
+        self.assertEqual("FIRST", first_pool.strategy)
+        self.assertEqual("RANDOM", random_pool.strategy)
+        self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
+
+    def test_57_persistent_serverpool_per_tls_version(self):
+        # TLS v1.2 and TLS v1.3 differ only in the SSL options. Resolvers that differ only in the TLS version
+        # must not share a persistent server pool, so that a changed TLS version takes effect without a restart.
+        config = {"LDAPURI": "ldaps://server1",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        resolver = LDAPResolver()
+        resolver.loadConfig(config | {"TLS_VERSION": "2"})
+        tls_1_3_pool = resolver.get_serverpool_instance()
+        resolver.loadConfig(config | {"TLS_VERSION": "5"})
+        tls_1_2_pool = resolver.get_serverpool_instance()
+
+        self.assertIsNot(tls_1_3_pool, tls_1_2_pool)
+        self.assertIn(ssl.OP_NO_TLSv1_2, tls_1_3_pool.servers[0].tls.ssl_options)
+        self.assertIn(ssl.OP_NO_TLSv1_3, tls_1_2_pool.servers[0].tls.ssl_options)
+        self.assertNotIn(ssl.OP_NO_TLSv1_2, tls_1_2_pool.servers[0].tls.ssl_options)
+        # The same TLS version uses the same pool again
+        resolver.loadConfig(config | {"TLS_VERSION": "2"})
+        self.assertIs(tls_1_3_pool, resolver.get_serverpool_instance())
+
+    def test_99_config_for_documentation(self):
+        # The LDAP resolver is documented by how it connects and identifies the users, not by the servers, the base
+        # DN, the bind account or the filters
+        config = {"LDAPURI": "ldap://dc1.example.com, ldaps://dc2.example.com", "START_TLS": "1",
+                  "LDAPBASE": "dc=example,dc=com", "BINDDN": "cn=service,dc=example,dc=com",
+                  "BINDPW": "service-password", "LDAPSEARCHFILTER": "(objectClass=person)", "AUTHTYPE": "NTLM",
+                  "TLS_VERIFY": "1", "UIDTYPE": "objectGUID", "SERVERPOOL_STRATEGY": "FIRST", "CACHE_TIMEOUT": "300",
+                  "EDITABLE": "0", "recursive_group_search": "1", "group_name_attribute": "cn",
+                  "group_search_filter": "(member:1.2.840.113556.1.4.1941:={dn})",
+                  "group_attribute_mapping_key": "groups"}
+        documented = LDAPResolver.get_config_for_documentation(config)
+        self.assertEqual({"editable": False, "auth_type": "NTLM", "tls": ["ldaps", "start_tls"], "tls_verify": True,
+                          "uid_type": "objectGUID", "servers": 2, "serverpool_strategy": "FIRST",
+                          "cache_timeout": 300, "group_search": True}, documented)
+
+        # If the first server is an ldaps server, START_TLS is not used, also not for the other servers
+        config["LDAPURI"] = "ldaps://dc1.example.com, ldap://dc2.example.com"
+        self.assertEqual(["ldaps", "none"], LDAPResolver.get_config_for_documentation(config)["tls"])
+
+        # The defaults of the resolver are documented for the settings that are not configured, and a value that
+        # is none of the known ones is documented as unknown
+        documented = LDAPResolver.get_config_for_documentation({"LDAPURI": "ldap://dc1.example.com",
+                                                                "AUTHTYPE": "custom-auth-type",
+                                                                "recursive_group_search": "1"})
+        self.assertEqual({"editable": False, "auth_type": "unknown", "tls": ["none"], "tls_verify": False,
+                          "uid_type": "DN", "servers": 1, "serverpool_strategy": "ROUND_ROBIN",
+                          "cache_timeout": 120, "group_search": False}, documented)
+
+
+def write_self_signed_certificate(directory: str, file_name: str, host_name: str) -> tuple[str, str]:
+    """
+    Write a self-signed certificate for the host name and its private key as PEM files.
+
+    :return: The paths of the certificate file and the key file
+    """
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, host_name)])
+    now = datetime.datetime.now(datetime.UTC)
+    certificate = (x509.CertificateBuilder()
+                   .subject_name(subject)
+                   .issuer_name(subject)
+                   .public_key(private_key.public_key())
+                   .serial_number(x509.random_serial_number())
+                   .not_valid_before(now - datetime.timedelta(minutes=5))
+                   .not_valid_after(now + datetime.timedelta(days=1))
+                   .add_extension(x509.SubjectAlternativeName([x509.DNSName(host_name)]), critical=False)
+                   .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+                   .sign(private_key, hashes.SHA256()))
+    certificate_file = os.path.join(directory, f"{file_name}.crt")
+    key_file = os.path.join(directory, f"{file_name}.key")
+    with open(certificate_file, "wb") as file:
+        file.write(certificate.public_bytes(serialization.Encoding.PEM))
+    with open(key_file, "wb") as file:
+        file.write(private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                             serialization.NoEncryption()))
+    return certificate_file, key_file
+
+
+class LDAPTLSHandshakeTestCase(unittest.TestCase):
+    """
+    Connects ldap3 with the TLS object of the LDAP resolver to a local TLS server that accepts TLS v1.2
+    and TLS v1.3. The handshake uses the ssl module and the OpenSSL library of the test system.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.directory = tempfile.mkdtemp()
+        cls.server_certificate, cls.server_key = write_self_signed_certificate(cls.directory, "server",
+                                                                               "localhost")
+        cls.other_certificate, _ = write_self_signed_certificate(cls.directory, "other", "localhost")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.directory)
+
+    def connect(self, tls_version: str, host: str = "localhost", tls_verify: bool = True,
+                tls_ca_file: str | None = None,
+                server_minimum_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_2,
+                server_maximum_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_3) -> str:
+        """
+        Open an LDAPS connection to a local TLS server with the TLS object of the LDAP resolver.
+
+        :return: The negotiated TLS version, for example "TLSv1.2"
+        """
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(self.server_certificate, self.server_key)
+        server_context.minimum_version = server_minimum_version
+        server_context.maximum_version = server_maximum_version
+        listener = socket.create_server(("127.0.0.1", 0))
+        listener.settimeout(10)
+
+        def serve() -> None:
+            try:
+                server_connection, _ = listener.accept()
+                with server_context.wrap_socket(server_connection, server_side=True) as tls_connection:
+                    tls_connection.settimeout(10)
+                    tls_connection.recv(1)
+            except OSError:
+                # The client rejected the handshake or closed the connection
+                pass
+
+        server_thread = threading.Thread(target=serve, daemon=True)
+        server_thread.start()
+        tls_context = LDAPResolver.get_tls_context(ldap_uri="ldaps://localhost", tls_version=tls_version,
+                                                   tls_verify=tls_verify,
+                                                   tls_ca_file=tls_ca_file or self.server_certificate)
+        server = ldap3.Server(host, port=listener.getsockname()[1], use_ssl=True, tls=tls_context,
+                              mode=ldap3.IP_V4_ONLY, connect_timeout=5)
+        connection = ldap3.Connection(server, receive_timeout=5)
+        try:
+            connection.open(read_server_info=False)
+            return connection.socket.version()
+        finally:
+            if not connection.closed:
+                connection.unbind()
+            elif connection.socket:
+                # A failed handshake leaves the plain socket open, and the server waits for it
+                connection.socket.close()
+            server_thread.join(10)
+            listener.close()
+
+    def test_01_tls_v1_2_allows_only_tls_1_2(self):
+        self.assertEqual("TLSv1.2", self.connect("5"))
+        self.assertEqual("TLSv1.2", self.connect("5", tls_verify=False))
+        # A server that accepts only TLS v1.3 fails the handshake
+        with self.assertRaises(LDAPSocketOpenError):
+            self.connect("5", server_minimum_version=ssl.TLSVersion.TLSv1_3)
+
+    def test_02_tls_v1_3_allows_only_tls_1_3(self):
+        self.assertEqual("TLSv1.3", self.connect("2"))
+        # Without TLS_VERSION, the resolver uses TLS v1.3
+        self.assertEqual("TLSv1.3", self.connect(""))
+        # A server that accepts only TLS v1.2 fails the handshake
+        with self.assertRaises(LDAPSocketOpenError):
+            self.connect("2", server_maximum_version=ssl.TLSVersion.TLSv1_2)
+
+    def test_03_wrong_host_name_fails(self):
+        with self.assertRaises(LDAPSocketOpenError) as context:
+            self.connect("5", host="127.0.0.1")
+        self.assertIn("doesn't match", str(context.exception))
+
+    def test_04_unknown_certificate_authority_fails(self):
+        with self.assertRaises(LDAPSocketOpenError) as context:
+            self.connect("5", tls_ca_file=self.other_certificate)
+        self.assertIn("CERTIFICATE_VERIFY_FAILED", str(context.exception))
 
 
 class BaseResolverTestCase(MyTestCase):
@@ -3319,7 +3777,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertDictEqual({}, resolver.get_user_info_batch([]))
 
     def test_02_get_usernames_batch(self):
-        # The login names go through getUsername, which for several resolvers is cheaper than
+        # The login names go through lookup_username, which for several resolvers is cheaper than
         # reading the full user information
         resolver = UserIdResolver()
         with mock.patch.object(UserIdResolver, "getUsername",
@@ -3336,6 +3794,57 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(2, mock_get_username.call_count)
 
         self.assertDictEqual({}, resolver.get_usernames_batch([]))
+
+    def test_02a_get_usernames_batch_reports_a_user_store_that_does_not_answer(self) -> None:
+        # The login names go through lookup_username, which tells a user that does not exist from a user
+        # store that did not answer. The ID of such a user is reported instead of raising, so that one
+        # failing user does not cost the whole batch.
+        resolver = UserIdResolver()
+        unanswered_user_id = "2"
+
+        def lookup_username(user_id: str) -> str:
+            if user_id == unanswered_user_id:
+                raise ResolverError(str(USER_LOOKUP_FAILED))
+            return f"user{user_id}"
+
+        unresolvable_ids = set()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=lookup_username) as mock_lookup_username:
+            login_map = resolver.get_usernames_batch(["1", unanswered_user_id, "3"],
+                                                     unresolvable_ids=unresolvable_ids)
+
+        self.assertDictEqual({"1": "user1", unanswered_user_id: "", "3": "user3"}, login_map)
+        self.assertSetEqual({unanswered_user_id}, unresolvable_ids)
+        # Every ID is asked exactly once, so a reported ID does not cost a second pass
+        self.assertEqual(3, mock_lookup_username.call_count, mock_lookup_username.call_args_list)
+
+    def test_02b_get_usernames_batch_without_a_set_to_report_to(self) -> None:
+        resolver = UserIdResolver()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=ResolverError(str(USER_LOOKUP_FAILED))):
+            login_map = resolver.get_usernames_batch(["1"])
+        self.assertDictEqual({"1": ""}, login_map)
+
+    def test_03_parse_config_yaml(self):
+        # Every call returns its own copy, the first call too, so a change of one result does not reach the next
+        text = f'{{"username": "uid", "groups": ["admins"], "id": "{uuid.uuid4()}"}}'
+        first = parse_config_yaml(text)
+        first["username"] = "mail"
+        first["groups"].append("developers")
+        second = parse_config_yaml(text)
+        self.assertEqual("uid", second["username"])
+        self.assertEqual(["admins"], second["groups"])
+        self.assertIsNot(first, second)
+
+        self.assertEqual(["mobile"], parse_config_yaml('["mobile"]'))
+        self.assertEqual({"username": "userName"}, parse_config_yaml("{username: 'userName'}"))
+        # Invalid YAML raises on every call
+        for _ in range(2):
+            with self.assertRaises(yaml.YAMLError):
+                parse_config_yaml('{"username": "uid"')
+        # A value that is not a string goes to the YAML parser unchanged
+        with self.assertRaises(AttributeError):
+            parse_config_yaml({})
 
 
 class ResolverTestCase(MyTestCase):

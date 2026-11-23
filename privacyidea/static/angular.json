@@ -57,13 +57,27 @@
               "src/styles/table-global.scss"
             ],
             "scripts": [],
-            "optimization": true
+            "optimization": {
+              "scripts": true,
+              "styles": {
+                "minify": true,
+                "inlineCritical": false
+              },
+              "fonts": true
+            }
           },
           "configurations": {
             "production": {
               "baseHref": "/static/dist/privacyidea-webui/browser/",
               "localize": true,
-              "optimization": true,
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              },
               "budgets": [
                 {
                   "type": "initial",

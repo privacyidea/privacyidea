@@ -6,7 +6,7 @@ The migration that added the column only printed an error when it failed, so a d
 without the column. Both directions therefore check for the column before changing it.
 
 Revision ID: 56529818c956
-Revises: b7c1e4d2a9f3
+Revises: 7e3010cbe03e
 Create Date: 2026-10-02 12:00:00.000000
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 from sqlalchemy import inspect
 
 revision = '56529818c956'
-down_revision = 'b7c1e4d2a9f3'
+down_revision = '7e3010cbe03e'
 branch_labels = None
 depends_on = None
 

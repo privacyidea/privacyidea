@@ -53,6 +53,9 @@ class ResponseManglerEventHandler(BaseEventHandler):
 
     identifier = "ResponseMangler"
     description = "This event handler can mangle the JSON response."
+    # The client receives the mangled response. Continuing without the handler would send the data the handler was
+    # configured to remove or change.
+    default_abort_on_error = True
 
     @property
     def allowed_positions(cls):
@@ -139,6 +142,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     del (content[comp[0]][comp[1]][comp[2]])
                 else:
                     log.warning(f"JSON pointer length of {len(comp)!s} not supported.")
+                    self.run_details = f"A JSON pointer of length {len(comp)} is not supported."
+                    ret = False
                 options.get("response").data = json.dumps(content)
             except KeyError:
                 log.warning(f"Can not delete response JSON Pointer {json_pointer!s}.")
@@ -150,6 +155,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     value = is_true(value)
             except ValueError:
                 log.warning("Failed to convert value")
+                self.run_details = f"The value can not be converted to {type}."
+                ret = False
 
             if len(comp) == 1:
                 content[comp[0]] = value
@@ -162,6 +169,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                 content[comp[0]][comp[1]][comp[2]] = value
             else:
                 log.warning(f"JSON pointer of length {len(comp)!s} not supported.")
+                self.run_details = f"A JSON pointer of length {len(comp)} is not supported."
+                ret = False
             options.get("response").data = json.dumps(content)
 
         return ret

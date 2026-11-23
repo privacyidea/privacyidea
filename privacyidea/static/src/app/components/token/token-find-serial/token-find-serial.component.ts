@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpParams } from "@angular/common/http";
-import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { disabled, form, FormField, min, required } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -31,12 +32,23 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface, TokenType } from "@services/token/token.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
 import { Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
+
+interface FindSerialModel {
+  otpValue: string;
+  tokenType: string;
+  assignmentState: string;
+  serialSubstring: string;
+  countWindow: number | null;
+}
 
 @Component({
   selector: "app-token-get-serial",
   imports: [
+    FormField,
     MatProgressBarModule,
     MatFormField,
     MatInput,
@@ -53,12 +65,26 @@ import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-d
   styleUrl: "./token-find-serial.component.scss"
 })
 export class TokenFindSerialComponent {
-  otpValue = signal<string>("");
-  tokenType = signal<string>("");
-  assignmentState = signal<string>("");
-  serialSubstring = signal<string>("");
-  countWindow = signal<number>(10);
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
   currentStep = signal("init");
+  searchModel = signal<FindSerialModel>({
+    otpValue: "",
+    tokenType: "",
+    assignmentState: "",
+    serialSubstring: "",
+    countWindow: 10
+  });
+  searchForm = form(this.searchModel, (f) => {
+    requiredNonBlank(f.otpValue);
+    disabled(f.otpValue, () => this.currentStep() !== "init");
+    required(f.countWindow);
+    min(f.countWindow, 1);
+  });
+  // The button doubles as Stop while a search runs, so only the steps that start a search depend on validity.
+  runSearchDisabled = computed(
+    () => ["init", "found", "error"].includes(this.currentStep()) && !this.searchForm().valid()
+  );
   foundSerial = signal<string>("");
   tokenCount = signal<string>("");
   serialSubscription: Subscription | null = null;
@@ -85,10 +111,10 @@ export class TokenFindSerialComponent {
 
   constructor() {
     effect(() => {
-      this.otpValue();
-      this.assignmentState();
-      this.tokenType();
-      this.serialSubstring();
+      this.searchForm.otpValue().value();
+      this.searchForm.assignmentState().value();
+      this.searchForm.tokenType().value();
+      this.searchForm.serialSubstring().value();
       this.resetSteps();
     });
   }
@@ -109,20 +135,22 @@ export class TokenFindSerialComponent {
   }
 
   getParams(): HttpParams {
+    const { countWindow, assignmentState, tokenType, serialSubstring } = this.searchModel();
     let params = new HttpParams();
-    params = params.set("window", this.countWindow());
-
-    if (this.assignmentState() === "assigned") {
+    if (countWindow !== null) {
+      params = params.set("window", countWindow);
+    }
+    if (assignmentState === "assigned") {
       params = params.set("assigned", "1");
     }
-    if (this.assignmentState() === "unassigned") {
+    if (assignmentState === "unassigned") {
       params = params.set("unassigned", "1");
     }
-    if (this.tokenType() !== "") {
-      params = params.set("type", this.tokenType());
+    if (tokenType !== "") {
+      params = params.set("type", tokenType);
     }
-    if (this.serialSubstring() !== "") {
-      params = params.set("serial", this.serialSubstring());
+    if (serialSubstring !== "") {
+      params = params.set("serial", serialSubstring);
     }
 
     return params;
@@ -133,10 +161,14 @@ export class TokenFindSerialComponent {
       this.notificationService.warning($localize`:@@token.invalidAction:Invalid action.`);
       return;
     }
+    if (!this.searchForm().valid()) {
+      void touchAll(this.searchForm);
+      return;
+    }
     let params = this.getParams();
     params = params.set("count", "1");
     this.currentStep.set("counting");
-    this.tokenService.getSerial(this.otpValue(), params).subscribe({
+    this.tokenService.getSerial(this.searchModel().otpValue, params).subscribe({
       next: (response) => {
         this.tokenCount.set(response?.result?.value?.count !== undefined ? String(response.result?.value.count) : "");
         this.currentStep.set("countDone");
@@ -174,7 +206,7 @@ export class TokenFindSerialComponent {
     let params = this.getParams();
     params = params.delete("count");
     this.currentStep.set("searching");
-    this.serialSubscription = this.tokenService.getSerial(this.otpValue(), params).subscribe({
+    this.serialSubscription = this.tokenService.getSerial(this.searchModel().otpValue, params).subscribe({
       next: (response) => {
         const serial = response.result?.value?.serial ?? "";
         const afterClosed = this.dialogService
@@ -182,7 +214,7 @@ export class TokenFindSerialComponent {
             component: FindSerialResultDialogComponent,
             data: {
               foundSerial: serial,
-              otpValue: this.otpValue()
+              otpValue: this.searchModel().otpValue
             }
           })
           .afterClosed();

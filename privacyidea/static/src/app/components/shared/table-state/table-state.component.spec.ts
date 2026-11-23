@@ -20,6 +20,7 @@ import { Component, signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TableState } from "@core/models/table_state/table-state";
 import { TableStateComponent } from "./table-state.component";
+import { axe } from "@testing/axe";
 
 // The pages that own a table project their way out of an empty list into the panel - the realm
 // selector above all, which the panel replaces while it is on screen.
@@ -321,5 +322,12 @@ describe("TableStateComponent", () => {
       expect(state.status()).toBe("cancelled");
       expect(hostFixture.nativeElement.textContent).toContain("Select Realm");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    render(buildState());
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

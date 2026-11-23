@@ -6,7 +6,7 @@ from webauthn.helpers import bytes_to_base64url
 from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required, get_optional
 from privacyidea.lib import fido2
 from privacyidea.lib.cache.redis import ChallengeDTO
-from privacyidea.lib.challenge import get_challenges, cancel_challenge
+from privacyidea.lib.challenge import get_challenges, cancel_challenge, consume_challenge
 from privacyidea.lib.config import get_from_config
 from privacyidea.models import Challenge
 from privacyidea.lib.crypto import geturandom
@@ -14,6 +14,7 @@ from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.token.auth import record_successful_authentication
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
@@ -88,12 +89,31 @@ class FIDOVerificationResult:
     challenge: "Challenge | ChallengeDTO"
 
 
+def record_fido2_login_success(token: TokenClass) -> None:
+    """
+    The success bookkeeping of ``check_token_list`` for the FIDO2 login paths: count the authentication unless
+    the no_auth_counter config switches the counters off, reset the fail counter and record the time of this
+    authentication.
+
+    The views call this once the login is accepted. A verified assertion is not yet an accepted login - the
+    view can still refuse it - so last_auth is written here and not where the assertion is verified.
+    """
+    record_successful_authentication(token)
+    token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(UTC).isoformat(timespec="seconds"))
+
+
 def has_unbound_challenge(transaction_id: str) -> bool:
     """
     Check whether the transaction has a challenge that is not bound to a token. Such a challenge comes from
     /validate/initialize and starts a passkey login without a username.
     """
     return any(not challenge.serial for challenge in get_challenges(transaction_id=transaction_id))
+
+
+class ChallengeExpiredError(AuthError):
+    """
+    The challenge of the transaction had timed out when the response arrived.
+    """
 
 
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
@@ -108,7 +128,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
     - HTTP_ORIGIN
 
     If no challenge is found for the transaction_id, a ResourceNotFoundError is raised.
-    If the challenge has timed out, an AuthError is raised.
+    If the challenge has timed out, a ChallengeExpiredError (an AuthError) is raised.
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
 
@@ -128,7 +148,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
 
     if not challenge.is_valid():
         log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
-        raise AuthError(f"The challenge {transaction_id} has timed out.")
+        raise ChallengeExpiredError(f"The challenge {transaction_id} has timed out.")
 
     # New challenges store the value under FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
     # Challenges created by older code used the raw "user_verification" string instead.
@@ -175,11 +195,15 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
         })
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
+    if ret > 0 and not consume_challenge(challenge):
+        # The assertion is valid, but another request already used this challenge, so this one is not accepted.
+        # Consume only after a verified assertion: a wrong one must not remove the challenge of the right request.
+        # A synced passkey reports sign count 0, so the challenge is the only replay guard on that path.
+        log.info(f"The challenge {transaction_id} of token {token.get_serial()} was used by another request.")
+        ret = -1
     result = FIDOVerificationResult(ret, challenge)
-    # On success, remove all challenges with the transaction_id from both
+    # On success, remove the remaining challenges with the transaction_id from both
     # Redis (when active) and the DB.
     if result.success > 0:
         cancel_challenge(transaction_id)
-        # Update the last_auth token info
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(UTC).isoformat(timespec="seconds"))
     return result

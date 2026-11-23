@@ -20,12 +20,14 @@
 <div
   #scrollContainer
   appScrollToTop
+  (scroll)="updateSearchReached()"
   class="edit-policy-layout">
   <h3 class="margin-8">
     {{ title() }}
   </h3>
 
   <div
+    #stickyHeader
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
@@ -44,33 +46,57 @@
         mat-stroked-button>
         <span i18n="@@common.cancel">Cancel</span>
       </button>
+      @if (mode() === "edit" && authService.actionAllowed("policywrite")) {
+        <button
+          (click)="onCopy()"
+          [disabled]="savingName() !== null"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <mat-icon>content_copy</mat-icon>
+          <span i18n="@@common.copy">Copy</span>
+        </button>
+      }
       <button
         (click)="onSave()"
         [disabled]="!canSave()"
+        [attr.aria-describedby]="checkAllResolversWithoutResolver() ? 'save-blocked-reason' : null"
         class="action-button-primary button-width-s"
         mat-stroked-button>
         <mat-icon>save</mat-icon>
         <span i18n="@@common.save">Save</span>
       </button>
-
-      <!-- Only while the header is pinned: unpinned, the field sits in the actions tab, where
-           it belongs above the two panels it filters. -->
-      @if (searchInHeader()) {
-        <app-policy-action-search
-          class="action-search-field"
-          [(actionFilter)]="actionFilter" />
+      <!-- The name errors show below the name field, which is always visible. This reason belongs to the conditions
+           tab, so the header repeats it next to the Save button. -->
+      @if (checkAllResolversWithoutResolver()) {
+        <p
+          id="save-blocked-reason"
+          class="save-blocked-reason"
+          i18n="@@policy.saveNeedsResolverForCheckAllResolvers">
+          Select a resolver on the Conditions tab, or clear "Check all possible resolvers of a user".
+        </p>
       }
+
+      <!-- Shown only once the header reaches the field in the actions tab: until then it sits there,
+           above the two panels it filters. Hidden rather than left out, so the header keeps its
+           height when the field moves in. -->
+      <app-policy-action-search
+        class="action-search-field"
+        [class.hidden]="!searchInHeader()"
+        [(actionFilter)]="actionFilter" />
     </div>
   </div>
 
   @if (mode() === "create") {
     <app-policy-template-picker
+      #templatePicker
       [currentPriority]="editedPolicy().priority"
       (templateApplied)="addPolicyEdit($event)"></app-policy-template-picker>
   }
 
   <app-policy-panel-edit
+    #panel
     [policy]="editedPolicy()"
+    [nameTaken]="nameTaken()"
     [(activeTab)]="activeTab"
     [(actionFilter)]="actionFilter"
     [searchInHeader]="searchInHeader()"

@@ -14,6 +14,7 @@ on:
       - "branch-*"
     paths:
       - "requirements.txt"
+      - "deploy/docker/requirements-image.txt"
       - ".github/workflows/osv-scanner-backend.yml"
   push:
     branches:
@@ -21,6 +22,7 @@ on:
       - "branch-*"
     paths:
       - "requirements.txt"
+      - "deploy/docker/requirements-image.txt"
       - ".github/workflows/osv-scanner-backend.yml"
   schedule:
     # Nightly at 22:47 UTC — offset from frontend scan (22:53) to avoid simultaneous load.
@@ -63,6 +65,7 @@ jobs:
         run: |
           osv-scanner scan \
             --lockfile=requirements.txt \
+            --lockfile=deploy/docker/requirements-image.txt \
             --format=sarif \
             --output-file=osv-results.sarif
 

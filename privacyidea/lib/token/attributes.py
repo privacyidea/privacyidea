@@ -580,6 +580,9 @@ def set_token_type_info(serial: str | None, info: dict, user: "User | None" = No
     reach a key of a different token type. A key that no token class declares settable raises a
     ParameterError.
 
+    A key that a token needs to work, see TokenClass.required_tokeninfo_keys, can not be set to an empty value.
+    Such a value raises a ParameterError before any token is written.
+
     :param serial: The serial number of the token
     :param info: The entries to write, as {key: value}
     :param user: The owner of the tokens that should be modified
@@ -593,11 +596,19 @@ def set_token_type_info(serial: str | None, info: dict, user: "User | None" = No
             raise ParameterError(f"The token info key '{key}' can not be set on any token type.")
 
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
-    written_keys = []
+    info_per_token = []
     for tokenobject in tokenobject_list:
         # A user can own tokens of several types, only the keys this token declares settable are touched
         own_info = {key: value for key, value in info.items()
                     if tokenobject.is_settable_tokeninfo_key(key)}
+        # All tokens are checked before the first one is written, so a refused request changes nothing
+        for key, value in own_info.items():
+            if value in (None, "") and tokenobject.is_required_tokeninfo_key(key):
+                raise ParameterError(f"The token info key '{key}' must not be empty.")
+        info_per_token.append((tokenobject, own_info))
+
+    written_keys = []
+    for tokenobject, own_info in info_per_token:
         if not own_info:
             continue
         for key, value in own_info.items():

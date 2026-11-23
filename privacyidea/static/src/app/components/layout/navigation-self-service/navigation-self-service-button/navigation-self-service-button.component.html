@@ -18,6 +18,7 @@
 -->
 <div class="tile-size-scope">
   <a
+    [attr.aria-current]="isSelected() ? 'page' : null"
     [ngClass]="isSelected() ? 'selected' : ''"
     [routerLinkActiveOptions]="{ exact: true }"
     [routerLink]="routePath()"

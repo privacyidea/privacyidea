@@ -21,7 +21,15 @@
 This module provides the functionality to register export or import functions
 for separate parts of the privacyIDEA server configuration.
 """
+import logging
 import sys
+from collections.abc import Callable, Iterable
+
+from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.log import get_key_names
+from privacyidea.models import db
+
+log = logging.getLogger(__name__)
 
 EXPORT_FUNCTIONS = {}
 IMPORT_FUNCTIONS = {}
@@ -100,3 +108,59 @@ def register_import(name=None, prio=99):
                                       'func': func}
         return func
     return wrapped
+
+
+def get_import_names(data: dict | list, name_key: str = "name") -> list:
+    """
+    Return the names of the configuration objects in the data an importer gets, for a log message that says which
+    objects are imported. The settings of the objects are not part of it, they hold the credentials of the objects
+    in plain text.
+
+    :param data: a dict of the objects by their names, or a list of the objects
+    :param name_key: the key under which an object in a list holds its name
+    :return: the names of the objects
+    """
+    if isinstance(data, dict):
+        return get_key_names(data)
+    if isinstance(data, list):
+        return [entry.get(name_key) for entry in data if isinstance(entry, dict)]
+    return []
+
+
+def import_entries(entries: Iterable[tuple[str, dict]], import_entry: Callable[[str, dict], int], label: str,
+                   error_class: type[Exception] = ConfigAdminError) -> list[str]:
+    """
+    Import the entries of one part of the configuration independently of each other.
+
+    If an entry can not be imported, the database session is rolled back and the
+    remaining entries are still imported. After all entries have been processed,
+    an error lists the entries that failed and the entries that were imported.
+
+    :param entries: the name and the data of each entry
+    :param import_entry: the function that imports one entry. It is called with
+        the name and the data of the entry and returns the database id.
+    :param label: what the entries are, in plural, used in the log and in the
+        error message (e.g. "SMTP servers")
+    :param error_class: the exception that is raised if an entry failed
+    :return: the names of the imported entries
+    :raises error_class: if at least one entry could not be imported
+    """
+    imported = []
+    failed = {}
+    for name, data in entries:
+        try:
+            rid = import_entry(name, data)
+        except Exception as e:
+            # Leave the session usable for the next entry
+            db.session.rollback()
+            log.warning(f'Could not import "{name!s}" of the {label}: {e!s}')
+            failed[name] = e
+            continue
+        imported.append(name)
+        log.info(f'Import of "{name!s}" of the {label} finished, id: {rid!s}')
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({e!s})' for n, e in failed.items())
+        raise error_class(f"Could not import the following {label}: "
+                          f"{failure_summary}. Successfully imported: {imported}.")
+    return imported

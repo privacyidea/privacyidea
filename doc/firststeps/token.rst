@@ -27,7 +27,7 @@ that you need to install on your smartphone.
 
 * After enrolling the token, a dialog shows a QR code that you need to scan with
   the privacyIDEA Authenticator App.
-* Click the serial number link in the dialog.
+* Click the serial number next to *Token* in the dialog.
 
 .. figure:: images/testtoken.png
    :width: 500

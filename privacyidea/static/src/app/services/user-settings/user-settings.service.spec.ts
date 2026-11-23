@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting, TestRequest } from "@angular/common/http/testing";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { PiResponse } from "@app/app.component";
@@ -247,5 +247,94 @@ describe("UserSettingsService", () => {
     expect(service.settings()).toBeNull();
     service.getSettings().subscribe();
     respondWith({});
+  });
+
+  it("should not cache a response that arrives after clearCache", () => {
+    service.getSettings().subscribe();
+    const late = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(service.settings()).toBeNull();
+    service.getSettings().subscribe();
+    respondWith({ theme: "light" });
+    expect(service.settings()).toEqual({ theme: "light" });
+  });
+
+  it("should not hand a response that arrives after clearCache to its subscribers", () => {
+    const received: UserSettings[] = [];
+    service.getSettings().subscribe((settings) => received.push(settings));
+    const late = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(received).toEqual([]);
+  });
+
+  it.each([
+    ["setSetting", () => service.setSetting("theme", "dark")],
+    ["setSettings", () => service.setSettings({ theme: "dark" })],
+    ["deleteSetting", () => service.deleteSetting("theme")]
+  ])("should not cache the answer of %s that arrives after clearCache", (_name, write) => {
+    write().subscribe();
+    const late = httpMock.expectOne((request) => request.url.startsWith("/user/settings"));
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(service.settings()).toBeNull();
+  });
+  describe("an error that arrives after clearCache", () => {
+    const fail = (request: TestRequest): void => {
+      request.flush("nope", { status: 500, statusText: "Server Error" });
+    };
+
+    it("should not hand the failure of a getSettings to its subscribers", () => {
+      const received: unknown[] = [];
+      service.getSettings().subscribe({ next: (v) => received.push(v), error: (e) => received.push(e) });
+      const late = httpMock.expectOne("/user/settings");
+
+      service.clearCache();
+      fail(late);
+
+      expect(received).toEqual([]);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["setSetting", () => service.setSetting("theme", "dark")],
+      ["setSettings", () => service.setSettings({ theme: "dark" })],
+      ["deleteSetting", () => service.deleteSetting("theme")]
+    ])("should not notify the next session about a failed %s but tell its caller", (_name, call) => {
+      let failed = false;
+      call().subscribe({ error: () => (failed = true) });
+      const late = httpMock.expectOne((request) => request.url.startsWith("/user/settings"));
+
+      service.clearCache();
+      fail(late);
+
+      expect(failed).toBe(true);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["getSettings", () => service.getSettings()],
+      ["setSetting", () => service.setSetting("theme", "dark")]
+    ])("should keep the request of the next session shared after a failed %s", (_name, call) => {
+      call().subscribe({ error: () => undefined });
+      const late = httpMock.expectOne((request) => request.url.startsWith("/user/settings"));
+      service.clearCache();
+
+      service.getSettings().subscribe();
+      const current = httpMock.expectOne("/user/settings");
+      fail(late);
+      service.getSettings().subscribe();
+      httpMock.expectNone("/user/settings");
+
+      respondWith({ theme: "light" }, current);
+      expect(service.settings()).toEqual({ theme: "light" });
+    });
   });
 });

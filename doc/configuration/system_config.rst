@@ -107,11 +107,12 @@ provides a wrong OTP value. AutoResync works like this:
 * If it is, the token counter is set and the user is successfully authenticated.
 
 .. note:: AutoResync works for all HOTP and TOTP based tokens including SMS and
-   Email tokens. For TOTP tokens the **Auto resync timeout** is not used: the
-   second OTP value must belong to the time step directly after the remembered
-   one and lie within the sync window around the current time, which limits the
-   resync to about two time steps. Day password tokens are not resynchronized
-   automatically.
+   Email tokens. For TOTP tokens, the second OTP value must belong to the time
+   step directly after the remembered one. privacyIDEA uses at least three time
+   steps as **Auto resync timeout** for TOTP tokens. The token shows each value
+   for one time step, so the user needs up to two time steps to read both
+   values. The third time step leaves time for the requests. Day password
+   tokens are not resynchronized automatically.
 
 
 .. index:: usercache
@@ -286,11 +287,10 @@ OTP length of newly enrolled tokens
 
 This is the default length of the OTP value of OATH-based tokens like SMS,
 Email, TOTP and HOTP. It is used when the enrollment request contains no OTP
-length, e.g. an API request without ``otplen``. The current WebUI always sends
-an OTP length for HOTP and TOTP tokens (6 unless changed in the dialog), so
-there this value only applies to Email and SMS tokens; the previous WebUI sends
-6 for every token type. An ``hotp_otplen`` or ``totp_otplen`` policy replaces
-the sent value on the server.
+length, e.g. an API request without ``otplen``. The current WebUI presets the
+OTP length in its HOTP and TOTP enrollment forms with this value; the previous
+WebUI sends 6 for every token type. An ``hotp_otplen`` or ``totp_otplen``
+policy replaces the sent value on the server.
 
 Count Window of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

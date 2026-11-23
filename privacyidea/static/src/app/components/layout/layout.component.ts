@@ -24,13 +24,12 @@ import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-noti
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "@components/layout/navigation-self-service/navigation-self-service.wizard.component";
 import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { SubscriptionExpiredNoticeComponent } from "@components/layout/subscription-expired-notice/subscription-expired-notice.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { LoadingGroup, LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
-import {
-  UiPreferencesService,
-  UiPreferencesServiceInterface
-} from "@services/user-settings/ui-preferences.service";
+import { NoRealmDialogService } from "@services/no-realm-dialog/no-realm-dialog.service";
+import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
 @Component({
   selector: "app-layout",
@@ -42,7 +41,8 @@ import {
     NavigationComponent,
     NavigationSelfServiceComponent,
     NavigationSelfServiceWizardComponent,
-    DebugNoticeComponent
+    DebugNoticeComponent,
+    SubscriptionExpiredNoticeComponent
   ],
   styleUrl: "./layout.component.scss"
 })
@@ -52,6 +52,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly renderer = inject(Renderer2);
+  // Instantiated for its effect: it opens the dialog that points an administrator to the realm management.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private readonly noRealmDialog = inject(NoRealmDialogService);
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingGroups = signal<LoadingGroup[]>([]);
