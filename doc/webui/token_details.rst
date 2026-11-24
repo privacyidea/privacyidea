@@ -5,19 +5,18 @@
 Functionality of the Tokens view
 ================================
 
-Selecting a token from the list presents a detailed overview of the properties
-of the token and also lets the administrator or a privileged user perform specific tasks for this token.
+Clicking the serial of a token in the list opens the token details. They present a detailed overview of the properties
+of the token and also let the administrator or a privileged user perform specific tasks for this token.
 
 .. figure:: images/token_details.png
    :width: 500
 
    *Token Detail*
 
-Below the token attributes you see the assigned user. You can click on the username and
-change to the :ref:`user_details`.
-
-Under the user assignment, the token can be added to or removed from a container. Clicking on the container serial
-redirects to the container details (:ref:`container_functionality`).
+At the top of the page are token actions such as *Deactivate*, *Revoke*, *Delete* or *Lost This Token?*. Below, the
+token information is grouped into cards, where further actions apply to the specific information, such as resetting the
+fail counter, assigning or unassigning a user, or setting the PIN. Which actions are shown depends on the token type and
+the rights of the administrator.
 
 Lost token
 ----------
@@ -39,6 +38,8 @@ Thus the administrator does not know the OTP PIN, while the user can use his old
 
 .. figure:: images/lost_token_button.png
    :width: 500
+
+   *Confirming that a token is lost*
 
 A long password is displayed to the administrator and the administrator
 can read this password to the user. The user now can authenticate
@@ -78,7 +79,8 @@ Token settings
 
 .. index:: maxfail, failcount, token description, count window
 
-You can change the following token settings.
+You can change the following token settings in the *Counters*, *Description* and *Information* cards of the token
+details. *Fail Count* and its reset button are in the *Status* card.
 
 **Max Count and Fail Count**
 
@@ -90,7 +92,7 @@ You can change the following token settings.
 
 **Description**
 
-   The token description is also displayed in the tokenview. You can
+   The token description is shown in the *Description* card and in the token list. You can
    set a description to make it easier to identify a token. The token
    description will be truncated to fit into the database column (80 characters).
 
@@ -162,8 +164,29 @@ Resync Token
 
 .. index:: resync token
 
-In the *Sync* section of the token details, the administrator can enter two consecutive
-OTP values to resynchronize the token if it was out of sync.
+In the *Sync* card of the token details, the administrator can enter two consecutive
+OTP values in *Current OTP* and *Next OTP* and click *Resync Token* to resynchronize the token if it was out of sync.
+Passkeys and WebAuthn tokens have no *Sync* card.
+
+.. _test_token:
+
+Test Token
+----------
+
+.. index:: test token
+
+In the *Test* card, the administrator can check whether a token works:
+
+* *Test Token* checks the OTP PIN followed by the OTP value, entered in *PIN and/or OTP*, like an authentication
+  request.
+* *Verify OTP Value* checks only the OTP value, without the OTP PIN. It requires the admin right
+  :ref:`policy_tokenlist` and is not shown for token types that can not be checked by the OTP value alone, such as
+  Simple Pass, push or TiQR tokens.
+* *Trigger Challenge* creates a challenge for the token without the OTP PIN and shows the challenge message. The
+  response is then entered and checked with *Send Response*. It requires the admin right
+  :ref:`policy_triggerchallenge`.
+
+For passkeys, *Test Passkey* replaces these buttons. WebAuthn tokens have no *Test* card.
 
 Set token realm
 ---------------
@@ -175,6 +198,8 @@ He will not see tokens, that are not in his realm.
 So you can assign a token to realm A and realm B, thus the administrator A
 and the administrator B will be able to see the token.
 
+The token realms are changed in the row *Token Realms* of the *Assignments* card.
+
 .. _enroll_token:
 
 Enroll Token
@@ -182,13 +207,11 @@ Enroll Token
 
 .. index:: enroll token
 
-You can enroll a token either from the Token View or from the
-:ref:`user_details`. When enrolling a token from the User Details the token
-is directly assigned to the user.
+You can enroll a token either with *Enroll Token* in the token list or with *Enroll New Token* in the
+:ref:`user_details`. When enrolling a token from the User Details the token is directly assigned to the user.
 
-If you enroll the token from the token view, you can select a user, to whom
-the token will be assigned.
-From version 3.11, you can also assign the token only to a realm.
+If you enroll the token from the token list, you can select a user in *Assign Token to a User*, to whom the token will
+be assigned. From version 3.11, you can also assign the token only to a realm (*Only add to the realm*).
 
 When enrolling a token, you can select the token type and according to the
 token type other necessary information. For more information on the different token types, see :ref:`tokentypes`.
@@ -196,56 +219,55 @@ token type other necessary information. For more information on the different to
 .. figure:: images/token_enroll.png
    :width: 500
 
-   *Token enrollment dialog*
+   *Token enrollment page*
 
 
 Assign
 -------
 
-This function available in the token details is used to assign a token to a user.
-Select a realm and start typing a username to find the user, to whom the
-token should be assigned.
+If no user is assigned to the token, the assign button in the *User* card of the token details assigns one. Select a
+realm in *Select Realm of User* and start typing a username in *Enter User* to find the user, to whom the token should
+be assigned.
 
 Unassign
 ---------
 
-In the token details view you can unassign the token. After that, the token
-can be assigned to a new user. Unassigning removes the OTP PIN and resets the
-fail counter. The token stays active and keeps its token realms; disable it if
-it must not be used until it is assigned again.
+The icon button next to the username in the *User* card of the token details unassigns the token. After that, the token
+can be assigned to a new user. Unassigning removes the OTP PIN and resets the fail counter. The token stays active and
+keeps its token realms; disable it if it must not be used until it is assigned again.
 
 Add to Container
 ----------------
 
-A token can be added to a container in the token details view and during the enrollment by selecting an existing
-container. The *Create new container* entry at the top of the container selection opens a dialog for a basic container
-creation: It allows defining the container type, setting a description, and optionally assigning the token owner to the
-new container. After the creation, the new container is preselected. The *Create new container* entry requires the right
-``container_create`` (:ref:`admin <policy_container_create>` or user policy). Assigning the new container to the token
-owner additionally requires the right ``container_assign_user`` (:ref:`admin <policy_container_assign_user>` or user
-policy) and a token owner.
+A token can be added to a container in the row *Container Serial* of the *Assignments* card and during the enrollment in
+*Add Token to a Container* by selecting an existing container. The *Create new container* entry at the top of the
+container selection opens a dialog for a basic container creation: It allows defining the container type, setting a
+description, and optionally assigning the token owner to the new container. After the creation, the new container is
+preselected. The *Create new container* entry requires the right ``container_create`` (:ref:`admin
+<policy_container_create>` or user policy). Assigning the new container to the token owner additionally requires the
+right ``container_assign_user`` (:ref:`admin <policy_container_assign_user>` or user policy) and a token owner.
 
 Remove from Container
 ---------------------
 
-A token can be removed from a container in the token details view. Afterward, the token can be added to a new container.
+The icon button next to the container serial in the *Assignments* card removes the token from its container. Afterward,
+the token can be added to a new container.
 
 Enable
 ------
 
-If a token is disabled, it can be enabled again.
+If a token is disabled, the button *Activate* at the top of the token details enables it again.
 
 Disable
 -------
 
-Tokens can be disabled. Disabled tokens still belong to the assigned user
-but those tokens can not be used to authenticate. Disabled tokens can
-be enabled again.
+Tokens can be disabled with the button *Deactivate* at the top of the token details. Disabled tokens still belong to the
+assigned user but those tokens can not be used to authenticate. Disabled tokens can be enabled again.
 
 Set PIN
 --------
 
-You can set the OTP PIN of a token in the *PIN Setup* section of the token details: enter it in *PIN* and
+You can set the OTP PIN of a token in the *PIN Setup* card of the token details: enter it in *PIN* and
 *Repeat PIN* and click *Set PIN* (policy action ``setpin``). *Random PIN* lets the server generate a PIN and shows it
 once (policy actions ``setrandompin`` and ``otp_pin_set_random``). The mOTP PIN of an mOTP token is set during
 enrollment; to change it later, use ``POST /token/setpin`` with the parameter ``userpin``.

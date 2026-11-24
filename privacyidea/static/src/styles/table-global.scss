@@ -448,7 +448,11 @@ table.mat-mdc-table {
   width: 72px;
   min-width: 72px;
   max-width: 72px;
-  // The checkbox's empty label reaches past the cell, and the cell's ellipsis would print a "..." beside the box.
+}
+
+// The checkbox's empty label reaches past the cell, and the cell's ellipsis would print a "..." beside the box.
+// Material sets the ellipsis on its cells with the same specificity and loads later, hence the table in the selector.
+.mat-mdc-table .table-checkbox {
   text-overflow: clip;
 }
 

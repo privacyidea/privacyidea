@@ -11,9 +11,21 @@ several actions on the user.
 
    *User Details.*
 
-You see a list of the user's tokens and change to the :ref:`token_details`.
-On the bottom, a list of the user's containers is displayed. You can click on the serial to change to the container
-details (:ref:`container_view`).
+If the resolver of the user is editable, *Edit* at the top of the page changes the attributes of the user (see
+`Edit user`_) and *Delete* deletes the user from the user store after a confirmation (admin policy action
+:ref:`policy_deleteuser`).
+
+The *Attributes* card lists the attributes the resolver returns for the user. Next to it, the *Custom Attributes* card
+shows the additional user attributes (see :ref:`user_attributes`), the *Internal Attributes* card the attributes
+privacyIDEA writes itself (admin policy action :ref:`policy_get_user_internal_attributes`), and the *User Lock State*
+card whether the user is locked, with the buttons to lock or unlock the user (see
+:ref:`conditional_access_manual_restrictions`).
+
+Below the attributes, *Tokens of User* lists the user's tokens. Click on a serial to change to the :ref:`token_details`.
+*Containers of User* lists the user's containers. You can click on the serial to change to the container details
+(:ref:`container_view`). Select containers to delete them, unassign them from the user or change their state with
+*(De)activate*. *Remembered Devices of User* lists the remembered devices of the user on all API clients (admin policy
+action :ref:`policy_remembered_device_list`), see :ref:`api_clients`.
 
 Enable and Disable Tokens
 .........................

@@ -7,6 +7,10 @@ Before every update, read :read-before-update:`READ_BEFORE_UPDATE.md` of the ver
 you update to. It lists what changes and what you have to do before and after the
 update. When you skip versions, read the sections of all versions in between.
 
+If you update from 3.13 to 3.14.1, you can read
+:read-before-update:`UPDATE_FROM_3.13_TO_3.14.1.md` instead. It holds the notes of
+both versions, sorted by topic, and tells you which topics you can skip.
+
 If you installed privacyIDEA via DEB or RPM repository you can use the normal
 system ways of *apt* and *dnf* to upgrade privacyIDEA to the
 current version.

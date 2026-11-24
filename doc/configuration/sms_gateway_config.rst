@@ -16,6 +16,8 @@ There are different providers (gateways) to deliver SMS.
 .. figure:: images/sms_gateway_new.png
    :width: 500
 
+   *The provider modules offered for a new SMS gateway*
+
 .. _firebase_provider:
 
 Firebase Provider
