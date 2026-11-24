@@ -272,6 +272,42 @@ describe("EnrollPasskeyComponent", () => {
     expect(tokenService.enrollToken).not.toHaveBeenCalled();
   });
 
+  it("cancels the browser's registration once the step was left, without an error", async () => {
+    const create = jest.fn(
+      (options?: CredentialCreationOptions) =>
+        new Promise<Credential | null>((_, reject) =>
+          options?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")))
+        )
+    );
+    setNavigatorCredentials({ create });
+    const initResponse = {
+      detail: {
+        serial: "S-4",
+        transaction_id: "tx",
+        passkey_registration: {
+          rp: { name: "Example", id: "example.com" },
+          user: { id: "AA", name: "alice", displayName: "Alice" },
+          challenge: "AAAA",
+          pubKeyCredParams: [],
+          excludeCredentials: [],
+          authenticatorSelection: {},
+          timeout: 10000,
+          extensions: {},
+          attestation: "none"
+        }
+      }
+    } as unknown as EnrollmentResponse;
+    const left = new AbortController();
+
+    const pending = register(initResponse, { type: "passkey" } as TokenEnrollmentData, left.signal);
+    left.abort();
+
+    expect(await pending).toBeNull();
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ signal: left.signal }));
+    expect(notif.error).not.toHaveBeenCalled();
+    expect(tokenService.deleteToken).not.toHaveBeenCalled();
+  });
+
   it("passes the axe accessibility checks", async () => {
     fixture.detectChanges();
 

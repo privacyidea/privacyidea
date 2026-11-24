@@ -30,7 +30,6 @@ import {
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
 import { Observable, Subject } from "rxjs";
 
@@ -53,8 +52,6 @@ export type EnrollmentFirstStep =
 export interface EnrollmentFlowOptions {
   // Read when the success step opens, so a subclass can replace it, see the wizard.
   successStep: () => Type<EnrollmentStep>;
-  // A reason given here keeps the success step closed and is shown as a warning.
-  successBlockedReason?: () => string | null;
   // A step finished or the dialog closed.
   onStepClosed?: () => void;
   // The incomplete token was deleted.
@@ -74,7 +71,6 @@ export interface EnrollmentFlowOptions {
  */
 export class EnrollmentFlow {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly dialogData = signal<TokenEnrollmentDialogData | null>(null);
   readonly step = signal<EnrollmentStepKind | null>(null);
@@ -220,12 +216,6 @@ export class EnrollmentFlow {
   }
 
   private finish(response: EnrollmentResponse): void {
-    const blockedReason = this.options.successBlockedReason?.();
-    if (blockedReason) {
-      this.notificationService.warning(blockedReason);
-      this.close();
-      return;
-    }
     this.setResponse(response);
     this.show("success");
     this.options.onCompleted?.();

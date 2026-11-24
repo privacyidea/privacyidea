@@ -232,10 +232,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly successStepComponent: Type<EnrollmentStep> = TokenEnrollmentSuccessComponent;
   readonly enrollmentFlow = new EnrollmentFlow({
     successStep: () => this.successStepComponent,
-    successBlockedReason: () =>
-      this.isUserRequired() && !this.userService.selectedUser()
-        ? $localize`:@@token.userRequiredToken:User is required for this token type, but no user was provided.`
-        : null,
     onCancelled: () => this.resetEnrollment(),
     onIncomplete: () => this.resetInputsAfterEnrollment(true),
     onCompleted: () => this.resetInputsAfterEnrollment(true)

@@ -238,6 +238,27 @@ describe("EnrollWebauthnComponent", () => {
     expect(notification.warning).toHaveBeenCalledWith("Enrollment response or its detail is missing for finalization.");
   });
 
+  it("cancels the browser's registration once the step was left, without an error", async () => {
+    const create = jest.fn(
+      (options?: CredentialCreationOptions) =>
+        new Promise<Credential | null>((_, reject) =>
+          options?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")))
+        )
+    );
+    (navigator as { credentials: CredentialsContainer }).credentials = { create } as unknown as CredentialsContainer;
+    tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse()));
+    const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+    const left = new AbortController();
+
+    const pending = register(initResponse as EnrollmentResponse, enrollmentArgs!.data, left.signal);
+    left.abort();
+
+    expect(await pending).toBeNull();
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ signal: left.signal }));
+    expect(notification.error).not.toHaveBeenCalled();
+  });
+
   it("reports a failed attempt when credential creation throws", async () => {
     setNavigatorCreate(async () => {
       throw new Error("blocked");

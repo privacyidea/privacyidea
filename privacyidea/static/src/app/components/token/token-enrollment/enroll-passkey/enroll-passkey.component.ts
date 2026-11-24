@@ -88,7 +88,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       console.warn("Received enrollment data is not of type 'passkey'. Cannot proceed with Passkey enrollment.");
       return null;
     }
-    const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+     const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse, signal);
     if (!publicKeyCred || signal.aborted) {
       return null;
     }
@@ -101,7 +101,10 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     return finalResponse ?? ENROLLMENT_CANCELLED;
   }
 
-  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<PublicKeyCredential | null> {
+  private async readPublicKeyCred(
+    responseStepOne: EnrollmentResponse,
+    signal: AbortSignal
+  ): Promise<PublicKeyCredential | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
@@ -131,8 +134,12 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       attestation: passkeyRegOptions.attestation
     };
     const publicKeyCred = await navigator.credentials
-      .create({ publicKey: publicKeyOptions })
+      .create({ publicKey: publicKeyOptions, signal })
       .catch((browserOrCredentialError) => {
+        // The user left the step, nothing failed.
+        if (signal.aborted) {
+          return null;
+        }
         this.notificationService.error(
           $localize`:@@token.passkeyCredential:Passkey credential creation failed: ${browserOrCredentialError.message}:MESSAGE:`
         );

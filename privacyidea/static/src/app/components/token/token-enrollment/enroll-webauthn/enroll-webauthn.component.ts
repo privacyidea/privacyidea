@@ -99,7 +99,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       return null;
     }
 
-    const publicKeyCred = await this.readPublicKeyCred(webauthnEnrollmentResponse);
+    const publicKeyCred = await this.readPublicKeyCred(webauthnEnrollmentResponse, signal);
     if (!publicKeyCred || signal.aborted) {
       return null;
     }
@@ -110,7 +110,10 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     });
   }
 
-  readPublicKeyCred = async (enrollmentResponse: WebauthnEnrollmentResponse): Promise<PublicKeyCredential | null> => {
+  readPublicKeyCred = async (
+    enrollmentResponse: WebauthnEnrollmentResponse,
+    signal: AbortSignal
+  ): Promise<PublicKeyCredential | null> => {
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
@@ -146,9 +149,14 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     let publicKeyCred: PublicKeyCredential | null;
     try {
       publicKeyCred = (await navigator.credentials.create({
-        publicKey: publicKeyOptions
+        publicKey: publicKeyOptions,
+        signal
       })) as PublicKeyCredential | null;
     } catch (browserOrCredentialError) {
+      // The user left the step, nothing failed.
+      if (signal.aborted) {
+        return null;
+      }
       const message =
         browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
       this.notificationService.error(

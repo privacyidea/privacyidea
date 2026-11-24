@@ -31,10 +31,8 @@ import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollm
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService } from "@services/dialog/dialog.service";
-import { NotificationService } from "@services/notification/notification.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockNotificationService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 
 const response = (detail: Record<string, unknown>) =>
@@ -42,7 +40,6 @@ const response = (detail: Record<string, unknown>) =>
 
 describe("EnrollmentFlow", () => {
   let dialogService: MockDialogService;
-  let notificationService: MockNotificationService;
   let options: EnrollmentFlowOptions & {
     onStepClosed: jest.Mock;
     onCancelled: jest.Mock;
@@ -52,13 +49,9 @@ describe("EnrollmentFlow", () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: NotificationService, useClass: MockNotificationService }
-      ]
+      providers: [{ provide: DialogService, useClass: MockDialogService }]
     });
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
-    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     options = {
       successStep: () => TokenEnrollmentSuccessComponent,
       onStepClosed: jest.fn(),
@@ -243,18 +236,6 @@ describe("EnrollmentFlow", () => {
     expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
     expect(options.onIncomplete).not.toHaveBeenCalled();
-  });
-
-  it("keeps the success step closed while a reason blocks it", () => {
-    options.successBlockedReason = () => "User missing";
-    const enrolled = response({ rollout_state: "enrolled" });
-    const flow = startFlow(enrolled);
-
-    flow.continue(enrolled);
-
-    expect(notificationService.warning).toHaveBeenCalledWith("User missing");
-    expect(dialogService.openDialog).not.toHaveBeenCalled();
-    expect(options.onCompleted).not.toHaveBeenCalled();
   });
 
   it("reads the success step when it opens", () => {

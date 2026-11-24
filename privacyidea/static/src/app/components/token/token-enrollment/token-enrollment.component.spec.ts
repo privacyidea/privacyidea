@@ -268,21 +268,20 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.isFormInvalid()).toBe(true);
     });
 
-    it("does not open the success dialog when the user is required but missing", () => {
+    it("shows the success step of a created token whatever the page selects meanwhile", () => {
+      // The page switched to a type that needs a user, but the token was enrolled without one.
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       const response = { detail: { rollout_state: "enrolled" } } as unknown as EnrollmentResponse;
       component.enrollmentFlow.start({
         response,
         enrollParameters: {} as unknown as EnrollTokenArguments,
-        tokenType: "webauthn"
+        tokenType: "hotp"
       });
 
       component.enrollmentFlow.continue(response);
 
-      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
-        "User is required for this token type, but no user was provided."
-      );
-      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+      expect(notificationServiceMock.warning).not.toHaveBeenCalled();
+      expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     });
 
     it("Default values for enrollment", () => {
