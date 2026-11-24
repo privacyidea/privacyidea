@@ -117,9 +117,9 @@ provides a wrong OTP value. AutoResync works like this:
 .. note:: AutoResync works for HOTP and TOTP based tokens. SMS and Email tokens
    are excluded, since privacyIDEA sends every value itself and their counter
    can not fall behind. privacyIDEA uses at least three time steps as
-   **Auto resync timeout** for TOTP tokens. The token shows each value for one
-   time step, so the user needs up to two time steps to read both values. The
-   third time step leaves time for the requests. Day password and TAN tokens are
+   **Auto resync timeout** for TOTP tokens. The token shows a new value only
+   once per time step, so a shorter timeout would not leave the user time to
+   read the next value and to send the requests. Day password and TAN tokens are
    not resynchronized automatically.
 
 

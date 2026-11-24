@@ -737,6 +737,8 @@ class TOTPTokenTestCase(MyTestCase):
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
         self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+        # Later tests get the default time window
+        token.remove_tokeninfo("timeWindow")
 
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -1080,6 +1082,8 @@ class TOTPTokenTestCase(MyTestCase):
                 token = self._autoresync_token(f"TOTPCAP{number}", timeWindow=window, timeStep=step)
                 if timeout is not None:
                     set_privacyidea_config("AutoResyncTimeout", timeout)
+                else:
+                    delete_privacyidea_config("AutoResyncTimeout")
                 self.assertEqual(cap, token._max_autoresync_gap())
                 self.assertTrue(token._is_next_counter(10, 10 + cap))
                 self.assertFalse(token._is_next_counter(10, 10 + cap + 1))
@@ -1140,3 +1144,61 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(-1, self._present(token, self.FIRST))
         self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
         self.assertNotIn("otp1c", token.get_tokeninfo())
+
+    def test_35_autoresync_deadline_with_clock(self):
+        token = self._autoresync_token()
+        timeout = token.get_autoresync_timeout()
+        self.assertEqual(300, timeout)
+        start = 1700000000
+
+        # The second value one second before the deadline completes the autoresync
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start):
+            self.assertEqual(-1, self._present(token, self.FIRST))
+            self.assertEqual(start + timeout, int(token.get_tokeninfo("dueDate")))
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start + timeout - 1):
+            self.assertTrue(token.has_pending_autoresync())
+            self.assertEqual(self.FIRST + 1, self._present(token, self.FIRST + 1))
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+
+        # The second value at the deadline starts a new autoresync
+        token.token.count = self.COUNT
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start):
+            self.assertEqual(-1, self._present(token, self.FIRST))
+            self.assertEqual(start + timeout, int(token.get_tokeninfo("dueDate")))
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start + timeout):
+            self.assertFalse(token.has_pending_autoresync())
+            self.assertEqual(-1, self._present(token, self.FIRST + 1))
+            self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+            self.assertEqual(str(self.FIRST + 1), token.get_tokeninfo("otp1c"))
+            self.assertEqual(start + 2 * timeout, int(token.get_tokeninfo("dueDate")))
+
+    def test_36_autoresync_configuration_change_while_pending(self):
+        token = self._autoresync_token()
+        start = 1700000000
+
+        # A smaller time window lowers the cap of a pair that is pending already
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start):
+            self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertEqual(6, token._max_autoresync_gap())
+        token.write_tokeninfo("timeWindow", 60)
+        self.assertEqual(2, token._max_autoresync_gap())
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start + 1):
+            self.assertEqual(-1, self._present(token, self.FIRST + 3))
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        token.write_tokeninfo("timeWindow", 180)
+
+        # A longer AutoResyncTimeout does not extend the dueDate of a pair that is pending already
+        token.token.count = self.COUNT
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=start):
+            self.assertEqual(-1, self._present(token, self.FIRST))
+        due_date = int(token.get_tokeninfo("dueDate"))
+        self.assertEqual(start + 300, due_date)
+        set_privacyidea_config("AutoResyncTimeout", 3600)
+        self.assertEqual(3600, token.get_autoresync_timeout())
+        self.assertEqual(due_date, int(token.get_tokeninfo("dueDate")))
+        with mock.patch("privacyidea.lib.tokens.hotptoken.time.time", return_value=due_date):
+            self.assertEqual(-1, self._present(token, self.FIRST + 1))
+            self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+            self.assertEqual(due_date + 3600, int(token.get_tokeninfo("dueDate")))

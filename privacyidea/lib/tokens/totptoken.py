@@ -425,7 +425,7 @@ class TotpTokenClass(HotpTokenClass):
         How many time steps the second OTP value of an autoresync may be after the first one. It is bounded by one
         side of the time window of the token and by the autoresync timeout, so a long AutoResyncTimeout alone does
         not widen it. The timeout is at least three time steps, so the gap is at least one and, with the default time
-        window, six.
+        window of 180 seconds and a time step of 30 seconds, six.
 
         :return: The largest difference of the two counters
         """
