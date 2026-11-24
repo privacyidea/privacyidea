@@ -50,7 +50,7 @@ from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
+from privacyidea.lib.policy import SCOPE, delete_policy, get_policies, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
@@ -3013,6 +3013,57 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         finally:
             delete_policy("clisamepol")
             os.unlink(pol_path)
+
+    def test_26_policy_create_keeps_the_values_of_an_existing_policy(self):
+        # 'policy create' for an existing policy keeps every value that the arguments or the file leave out
+        runner = self.app.test_cli_runner()
+        set_policy("clikeeppol", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, active=False,
+                   check_all_resolvers=True, description="keep me")
+        kept_values = {"active": False, "check_all_resolvers": True, "description": "keep me"}
+
+        def create_from_file(content: str) -> Result:
+            with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+                pol_file.write(content)
+                pol_path = pol_file.name
+            try:
+                return runner.invoke(pi_manage, ["config", "policy", "create",
+                                                 "clikeeppol", "admin", "enable", "-f", pol_path])
+            finally:
+                os.unlink(pol_path)
+
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create", "clikeeppol", "admin", "enable"])
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertIn(PolicyAction.ENABLE, policy["action"])
+            self.assertEqual(kept_values, {key: policy.get(key) for key in kept_values})
+
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'tokenlist'}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertIn(PolicyAction.TOKENLIST, policy["action"])
+            self.assertEqual(kept_values, {key: policy.get(key) for key in kept_values})
+
+            # The values in the file are set
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'tokenlist', "
+                                      "'active': True, 'check_all_resolvers': False}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertTrue(policy["active"])
+            self.assertFalse(policy["check_all_resolvers"])
+            self.assertEqual("keep me", policy["description"])
+        finally:
+            delete_policy("clikeeppol")
+
+        # A new policy from a file without these values is active and does not check all resolvers
+        try:
+            result = create_from_file("{'name': 'clikeeppol', 'scope': 'admin', 'action': 'enable'}")
+            self.assertEqual(0, result.exit_code, result.output)
+            policy = get_policies(name="clikeeppol")[0]
+            self.assertTrue(policy["active"])
+            self.assertFalse(policy["check_all_resolvers"])
+        finally:
+            delete_policy("clikeeppol")
 
 
 class PIManageAuthLogTestCase(CliTestCase):

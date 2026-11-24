@@ -14,14 +14,25 @@ from contextlib import contextmanager
 from flask import Response
 from flask_babel import refresh
 
-from privacyidea.app import create_app
+import privacyidea
+from privacyidea.app import CSP, create_app
+from privacyidea.config import TestingConfig
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
-from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies, delete_policy, REMOTE_USER
+from privacyidea.lib.realm import delete_realm
+from privacyidea.lib.resolver import delete_resolver
 from privacyidea.lib.utils import to_unicode, get_version_number
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, save_config_timestamp
-from .base import MyTestCase, MyApiTestCase
+from privacyidea.webui.login import CSP_NONCE_PLACEHOLDER
+from .base import MyTestCase, MyApiTestCase, OverrideConfigTestCase
+
+
+def userinfo_condition(handle_missing_data: ConditionHandleMissingData) -> list[tuple]:
+    """A userinfo condition. The start page has no user, so the data for this condition is missing."""
+    return [(ConditionSection.USERINFO, "email", PrimaryComparators.EQUALS, "alice@example.com", True,
+             handle_missing_data.value)]
 
 
 class AlternativeWebUI(MyTestCase):
@@ -146,27 +157,24 @@ class LoginUITestCase(MyTestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_09_realm_dropdown_attribute_error(self):
-        """Covers AttributeError fallback when realm_dropdown has no action values."""
+        """A realm_dropdown policy without action values lists all realms on the start page."""
         def patched_action_only(*_args, **kwargs):
-            m = mock.MagicMock()
+            match = mock.MagicMock()
             if kwargs.get("action") == PolicyAction.REALMDROPDOWN:
-                m.policies.return_value = [{"name": "realmdrop"}]
-                m.action_values.side_effect = AttributeError
+                match.any.return_value = True
+                match.action_values.side_effect = AttributeError
             else:
-                m.policies.return_value = []
-                m.action_values.return_value = []
-            return m
+                match.policies.return_value = []
+                match.action_values.return_value = []
+            return match
 
-        def patched_generic(*_args, **_kwargs):
-            m = mock.MagicMock()
-            m.any.return_value = False
-            return m
-
-        with mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only), \
-             mock.patch("privacyidea.webui.login.Match.generic", side_effect=patched_generic):
+        all_realms = {"realm_a": {}, "realm_b": {}}
+        with (mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only),
+              mock.patch("privacyidea.webui.login.get_realms", return_value=all_realms)):
             with self.app.test_request_context('/', method='GET'):
                 res = self.app.full_dispatch_request()
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(200, res.status_code)
+        self.assertIn('id="REALMS" value="realm_a,realm_b"', res.get_data(as_text=True))
 
     def test_10_hsm_exception(self):
         """Covers HSMException handler: renders with hsm_ready=False."""
@@ -252,6 +260,21 @@ class LoginUITestCase(MyTestCase):
                 self.assertEqual(200, res.status_code, res.data)
                 self.assertIn(b"Hello plugin", res.data)
 
+    def test_policy_error_uses_default_value(self):
+        # The hide_version policy raises an error for its userinfo condition. The start page still renders and shows
+        # the version, and the login text policy still applies.
+        self._set_login_text_policy("Hello start page")
+        set_policy("hide_version", scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION,
+                   conditions=userinfo_condition(ConditionHandleMissingData.RAISE_ERROR))
+        self.addCleanup(delete_policy, "hide_version")
+        with self.assertLogs("privacyidea.webui.login", level="ERROR") as captured_logs:
+            with self.app.test_request_context('/', method='GET'):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertIn(b"Hello start page", res.data)
+        self.assertIn(f'id="PRIVACYIDEA_VERSION_NUMBER" value="{get_version_number()}"', res.get_data(as_text=True))
+        self.assertIn(f"'{PolicyAction.HIDE_VERSION}'", captured_logs.output[0])
+
 
 class LanguageTestCase(MyApiTestCase):
 
@@ -295,7 +318,7 @@ class ConfigTestCase(MyApiTestCase):
                                 "translation_warning", "password_reset", "hsm_ready", "has_job_queue", "customization",
                                 "custom_css", "customization_menu_file", "customization_baseline_file", "realms",
                                 "show_node", "external_links", "login_text", "gdpr_link", "logo", "page_title",
-                                "otp_pin_set_random_user", "privacyideaVersionNumber", "passkey_login"}
+                                "privacyideaVersionNumber", "passkey_login"}
             self.assertSetEqual(expected_entries, set(config.keys()))
 
             self.assertEqual("static/customize", config["customization"])
@@ -348,6 +371,117 @@ class ConfigTestCase(MyApiTestCase):
         self.app.config['PI_UI_DEACTIVATED'] = False
         self.assertEqual(res.status_code, 200)
         self.assertNotIn("instance", res.json["result"]["value"])
+
+    def _get_ui_config(self, environ_base: dict | None = None, headers: dict | None = None) -> dict:
+        with self.app.test_request_context("/config", method="GET", environ_base=environ_base, headers=headers):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json["result"]["value"]
+
+    def test_04_policy_error_uses_default_value(self):
+        # Each policy of the start page has a userinfo condition, and the start page has no user. With "Condition is
+        # true", the policy applies. With "Raise an error", the setting of the policy uses its default value, and the
+        # log file names the action.
+        delete_all_policies()
+        self.setUp_user_realms()
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        self.addCleanup(delete_resolver, "sqlite_resolver")
+        self.addCleanup(delete_realm, "sqliterealm")
+        self.addCleanup(delete_all_policies)
+        # REMOTE_USER names an account that does not exist, so the remote_user policy also has no user
+        environ_base = {"REMOTE_USER": "unknown_user"}
+        cases = [
+            (SCOPE.WEBUI, PolicyAction.REALMDROPDOWN, self.realm1, lambda config: config["realms"], self.realm1, ""),
+            (SCOPE.WEBUI, PolicyAction.SHOW_NODE, None, lambda config: config["show_node"], "Node1", ""),
+            (SCOPE.WEBUI, PolicyAction.CUSTOM_MENU, "myMenu.html", lambda config: config["customization_menu_file"],
+             "myMenu.html", "templates/menu.html"),
+            (SCOPE.WEBUI, PolicyAction.CUSTOM_BASELINE, "myBaseline.html",
+             lambda config: config["customization_baseline_file"], "myBaseline.html", "templates/baseline.html"),
+            (SCOPE.WEBUI, PolicyAction.LOGIN_TEXT, "Please log in", lambda config: config["login_text"],
+             "Please log in", ""),
+            (SCOPE.WEBUI, PolicyAction.GDPR_LINK, "https://privacy.example.com", lambda config: config["gdpr_link"],
+             "https://privacy.example.com", ""),
+            (SCOPE.WEBUI, PolicyAction.PASSKEY_LOGIN, PasskeyLoginButtonOptions.HIDE,
+             lambda config: config["passkey_login"], PasskeyLoginButtonOptions.HIDE, PasskeyLoginButtonOptions.SHOW),
+            (SCOPE.WEBUI, PolicyAction.REMOTE_USER, REMOTE_USER.FORCE,
+             lambda config: (config["remote_user"], config["force_remote_user"]), ("unknown_user", True), ("", False)),
+            (SCOPE.USER, PolicyAction.PASSWORDRESET, None, lambda config: config["password_reset"], True, False),
+            # An active hide_version policy removes the version number from the answer
+            (SCOPE.HARDENING, PolicyAction.HIDE_VERSION, None, lambda config: config.get("privacyideaVersionNumber"),
+             None, get_version_number()),
+        ]
+        for scope, action, action_value, read_setting, policy_setting, default_setting in cases:
+            with self.subTest(action=action):
+                policy_action = f"{action}={action_value}" if action_value else action
+                set_policy("start_page", scope=scope, action=policy_action,
+                           conditions=userinfo_condition(ConditionHandleMissingData.IS_TRUE))
+                self.assertEqual(policy_setting, read_setting(self._get_ui_config(environ_base=environ_base)))
+
+                set_policy("start_page", scope=scope, action=policy_action,
+                           conditions=userinfo_condition(ConditionHandleMissingData.RAISE_ERROR))
+                with self.assertLogs("privacyidea.webui.login", level="ERROR") as captured_logs:
+                    config = self._get_ui_config(environ_base=environ_base)
+                self.assertEqual(default_setting, read_setting(config))
+                self.assertEqual(1, len(captured_logs.output), captured_logs.output)
+                self.assertIn(f"'{action}'", captured_logs.output[0])
+                delete_policy("start_page")
+
+    def test_05_policy_error_keeps_other_settings(self):
+        # The login text policy compares the user agent with "contains", which needs a list. The remote_user policy
+        # raises an error for its userinfo condition. These errors change only the login text and REMOTE_USER. The
+        # other policies of the start page still apply, also password_reset, which is checked after remote_user.
+        delete_all_policies()
+        self.setUp_user_realms()
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        self.addCleanup(delete_resolver, "sqlite_resolver")
+        self.addCleanup(delete_realm, "sqliterealm")
+        self.addCleanup(delete_all_policies)
+        set_policy("login_text", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Please log in",
+                   conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.CONTAINS,
+                                "Mozilla", True)])
+        set_policy("remote_user", scope=SCOPE.WEBUI, action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.FORCE}",
+                   conditions=userinfo_condition(ConditionHandleMissingData.RAISE_ERROR))
+        set_policy("start_page", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.GDPR_LINK}=https://privacy.example.com,"
+                          f"{PolicyAction.REALMDROPDOWN}={self.realm1}")
+        set_policy("password_reset", scope=SCOPE.USER, action=PolicyAction.PASSWORDRESET)
+        with self.assertLogs("privacyidea.webui.login", level="ERROR") as captured_logs:
+            config = self._get_ui_config(environ_base={"REMOTE_USER": "unknown_user"},
+                                         headers={"User-Agent": "Mozilla/5.0"})
+        self.assertEqual("", config["login_text"])
+        self.assertEqual("", config["remote_user"])
+        self.assertFalse(config["force_remote_user"])
+        self.assertEqual("https://privacy.example.com", config["gdpr_link"])
+        self.assertEqual(self.realm1, config["realms"])
+        self.assertTrue(config["password_reset"])
+        self.assertEqual(2, len(captured_logs.output), captured_logs.output)
+        self.assertIn(f"'{PolicyAction.REMOTE_USER}'", captured_logs.output[0])
+        self.assertIn(f"'{PolicyAction.LOGIN_TEXT}'", captured_logs.output[1])
+
+    def test_06_conflicting_policies_use_default_value(self):
+        # Two login text policies with the same priority define different texts. The start page shows no login text.
+        delete_all_policies()
+        set_policy("login_text_1", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello", priority=1)
+        set_policy("login_text_2", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Welcome", priority=1)
+        self.addCleanup(delete_all_policies)
+        with self.assertLogs("privacyidea.webui.login", level="ERROR") as captured_logs:
+            config = self._get_ui_config()
+        self.assertEqual("", config["login_text"])
+        self.assertIn(f"'{PolicyAction.LOGIN_TEXT}'", captured_logs.output[0])
+
+    def test_07_config_contains_no_policy_definitions(self):
+        # The answer of /config contains the settings of the start page, but not the policies that define them
+        delete_all_policies()
+        self.setUp_user_realms()
+        set_policy("random_pin_policy", scope=SCOPE.USER, action=f"{PolicyAction.OTPPINSETRANDOM}=12",
+                   realm=self.realm1, user="alice,bob", client="10.1.0.0/16")
+        self.addCleanup(delete_all_policies)
+        with self.app.test_request_context("/config", method="GET"):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        response_text = response.get_data(as_text=True)
+        for policy_detail in ["random_pin_policy", "10.1.0.0/16", PolicyAction.OTPPINSETRANDOM]:
+            self.assertNotIn(policy_detail, response_text)
 
 
 class NewUIRoutingTestCase(MyTestCase):
@@ -661,8 +795,8 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertIn('<meta name="pi-script-root" content="">', body)
 
     def test_serve_locale_carries_no_inline_script(self):
-        """The served shell stays free of inline scripts: the app's CSP allows only
-        script-src 'self', with no nonce and no script hashes."""
+        """The server adds no inline script of its own to the served shell: the script root
+        goes into a meta tag, which the CSP does not have to allow."""
         index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
                      '</head><body></body></html>')
         with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
@@ -672,6 +806,21 @@ class NewUIRoutingTestCase(MyTestCase):
                 result = _serve_locale("en")
         body = to_unicode(result.get_data())
         self.assertNotIn("<script>", body)
+
+    def test_serve_locale_empties_the_csp_nonce_placeholder_without_csp(self):
+        """Without PI_ENABLE_CSP there is no nonce: the placeholder becomes empty, so Angular puts
+        no nonce on the style elements of the components."""
+        index_html = (f'<html><head></head><body><app-root ngCspNonce="{CSP_NONCE_PLACEHOLDER}"></app-root>'
+                      f'<script src="main.js" type="module" nonce="{CSP_NONCE_PLACEHOLDER}"></script></body></html>')
+        with (mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True),
+              mock.patch("builtins.open", mock.mock_open(read_data=index_html))):
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                result = _serve_locale("en")
+        body = to_unicode(result.get_data())
+        self.assertNotIn(CSP_NONCE_PLACEHOLDER, body)
+        self.assertIn('<app-root ngCspNonce="">', body)
+        self.assertIn('<script src="main.js" type="module" nonce="">', body)
 
     def test_serve_locale_escapes_the_script_root(self):
         """A mount point containing markup characters cannot break out of the meta tag."""
@@ -864,3 +1013,89 @@ class NewUIRoutingTestCase(MyTestCase):
                 for bad_locale in ["unknown", "de/../fr", "DE", "EN", "zh_hant"]:
                     result = _serve_locale(bad_locale)
                     self.assertIsNone(result, f"Expected None for locale {bad_locale!r}")
+
+
+class NewUIContentSecurityPolicyTestCase(OverrideConfigTestCase):
+    """The WebUI with PI_ENABLE_CSP: the style elements of its components carry the nonce of the CSP
+    header of the same response, and the policy allows no inline script."""
+
+    class Config(TestingConfig):
+        PI_ENABLE_CSP = True
+        PI_FORCE_HTTPS = False
+
+    # The index.html as the Angular build writes it when src/index.html has the ngCspNonce attribute
+    # and the build does not inline the critical CSS: no inline style or script.
+    built_index_html = ('<html><head><base href="/static/dist/privacyidea-webui/browser/en/">'
+                        '<link rel="stylesheet" href="styles.css"></head><body>'
+                        f'<app-root ngcspnonce="{CSP_NONCE_PLACEHOLDER}"></app-root>'
+                        f'<script src="main.js" type="module" nonce="{CSP_NONCE_PLACEHOLDER}"></script>'
+                        '</body></html>')
+
+    def _get_index(self, path: str) -> Response:
+        """Request *path* from a browser while the static folder holds a built English WebUI."""
+        with tempfile.TemporaryDirectory() as static_folder:
+            browser_dir = os.path.join(static_folder, "dist", "privacyidea-webui", "browser", "en")
+            os.makedirs(browser_dir)
+            with open(os.path.join(browser_dir, "index.html"), "w", encoding="utf-8") as index_file:
+                index_file.write(self.built_index_html)
+            original_static_folder = self.app.static_folder
+            self.app.static_folder = static_folder
+            try:
+                with self.app.test_request_context(path, method="GET", headers={"Accept": "text/html"}):
+                    response = self.app.full_dispatch_request()
+            finally:
+                self.app.static_folder = original_static_folder
+        self.assertEqual(200, response.status_code)
+        return response
+
+    @staticmethod
+    def _nonces_of_directives(response: Response) -> dict[str, list[str]]:
+        nonces = {}
+        for directive in response.headers["Content-Security-Policy"].split(";"):
+            name, *sources = directive.split()
+            nonces[name] = [source[len("'nonce-"):-1] for source in sources if source.startswith("'nonce-")]
+        return nonces
+
+    def _assert_index_carries_the_nonce_of_the_header(self, response: Response) -> str:
+        nonces = self._nonces_of_directives(response)
+        self.assertEqual(1, len(nonces["style-src"]))
+        nonce = nonces["style-src"][0]
+        # With a nonce in script-src, anyone who reads the nonce from <app-root> can add an inline script.
+        self.assertEqual([], nonces["script-src"])
+        self.assertEqual([], nonces["default-src"])
+        body = to_unicode(response.get_data())
+        self.assertNotIn(CSP_NONCE_PLACEHOLDER, body)
+        self.assertIn(f'<app-root ngcspnonce="{nonce}">', body)
+        return nonce
+
+    def test_locale_route_serves_the_nonce_of_the_csp_header(self):
+        self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+
+    def test_unknown_locale_serves_the_nonce_of_the_csp_header(self):
+        """A deep link like /app/v2/tokens matches the locale route with an unknown locale."""
+        self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/tokens"))
+
+    def test_spa_fallback_serves_the_nonce_of_the_csp_header(self):
+        """/app/v2/ and paths outside /app/v2/ match no route and reach the WebUI through the 404 handler,
+        which also gets the nonce of the request."""
+        for path in ["/app/v2/", "/tokens"]:
+            with self.subTest(path=path):
+                self._assert_index_carries_the_nonce_of_the_header(self._get_index(path))
+
+    def test_each_response_gets_a_new_nonce(self):
+        first_nonce = self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+        second_nonce = self._assert_index_carries_the_nonce_of_the_header(self._get_index("/app/v2/en/"))
+        self.assertNotEqual(first_nonce, second_nonce)
+
+    def test_csp_keeps_the_style_hashes_of_the_legacy_webui(self):
+        response = self._get_index("/app/v2/en/")
+        style_sources = [directive for directive in response.headers["Content-Security-Policy"].split(";")
+                         if directive.split()[0] == "style-src"][0].split()
+        for source in CSP["style-src"]:
+            self.assertIn(source, style_sources)
+
+    def test_webui_source_index_carries_the_nonce_placeholder(self):
+        """Angular reads the nonce of <app-root> at runtime, and the server replaces the placeholder. This only
+        works if src/index.html uses the placeholder that the server replaces."""
+        source_index = pathlib.Path(privacyidea.__file__).parent / "static" / "src" / "index.html"
+        self.assertIn(f'<app-root ngCspNonce="{CSP_NONCE_PLACEHOLDER}">', source_index.read_text(encoding="utf-8"))

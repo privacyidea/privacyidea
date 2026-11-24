@@ -546,8 +546,9 @@ user, client or time condition, e.g.::
    pi-manage config policy create helpdesk admin "tokenlist, enable, disable"
 
 If a policy with this name exists, ``create`` changes it: it sets the new
-scope and actions and activates the policy. Realm, user, client and time stay
-as they are, unless the file of ``-f`` sets them. The description is deleted.
+scope and actions. All other attributes stay as they are, unless the file of
+``-f`` sets them. A disabled policy stays disabled. To activate it, use
+``pi-manage config policy enable``.
 
 With ``-f`` the policy is read from a file that contains a Python dictionary
 with the attributes of the policy. Only ``name``, ``scope``, ``action``,
@@ -555,8 +556,9 @@ with the attributes of the policy. Only ``name``, ``scope``, ``action``,
 ``adminrealm``, ``adminuser`` and ``check_all_resolvers`` are read; other
 attributes, such as ``priority``, ``conditions``, ``pinode``, ``description``,
 ``user_agents`` or ``user_case_insensitive``, are ignored without a message.
-Without ``active`` in the file the policy is active, without
-``check_all_resolvers`` that option is off. The ``name``, ``scope`` and
+Without ``active`` in the file, a new policy is active. Without
+``check_all_resolvers``, that option is off for a new policy. An existing
+policy keeps both values. The ``name``, ``scope`` and
 ``action`` in the file take precedence over the arguments, which still have to
 be given. If the policy cannot be created, the command prints the error and
 exits with a non-zero status. To transfer complete policies, or many of them,

@@ -25,7 +25,7 @@ administrative users like helpdesk users in the IT department.
 .. figure:: images/admin_policies.png
    :width: 500
 
-   *The Admin scope provides an additional field 'admin realm'.*
+   *Policies in the admin scope have the additional conditions Admin Realms and Admin Name.*
 
 All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights concerning one user realm and only a few

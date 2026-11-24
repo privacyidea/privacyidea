@@ -38,13 +38,8 @@ created as well (see :ref:`caconnectors`).
 Generating Signing Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can also generate the signing request. The key pair and the request are generated on the
-server.
-
-.. figure:: images/generate_csr1.png
-   :width: 500
-
-   *Generate a certificate signing request*
+You can also generate the signing request with *Generate Request*. The key pair and the request are generated on
+the server.
 
 When generating the certificate signing request this way the RSA key pair is
 generated on the server.

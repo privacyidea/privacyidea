@@ -271,14 +271,21 @@ WebUI
   their realm, resolver and user, and they have no user, token and container data. These
   policies are ``realm_dropdown``, ``login_text``, ``gdpr_link``,
   :ref:`webui_custom_menu`, :ref:`webui_custom_baseline`, :ref:`policy_passkey_login`,
-  ``show_node``, ``otp_pin_set_random`` and :ref:`policy_password_reset` (scope
-  *user*) and ``hide_version`` (scope *hardening*).
+  ``show_node``, :ref:`policy_password_reset` (scope *user*) and ``hide_version``
+  (scope *hardening*).
 * Start page, :ref:`policy_remote_user`: if the web server sends ``REMOTE_USER``,
   privacyIDEA checks this policy for the account that ``REMOTE_USER`` names. Without a
   realm in ``REMOTE_USER``, this is the default realm. The ``userinfo`` conditions read
   this account. For a local administrator or for a name that does not exist in the realm,
   privacyIDEA checks the login name and the realm. It does not check the resolver, and
   ``userinfo`` has no data.
+* Start page, errors: an error in one of these policies does not stop the start page.
+  Examples are ``Raise an error`` for missing data, an invalid condition, and two policies
+  with the same priority and different values. The setting of this policy uses its default
+  value, and the log file contains the details. For example, the start page does not use
+  ``REMOTE_USER`` and shows no link for the password reset.
+* Login, error in :ref:`policy_remote_user`: the login (``/auth``) does not use
+  ``REMOTE_USER`` and checks the password. The log file contains the details.
 * The WebUI settings of the session, like ``logout_time`` or the page sizes, are fixed at
   the login. A later change of the time or of the client IP does not change them.
 * The WebUI shows the menus and buttons from the rights at the login. For these rights,
@@ -293,6 +300,7 @@ The policies of the scope :ref:`policies_hardening` have no user. A condition th
 user, a token or a container has missing data. With ``Condition is false``, the policy
 does not apply. With ``Condition is true``, it applies.
 
-On the API, an error in a hardening policy does not stop the request. The policy does not
-apply instead. This includes ``Raise an error`` for missing data and an invalid condition.
-Thus an error turns off the protection of the policy. The log file contains the details.
+On the API and on the WebUI start page, an error in a hardening policy does not stop the
+request. The policy does not apply instead. This includes ``Raise an error`` for missing
+data and an invalid condition. Thus an error turns off the protection of the policy. The
+log file contains the details.

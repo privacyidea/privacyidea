@@ -50,10 +50,11 @@ servers, create new server definitions and delete them.
 
    *Edit an existing SMTP server definition.*
 
-In the edit dialog you can enter all necessary attributes to talk to the SMTP
-server. You can also send a test email to verify that your settings are correct.
+On the edit page you can enter all necessary attributes to talk to the SMTP
+server. You can also send a test email to the address in *Recipient for Testing* to verify that your settings are
+correct.
 
-The SMTP server dialog has a checkbox that enables sending all emails for the given
+The checkbox *Send mail from job queue* enables sending all emails for the given
 SMTP server configuration via the :ref:`job_queue`. It only has an effect if a job
 queue is configured. The previous WebUI only shows it then, the current WebUI always
 shows it.

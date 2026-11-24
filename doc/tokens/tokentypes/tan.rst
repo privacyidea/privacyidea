@@ -15,11 +15,10 @@ Or it can be initialized or imported with a dedicated list of TANs.
 
 After enrollment, you are prompted to print the generated TAN list.
 
-.. figure:: images/enroll_tan1.png
-   :width: 500
-
 .. figure:: images/enroll_tan2.png
    :width: 500
+
+   *Print the OTP values after the enrollment*
 
 Import of TAN token
 ~~~~~~~~~~~~~~~~~~~

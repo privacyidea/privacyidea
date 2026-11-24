@@ -2895,7 +2895,7 @@ class PolicyTestCase(MyTestCase):
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, None, " ", node_name2])
         self.assertEqual(f"{node_name1}, {node_name2}", Policy.query.filter_by(name="test").first().pinode)
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=[None])
-        self.assertEqual("", Policy.query.filter_by(name="test").first().pinode)
+        self.assert_empty_string(Policy.query.filter_by(name="test").first().pinode)
         # A list entry with commas is split like the stored value
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=[f"{node_name1}, {node_name2}"])
         self.assertEqual(f"{node_name1}, {node_name2}", Policy.query.filter_by(name="test").first().pinode)

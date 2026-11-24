@@ -17,12 +17,13 @@ Create a UserIdResolver
 The UserIdResolver is the connector to the user source. For more information
 see :ref:`useridresolvers`.
 
-* Go to *Users -> Resolvers* and click *New Resolver*.
+* After the first login, a dialog points out that no resolver and no realm exist yet. Click *Create resolver*.
+  If you closed the dialog with *Later*, go to *Users -> Resolvers* and click *New Resolver*.
 
 .. figure:: images/resolver1.png
    :width: 500
 
-   *Create the first UserIdResolver*
+   *No resolver and no realm exist yet*
 
 * Keep the *Type* *Passwd*, which is the default. Its *Filename* is already
   set to ``/etc/passwd``.

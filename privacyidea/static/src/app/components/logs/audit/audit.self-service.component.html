@@ -50,7 +50,7 @@
         (page)="onPageEvent($event)"
         class="hide-page-size-label"
         [length]="totalLength()"
-        [pageIndex]="auditService.pageIndex()"
+        [pageIndex]="auditService.pageIndex() - 1"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="auditService.pageSize()"
         showFirstLastButtons />

@@ -6,11 +6,6 @@ TOTP Token Config
 
 .. index:: TOTP Token
 
-.. figure:: images/totp.png
-   :width: 500
-
-   *TOTP Token configuration*
-
 **Default Time Step** (``totp.timeStep``, default 30 seconds), **Default Time
 Window** (``totp.timeWindow``, default 180 seconds) and **Default Hashlib**
 (``totp.hashlib``, default ``sha1``) are used for a new TOTP token if the enrollment

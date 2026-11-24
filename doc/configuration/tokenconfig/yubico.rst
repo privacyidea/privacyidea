@@ -9,13 +9,8 @@ Yubico Cloud mode
 The Yubico Cloud mode sends the One Time Password emitted by the YubiKey to
 the Yubico Cloud service or another (possibly self-hosted) validation server.
 
-.. figure:: images/yubico.png
-   :width: 500
-
-   *Configure the Yubico Cloud mode*
-
 To contact the Yubico Cloud service you need to get an API key and a Client
-ID from Yubico and enter them here in the config dialog. If the Yubico URL is
+ID from Yubico and enter them in the *Yubico* section. If the Yubico URL is
 not set, privacyIDEA uses ``https://api.yubico.com/wsapi/2.0/verify``. Do not
 save the field empty after it was filled: a stored empty value is used as URL
 and every authentication with a Yubico token fails; delete the entry instead

@@ -19,7 +19,9 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatPaginator } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
+import { By } from "@angular/platform-browser";
 import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditData, AuditService } from "@services/audit/audit.service";
@@ -209,7 +211,7 @@ describe("AuditComponent (unit)", () => {
     expect(component.auditDataSource().data).toEqual(rows);
   });
 
-  it("onPageEvent mutates pageSize & pageIndex signals", () => {
+  it("onPageEvent stores the 0-based paginator index as the 1-based API page", () => {
     component.onPageEvent({
       pageSize: 15,
       pageIndex: 2,
@@ -217,7 +219,7 @@ describe("AuditComponent (unit)", () => {
       previousPageIndex: 1
     });
     expect(mockAuditService.pageSize()).toBe(15);
-    expect(mockAuditService.pageIndex()).toBe(2);
+    expect(mockAuditService.pageIndex()).toBe(3);
   });
 });
 
@@ -260,7 +262,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  const showRows = (rows: AuditData[]) =>
+  const showRows = (rows: AuditData[], count = 1) =>
     mockAuditService.auditResource.value.set({
       detail: undefined,
       id: 0,
@@ -271,7 +273,7 @@ describe("AuditComponent (template rendering)", () => {
       versionnumber: "",
       result: {
         value: {
-          count: 1,
+          count,
           auditdata: rows,
           auditcolumns: [],
           current: 0
@@ -279,6 +281,22 @@ describe("AuditComponent (template rendering)", () => {
         status: true
       }
     });
+
+  it.each([AuditComponent, AuditSelfServiceComponent])(
+    "%p shows the 1-based API page on the 0-based paginator",
+    (componentType) => {
+      const pageFixture = TestBed.createComponent(componentType);
+      showRows(
+        Array.from({ length: 10 }, () => ({}) as AuditData),
+        25
+      );
+      mockAuditService.pageIndex.set(2);
+      pageFixture.detectChanges();
+
+      const paginator = pageFixture.debugElement.query(By.directive(MatPaginator)).componentInstance as MatPaginator;
+      expect(paginator.pageIndex).toBe(1);
+    }
+  );
 
   it("renders the startdate column as one ISO date and time, not the raw server string", () => {
     showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);

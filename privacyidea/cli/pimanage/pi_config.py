@@ -564,11 +564,10 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
                            user=params.get("user"),
                            time=params.get("time"),
                            client=params.get("client"),
-                           active=params.get("active", True),
+                           active=params.get("active"),
                            adminrealm=params.get("adminrealm"),
                            adminuser=params.get("adminuser"),
-                           check_all_resolvers=params.get(
-                               "check_all_resolvers", False))
+                           check_all_resolvers=params.get("check_all_resolvers"))
             return r
 
         except Exception as e:

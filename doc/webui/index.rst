@@ -10,6 +10,10 @@ the privacyIDEA server. It is also used as a self-service portal for the average
 manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
 
+.. contents:: On this page
+   :local:
+   :depth: 1
+
 .. _new_webui:
 
 Serving the WebUI
@@ -167,6 +171,8 @@ administrator has read access is displayed in the dashboard.
 
 .. figure:: images/dashboard.png
    :width: 500
+
+   *Dashboard*
 
 Token usage
 ~~~~~~~~~~~
@@ -519,23 +525,28 @@ Tokens
 
 .. index:: tokensview
 
-The administrator can see all the tokens of all realms he is allowed to manage in the
-tokenview. Each token can be located in several realms and be assigned to one
-user. The administrator can see all the details of the token.
+Under *Token > Overview*, the administrator sees all the tokens of all realms they are allowed to manage. Each token can
+be located in several realms and be assigned to one user. *Enroll Token* opens the enrollment page, and the buttons
+above the list act on the selected tokens.
 
 .. figure:: images/token_view.png
    :width: 500
 
    *Tokens overview*
 
-The administrator can click on one token, to show more details of this token
-and to perform actions on this token. Read on here:
+Clicking the serial of a token opens its details, where the administrator can perform actions on this token. Read on
+here:
 
    :ref:`token_details`
 
-Under *Applications* in the token menu, the administrator can check for all SSH Keys attached to
-services and for HOTP tokens attached to machines for offline authentication.
-Also see :ref:`machines`.
+The *Token* menu also contains:
+
+* *Container* and *Templates*: the containers and the container templates, see :ref:`container_view`.
+* *Import*: importing token seed files, see :ref:`import`.
+* *Challenges*: the open challenges of challenge-response authentications.
+* *Applications*: the SSH keys attached to services and the HOTP tokens attached to machines for offline
+  authentication. Also see :ref:`machines`.
+* *Find Token*: determining the serial of a token from an OTP value, see :ref:`get_serial`.
 
 
 .. _container_view:
@@ -545,10 +556,10 @@ Containers
 
 .. index:: containerview
 
-In the container view, administrators can see all the containers in all the realms they are allowed to manage. Users can
-only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but can
-only be assigned to one user. You can click on a container to see more details and perform actions on the container and
-the tokens it contains.
+Under *Token > Container*, administrators can see all the containers in all the realms they are allowed to manage. Users
+can only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but
+can only be assigned to one user. You can click on the serial of a container to see more details and perform actions on
+the container and the tokens it contains.
 
 .. figure:: images/container_list.png
    :width: 500
@@ -567,15 +578,16 @@ More details about the container view can be found here:
 Users
 -----
 
-The administrator can see all users fetched by :ref:`useridresolvers` located in
-:ref:`realms` he is allowed to manage.
+Under *Users > Overview*, the administrator can see all users fetched by :ref:`useridresolvers` located in
+:ref:`realms` they are allowed to manage. The resolvers and realms themselves are configured under *Users > Resolvers*
+and *Users > Realms*.
 
 .. note:: Users are only visible, if the useridresolver is located
    within a realm. If you only define a useridresolver but no realm,
    you will not be able to see the users!
 
 You can select one of the realms in the *Select Realm* drop-down box. The administrator
-will only see the realms in the drop-down box, that he is allowed to manage.
+will only see the realms in the drop-down box that they are allowed to manage.
 
 
 .. figure:: images/usersview.png
@@ -583,9 +595,9 @@ will only see the realms in the drop-down box, that he is allowed to manage.
 
    *The Users view lists all users in a realm.*
 
-The list shows the users from the selected realm. The username, surname,
-given name, email and phone are filled according to the definition of
-the useridresolver.
+The list shows the users from the selected realm with their username, user ID, given name, surname, email, phone,
+mobile, description and resolver. The values are filled according to the attribute mapping of the useridresolver, so a
+column stays empty if the mapping does not contain the attribute.
 
 Even if a realm contains several useridresolvers, users from all
 resolvers within this realm are displayed. However, if a user with the
@@ -607,40 +619,35 @@ Read about the functionality of the users view in the following sections.
    manage_users
    user_attributes
 
-.. _webui_machines:
+.. _webui_policies_menu:
 
-Machines
+Policies
 --------
 
-Under *Configuration > Machines*, the machines fetched by the configured machine resolvers are listed.
-Machines are only necessary if you plan :ref:`special use cases<machines>` like
-managing SSH keys or doing offline OTP. In most cases there is no need to manage machines and this view is empty.
+The *Policies* menu contains everything that controls the behavior of privacyIDEA at runtime:
 
-.. figure:: images/machinesview.png
-   :width: 500
+* *Policy Overview*: the list of :ref:`policies`. Clicking a policy name opens its details, and *Create Policy* opens
+  the page to create a new one.
+* *Conditional Access*: the :ref:`conditional_access` policies.
+* *API Clients*: the :ref:`api_clients`.
+* *Event Handler*: the :ref:`eventhandler`, which trigger actions on certain events.
 
-   *The Machines view.*
+.. _webui_subscription:
 
-.. _config:
+Subscription
+------------
 
-Configuration
--------------
-
-The *Configuration* menu is the heart of the privacyIDEA server. It contains the general
-:ref:`system_config` and lets the user set up :ref:`periodic_tasks`. The :ref:`policies`, which are important to
-configure behavior of the system, and the :ref:`eventhandler` are managed under the separate menu *Policies*.
-
-.. figure:: ../configuration/images/system-config.png
-   :width: 500
-
-   *The Config section is the heart of the privacyIDEA server.*
+Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
+company behind privacyIDEA, can be viewed and managed in the menu *Subscription*.
 
 .. _webui_audit:
 
 Audit
 -----
 
-In this tab, the :ref:`audit` log is displayed which lists all events the server registers.
+The *Audit* menu contains *Audit Log*, *Authentication Log*, *Known Clients*, *Locked Users* and *IP Blocklist*.
+
+Under *Audit Log*, the :ref:`audit` log is displayed which lists all events the server registers.
 
 .. figure:: ../audit/auditlog.png
    :width: 500
@@ -651,16 +658,21 @@ In this tab, the :ref:`audit` log is displayed which lists all events the server
 .. _webui_authentication_log:
 
 Authentication log
-------------------
+~~~~~~~~~~~~~~~~~~
 
-In this tab, the :ref:`authentication_log` is displayed which lists how every
+Under *Authentication Log*, the :ref:`authentication_log` is displayed which lists how every
 authentication request was decided: the event, the reason behind it, the
 endpoint that served the request and what conditional access did about it.
+
+.. figure:: images/authentication_log.png
+   :width: 500
+
+   *The authentication log lists how each authentication request was decided.*
 
 .. _components:
 
 Known Clients
--------------
+~~~~~~~~~~~~~
 
 .. index:: Components, Known Clients
 
@@ -675,6 +687,57 @@ are connected to your network.
 
    *Known Clients lists the client applications that have authenticated.*
 
+.. _webui_locked_users_ip_blocklist:
 
-Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
-company behind privacyIDEA, can be viewed and managed in the menu *Subscription*.
+Locked Users and IP Blocklist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Locked Users* lists the users and *IP Blocklist* the IP addresses that are currently restricted, either by a
+:ref:`conditional_access` policy or by hand. The *IP Blocklist* page also blocks an IP address by hand, while users are
+locked on their details page. How locks and blocks work is described in :ref:`conditional_access_locks_and_blocks`, and
+restrictions set by hand in :ref:`conditional_access_manual_restrictions`.
+
+.. _webui_external_services:
+
+External Services
+-----------------
+
+The *External Services* menu contains the connections to other services:
+
+* *SMTP Servers*: the :ref:`smtpserver`.
+* *RADIUS Servers*: the :ref:`radiusserver_config`.
+* *SMS Gateways*: the :ref:`sms_gateway_config`.
+* *CA Connectors*: the :ref:`caconnectors`.
+* *PrivacyIDEA Servers*: the :ref:`privacyideaserver_config`.
+* *Tokengroups*: the tokengroups to which tokens can be added.
+* *Service IDs*: the :ref:`serviceids`.
+
+Each list opens the details of an entry by its name, and its create button opens the page to add a new one.
+
+.. _config:
+
+Configuration
+-------------
+
+The *Configuration* menu contains the general :ref:`system_config` (*System*), the :ref:`token_config` (*Tokentypes*),
+the machines (*Machines*), the machine resolvers (*Machine Resolver*, see :ref:`machines`) and the :ref:`periodic_tasks`
+(*Periodic Tasks*).
+
+.. figure:: ../configuration/images/system-config.png
+   :width: 500
+
+   *The Config section of the privacyIDEA server.*
+
+.. _webui_machines:
+
+Machines
+~~~~~~~~
+
+Under *Configuration > Machines*, the machines fetched by the configured machine resolvers are listed.
+Machines are only necessary if you plan :ref:`special use cases<machines>` like
+managing SSH keys or doing offline OTP. In most cases there is no need to manage machines and this view is empty.
+
+.. figure:: images/machinesview.png
+   :width: 500
+
+   *The Machines view.*

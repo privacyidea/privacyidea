@@ -271,6 +271,39 @@
   }
 }
 
+// The resting label of an outlined field runs to the outline's far end and under the trailing controls: Material only
+// shortens it for a suffix when the field also has a prefix, and never for the select arrow or the number spin buttons,
+// which sit inside the infix. Each trailing part adds its width to the reserve, so the label ends in an ellipsis before
+// them. The floated label sits on the outline above the controls and keeps its full width.
+.mat-mdc-form-field:is(
+  .mat-mdc-form-field-has-icon-suffix,
+  .mat-mdc-form-field-type-mat-select,
+  :has(input[type="number"])
+) {
+  --form-field-trailing-suffix: 16px;
+  --form-field-trailing-control: 0px;
+  --form-field-trailing-reserve: calc(
+    max(12px, var(--mat-form-field-outlined-container-shape, var(--mat-sys-corner-extra-small))) +
+      var(--form-field-trailing-suffix) + var(--form-field-trailing-control)
+  );
+
+  &.mat-mdc-form-field-has-icon-suffix {
+    --form-field-trailing-suffix: 56px;
+  }
+
+  &.mat-mdc-form-field-type-mat-select {
+    --form-field-trailing-control: 14px;
+  }
+
+  &:has(input[type="number"]) {
+    --form-field-trailing-control: 20px;
+  }
+
+  .mdc-notched-outline:not(.mdc-notched-outline--notched) > .mdc-notched-outline__notch {
+    max-width: min(var(--mat-form-field-notch-max-width, 100%), calc(100% - var(--form-field-trailing-reserve)));
+  }
+}
+
 .input-width-xs .mat-mdc-form-field-infix {
   width: var(--input-width-xs);
 }
