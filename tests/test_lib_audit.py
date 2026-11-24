@@ -964,6 +964,13 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10), datetime.datetime(2026, 11, 5, 10, 0, 1),
                                       True),
                          read("2026-11-05T10:00:00Z/2026-11-05T10:00:00Z"))
+        # The end includes its whole second, so a start within that second is allowed
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10, 0, 0, 500000),
+                                      datetime.datetime(2026, 11, 5, 10, 0, 1), True),
+                         read("2026-11-05T10:00:00.5Z/2026-11-05T10:00:00Z"))
+        # but not a start at the next second
+        with self.assertRaisesRegex(ParameterError, "Invalid ISO 8601 time interval for date.*start .*after"):
+            read_time_intervals({"date": "2026-11-05T10:00:01Z/2026-11-05T10:00:00Z"})
 
     def test_24_add_to_log(self):
         self.Audit.log({"info": "first"})

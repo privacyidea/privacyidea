@@ -131,12 +131,12 @@ def read_time_intervals(param: dict) -> None:
         if start is None and end is None:
             param.pop(key)
             continue
-        if start is not None and end is not None and start > end:
-            raise ParameterError(f"Invalid ISO 8601 time interval for {key}: {value!r}. The start of a time "
-                                 f"interval can not lie after its end.")
         end_exclusive = end is not None and end.microsecond == 0
         if end_exclusive:
             end += datetime.timedelta(seconds=1)
+        if start is not None and end is not None and (start >= end if end_exclusive else start > end):
+            raise ParameterError(f"Invalid ISO 8601 time interval for {key}: {value!r}. The start of a time "
+                                 f"interval can not lie after its end.")
         param[key] = TimeInterval(start, end, end_exclusive)
 
 

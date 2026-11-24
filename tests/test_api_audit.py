@@ -847,6 +847,8 @@ class APIAuditTestCase(MyApiTestCase):
                 self.assertEqual(400, res.status_code, (key, value, res.json))
                 self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
                 self.assertIn(f"Invalid ISO 8601 time interval for {key}", res.json["result"]["error"]["message"])
+                self.assertIn("The start of a time interval can not lie after its end",
+                              res.json["result"]["error"]["message"])
 
     def test_14_end_bound_includes_its_whole_second(self):
         with non_utc_time_zone():
