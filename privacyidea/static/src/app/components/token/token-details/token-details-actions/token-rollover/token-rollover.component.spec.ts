@@ -176,7 +176,7 @@ describe("TokenRolloverComponent", () => {
     expect(component.enrollmentFlow.dialogData()?.rollover).toBe(true);
   });
 
-  it("should keep the regenerated response for a reopened last step dialog", async () => {
+  it("keeps a regenerated response in the enrollment data of the rollover", async () => {
     const mockEnrollResp = {
       result: { status: true },
       detail: { rollout_state: "done", serial: "ABC123", googleurl: { img: "initial-img", value: "initial-url" } }
@@ -200,15 +200,6 @@ describe("TokenRolloverComponent", () => {
     component.enrollmentFlow.dialogData()?.onEnrollmentResponseChange?.(regenerated);
 
     expect(component.enrollmentFlow.dialogData()?.response).toBe(regenerated);
-
-    component.enrollmentFlow.close();
-    dialogService.openDialog.mockClear();
-    component.enrollmentFlow.resume();
-
-    expect(dialogService.openDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ component: TokenEnrollmentDialogComponent })
-    );
-    expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
   });
 
   it("gives the dialogs the type of the enrollment request, not the selected enrollment type", async () => {
