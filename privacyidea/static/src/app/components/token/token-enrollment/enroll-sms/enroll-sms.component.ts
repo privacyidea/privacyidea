@@ -37,6 +37,8 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -98,6 +100,10 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
   phoneNumber = signal<string>("");
   readNumberDynamically = signal<boolean>(false);
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  readNumberDynamicallyForm = form(this.readNumberDynamically);
   smsGatewayForm = form(this.smsGateway, (f) => {
     required(f);
     disabled(f, () => this.disabled() || this.enrollmentPolicies().state === "pending");

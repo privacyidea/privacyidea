@@ -48,6 +48,7 @@ import { DocumentationService } from "@services/documentation/documentation.serv
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { axe } from "@testing/axe";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -660,5 +661,11 @@ describe("TokenTableActionsComponent", () => {
 
       expect(notificationService.error).toHaveBeenCalledWith("An error occurred while assigning tokens.");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -6,7 +6,9 @@ enckey canary: verifies the encryption key hasn't been silently swapped.
 At pi-init time, we encrypt a known plaintext with the current enckey (via
 privacyidea.lib.crypto.encryptPassword, the same primitive PI uses for
 sensitive config) and store the ciphertext in the pi_config table under a
-reserved key. Every pi worker verifies the canary on startup — if decryption
+reserved key. The key starts with "__", so "pi-manage config export" leaves it
+out and "config import" skips it: a canary from another installation never
+replaces this one. Every pi worker verifies the canary on startup — if decryption
 doesn't return the expected plaintext, the enckey on disk does not match
 the one the database was built with, and the container refuses to start.
 

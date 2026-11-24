@@ -33,6 +33,7 @@ import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
 } from "./token-enrollment-first-step-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentFirstStepDialogComponent", () => {
   let component: TokenEnrollmentFirstStepDialogComponent;
@@ -198,5 +199,12 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
 
     expect(onRetry).toHaveBeenCalled();
     expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await setup();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

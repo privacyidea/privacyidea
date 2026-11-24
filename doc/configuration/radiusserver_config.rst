@@ -8,11 +8,12 @@ RADIUS server configuration
 At *External Services -> RADIUS Servers* the administrator
 can configure RADIUS servers to which privacyIDEA can forward authentication requests.
 
-A RADIUS server definition has a unique *Identifier*, the *Server* (host name or IP
-address) and *Port* (default 1812), the shared *Secret*, the *Dictionary* file on the
+A RADIUS server definition has a unique *Identifier*, the *IP or FQDN* of the server
+and *Port* (default 1812), the shared *Secret*, the *RADIUS Dictionary* file on the
 privacyIDEA server (default ``/etc/privacyidea/dictionary``), the *Timeout* per attempt in
 seconds (default 5), the number of *Retries* (default 3), a *Description*, and
-*Require Message-Authenticator*.
+*Require Message-Authenticator*. *Test RADIUS Server* sends an authentication request with a user name and a
+password to check the definition.
 
 .. figure:: images/radius-server-config.png
    :width: 700

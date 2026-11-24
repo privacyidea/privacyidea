@@ -25,7 +25,7 @@ administrative users like helpdesk users in the IT department.
 .. figure:: images/admin_policies.png
    :width: 500
 
-   *The Admin scope provides an additional field 'admin realm'.*
+   *Policies in the admin scope have the additional conditions Admin Realms and Admin Name.*
 
 All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights concerning one user realm and only a few
@@ -37,6 +37,16 @@ means that the administrator *frank* in the admin-realm *helpdesk* is allowed
 to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
 do not name the administrator, but the users the administrator may act on.
 
+.. note:: Configuration objects that belong to no realm, like policies, event handlers,
+   conditional-access policies, API clients, SMTP, RADIUS and privacyIDEA servers, SMS
+   gateways, CA connectors, the system configuration and periodic tasks, serve every
+   realm. The user realm of an admin policy does not restrict them: an administrator
+   with ``smtpserver_write`` changes the SMTP servers of all realms, and an
+   administrator with ``policywrite`` can write a policy without a realm, also an admin
+   policy, which then applies to every realm. The same holds for
+   ``system_documentation``. Do not give such actions to administrators who should
+   only act in some realms.
+
 .. note:: As long as no admin policy is active, all administrators are allowed to do
    everything, except the actions that always need their policy:
    :ref:`policy_set_custom_user_attributes`, :ref:`policy_delete_custom_user_attributes`,
@@ -45,7 +55,9 @@ do not name the administrator, but the users the administrator may act on.
    sets a value such as ``hide_tokeninfo``, or one for another admin realm - every
    administrator may only do what a matching policy grants.
 
-.. note:: Admin policies are also checked for all local administrators.
+.. note:: Admin policies are also checked for all local administrators. A local
+   administrator has no admin realm: only the policies without an admin realm, or with
+   the admin realm ``*``, apply to them. See :ref:`faq_admins`.
 
 The following actions are available in the scope
 *admin*:
@@ -74,6 +86,8 @@ is not allowed to list any tokens.
    the admin will have list rights on all mentioned realms
    independent of the priority of the policies.
 
+.. versionadded:: 3.1
+
 enroll
 ~~~~~~
 
@@ -83,6 +97,8 @@ There are enrollment actions per token type, e.g. ``enrollHOTP``. Only those tok
 types are selectable in the WebUI during enrollment which are allowed by their
 corresponding enroll policy action.
 
+.. versionadded:: 2.0
+
 enable
 ~~~~~~
 
@@ -90,6 +106,8 @@ type: ``bool``
 
 The ``enable`` action allows the administrator to activate
 disabled tokens.
+
+.. versionadded:: 2.0
 
 disable
 ~~~~~~~
@@ -99,6 +117,8 @@ type: ``bool``
 Tokens can be enabled and disabled. Disabled tokens can not be
 used to authenticate. The ``disable`` action allows the
 administrator to disable tokens.
+
+.. versionadded:: 2.0
 
 revoke
 ~~~~~~
@@ -110,6 +130,8 @@ A locked token can not be modified anymore. It can only be deleted.
 
 Certain token types like *certificate* may define special actions when
 revoking a token.
+
+.. versionadded:: 2.6
 
 set
 ~~~
@@ -132,6 +154,8 @@ declares it, so a parameter cannot reach a different token type, and the
 entries that carry what a token authenticates with are not settable at all.
 These entries are otherwise written during the enrollment of the token.
 
+.. versionadded:: 2.0
+
 setdescription
 ~~~~~~~~~~~~~~
 
@@ -142,6 +166,8 @@ The admin is allowed to set the description of tokens via the endpoint ``/token/
 .. note:: An admin can also be allowed to set the description of a token by
    granting the aforementioned policy ``set``.
 
+.. versionadded:: 3.9
+
 setpin
 ~~~~~~
 
@@ -150,6 +176,8 @@ type: ``bool``
 If the ``setpin`` action is defined, the administrator
 is allowed to set the OTP PIN of a token.
 
+.. versionadded:: 2.0
+
 setrandompin
 ~~~~~~~~~~~~
 
@@ -157,6 +185,8 @@ type: ``bool``
 
 If the ``setrandompin`` action is defined, the administrator
 is allowed to call the endpoint that sets a random token PIN.
+
+.. versionadded:: 3.2
 
 token_rollover
 ~~~~~~~~~~~~~~
@@ -169,11 +199,12 @@ which gives it a new secret.
 ``POST /token/init`` updates a token when it is called with the serial of a
 token that already exists. While the enrollment of that token is still under
 way — the second request of a two-step or a FIDO2 enrollment, a token waiting
-to be verified — that is part of the enrollment and only needs the
+to be verified — that is part of the enrollment and needs the
 ``enroll<TOKENTYPE>`` action. Once the token is in use, the same request gives
-it a new secret, so it additionally requires this action, and the policy is
-matched against the realm of the existing token rather than against a realm
-passed in the request.
+it a new secret, so it additionally requires this action. In both cases the
+policy is matched against the existing token - its owner or one of its realms,
+as for the other token actions - rather than against a realm passed in the
+request. A user can only name a token they own.
 
 Enrolling a new token is unaffected and needs only the enrollment action of
 its token type.
@@ -181,6 +212,8 @@ its token type.
 .. note:: There is an action of the same name in the :ref:`webui_policies`
    scope. That one only decides for which token types the WebUI offers a
    rollover button; this one decides whether the request is carried out.
+
+.. versionadded:: 3.14
 
 settokeninfo
 ~~~~~~~~~~~~
@@ -211,6 +244,8 @@ ability to refill offline OTP values, but it cannot be set to a given value.
 Only the token types the offline machine application supports have one, namely
 HOTP, WebAuthn and passkey tokens.
 
+.. versionadded:: 2.19
+
 enrollpin
 ~~~~~~~~~
 
@@ -221,6 +256,8 @@ can set a token PIN during enrollment. If the action is not defined and
 the administrator tries to set a PIN during enrollment, the enrollment will fail with a PolicyError.
 In versions 3.12 and earlier, the PIN was silently deleted and an enrollment was possible.
 
+.. versionadded:: 2.16
+
 hide_tokeninfo
 ~~~~~~~~~~~~~~
 
@@ -228,8 +265,13 @@ type: ``string``
 
 This specifies a blank-separated list of tokeninfo keys, which should be removed
 from the response and therefore will not be shown in the WebUI or JSON response.
+A policy restricted to realms, resolvers or users hides the keys for the tokens
+whose owner or token realm it names, also in the unfiltered token list and in
+the tokens of the container list.
 
 For example a value ``tokenkind auto_renew`` will hide these two tokeninfo entries.
+
+.. versionadded:: 3.7
 
 otp_pin_maxlength
 ~~~~~~~~~~~~~~~~~
@@ -248,6 +290,8 @@ use when setting the OTP PIN.
    ``spass_otp_pin_contents``. If such a token specific policy exists, it takes
    priority over the common PIN policy.
 
+.. versionadded:: 2.18
+
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
 
@@ -257,6 +301,8 @@ range: 0 - 31
 
 This is the minimum required PIN length the admin must use when setting the
 OTP PIN.
+
+.. versionadded:: 2.18
 
 .. _admin_policies_otp_pin_contents:
 
@@ -319,6 +365,7 @@ characters ``+`` and ``-``.
    *1122* would be a valid PIN.
    *1177* would not be a valid PIN.
 
+.. versionadded:: 2.18
 
 otp_pin_set_random
 ~~~~~~~~~~~~~~~~~~
@@ -335,12 +382,16 @@ This policy is needed to define how long the PIN will be.
    specific or common) if exactly one value applies; otherwise it consists of digits
    and letters.
 
+.. versionadded:: 3.2
+
 reset
 ~~~~~
 
 type: ``bool``
 
 The administrator is allowed to reset the fail counter of a token.
+
+.. versionadded:: 2.0
 
 resync
 ~~~~~~
@@ -349,6 +400,8 @@ type: ``bool``
 
 If the ``resync`` action is defined, the administrator is
 allowed to resynchronize a token.
+
+.. versionadded:: 2.0
 
 assign
 ~~~~~~
@@ -363,6 +416,8 @@ therefore does not prevent an administrator from enrolling tokens for users.
 
 Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
 
+.. versionadded:: 2.0
+
 unassign
 ~~~~~~~~
 
@@ -373,6 +428,8 @@ is allowed to unassign tokens from a user. Meaning the
 administrator can remove the link between the token
 and the user. The token still continues to exist in the system.
 
+.. versionadded:: 2.0
+
 importtokens
 ~~~~~~~~~~~~
 
@@ -382,9 +439,12 @@ If the ``importtokens`` action is defined, the administrator is
 allowed to import token seeds from a token file, thus
 creating many new token objects in the system's database.
 
-The right to upload tokens can be limited to certain realms.
-Thus the administrator could only upload tokens into the realms they are allowed to
-manage.
+The right to upload tokens can be limited to certain realms. Thus the administrator could only upload
+tokens into the realms they are allowed to manage. The restriction is checked against the realms selected for
+the import, against each token of the file that already exists, and against each user named in a version 2
+file; the file is refused if one of them is not allowed.
+
+.. versionadded:: 2.0
 
 delete
 ~~~~~~
@@ -398,6 +458,8 @@ allowed to delete a token from the system.
 
 .. note:: All audit entries of this token still exist in the audit log.
 
+.. versionadded:: 2.0
+
 spass_otp_pin_contents
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -405,6 +467,8 @@ type: ``string``
 
 This policy defines what characters are allowed when the admin sets an OTP PIN
 for a :ref:`spass_token`.
+
+.. versionadded:: 2.18
 
 .. _spass-otp-pin-minlength:
 .. _spass-otp-pin-maxlength:
@@ -417,6 +481,8 @@ type: ``integer``
 
 These policy actions define the required minimal and allowed maximal pin length
 for a :ref:`spass_token`.
+
+.. versionadded:: 2.18
 
 .. _policy_userlist:
 
@@ -437,6 +503,8 @@ Listing or counting the users by whether they own a token additionally requires 
 :ref:`policy_tokenlist` action in every realm the users are listed from, since it tells
 who owns a token.
 
+.. versionadded:: 2.0
+
 .. _policy_get_user_internal_attributes:
 
 get_user_internal_attributes
@@ -448,6 +516,8 @@ The administrator is allowed to read the privacyIDEA-internal attributes of a us
 ``GET /user/internal_attribute``. privacyIDEA writes these attributes itself, e.g. the FIDO2
 user ID ``fido2_user_id``. They can not be changed through this endpoint. An administrator
 restricted to certain realms can only read the attributes of users in these realms.
+
+.. versionadded:: 3.14
 
 .. _policy_getchallenges:
 
@@ -465,6 +535,8 @@ This policy allows the administrator to retrieve a list of active challenges
 of a challenge response token. The administrator can view these challenges
 in the web UI.
 
+.. versionadded:: 2.9
+
 .. _policy_cancelchallenge:
 
 cancelchallenge
@@ -479,6 +551,8 @@ allowed to cancel (delete) an active challenge by its transaction ID via
 This is a separate, write-scoped permission from ``getchallenges`` -
 admins who should only inspect open challenges must *not* be granted
 ``cancelchallenge``.
+
+.. versionadded:: 3.14
 
 .. _policy_tokenrealms:
 
@@ -501,6 +575,8 @@ other realms, so the administrators of every realm the token is still in can go 
 managing it. Remove the other realms with ``tokenrealms`` after the assignment if
 only the administrators of the user's realm should manage it.
 
+.. versionadded:: 2.3
+
 .. _tokengroups:
 
 tokengroups
@@ -516,6 +592,8 @@ addressed in certain situations.
 
 Administrators can also be allowed to define tokengroups and delete tokengroup definitions.
 
+.. versionadded:: 3.8
+
 .. _policy_tokengroup_list:
 
 tokengroup_list
@@ -524,6 +602,8 @@ tokengroup_list
 type: ``bool``
 
 This allows the administrator to list all defined tokengroups.
+
+.. versionadded:: 3.8
 
 .. _policy_tokengroup_add:
 
@@ -535,6 +615,8 @@ type: ``bool``
 If the policy ``tokengroup_add`` is defined, the administrator is allowed to
 define new tokengroups.
 
+.. versionadded:: 3.8
+
 .. _policy_tokengroup_delete:
 
 tokengroup_delete
@@ -544,6 +626,8 @@ type: ``bool``
 
 If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
 delete existing tokengroup definitions.
+
+.. versionadded:: 3.8
 
 .. _policy_serviceids:
 .. _policy_serviceid_add:
@@ -561,6 +645,8 @@ application specific passwords.
 
 See :ref:`serviceids`.
 
+.. versionadded:: 3.9
+
 .. _policy_serviceid_delete:
 
 serviceid_delete
@@ -569,6 +655,8 @@ serviceid_delete
 type: ``bool``
 
 This policy allows the administrator to delete a service ID definition.
+
+.. versionadded:: 3.9
 
 .. _policy_serviceid_list:
 
@@ -579,6 +667,8 @@ type: ``bool``
 
 This policy allows the administrator to list all defined service IDs. An action of the same name exists in the user
 scope, see :ref:`user_policy_serviceid_list`.
+
+.. versionadded:: 3.9
 
 .. _policy_getserial:
 
@@ -593,6 +683,7 @@ If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
 
+.. versionadded:: 2.2
 
 .. _policy_sshkey_read:
 
@@ -611,6 +702,7 @@ contained in encrypted form in the token list, so this action is the way to
 retrieve it. The administrator is restricted to the realms of their policies,
 and only active tokens hand out their key. See :ref:`sshkey_token`.
 
+.. versionadded:: 3.14
 
 .. _policy_getrandom:
 
@@ -628,6 +720,8 @@ The endpoint can be used by the client, if the client has no reliable random
 number generator. Creating API keys for the Yubico Validation Protocol uses
 this endpoint.
 
+.. versionadded:: 2.9
+
 .. _lost_token:
 
 losttoken
@@ -644,6 +738,7 @@ restricted to certain realms can only run the process for tokens of those realms
 To only perform the lost token process the actions ``copytokenuser``
 and ``copytokenpin`` are not necessary!
 
+.. versionadded:: 2.0
 
 .. _policy_adduser:
 
@@ -660,6 +755,8 @@ users to a user store.
 .. note:: The user store still must be defined as editable, otherwise no
    users can be added, edited or deleted.
 
+.. versionadded:: 2.4
+
 .. _policy_updateuser:
 
 updateuser
@@ -671,6 +768,8 @@ type: ``bool``
 
 If the ``updateuser`` action is defined, the administrator is allowed to edit
 users in the user store.
+
+.. versionadded:: 2.4
 
 .. _policy_deleteuser:
 
@@ -684,6 +783,7 @@ type: ``bool``
 If the ``deleteuser`` action is defined, the administrator is allowed to
 delete an existing user from the user store.
 
+.. versionadded:: 2.4
 
 .. _policy_copytokenuser:
 
@@ -698,6 +798,8 @@ allowed to copy the user assignment of one token to another.
 This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
+
+.. versionadded:: 2.0
 
 .. deprecated:: 3.14
    The endpoint this action guards, ``POST /token/copyuser``, is
@@ -720,6 +822,8 @@ This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
 
+.. versionadded:: 2.0
+
 .. deprecated:: 3.14
    The endpoint this action guards, ``POST /token/copypin``, is
    deprecated and will be removed in a future release, and this action
@@ -736,6 +840,8 @@ type: ``bool``
 To be able to define new :ref:`smtpserver` or delete existing ones, the
 administrator needs the right ``smtpserver_write``.
 
+.. versionadded:: 2.10
+
 .. _policy_smtpserver_read:
 
 smtpserver_read
@@ -744,6 +850,8 @@ smtpserver_read
 type: ``bool``
 
 Allow the administrator to read the :ref:`smtpserver`.
+
+.. versionadded:: 3.1
 
 .. _policy_smsgateway_write:
 
@@ -755,6 +863,8 @@ type: ``bool``
 To be able to define new :ref:`sms_gateway_config` or delete existing ones, the
 administrator needs the right ``smsgateway_write``.
 
+.. versionadded:: 2.13
+
 .. _policy_smsgateway_read:
 
 smsgateway_read
@@ -763,6 +873,8 @@ smsgateway_read
 type: ``bool``
 
 Allow the administrator to read the :ref:`sms_gateway_config`.
+
+.. versionadded:: 3.1
 
 .. _policy_periodictask_write:
 
@@ -773,6 +885,8 @@ type: ``bool``
 
 Allow the administrator to write or delete :ref:`periodic_tasks` definitions.
 
+.. versionadded:: 2.23
+
 .. _policy_periodictask_read:
 
 periodictask_read
@@ -782,6 +896,8 @@ type: ``bool``
 
 Allow the administrator to read the :ref:`periodic_tasks` definitions.
 
+.. versionadded:: 3.1
+
 .. _policy_eventhandling_write:
 
 eventhandling_write
@@ -790,6 +906,8 @@ eventhandling_write
 type: ``bool``
 
 Allow the administrator to configure :ref:`Event Handlers<eventhandler>`.
+
+.. versionadded:: 2.12
 
 .. _policy_eventhandling_read:
 
@@ -804,6 +922,8 @@ Allow the administrator to read :ref:`Event Handlers<eventhandler>`.
    or realms. Having the right to read event handlers will allow the
    administrator to see all event handler definitions.
 
+.. versionadded:: 3.1
+
 .. _policy_radiusserver_write:
 
 radiusserver_write
@@ -812,6 +932,8 @@ radiusserver_write
 type: ``bool``
 
 Allow the administrator to write or delete :ref:`radiusserver_config` definitions.
+
+.. versionadded:: 2.11
 
 .. _policy_radiusserver_read:
 
@@ -822,6 +944,8 @@ type: ``bool``
 
 Allow the administrator to read the :ref:`radiusserver_config` definitions.
 
+.. versionadded:: 3.1
+
 .. _policy_privacyideaserver_write:
 
 privacyideaserver_write
@@ -831,6 +955,8 @@ type: ``bool``
 
 Allow the administrator to write or delete :ref:`privacyideaserver_config` definitions.
 
+.. versionadded:: 2.20
+
 .. _policy_privacyideaserver_read:
 
 privacyideaserver_read
@@ -839,6 +965,8 @@ privacyideaserver_read
 type: ``bool``
 
 Allow the administrator to read the :ref:`privacyideaserver_config` definitions.
+
+.. versionadded:: 3.1
 
 .. _policywrite:
 .. _policyread:
@@ -856,6 +984,10 @@ Allow the administrator to write, read or delete policies.
    or realms. Having the right to read policies will allow the
    administrator to see all policies.
 
+.. versionadded:: 2.0 ``policywrite`` and ``policydelete``
+
+.. versionadded:: 3.1 ``policyread``
+
 .. _resolverwrite:
 .. _resolverread:
 .. _resolverdelete:
@@ -867,14 +999,38 @@ type: ``bool``
 
 Allow the administrator to write, read or delete user resolvers and realms.
 
-.. note:: Currently the policies do not take into account resolvers
-   or realms. Having the right to read resolvers will allow the
-   administrator to see all resolvers and realms.
+If the admin policy is bound to user realms, the administrator only sees and changes
+the resolvers that are part of these realms and the resolvers that are part of no realm
+yet. If the policy also names resolvers, only these resolvers are granted. A policy that
+names resolvers but no realm grants these resolvers, also if they are part of no realm.
+A resolver that does not exist yet can be created with the action, and if the policy
+names resolvers, with one of these names. The users of the policy do not restrict the
+resolvers.
+
+Changing, testing or deleting a resolver needs the right for it in every realm it is
+part of, as the change affects the users of all these realms. Seeing it needs the right
+in one of them.
+
+Adding a resolver to a realm, removing it from a realm or changing its priority in
+a realm needs the right for the resolver as well, so a resolver of a realm the policy
+does not grant can not be added. Setting, changing or removing the default realm needs
+the right for the whole current and the whole new default realm: a policy for the realm
+that also names resolvers or users does not grant it. Deleting a realm removes all of
+its resolvers and, for the default realm, the default realm, so it needs these rights as
+well. The only realm is the default realm: a realm that is created or changed as the only
+realm, or that is the only realm left after another realm is deleted, becomes the default
+realm, which needs ``resolverwrite`` for the whole realm.
+
+.. versionchanged:: 3.14.1 Realm and resolver conditions are considered to restrict these admin rights.
 
 The WebUI also needs ``resolverread`` to offer editing and creating users: the *Edit*
 button in the user details needs ``updateuser`` and ``resolverread``, and *Create User*
 needs ``adduser`` and ``resolverread``, because it lists the editable user stores.
 Without ``resolverread`` both are hidden.
+
+.. versionadded:: 2.0 ``resolverwrite`` and ``resolverdelete``
+
+.. versionadded:: 3.1 ``resolverread``
 
 .. _mresolverwrite:
 .. _mresolverread:
@@ -887,6 +1043,10 @@ type: ``bool``
 
 Allow the administrator to write, read or delete machine resolvers.
 
+.. versionadded:: 2.1 ``mresolverwrite`` and ``mresolverdelete``
+
+.. versionadded:: 3.1 ``mresolverread``
+
 .. _configwrite:
 .. _configread:
 .. _policy_configread:
@@ -898,6 +1058,13 @@ configwrite, configread, configdelete
 type: ``bool``
 
 Allow the administrator to write, read or delete system configuration.
+``configread`` also allows reading the *Certificate Health*, *Resolver
+Timing* and *Notification Delivery* panels of the dashboard
+(``GET /system/health/...``).
+
+.. versionadded:: 2.0 ``configwrite`` and ``configdelete``
+
+.. versionadded:: 3.1 ``configread``
 
 .. _caconnectorwrite:
 .. _caconnectorread:
@@ -910,6 +1077,7 @@ type: ``bool``
 
 Allow the administrator to write, read or delete CA connectors.
 
+.. versionadded:: 2.3
 
 .. _policy_statistics_read:
 
@@ -920,6 +1088,7 @@ type: ``bool``
 
 This action allows the reading of the statistics at the :ref:`rest_monitoring`.
 
+.. versionadded:: 2.23
 
 .. _policy_statistics_delete:
 
@@ -930,6 +1099,7 @@ type: ``bool``
 
 This action allows deleting statistics at the :ref:`rest_monitoring`.
 
+.. versionadded:: 2.23
 
 .. _policy_auditlog:
 
@@ -953,6 +1123,8 @@ A local administrator sees every entry they caused.
 
 To learn more about the audit log, see :ref:`audit`.
 
+.. versionadded:: 2.0
+
 .. _policy_auditlog_download:
 
 auditlog_download
@@ -960,7 +1132,12 @@ auditlog_download
 
 type: ``bool``
 
-The administrator is allowed to download the audit log.
+The administrator is allowed to download the audit log. The download contains
+the entries of the realms that both the ``auditlog_download`` and the
+:ref:`policy_auditlog` policies of the administrator grant, plus the entries
+the administrator caused. Without a matching ``auditlog`` policy the download
+contains only the administrator's own entries. Grant ``auditlog_download``
+together with an ``auditlog`` policy for the same realms.
 
 .. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
    download - older entries are excluded just as in the search view.
@@ -968,6 +1145,8 @@ The administrator is allowed to download the audit log.
    applied to the download: hidden columns are still present in the
    exported CSV. If you need that restriction, disallow downloading
    the data.
+
+.. versionadded:: 2.17
 
 .. _policy_auditlog_age:
 
@@ -982,6 +1161,8 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+.. versionadded:: 2.17
+
 .. _policy_hide_audit_columns:
 
 hide_audit_columns
@@ -989,12 +1170,17 @@ hide_audit_columns
 
 type: ``string``
 
-This specifies a blank-separated list of audit columns, that should be removed
-from the response and also from the WebUI.
+This specifies a blank-separated list of audit columns that are removed from the
+response and from the WebUI. A policy restricted to realms, resolvers or users
+removes the columns from the entries of the users and realms it names, also when
+the audit log is not filtered. The CSV download of the audit log is not affected
+by this policy.
 For example a value ``sig_check log_level`` will hide these two columns.
 
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
+
+.. versionadded:: 3.5
 
 .. _policy_authentication_log_read:
 
@@ -1154,6 +1340,8 @@ a user without having specified the PIN of the SMS token.
 A common setup is that one administrative account only has this single
 permission enabled and is only used for triggering challenges.
 
+.. versionadded:: 2.17
+
 .. _admin_policy_2step:
 
 hotp_2step and totp_2step
@@ -1173,6 +1361,8 @@ Such a policy can also be set for the user. See :ref:`user_policy_2step`.
    policy :ref:`policy_verify_enrollment`, since the usage of 2step already
    ensures that the user has successfully scanned the QR code.
 
+.. versionadded:: 2.21
+
 .. _admin_policy_hashlib:
 
 hotp_hashlib, totp_hashlib and daypassword_hashlib
@@ -1184,8 +1374,12 @@ Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified ha
 The corresponding input selector will be disabled in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*. Without this policy, a request that does not
 send the hashlib gets the value of the token configuration (``hotp.hashlib``, ``totp.hashlib`` or
-``daypassword.hashlib``), or *sha1* if it is not set there. The current WebUI presets *sha1* in the
-HOTP and TOTP forms (the token configuration value in the DayPassword form) and always sends it.
+``daypassword.hashlib``), or *sha1* if it is not set there. The WebUI presets its forms with that
+value.
+
+.. versionadded:: 3.2 ``hotp_hashlib`` and ``totp_hashlib``
+
+.. versionadded:: 3.9 ``daypassword_hashlib``
 
 If an administrator enrolls a token without a user and realm-specific policies of the same priority define
 different values, the enrollment fails with the policy error "There are policies with conflicting actions".
@@ -1202,6 +1396,10 @@ type: ``integer``
 Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified OTP length.
 The corresponding input selector will be disabled in the web UI. This policy takes precedence over the value given on the System Config page (OTP length of newly enrolled tokens).
 Possible values are *6* or *8*, default is *6*.
+
+.. versionadded:: 3.2 ``hotp_otplen`` and ``totp_otplen``
+
+.. versionadded:: 3.9 ``daypassword_otplen``
 
 If an administrator enrolls a token without a user and realm-specific policies of the same priority define
 different values, the enrollment fails with the policy error "There are policies with conflicting actions".
@@ -1223,6 +1421,10 @@ Default value is *false*.
 
 .. note:: If two step enrollment :ref:`admin_policy_2step` is activated, this policy is not applied.
 
+.. versionadded:: 3.9 ``daypassword_force_server_generate``
+
+.. versionadded:: 3.12 ``hotp_force_server_generate``, ``totp_force_server_generate``, ``applspec_force_server_generate`` and ``motp_force_server_generate``
+
 totp_timestep
 ~~~~~~~~~~~~~
 
@@ -1232,7 +1434,9 @@ Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
 Possible values are *30* or *60*. Without this policy, a request that does not send the time step
 gets the value of the token configuration (``totp.timeStep``), or *30* if it is not set there.
-The current WebUI presets *30* in the form and always sends it.
+The WebUI presets its form with that value.
+
+.. versionadded:: 3.2
 
 If an administrator enrolls a token without a user and realm-specific policies of the same priority define
 different values, the enrollment fails with the policy error "There are policies with conflicting actions".
@@ -1249,6 +1453,8 @@ type: ``string``
 Enforce the time step of the DayPassword token, for example ``24h``. The value is a number followed by one
 of the units *y*, *d*, *h*, *m* or *s*.
 
+.. versionadded:: 3.9
+
 If an administrator enrolls a token without a user and realm-specific policies of the same priority define
 different values, the enrollment fails with the policy error "There are policies with conflicting actions".
 The current WebUI shows this message before the enrollment and disables *Enroll*.
@@ -1261,9 +1467,22 @@ system_documentation
 
 type: ``bool``
 
-The administrator is allowed to export a complete system documentation
-including resolvers and realms.
-The documentation is created as restructured text.
+The administrator is allowed to export a documentation of the system
+configuration: the privacyIDEA version, the revision of the database schema
+and the nodes, selected settings of the ``pi.cfg``, the local administrators,
+the system configuration, the resolvers, realms, policies and event handlers,
+the SMTP servers, SMS gateways, RADIUS servers and CA connectors, the machine
+resolvers and the number of tokens attached to machines, and the number of
+tokens and containers per type. The documentation is created as restructured
+text.
+
+The ``pi.cfg``, the resolvers, the event handlers and the external services
+are documented by selected settings, which leave out hosts, URLs, paths,
+credentials and free text. A connect string is documented by its driver, and
+a resolver by the settings that describe how privacyIDEA uses the user store,
+like the kind of TLS of an LDAP resolver or the requests of an HTTP resolver.
+
+.. versionadded:: 2.5
 
 sms_gateways
 ~~~~~~~~~~~~
@@ -1275,6 +1494,8 @@ system-wide in the :ref:`token settings <sms_token_config>`.
 This policy takes a blank-separated list of configured :ref:`SMS gateways <sms_gateway_config>`.
 It allows the administrator to select an individual SMS gateway during token enrollment.
 
+.. versionadded:: 3.0
+
 indexedsecret_force_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1285,6 +1506,8 @@ user attribute is set as the secret.
 The admin does not know the secret and can not change the secret.
 
 For more details of this token type see :ref:`indexedsecret_token`.
+
+.. versionadded:: 3.3
 
 .. _admin_trusted_attestation_CA:
 
@@ -1307,6 +1530,7 @@ makes the enrollment fail if :ref:`require_attestation` is set to ``verify`` or
 If an attestation certificate is required, see the enrollment policy
 :ref:`require_attestation`.
 
+.. versionadded:: 3.5
 
 .. _admin_set_custom_user_attributes:
 .. _policy_set_custom_user_attributes:
@@ -1343,6 +1567,8 @@ for the key or for ``*``.
 .. note:: If this policy is not set, the admin is not allowed to set any
    custom user attributes.
 
+.. versionadded:: 3.6
+
 .. _admin_delete_custom_user_attributes:
 
 .. _policy_delete_custom_user_attributes:
@@ -1366,6 +1592,8 @@ the attribute "department" of the corresponding users.
 .. note:: If this policy is not set, the admin is not allowed to delete any
    custom user attributes.
 
+.. versionadded:: 3.6
+
 .. _admin_machinelist:
 .. _policy_machinelist:
 
@@ -1375,6 +1603,8 @@ machinelist
 type: ``bool``
 
 The administrator is allowed to list the machines.
+
+.. versionadded:: 2.1
 
 .. _policy_manage_machine_tokens:
 
@@ -1386,6 +1616,8 @@ type: ``bool``
 The administrator is allowed to attach and detach tokens to machines to enable the use with
 one of the available applications. See :ref:`machines`.
 
+.. versionadded:: 2.1
+
 .. _policy_fetch_authentication_items:
 
 fetch_authentication_items
@@ -1395,6 +1627,8 @@ type: ``bool``
 
 The administrator is allowed to fetch authentication items of tokens assigned to machines.
 It grants access to the ``/machine/authitem`` endpoints (see :ref:`rest_machine`).
+
+.. versionadded:: 2.1
 
 .. _policy_clienttype:
 
@@ -1406,6 +1640,8 @@ type: ``bool``
 This policy action allows the admin to view the list of clients which authenticate to privacyIDEA
 at the :ref:`rest_client`.
 
+.. versionadded:: 2.15
+
 .. _policy_managesubscription:
 
 managesubscription
@@ -1415,6 +1651,8 @@ type: ``bool``
 
 The administrator is able to view and change the subscriptions.
 It grants access to the :ref:`rest_subscriptions`.
+
+.. versionadded:: 2.16
 
 .. _policy_set_hsm_password:
 
@@ -1426,6 +1664,7 @@ type: ``bool``
 The administrator is able to set the password of the hardware security module.
 It grants access to the ``/system/hsm`` endpoint (see :ref:`rest_system`).
 
+.. versionadded:: 2.7
 
 .. _policy_container_info:
 
@@ -1633,6 +1872,8 @@ type: ``bool``
 The administrator is allowed to list the :ref:`api_clients` and view their
 non-secret attributes. The API key itself is never returned.
 
+.. versionadded:: 3.14
+
 .. _policy_api_client_add:
 
 api_client_add
@@ -1642,6 +1883,8 @@ type: ``bool``
 
 The administrator is allowed to create API clients and generate their API key.
 The plaintext key is returned only once, on creation.
+
+.. versionadded:: 3.14
 
 .. _policy_api_client_edit:
 
@@ -1653,6 +1896,8 @@ type: ``bool``
 The administrator is allowed to modify an existing API client (display name,
 status, configuration). The API key is not affected.
 
+.. versionadded:: 3.14
+
 .. _policy_api_client_rotate:
 
 api_client_rotate
@@ -1662,6 +1907,8 @@ type: ``bool``
 
 The administrator is allowed to rotate the API key of a client. The previous key
 stops working immediately and a new plaintext key is returned once.
+
+.. versionadded:: 3.14
 
 .. _policy_api_client_delete:
 
@@ -1673,6 +1920,8 @@ type: ``bool``
 The administrator is allowed to delete an API client. Deleting a client also
 removes its remembered devices.
 
+.. versionadded:: 3.14
+
 .. _policy_remembered_device_list:
 
 remembered_device_list
@@ -1683,6 +1932,8 @@ type: ``bool``
 The administrator is allowed to list the remembered devices of an API client
 (the persistent "remember this device" sessions), including their non-secret
 metadata. The rotating token is never returned.
+
+.. versionadded:: 3.14
 
 .. _policy_remembered_device_revoke:
 
@@ -1696,3 +1947,4 @@ of a client's devices, or - across all clients - every device of a realm or of a
 single user. Realm-scoped admins can only revoke within their allowed realms.
 
 .. versionadded:: 3.14
+

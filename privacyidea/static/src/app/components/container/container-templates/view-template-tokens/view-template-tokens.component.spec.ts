@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { ViewTemplateTokensComponent } from "./view-template-tokens.component";
+import { axe } from "@testing/axe";
 
 describe("ViewTemplateTokensComponent", () => {
   let component: ViewTemplateTokensComponent;
@@ -79,5 +80,12 @@ describe("ViewTemplateTokensComponent", () => {
 
     const typeOccurrences = labels.filter((l) => l.includes("Type:"));
     expect(typeOccurrences.length).toBe(1);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.componentRef.setInput("templateTokens", []);
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

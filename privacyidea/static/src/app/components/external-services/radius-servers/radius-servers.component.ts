@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -34,7 +35,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -54,16 +54,16 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-radius-servers",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -95,12 +95,21 @@ export class RadiusServersComponent {
     allowed: () => this.authService.actionAllowed("radiusserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("radiusserver_write")
+      ? $localize`:@@radiusServer.createRADIUSServer:Create a RADIUS server to forward authentication requests to it.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("radiusserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["identifier", "server", "dictionary", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to;
   // the .scss include's table.table-width() call sums the same tiers in the same order so the
@@ -125,12 +134,36 @@ export class RadiusServersComponent {
     visibleRows: renderedRows(this.radiusDataSource)
   });
 
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createRadiusServer:Create RADIUS Server`,
+      tone: "primary",
+      width: "l",
+      icon: "vpn_lock",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("radiusserver_write"),
+      run: () => this.onCreateNewServer()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
+      run: () => this.deleteSelected()
+    }
+  ]);
+
   onCreateNewServer(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW);
   }
 
   onEditServer(server: RadiusServer): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS, server.identifier]);
   }
 
   deleteSelected(): void {

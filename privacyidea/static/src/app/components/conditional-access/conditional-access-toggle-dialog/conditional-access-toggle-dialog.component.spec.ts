@@ -23,6 +23,7 @@ import {
   ConditionalAccessToggleDialogComponent,
   ConditionalAccessToggleDialogData
 } from "./conditional-access-toggle-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessToggleDialogComponent", () => {
   let component: ConditionalAccessToggleDialogComponent;
@@ -75,5 +76,11 @@ describe("ConditionalAccessToggleDialogComponent", () => {
   it("closes with the chosen action value", () => {
     component.onAction("toggle");
     expect(dialogRef.close).toHaveBeenCalledWith("toggle");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

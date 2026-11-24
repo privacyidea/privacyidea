@@ -23,6 +23,7 @@ import {
   ConditionalAccessDryRunOffDialogComponent,
   ConditionalAccessDryRunOffDialogData
 } from "./conditional-access-dry-run-off-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessDryRunOffDialogComponent", () => {
   let component: ConditionalAccessDryRunOffDialogComponent;
@@ -76,6 +77,12 @@ describe("ConditionalAccessDryRunOffDialogComponent", () => {
   it("closes with undefined on cancel", () => {
     component.cancel();
     expect(dialogRef.close).toHaveBeenCalledWith(undefined);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

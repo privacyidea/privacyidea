@@ -21,11 +21,21 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import {
+  checkboxInput,
+  clearOverlays,
+  clickCheckbox,
+  flushFixture,
+  matSelectAt,
+  pickOption
+} from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
   return {
@@ -44,6 +54,7 @@ function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentP
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -60,6 +71,9 @@ describe("EnrollHotpComponent", () => {
   function createAndInit() {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
+
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+
     fixture.detectChanges();
   }
 
@@ -105,6 +119,95 @@ describe("EnrollHotpComponent", () => {
     fixture.componentRef.setInput("disabled", false);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
+  });
+
+  it("presets hashlib and otplen from the system config", () => {
+    (TestBed.inject(SystemService) as unknown as MockSystemService).systemConfig.set({
+      [HOTP_HASHLIB]: "sha512",
+      [DEFAULT_OTP_LENGTH]: "8"
+    });
+    createAndInit();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+  });
+
+  it("applies the system config when it loads after the dialog opened", () => {
+    createAndInit();
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps the values the user picked when the system config loads later", () => {
+    createAndInit();
+    component.hashAlgorithm.set("sha512");
+    component.otpLength.set(8);
+    // The preset must change, otherwise the linked signals do not recompute at all.
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "10" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps the presets when enrollment data without these values arrives later", () => {
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", { type: "hotp", description: "live-check-rollover" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.otpLength()).toBe(8);
+    expect(component.generateOnServer()).toBe(true);
+  });
+
+  it("applies the values the enrollment data contains", () => {
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "hotp",
+      generateOnServer: false,
+      otpLength: 8,
+      hashAlgorithm: "sha256"
+    });
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps enrollment data values that equal the preset when the system config loads later", () => {
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", { type: "hotp", otpLength: 6, hashAlgorithm: "sha1" });
+    fixture.detectChanges();
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+  });
+
+  it("keeps the policy values over a system config that loads later", () => {
+    createAndInit();
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha256", otplen: "6" } })
+    );
+    fixture.detectChanges();
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(6);
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {
@@ -413,5 +516,95 @@ describe("EnrollHotpComponent", () => {
       settle();
       expect(keyInput()).toBeNull();
     });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
+      createAndInit();
+      expect(component.generateOnServerForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture, "mat-checkbox.server-checkbox");
+
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.generateOnServerForm().dirty()).toBe(true);
+    });
+
+    it("writes a click on the two-step checkbox to the model", async () => {
+      createAndInit();
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": "allow" }));
+      await flushFixture(fixture);
+
+      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+
+      expect(component.twoStepEnabled()).toBe(true);
+      expect(component.twoStepEnabledForm().dirty()).toBe(true);
+    });
+
+    it("renders the checkboxes disabled while the policy forces the setting", async () => {
+      createAndInit();
+      fixture.componentRef.setInput(
+        "enrollmentPolicies",
+        loadedPolicies({ "2step": "force", force_server_generate: true })
+      );
+      await flushFixture(fixture);
+
+      expect(checkboxInput(fixture, "mat-checkbox.server-checkbox").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:not(.server-checkbox)").disabled).toBe(true);
+    });
+
+    it("writes the picked OTP length and hash algorithm to the model", async () => {
+      createAndInit();
+
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+    });
+
+    it("keeps a value the user picked that equals the preset when the system config loads later", async () => {
+      createAndInit();
+
+      // Picking the already selected option emits no change, so the user switches away and back to the preset.
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 0), 0);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+      await pickOption(fixture, matSelectAt(fixture, 1), 0);
+      expect(component.otpLength()).toBe(6);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+
+      systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+      await flushFixture(fixture);
+
+      expect(component.otpLength()).toBe(6);
+      expect(component.hashAlgorithm()).toBe("sha1");
+    });
+
+    it("renders the OTP key errors once the field was touched", async () => {
+      createAndInit();
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain("OTP key is required");
+      expect(text).toContain("OTP key must be at least 16 characters long.");
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    createAndInit();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

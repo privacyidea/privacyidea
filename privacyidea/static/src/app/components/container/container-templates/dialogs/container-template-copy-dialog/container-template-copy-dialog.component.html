@@ -30,26 +30,34 @@
       >.</p
     >
 
-    <mat-form-field class="input-width-l">
+    <mat-form-field
+      class="reserve-two-message-lines"
+      subscriptSizing="dynamic">
       <mat-label i18n="@@container.newTemplateName">New Template Name</mat-label>
       <input
         matInput
         type="text"
-        [value]="template().name"
-        (input)="editName($any($event.target).value)"
-        [errorStateMatcher]="nameErrorMatcher"
+        [formField]="form.name"
         (keydown.enter)="canSave() && onAction('copy')"
         aria-label="New Template Name"
         i18n-aria-label="@@container.newTemplateName" />
 
-      @if (nameConflict()) {
-        <mat-error i18n="@@container.templateNameAlready">A template with this name already exists.</mat-error>
+      @if (hasError(form.name, ERR.required)) {
+        <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong>.</mat-error>
       }
-      @if (isNameDirty() && template().name.length > 0 && nameInvalidPattern()) {
+      @if (hasError(form.name, "notChanged")) {
+        <mat-error i18n="@@container.templateNameMustDiffer"
+          >Template name must be <strong>different</strong> from the original.</mat-error
+        >
+      }
+      @if (hasError(form.name, ERR.pattern)) {
         <mat-error i18n="@@container.templateNameContains"
           >Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
           and hyphens are allowed.</mat-error
         >
+      }
+      @if (hasError(form.name, ERR.nameTaken)) {
+        <mat-error i18n="@@container.templateNameAlready">A template with this name already exists.</mat-error>
       }
     </mat-form-field>
   </div>

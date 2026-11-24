@@ -20,7 +20,7 @@
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@common.webauthn">WebAuthn</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content expansion-well">
+  <div class="panel-content expansion-well margin-top-8">
     <p i18n="@@tokenTypeConfig.webauthnToken"
       >The WebAuthn token is a hardware token, that communicates with the browser.</p
     >
@@ -31,12 +31,10 @@
 
     <div class="flex-row gap-16 ali-center margin-bottom-32">
       <mat-form-field
-        appearance="fill"
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.trustAnchorDir">trust_anchor_dir</mat-label>
         <input
-          [value]="trustAnchorDir()"
-          (input)="updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, $any($event.target).value)"
+          [formField]="config().values[WEBAUTHN_TRUST_ANCHOR_DIR]"
           matInput
           placeholder="/etc/privacyidea/trusted_attestation_roots" />
         <mat-hint i18n="@@tokenTypeConfig.pathDirectory"

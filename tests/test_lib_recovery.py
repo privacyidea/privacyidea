@@ -1,6 +1,8 @@
 """
 This test file tests the lib/passwordreset.py
 """
+from unittest import mock
+
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
@@ -154,3 +156,27 @@ class RecoveryTestCase(MyTestCase):
             self.assertEqual(get_base_url(required=True), "https://pi.example.com")
         finally:
             self.app.config.pop("PI_BASE_URL", None)
+
+    def test_06_link_encodes_login_and_realm(self):
+        class SpecialUser:
+            login = "DOMAIN\\us er/1#a%b@example.com"
+            realm = "realm one"
+            resolver = "register"
+
+            @staticmethod
+            def get_specific_info(_keys):
+                return {"email": "user@localhost.localdomain"}
+
+        set_privacyidea_config("recovery.identifier", "myserver")
+        with mock.patch("privacyidea.lib.passwordreset.send_email_identifier", return_value=True) as send:
+            create_recoverycode(SpecialUser(), recoverycode="code", base_url="https://pi.example.com")
+            create_recoverycode(SpecialUser(), recoverycode="code", base_url="https://pi.example.com",
+                                legacy_webui=True)
+        current_body, legacy_body = (call.args[3] for call in send.call_args_list)
+        # The "@" in front of the realm separates login name and realm, every other
+        # character that cannot be part of a path segment is percent-encoded. The current
+        # WebUI gets the code in the fragment, the previous one in the path.
+        self.assertIn("https://pi.example.com/app/v2/reset/DOMAIN%5Cus%20er%2F1%23a%25b@example.com@realm%20one#code",
+                      current_body)
+        self.assertIn("https://pi.example.com/#!/reset/DOMAIN%5Cus%20er%2F1%23a%25b@example.com@realm%20one/code",
+                      legacy_body)

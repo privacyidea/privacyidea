@@ -61,7 +61,7 @@ import {
 } from "@utils/filter.utils";
 import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
-import { tokenTypes } from "@utils/token.utils";
+import { tokenTypeDisplayLabel, tokenTypes } from "@utils/token.utils";
 import {
   catchError,
   firstValueFrom,
@@ -482,7 +482,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
 
@@ -706,7 +706,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     // Only load token details on the token details page.
-    if (!this.contentService.onTokenDetails() || !this.canListTokens()) {
+    if (!this.contentService.onTokenDetails() || !this.canListTokens() || !this.tokenSerial()) {
       return undefined;
     }
 
@@ -746,7 +746,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
     // Only load user tokens on the user details page.
-    if (!this.contentService.onUserDetails() || !this.canListTokens()) {
+    if (!this.contentService.onUserDetails() || !this.canListTokens() || !this.detailsUser().username) {
       return undefined;
     }
 
@@ -765,14 +765,15 @@ export class TokenService extends FilterableTableService implements TokenService
     return Object.entries(obj)
       .map(([key, info]) => {
         const infoString = String(info);
+        const name = tokenTypes.find((t) => t.key === key)?.name || key;
         return {
           value: {
             key: key as TokenTypeKey,
-            name: tokenTypes.find((t) => t.key === key)?.name || key,
+            name,
             info: infoString,
             text: tokenTypes.find((t) => t.key === key)?.text || ""
           },
-          label: infoString.split(":")[0]
+          label: tokenTypeDisplayLabel(infoString, name)
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -1345,10 +1346,11 @@ export class TokenService extends FilterableTableService implements TokenService
       );
   }
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
+  // The server takes the type from the token, so the request does not name it
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, { serial, verify }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to verify token.", error);

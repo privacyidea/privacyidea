@@ -40,6 +40,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
   let component: TokenEnrollmentLastStepDialogComponent;
@@ -357,5 +358,11 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
 
       expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

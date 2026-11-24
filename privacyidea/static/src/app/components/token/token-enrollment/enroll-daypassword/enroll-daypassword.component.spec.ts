@@ -27,6 +27,15 @@ import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@servic
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
+import {
+  clearOverlays,
+  clickCheckbox,
+  flushFixture,
+  matSelectAt,
+  pickOption,
+  typeInto
+} from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
   return {
@@ -168,7 +177,7 @@ describe("EnrollDaypasswordComponent", () => {
     const timeStepField = fields.find((f) => f.querySelector("mat-label")?.textContent?.trim() === "Timestep")!;
     const row = timeStepField.closest(".flex-row") as HTMLElement;
     const labels = Array.from(row.querySelectorAll("mat-form-field mat-label")).map((l) => l.textContent?.trim());
-    expect(labels).toEqual(["OTP Key", "OTP length", "Hash algorithm", "Timestep"]);
+    expect(labels).toEqual(["OTP Key", "OTP Length", "Hash Algorithm", "Timestep"]);
   });
 
   it("keeps the OTP key in the same row as the other fields when it is shown", () => {
@@ -183,7 +192,7 @@ describe("EnrollDaypasswordComponent", () => {
     const timeStepField = fields.find((f) => f.querySelector("mat-label")?.textContent?.trim() === "Timestep")!;
     const row = timeStepField.closest(".flex-row") as HTMLElement;
     const labels = Array.from(row.querySelectorAll("mat-form-field mat-label")).map((l) => l.textContent?.trim());
-    expect(labels).toEqual(["OTP Key", "OTP length", "Hash algorithm", "Timestep"]);
+    expect(labels).toEqual(["OTP Key", "OTP Length", "Hash Algorithm", "Timestep"]);
   });
 
   it("presets and locks from the enrollment policies", () => {
@@ -354,5 +363,55 @@ describe("EnrollDaypasswordComponent", () => {
       settle();
       expect(keyInput()).toBeNull();
     });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
+      expect(component.generateOnServerForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture);
+
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.generateOnServerForm().dirty()).toBe(true);
+    });
+
+    it("writes the picked OTP length and hash algorithm to the model", async () => {
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+    });
+
+    it("renders the OTP key errors once the field was touched", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
+    });
+
+    it("accepts a typed OTP key of at least 16 characters", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      await typeInto(fixture, fixture.nativeElement.querySelector("input[matInput]"), "0123456789abcdef");
+
+      expect(component.otpKeyForm().valid()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

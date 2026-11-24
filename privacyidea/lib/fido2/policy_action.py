@@ -19,3 +19,4 @@ class PasskeyAction:
     UserLabel = "passkey_user_label"
     AllowedAuthenticatorDeviceTypes = "passkey_allowed_authenticator_device_types"
     EnforceUserHandle = "passkey_enforce_user_handle"
+    DisablePrf = "passkey_disable_prf"

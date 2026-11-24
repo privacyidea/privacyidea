@@ -22,6 +22,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 import { ReasonDetail, ReasonDetailDialogData } from "../reason-detail";
 import { ReasonDetailDialog } from "./reason-detail-dialog";
+import { axe } from "@testing/axe";
 
 describe("ReasonDetailDialog", () => {
   let fixture: ComponentFixture<ReasonDetailDialog>;
@@ -115,7 +116,7 @@ describe("ReasonDetailDialog", () => {
       policies: []
     });
 
-    expect(headings()).toEqual(["Tokens used for this attempt"]);
+    expect(headings()).toEqual(["Tokens Used for This Attempt"]);
     expect(rows()).toEqual([["OATH0001", "WRONG_OTP"]]);
   });
 
@@ -131,7 +132,7 @@ describe("ReasonDetailDialog", () => {
       "PASSWORD_FAIL"
     );
 
-    expect(headings()).toEqual(["Tokens used for this attempt", "Other tokens of the user"]);
+    expect(headings()).toEqual(["Tokens Used for This Attempt", "Other Tokens of the User"]);
     // No token records a finding for a wrong password, so the used ones are listed as serials and the event type
     // says what came of them.
     expect(serials()).toEqual(["OATH0001"]);
@@ -159,5 +160,20 @@ describe("ReasonDetailDialog", () => {
       ["WAN003", "\u2014"],
       ["TOTP002", "TOKEN_DISABLED"]
     ]);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await render({
+      used: [
+        { serial: "OATH0001", reason: "WRONG_OTP" },
+        { serial: "TOTP002", reason: "TOKEN_DISABLED" }
+      ],
+      other: [],
+      namesTokens: false,
+      policies: []
+    });
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

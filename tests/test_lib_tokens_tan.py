@@ -6,10 +6,12 @@ import logging
 
 from testfixtures import LogCapture
 
+from privacyidea.lib.crypto import hash as hash_with_salt
 from privacyidea.lib.token import init_token, import_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.tantoken import TanTokenClass
 from privacyidea.models import Token
 from .base import MyTestCase
+from .compare_helpers import recorded_compare_digest
 
 OTPKEY = "3132333435363738393031323334353637383930"
 
@@ -143,6 +145,19 @@ class TanTokenTestCase(MyTestCase):
         self.assertEqual(r, -1)
         r = tok.check_otp("123465")
         self.assertEqual(r, 1)
+
+    def test_10a_tan_is_compared_in_constant_time(self):
+        """The stored TAN hash and the hash of the given value are compared in constant time."""
+        token = init_token({"type": "tan", "serial": "PITN_COMPARE", "tans": "123456"})
+        salt, stored_hash = token.get_tokeninfo("tan.tan0").split(":")
+
+        with recorded_compare_digest() as spy:
+            self.assertEqual(-1, token.check_otp("654321"))
+        self.assertTrue(spy.saw(stored_hash, hash_with_salt("654321", salt)))
+
+        # The right value is still accepted and the TAN is used up.
+        self.assertEqual(1, token.check_otp("123456"))
+        remove_token("PITN_COMPARE")
 
     def test_11_tan_token_export(self):
         # Set up the TANTokenClass for testing

@@ -38,6 +38,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -105,9 +107,16 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
 
   generateOnServerDisabled = computed(() => this.disabled() || this.policiesPending() || this.forceServerGenerate());
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.generateOnServerDisabled());
+  });
+
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: ERR.minLength }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.forceServerGenerate());
   });
 

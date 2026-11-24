@@ -67,6 +67,10 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
   motpPin = signal<string>("");
   repeatMotpPin = signal<string>("");
 
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.generateOnServerDisabled());
+  });
+
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
     disabled(f, () => this.disabled() || this.generateOnServer() || this.forceServerGenerate());
@@ -89,10 +93,10 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
     }
     const errors = this.motpPinForm().errors();
     if (errors.some((e) => e.kind === "required")) {
-      return $localize`:@@token.passwordRequired:Password is required`;
+      return $localize`:@@token.passwordRequired:Password is required.`;
     }
     if (errors.some((e) => e.kind === "minlength")) {
-      return $localize`:@@token.passwordMustLeast:Password must be at least 4 characters long`;
+      return $localize`:@@token.passwordMustLeast:Password must be at least 4 characters long.`;
     }
     return "";
   });

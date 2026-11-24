@@ -93,3 +93,30 @@ export function numericPolicyValue(value: string | undefined): number | undefine
   const parsed = parseInt(value ?? "", 10);
   return isNaN(parsed) ? undefined : parsed;
 }
+
+/** The value an enrollment field starts with and whether a policy sets it, which locks the field. */
+export interface FieldPreset<T> {
+  value: T;
+  locked: boolean;
+}
+
+/**
+ * The value of an enrollment field after its preset changed, for example when the system config loads after the
+ * dialog opened. A policy value always wins. Otherwise a value the user picked is kept, `chosen` also keeps a pick
+ * that equals the old preset.
+ */
+export function presetOrChoice<T>(
+  preset: FieldPreset<T>,
+  previous: { source: FieldPreset<T>; value: T } | undefined,
+  chosen: boolean
+): T {
+  if (preset.locked || !previous) {
+    return preset.value;
+  }
+  return previous.value !== previous.source.value || chosen ? previous.value : preset.value;
+}
+
+/** Compares two field presets by value, so that an equal preset does not reset the field. */
+export function samePreset<T>(a: FieldPreset<T>, b: FieldPreset<T>): boolean {
+  return a.value === b.value && a.locked === b.locked;
+}

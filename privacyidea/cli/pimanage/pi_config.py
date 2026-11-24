@@ -24,7 +24,7 @@ import sys
 import ast
 import inspect
 from functools import partial
-from typing import TextIO
+from typing import Any, TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
@@ -48,6 +48,8 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+from privacyidea.lib.utils.import_plan import (UNCHANGED, PlanEntry, apply_import_plan, build_import_plan,
+                                               format_import_plan)
 from privacyidea.cli.pimanage.challenge import challenge_cli
 from privacyidea.cli.pimanage.metrics import metrics_cli
 from privacyidea.cli.pimanage.remembered_device import remembered_device_cli
@@ -68,7 +70,8 @@ def ca_list(verbose):
     """
     List the Certificate Authorities.
     """
-    lst = get_caconnector_list()
+    # The configuration is only printed with --verbose, and only then it has to be censored
+    lst = get_caconnector_list(censor=verbose)
     for ca in lst:
         click.echo(f"{ca.get('connectorname')} (type {ca.get('type')})")
         if verbose:
@@ -113,11 +116,15 @@ def ca_create(ctx, name, catype):
 @click.argument("name", type=str)
 @click.option("-f", "--force", is_flag=True,
               help="Enforce creation of a new CRL")
-def ca_create_crl(name, force):
+@click.pass_context
+def ca_create_crl(ctx, name, force):
     """
     Create and publish the CRL for the CA NAME.
     """
     ca_obj = get_caconnector_object(name)
+    if not ca_obj:
+        click.secho(f"A CA connector with the name '{name}' does not exist.", fg="red")
+        ctx.exit(1)
     r = ca_obj.create_crl(check_validity=not force)
     if not r:
         click.secho("The CRL was not created.", fg="yellow")
@@ -189,24 +196,35 @@ def realm_create(name, resolvers):
 @click.argument("realm", type=str)
 @click.option("--delete-custom-attributes", is_flag=True, default=False,
               help="Also delete the realm's custom user attributes instead of refusing the deletion.")
-def realm_delete(realm, delete_custom_attributes):
+@click.option("--ignore-conditional-access-policies", is_flag=True, default=False,
+              help="Delete the realm although conditional-access policies still reference it "
+                   "instead of refusing the deletion. The policies are not changed and still "
+                   "name the deleted realm.")
+@click.pass_context
+def realm_delete(ctx, realm, delete_custom_attributes, ignore_conditional_access_policies):
     """
     Delete the given REALM
     """
-    try:
-        delete_realm(realm, delete_custom_attributes=delete_custom_attributes)
-    except UserError as e:
-        # The realm still has custom user attributes. Offer to delete them too.
-        if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
-            delete_realm(realm, delete_custom_attributes=True)
-        else:
+    while True:
+        try:
+            delete_realm(realm, delete_custom_attributes=delete_custom_attributes,
+                         confirm_ca_policies=ignore_conditional_access_policies)
+        except UserError as e:
+            # The realm still has custom user attributes or is referenced by
+            # conditional-access policies. Ask for confirmation and try again.
+            if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
+                delete_custom_attributes = True
+            elif e.id == Error.REALM_DELETE_CA_POLICY_REFERENCE and click.confirm(e.message):
+                ignore_conditional_access_policies = True
+            else:
+                click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
+                ctx.exit(1)
+        except ResourceNotFoundError as e:
             click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
+            ctx.exit(1)
+        else:
+            click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
             return
-        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
-    except ResourceNotFoundError as e:
-        click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
-    else:
-        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
 
 
 @realm_cli.command("set_default")
@@ -246,7 +264,7 @@ def resolver_list(verbose):
     """
     List the available resolvers and their type.
     """
-    reso_list = get_resolver_list()
+    reso_list = get_resolver_list(censor=verbose)
 
     if not verbose:
         for (name, resolver) in reso_list.items():
@@ -257,8 +275,6 @@ def resolver_list(verbose):
             click.echo("." * 32)
             data = resolver.get("data", {})
             for (k, v) in data.items():
-                if k.lower() in ["bindpw", "password"]:
-                    v = "xxxxx"
                 click.echo(f"{k:>24}: {v!r}")
             click.echo("\n")
 
@@ -529,25 +545,28 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
         try:
             contents = file.read()
             params = ast.literal_eval(contents)
-            if params.get("name") and params.get("name") != name:
-                print("Found name '{!s}' in file, will use that instead of "
-                      "'{!s}'.".format(params.get("name"), name))
+            if params.get("name"):
+                if params.get("name") != name:
+                    print("Found name '{!s}' in file, will use that instead of "
+                          "'{!s}'.".format(params.get("name"), name))
             else:
                 print("name not defined in file, will use the cli value "
                       f"{name!s}.")
                 params["name"] = name
 
-            if params.get("scope") and params.get("scope") != scope:
-                print("Found scope '{!s}' in file, will use that instead of "
-                      "'{!s}'.".format(params.get("scope"), scope))
+            if params.get("scope"):
+                if params.get("scope") != scope:
+                    print("Found scope '{!s}' in file, will use that instead of "
+                          "'{!s}'.".format(params.get("scope"), scope))
             else:
                 print("scope not defined in file, will use the cli value "
                       f"{scope!s}.")
                 params["scope"] = scope
 
-            if params.get("action") and params.get("action") != action:
-                print("Found action in file: '{!s}', will use that instead "
-                      "of: '{!s}'.".format(params.get("action"), action))
+            if params.get("action"):
+                if params.get("action") != action:
+                    print("Found action in file: '{!s}', will use that instead "
+                          "of: '{!s}'.".format(params.get("action"), action))
             else:
                 print("action not defined in file, will use the cli value "
                       f"{action!s}.")
@@ -561,11 +580,10 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
                            user=params.get("user"),
                            time=params.get("time"),
                            client=params.get("client"),
-                           active=params.get("active", True),
+                           active=params.get("active"),
                            adminrealm=params.get("adminrealm"),
                            adminuser=params.get("adminuser"),
-                           check_all_resolvers=params.get(
-                               "check_all_resolvers", False))
+                           check_all_resolvers=params.get("check_all_resolvers"))
             return r
 
         except Exception as e:
@@ -573,16 +591,21 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
             ctx.exit(1)
 
     else:
-        r = set_policy(name, scope, action)
-        return r
+        try:
+            return set_policy(name, scope, action)
+        except Exception as e:
+            click.secho(f"Could not create the policy {name}: {e!r}", fg="red", err=True)
+            ctx.exit(1)
 
 
 config_cli.add_command(policy_cli)
 
+# The order matters: a python dict literal is also valid YAML, but YAML would
+# e.g. read None as the string "None". So python must be tried before YAML.
 imp_fmt_dict = {
     'json': json.loads,
-    'yaml': yaml.safe_load,
-    'python': ast.literal_eval
+    'python': ast.literal_eval,
+    'yaml': yaml.safe_load
 }
 
 
@@ -591,6 +614,21 @@ def _accepts_parameter(func, parameter):
     keyword parameter. Used to pass optional flags ('skip_invalid', 'censor')
     only to the functions that support them."""
     return parameter in inspect.signature(func).parameters
+
+
+def _is_interactive() -> bool:
+    """Whether a terminal is connected to stdin, so that the user can answer a question."""
+    return sys.stdin.isatty()
+
+
+def _reads_stdin(infile: Any) -> bool:
+    """Whether the import data is read from stdin (no -i or -i -)."""
+    return infile in (sys.stdin, sys.__stdin__) or getattr(infile, "name", None) in ("<stdin>", "-")
+
+
+def _plan_entry_name(typ: str, entry: PlanEntry) -> str:
+    """The quoted name of a plan entry as the plan prints it, with the handler module for event."""
+    return f'"{entry.key[0]}" ({entry.key[1]})' if typ == "event" else f'"{entry.key}"'
 
 
 @config_cli.command("import")
@@ -610,14 +648,33 @@ def _accepts_parameter(func, parameter):
               help='Skip parts of the configuration that are not valid for this '
                    'privacyIDEA version (e.g. policy actions of a removed token '
                    'type) instead of failing, and import the rest.')
+@click.option('--replace', is_flag=True, default=False,
+              help='Delete the entries of the imported types that are missing from '
+                   'the import (system settings of the type config are never deleted).')
+@click.option('--dry-run', is_flag=True, default=False,
+              help='Only print the import plan, change nothing.')
+@click.option('--interactive', is_flag=True, default=False,
+              help='Print the import plan and ask before applying it. Needs an input '
+                   'file and a terminal.')
 @click.pass_context
-def config_import(ctx, infile, types, name, skip_invalid):
+def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], name: str | None,
+                  skip_invalid: bool, replace: bool, dry_run: bool, interactive: bool) -> None:
     """
     Import server configuration using specific or all registered importer types.
 
+    The import is compared with this system first and the resulting plan is
+    printed: which entries are created, updated, left unchanged, deleted (with
+    --replace) or skipped. Unchanged entries are not written again.
+
     Note: Existing configuration with the same name will be overwritten, other
-    existing configurations will be kept as is.
+    existing configurations will be kept as is unless --replace is given.
     """
+    if interactive and dry_run:
+        raise click.UsageError("--interactive can not be combined with --dry-run.")
+    if interactive and (_reads_stdin(infile) or not _is_interactive()):
+        click.secho("--interactive needs an input file (-i FILE) and a terminal.", fg="red")
+        ctx.exit(1)
+
     data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
 
@@ -626,14 +683,22 @@ def config_import(ctx, infile, types, name, skip_invalid):
     for fmt in imp_fmt_dict:
         try:
             data = imp_fmt_dict[fmt](content)
-            break
-        except (SyntaxError, ValueError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+        # The Python parser fails with RecursionError or MemoryError on deeply nested data, which YAML can read
+        except (SyntaxError, ValueError, TypeError, RecursionError, MemoryError, json.decoder.JSONDecodeError,
+                yaml.error.YAMLError) as _e:
             continue
-    if not data:
+        # e.g. plain text is valid YAML, but only a dictionary is a valid configuration
+        if isinstance(data, dict):
+            break
+        data = None
+    if data is None:
         click.secho("Could not determine input format! ", fg="red")
         click.secho(f"Accepted formats are: {', '.join(imp_fmt_dict.keys())}.",
                     fg="yellow")
         ctx.exit(1)
+    if not data:
+        click.secho("The input is an empty dictionary. There is nothing to import.", fg="yellow")
+        return
 
     def minver(s: str) -> str:
         """Get major.minor version number from string."""
@@ -653,28 +718,36 @@ def config_import(ctx, infile, types, name, skip_invalid):
             click.secho("Please make sure that the imported configuration "
                         "works as expected.", fg="yellow")
 
-    # we need to go through the importer functions based on priority
-    failed_types = []
-    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
-        if typ in imp_types:
-            if typ in data:
-                click.echo(f"Importing configuration type '{typ}'.")
-                # only pass 'skip_invalid' to importers that support it
-                kwargs = {"name": name}
-                supports_skip_invalid = _accepts_parameter(value['func'], "skip_invalid")
-                if supports_skip_invalid:
-                    kwargs["skip_invalid"] = skip_invalid
-                try:
-                    value['func'](data[typ], **kwargs)
-                except Exception as e:
-                    click.secho(f"Could not successfully import data of "
-                                f"type {typ}: {e!r}", fg="red")
-                    failed_types.append(typ)
-                    if supports_skip_invalid and not skip_invalid:
-                        click.secho("  Hint: some entries may use configuration "
-                                    "not available in this privacyIDEA version. "
-                                    "Re-run with '--skip-invalid' to skip them and "
-                                    "import the rest.", fg="yellow")
+    try:
+        plans = build_import_plan(data, imp_types, name=name, replace=replace, skip_invalid=skip_invalid)
+    except Exception as e:
+        click.secho(f"Could not compare the import data with this system: {e!r}", fg="red")
+        ctx.exit(1)
+
+    for line in format_import_plan(plans):
+        click.echo(line)
+
+    if dry_run:
+        click.echo("Dry run: nothing was changed.")
+        return
+
+    if interactive and any(entry.action != UNCHANGED for plan in plans for entry in plan.entries):
+        click.confirm("Apply this import plan?", abort=True)
+
+    def on_error(typ: str, entry: PlanEntry | None, e: Exception) -> None:
+        if entry is not None:
+            click.secho(f"Could not delete {typ} {_plan_entry_name(typ, entry)}: {e}", fg="red")
+            return
+        click.secho(f"Could not successfully import data of type {typ}: {e!r}", fg="red")
+        if _accepts_parameter(IMPORT_FUNCTIONS[typ]['func'], "skip_invalid") and not skip_invalid:
+            click.secho("  Hint: some entries may use configuration "
+                        "not available in this privacyIDEA version. "
+                        "Re-run with '--skip-invalid' to skip them and "
+                        "import the rest.", fg="yellow")
+
+    failed_types = apply_import_plan(plans, name=name, skip_invalid=skip_invalid,
+                                     on_import=lambda typ: click.echo(f"Importing configuration type '{typ}'."),
+                                     on_error=on_error)
 
     if failed_types:
         click.secho(f"Import finished with errors. Failed configuration types: "

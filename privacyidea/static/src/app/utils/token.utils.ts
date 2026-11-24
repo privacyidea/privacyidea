@@ -317,3 +317,14 @@ export function getEnrollmentDeviations(
   }
   return deviations;
 }
+
+// The backend sends each type as "<name>: <description>". A class added through
+// PI_TOKEN_MODULES often carries no name, and its whole description would end up
+// in the dropdown as the label.
+export function tokenTypeDisplayLabel(info: string, fallback: string): string {
+  return info.includes(":") ? info.split(":")[0] : fallback;
+}
+
+export function tokenTypeDisplayDescription(info: string): string {
+  return info.includes(":") ? info.slice(info.indexOf(":") + 1).trim() : info;
+}

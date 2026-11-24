@@ -1,0 +1,64 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  title="Create New Container"
+  i18n-title="@@container.createNewContainerDialog"
+  width="m"
+  [actions]="actions()"
+  (actionTriggered)="onAction($event)">
+  <div class="flex-column container-create-form">
+    <mat-form-field class="input-width-xl">
+      <mat-label i18n="@@container.containerType">Container Type</mat-label>
+      <mat-select
+        [value]="selectedType()"
+        (selectionChange)="selectedType.set($event.value)">
+        @for (option of typeOptions(); track option.containerType) {
+          <mat-option [value]="option">{{ option.description || option.containerType }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <div class="container-type-hint">
+      <span i18n="@@container.supportedTokenTypes">Supported Token Types:</span>
+      {{ supportedTokenTypes() }}
+    </div>
+
+    <mat-form-field class="input-width-xl margin-top-16">
+      <mat-label i18n="@@common.description">Description</mat-label>
+      <textarea
+        [value]="description()"
+        (input)="description.set($any($event.target).value)"
+        maxlength="80"
+        i18n-placeholder="@@common.enterDescription"
+        matInput
+        placeholder="Enter description"
+        rows="3"></textarea>
+    </mat-form-field>
+
+    @if (showUserAssignment()) {
+      <mat-checkbox
+        [checked]="assignUser()"
+        (change)="assignUser.set($event.checked)">
+        <span i18n="@@container.assignNewContainerToUser"
+          >Assign the new container to {{ data?.username }} in realm {{ data?.userRealm }}</span
+        >
+      </mat-checkbox>
+    }
+  </div>
+</app-dialog-wrapper>

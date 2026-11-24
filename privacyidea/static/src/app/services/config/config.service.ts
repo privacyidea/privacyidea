@@ -44,6 +44,8 @@ export interface AppConfig {
 
 export interface ConfigServiceInterface {
   config: WritableSignal<AppConfig>;
+  /** True once the server's answer replaced the default values of `config`. */
+  configLoaded: WritableSignal<boolean>;
 
   loadConfig(): void;
 }
@@ -68,6 +70,7 @@ export class ConfigService implements ConfigServiceInterface {
     translation_warning: false,
     passkey_login: "show"
   });
+  configLoaded = signal(false);
 
   loadConfig() {
     // loadConfig() runs at app bootstrap, before authData is populated, so read
@@ -77,8 +80,11 @@ export class ConfigService implements ConfigServiceInterface {
     // header and correctly receives the hidden (blanked) version.
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     const headers = token ? new HttpHeaders({ "PI-Authorization": token }) : undefined;
+    // The query of the URL the WebUI was opened with goes along unchanged, so that the request data conditions of
+    // the WebUI policies see the parameters of the start page. This request is the only one, so navigation inside
+    // the app does not change the configuration.
     this.http
-      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config`, { headers })
+      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config${window.location.search}`, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to load config:", error);
@@ -99,6 +105,7 @@ export class ConfigService implements ConfigServiceInterface {
 
         if (data.result?.status && configValue) {
           this.config.set(configValue);
+          this.configLoaded.set(true);
         } else {
           console.error("Failed to load config: Invalid response", data);
           return;

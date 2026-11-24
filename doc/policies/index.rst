@@ -28,10 +28,13 @@ privacyIDEA knows these scopes:
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.
 
+The WebUI lists the policies under *Policies > Policy Overview* with their priority, scope, description, actions and
+conditions. Clicking a policy name opens the policy, and *Create Policy* opens the page to create a new one.
+
 .. figure:: images/policies.png
    :width: 500
 
-   *Policy Definition*
+   *The policy list*
 
 You can use policy templates to ease the setup.
 
@@ -57,9 +60,13 @@ Each policy can contain the following attributes:
      On a library level or during migration scripts policies with
      other characters could be created.
 
+.. versionadded:: 2.0
+
 **scope**
 
   The scope of the policy as described above.
+
+.. versionadded:: 2.0
 
 **priority**
 
@@ -78,8 +85,12 @@ Each policy can contain the following attributes:
   Policy conflicts can still occur if multiple policies with the same priority
   specify different values for the same action.
 
+.. versionadded:: 2.23
+
 **description**
     Use this to describe your policy in more detail.
+
+.. versionadded:: 3.10
 
 **action**
 
@@ -96,19 +107,45 @@ Each policy can contain the following attributes:
   ``string`` and ``integer`` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
 
+  An action with a leading ``-`` or ``!`` is excluded from the policy, also
+  from a ``*`` that stands for all actions: the admin policy
+  ``*, -policywrite`` allows every admin action but writing policies. Another
+  policy can still allow the excluded action.
+
+  A boolean action saved with the value ``false`` (in any case) or ``0``, like
+  ``policywrite=false``, is disabled: it is stored as the excluded action
+  ``-policywrite``. This also applies to importing a policy.
+
+.. versionadded:: 2.0
+
 
 Conditions
 ----------
 
-The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, each take a list of
-values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is excluded, also
-from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field of nothing but exclusions
-matches no value at all.
+The conditions of a policy decide for which requests the policy applies. A policy
+applies to a request only if the request matches all conditions of the policy. A field
+that you leave blank matches every request.
 
-In *user* and *admin user* every value other than ``*`` is a regular expression that has to match
-the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed by any
-number of ``n``. A dot matches any character, so ``john.doe`` also matches *johnXdoe*. Realm and
-resolver values must name existing realms and resolvers.
+The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, each take a
+list of values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is
+excluded, also from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field
+of nothing but exclusions matches no value at all.
+
+In *user* and *admin user* every value other than ``*`` is a regular expression that has to
+match the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed
+by any number of ``n``. A dot matches any character, so ``john.doe`` also matches
+*johnXdoe*. Each value must be a valid regular expression. A comma separates two values,
+so an expression can not contain a comma. Realm and resolver values must name existing
+realms and resolvers.
+
+privacyIDEA can only check a condition if the request has the data for it. For example,
+the WebUI start page has no user. :ref:`policy_condition_checks` shows which data each
+kind of request has, and which actions have special rules.
+
+.. toctree::
+   :maxdepth: 1
+
+   condition_checks
 
 **realm**
 
@@ -116,30 +153,55 @@ resolver values must name existing realms and resolvers.
 
   If this field is left blank, this policy is valid for all realms.
 
-.. _check_all_resolvers:
+.. versionadded:: 2.0
 
 **resolver**
 
-  This policy will be valid for all users in this resolver.
+  This policy is valid for the users of the resolvers in this field.
 
   If this field is left blank, this policy is valid for all resolvers.
 
-  .. note:: You can use the parameter
-     ``check_all_resolvers``. This is *Check all possible resolvers*
-     *of a user to match the resolver in this policy* in the previous WebUI.
-     The WebUI does not offer this option. It can be set with the parameter
-     ``check_all_resolvers`` of ``POST /policy/<name>``.
+  A user belongs to one resolver only. If the same login name exists in
+  several resolvers of a realm, the user belongs to the resolver with the
+  highest priority (see :ref:`resolver_priority`). By default, a policy for
+  another resolver of the realm does not apply to this user, even if that
+  resolver also contains the login name.
 
-     Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
-     in the realm *realm1*, where *resolver1* is the resolver with the
-     highest priority. If the user authenticates as *user@realm1*, only
-     policies for *resolver1* will match, since the user is identified as
-     *user.resolver1@realm1*.
+.. _check_all_resolvers:
 
-     If you also want to match a policy with ``resolver=resolver2``, you need
-     to select *Check all possible resolvers* in this policy. Thus this
-     policy will match for all users, which are also contained in *resolver2*
-     as a secondary resolver.
+**Check all possible resolvers of a user**
+
+  With this option, the policy also applies to users who are contained in one
+  of its resolvers, but belong to another resolver of their realm. A resolver
+  with a lower priority can then work like a group, for example a list of the
+  login names that can use a VPN. Only the resolvers with a lower priority than
+  the user's resolver count.
+
+  Example: the realm *company* contains the resolvers *ldap* (priority 1) and
+  *vpn-users* (priority 2). *vpn-users* lists some of the login names of
+  *ldap*. A policy for the resolver *vpn-users* applies to
+
+  * without the option: only the users that exist in *vpn-users* but not in
+    *ldap*,
+  * with the option: in addition, the users of *ldap* that are also listed in
+    *vpn-users*. Users of *ldap* that are not listed in *vpn-users* are not
+    affected.
+
+  The option needs the login name and the realm of the user. If the request has an
+  empty user, for example an administrator acts on a token without an owner, a policy
+  with the option does not apply. If the request has no user at all, like the WebUI
+  start page, privacyIDEA does not check the resolver, and the policy applies. See
+  :ref:`policy_condition_checks`.
+
+  The option only works together with a resolver. In the WebUI it is the
+  checkbox below the resolvers of the policy. It can only be selected while a
+  resolver is selected, and a policy with the option but without a resolver
+  can not be saved. The policy list shows *all resolvers of the user* next to
+  the resolvers of such a policy.
+
+.. versionadded:: 2.0
+
+.. versionadded:: 2.17 ``check_all_resolvers``
 
 **user**
 
@@ -149,8 +211,15 @@ resolver values must name existing realms and resolvers.
 
   If this field is left blank, this policy is valid for all users.
 
+  privacyIDEA compares the login name that the resolver returns for the user. A resolver
+  can have several login name attributes, for example the user name and the email address.
+  A user can then log in with each of them, but the policy must contain the first login
+  name.
+
   .. note:: Starting with version 3.10 you can choose if the username and the
     adminname have to match case-sensitively or not.
+
+.. versionadded:: 2.0
 
 **admin realm** and **admin user**
 
@@ -158,6 +227,20 @@ resolver values must name existing realms and resolvers.
   ``adminrealm`` and ``adminuser`` in the API. See :ref:`admin_policies`.
 
   If these fields are left blank, this policy is valid for all administrators.
+
+  privacyIDEA has two kinds of administrators, see :ref:`faq_admins`:
+
+  * An administrator of an admin realm is a user of a realm in ``SUPERUSER_REALM``. Their
+    admin realm is this realm.
+  * A local administrator, which you create with ``pi-manage admin add``, has no admin
+    realm. A policy with an admin realm does not apply to local administrators. A policy
+    without an admin realm, or with the admin realm ``*``, applies to them.
+
+  The admin user is the login name for both kinds.
+
+.. versionadded:: 2.4 *admin realm*
+
+.. versionadded:: 3.3 *admin user*
 
 **privacyIDEA Node**
 
@@ -168,7 +251,12 @@ resolver values must name existing realms and resolvers.
   This can be useful if you e.g. only want certain administrative actions on
   dedicated nodes.
 
-  The nodes are configured in pi.cfg. See :ref:`cfgfile`.
+  Enter the names of the nodes. The nodes are configured in pi.cfg. See :ref:`cfgfile`. The node names are
+  compared exactly.
+  Wildcards (``*``) and negations (``!node`` or ``-node``) are not supported and are rejected
+  when you save the policy. To apply a policy on every node, leave the field empty.
+
+.. versionadded:: 3.4
 
 **time**
 
@@ -180,21 +268,26 @@ resolver values must name existing realms and resolvers.
      <dow>: <hh:mm>-<hh:mm>
      <dow>-<dow>: <hh:mm>-<hh:mm>
 
-  You may use any combination of these. Like::
+  You can combine these forms in a list separated by commas, like::
 
-     Mon-Fri: 8-18
+     Mon-Fri: 8-18, Sat: 10-12
 
   to define certain policies to be active throughout working hours.
 
+  The days are ``Mon``, ``Tue``, ``Wed``, ``Thu``, ``Fri``, ``Sat`` and ``Sun``. A day
+  range goes from the first day to the second day in this order. For a range over the
+  end of the week, use two ranges, like ``Sat-Sun: 8-18, Mon: 8-18``.
+
   Times are the local time of the privacyIDEA server, compared at minute precision with
-  both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
-  cross midnight (``22-6`` is rejected). The current WebUI
-  only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes can only be set
-  through the API.
+  both ends included: ``8-18`` means from 08:00 up to and including 18:00, and ``0-23``
+  ends at 23:00. For a whole day, use ``0:00-23:59``. A range can not cross midnight
+  (``22-6`` is rejected).
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before
      using time restricted policies.
+
+.. versionadded:: 2.12
 
 .. _client_policies:
 
@@ -205,14 +298,45 @@ resolver values must name existing realms and resolvers.
   their tokens depending on their IP addresses (like the internal network or
   remotely via the firewall).
 
-  You can enter several IP addresses or subnets divided by comma. Exclude an item
-  by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
+  You can enter several IP addresses or subnets, IPv4 and IPv6, divided by comma.
+  Exclude an item with a leading exclamation mark (like
+  ``10.2.0.0/16, !10.2.0.1, 192.168.0.1``). Host names are not supported.
+
+  A field with only exclusions matches no client. To match every client except one, add
+  the networks of all clients, like ``0.0.0.0/0, ::/0, !10.2.0.1``.
+
+  A web server that accepts IPv4 and IPv6 on one socket reports an IPv4 client as
+  ``::ffff:a.b.c.d``. privacyIDEA uses the IPv4 address ``a.b.c.d`` as the client IP, so
+  the IPv4 entries apply. An IPv4 network does not match a client with a native IPv6
+  address, and ``::/0`` does not match an IPv4 client.
+
+  The client is the IP address from which privacyIDEA receives the request. Behind a
+  reverse proxy, this is the proxy. For an authentication through a RADIUS server or
+  another plugin, this is the server of the plugin, not the device of the user. To use
+  the address of the original client, configure :ref:`override_client`.
+
+.. versionadded:: 2.0
 
 **User Agent**
 
   This is the user agent of the requesting client for which this action is valid. You can use this to define policies
   depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
   user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
+
+  The name is the first part of the ``User-Agent`` header of the request. It contains only
+  letters, digits, ``_`` and ``-``. It ends at the first other character, like ``/``, a
+  space or a dot. Thus ``PAM.module/1.0`` has the name ``PAM``. The privacyIDEA
+  plugins send their own name, for example ``privacyIDEA-Keycloak``. Browsers send
+  ``Mozilla``. For an authentication through a plugin, the user agent is the plugin, not
+  the browser of the user. A request without a user agent only matches policies without a
+  user agent. A header that starts with another character counts as no user agent.
+
+  A user agent in a policy must be such a name, like ``privacyidea-cp``. A version
+  (``privacyidea-cp/1.0``), a space, ``*`` or ``!`` never matches and is rejected when you
+  save the policy. The field does not support exclusions: ``-PAM`` is the name ``-PAM``, not
+  every user agent except ``PAM``.
+
+.. versionadded:: 3.12
 
 **additional conditions**
 
@@ -225,3 +349,5 @@ resolver values must name existing realms and resolvers.
     :maxdepth: 1
 
     conditions
+
+.. versionadded:: 3.1

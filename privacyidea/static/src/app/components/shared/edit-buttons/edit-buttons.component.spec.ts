@@ -48,4 +48,102 @@ describe("EditButtonsComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("save button", () => {
+    const saveButton = (): HTMLButtonElement | null => fixture.nativeElement.querySelector("button[aria-label='Save']");
+
+    const startEditing = (valid?: ReturnType<typeof signal<boolean>>) => {
+      fixture.componentRef.setInput("element", {
+        keyMap: { key: "value", label: "label" },
+        isEditing: signal(true),
+        value: "",
+        valid
+      });
+      fixture.componentRef.setInput("shouldHideEdit", true);
+      fixture.detectChanges();
+    };
+
+    it("is enabled when the element has no validity channel", () => {
+      startEditing();
+      expect(saveButton()?.disabled).toBe(false);
+    });
+
+    it("follows the validity channel of the element", () => {
+      const valid = signal(false);
+      startEditing(valid);
+      expect(saveButton()?.disabled).toBe(true);
+
+      valid.set(true);
+      fixture.detectChanges();
+      expect(saveButton()?.disabled).toBe(false);
+    });
+  });
+
+  describe("buttons of the edited row", () => {
+    const button = (label: string): HTMLButtonElement | null =>
+      fixture.nativeElement.querySelector(`button[aria-label='${label}']`);
+
+    const showRow = (key: string, isEditing = false) => {
+      const element = { keyMap: { key }, isEditing: signal(isEditing), value: "" };
+      fixture.componentRef.setInput("element", element);
+      fixture.componentRef.setInput("shouldHideEdit", true);
+      fixture.detectChanges();
+      return element;
+    };
+
+    it.each(["username", "user_name"])("shows save and cancel on the %p row while the user is edited", (key) => {
+      fixture.componentRef.setInput("isEditingUser", true);
+      showRow(key);
+
+      expect(button("Save")).not.toBeNull();
+      expect(button("Cancel")).not.toBeNull();
+    });
+
+    it("shows save and cancel on the info row while the info is edited", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      showRow("info");
+
+      expect(button("Save")).not.toBeNull();
+      expect(button("Cancel")).not.toBeNull();
+    });
+
+    it("shows neither save nor cancel on another row while the user or the info is edited", () => {
+      fixture.componentRef.setInput("isEditingUser", true);
+      fixture.componentRef.setInput("isEditingInfo", true);
+      showRow("description");
+
+      expect(button("Save")).toBeNull();
+      expect(button("Cancel")).toBeNull();
+    });
+
+    it("hands the element to toggleEdit when edit is clicked", () => {
+      const element = showRow("description");
+      fixture.componentRef.setInput("shouldHideEdit", false);
+      fixture.detectChanges();
+
+      button("Edit")!.click();
+
+      expect(component.toggleEdit()).toHaveBeenCalledWith(element);
+      expect(component.saveEdit()).not.toHaveBeenCalled();
+      expect(component.cancelEdit()).not.toHaveBeenCalled();
+    });
+
+    it("hands the element to saveEdit when save is clicked", () => {
+      const element = showRow("description", true);
+
+      button("Save")!.click();
+
+      expect(component.saveEdit()).toHaveBeenCalledWith(element);
+      expect(component.cancelEdit()).not.toHaveBeenCalled();
+    });
+
+    it("hands the element to cancelEdit and does not save when cancel is clicked", () => {
+      const element = showRow("description", true);
+
+      button("Cancel")!.click();
+
+      expect(component.cancelEdit()).toHaveBeenCalledWith(element);
+      expect(component.saveEdit()).not.toHaveBeenCalled();
+    });
+  });
 });

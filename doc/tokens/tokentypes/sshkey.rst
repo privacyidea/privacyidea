@@ -11,12 +11,6 @@ conjunction with the :ref:`machines` concept.
 
 A user or the administrator can upload the public SSH key and assign it to a user.
 
-
-.. figure:: images/sshkey.png
-   :width: 500
-
-   *Enroll an SSH key token*
-
 Paste the SSH key into the text area. The comment in the SSH key will be used as
 token comment.
 You can assign the SSH key to a user and then use the SSH key in Application

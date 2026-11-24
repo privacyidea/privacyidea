@@ -17,7 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthData, AuthDetail, AuthResponse, AuthRole, ContainerWizardConfig } from "@services/auth/auth.service";
-import { ValidateCheckResponse, ValidateServiceInterface } from "@services/validate/validate.service";
+import {
+  ChallengeStatus,
+  TriggerChallengeResponse,
+  ValidateCheckResponse,
+  ValidateServiceInterface
+} from "@services/validate/validate.service";
 import { of } from "rxjs";
 import { MockPiResponse } from "./mock-utils";
 
@@ -82,6 +87,15 @@ export class MockValidateService implements ValidateServiceInterface {
     } as ValidateCheckResponse)
   );
 
+  triggerChallenge = jest.fn().mockReturnValue(
+    of(
+      MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
+        message: "please enter otp: ",
+        transaction_id: "11451135673179897001"
+      })
+    )
+  );
+
   authenticatePasskey = jest
     .fn()
     .mockReturnValue(
@@ -95,4 +109,6 @@ export class MockValidateService implements ValidateServiceInterface {
     );
 
   pollTransaction = jest.fn().mockReturnValue(of(true));
+
+  pollTransactionStatus = jest.fn().mockReturnValue(of<ChallengeStatus>("accept"));
 }

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, forwardRef, inject, input, linkedSignal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -24,16 +24,22 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB } from "@constants/token.constants";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
+  FieldPreset,
   loadedEnrollmentPolicies,
   numericPolicyValue,
+  presetOrChoice,
+  samePreset,
   twoStepMode
 } from "@components/token/token-enrollment/enrollment-policy-values";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -78,14 +84,47 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
   twoStep = computed(() => twoStepMode(this.policies()));
   forceServerGenerate = computed(() => !!this.policies()?.force_server_generate);
 
-  // Policy value first, then the enrollment data (rollover, template), then the default.
+  // Policy value first, then the enrollment data (rollover, template), then the token configuration default.
   twoStepEnabled = linkedSignal(() => this.twoStep() === "force" || !!this.enrollmentData()?.twoStepInit);
   generateOnServer = linkedSignal(
     () => this.forceServerGenerate() || this.twoStepEnabled() || (this.enrollmentData()?.generateOnServer ?? true)
   );
   otpKey = linkedSignal(() => this.enrollmentData()?.otpKey ?? "");
-  otpLength = linkedSignal(() => this.otpLengthPolicy() ?? this.enrollmentData()?.otpLength ?? 6);
-  hashAlgorithm = linkedSignal(() => this.hashlibPolicy() ?? this.enrollmentData()?.hashAlgorithm ?? "sha1");
+  private readonly otpLengthPreset = computed<FieldPreset<number>>(
+    () => {
+      const policy = this.otpLengthPolicy();
+      return {
+        value:
+          policy ??
+          this.enrollmentData()?.otpLength ??
+          (parseInt(this.systemService.systemConfig()[DEFAULT_OTP_LENGTH], 10) || 6),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  private readonly hashAlgorithmPreset = computed<FieldPreset<string>>(
+    () => {
+      const policy = this.hashlibPolicy();
+      return {
+        value:
+          policy ?? (this.enrollmentData()?.hashAlgorithm || this.systemService.systemConfig()[HOTP_HASHLIB] || "sha1"),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  // A value the user picked is kept when the preset changes later, even one that equals the preset.
+  private readonly otpLengthChosen = signal(false);
+  private readonly hashAlgorithmChosen = signal(false);
+  otpLength = linkedSignal<FieldPreset<number>, number>({
+    source: this.otpLengthPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.otpLengthChosen))
+  });
+  hashAlgorithm = linkedSignal<FieldPreset<string>, string>({
+    source: this.hashAlgorithmPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.hashAlgorithmChosen))
+  });
 
   twoStepDisabled = computed(() => this.disabled() || this.policiesPending() || this.twoStep() === "force");
   override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
@@ -99,9 +138,20 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
       this.forceServerGenerate()
   );
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  twoStepEnabledForm = form(this.twoStepEnabled, (f) => {
+    disabled(f, () => this.twoStepDisabled());
+  });
+
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.generateOnServerDisabled());
+  });
+
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: ERR.minLength }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.twoStepEnabled());
   });
 
@@ -115,6 +165,15 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
     disabled(f, () => this.disabled() || this.policiesPending() || this.hashlibPolicy() !== undefined);
   });
 
+  constructor() {
+    super();
+
+    // A pick in the select marks the field dirty, which keeps its value over a later preset.
+    effect(() => {
+      if (this.otpLengthForm().dirty()) this.otpLengthChosen.set(true);
+      if (this.hashAlgorithmForm().dirty()) this.hashAlgorithmChosen.set(true);
+    });
+  }
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<HotpEnrollmentData> | null {
     const enrollmentData: HotpEnrollmentOptions = {
       ...basicOptions,

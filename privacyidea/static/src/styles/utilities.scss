@@ -1,0 +1,86 @@
+// Spacing and sizing utilities, generated from one scale.
+//
+// Naming follows the established tailwind-like convention: {property}-{step}, where {step} is the
+// scale value in pixels (margin-top-8 is 8px, gap-16 is 16px, padding-right-4 is 4px). Only the
+// values in $spacing-scale exist; a size outside the scale belongs in the owning component's own
+// stylesheet, not here. Negative margins are {property}-neg-{step} (margin-top-neg-16 is -16px).
+// Percentage widths are named by fraction (width-half, width-full), not by number.
+// Each class is defined here and nowhere else in the shared stylesheets.
+$spacing-scale: 0, 2, 4, 8, 16, 32, 64;
+$negative-spacing-scale: 8, 16, 32;
+
+// Utility class prefix -> CSS property it sets.
+$spacing-properties: (
+  "margin": margin,
+  "margin-top": margin-top,
+  "margin-right": margin-right,
+  "margin-bottom": margin-bottom,
+  "margin-left": margin-left,
+  "padding": padding,
+  "padding-top": padding-top,
+  "padding-right": padding-right,
+  "padding-bottom": padding-bottom,
+  "padding-left": padding-left,
+  "gap": gap
+);
+
+$negative-margin-properties: (
+  "margin": margin,
+  "margin-top": margin-top,
+  "margin-right": margin-right,
+  "margin-bottom": margin-bottom,
+  "margin-left": margin-left
+);
+
+@each $name, $property in $spacing-properties {
+  @each $step in $spacing-scale {
+    .#{$name}-#{$step} {
+      #{$property}: #{$step}px;
+    }
+  }
+}
+
+@each $name, $property in $negative-margin-properties {
+  @each $step in $negative-spacing-scale {
+    .#{$name}-neg-#{$step} {
+      #{$property}: -#{$step}px;
+    }
+  }
+}
+
+.margin-left-auto {
+  margin-left: auto;
+}
+
+.margin-right-auto {
+  margin-right: auto;
+}
+
+.width-full {
+  width: 100%;
+}
+
+.width-half {
+  width: 50%;
+}
+
+.height-auto {
+  height: auto;
+}
+
+.height-fit {
+  height: fit-content;
+}
+
+// Out of sight, still read by assistive technology (the page's own heading, for one): a 1px box, clipped, off the layout.
+.visually-hidden {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

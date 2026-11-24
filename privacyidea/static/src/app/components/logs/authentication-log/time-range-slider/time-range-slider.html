@@ -1,0 +1,66 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<!-- Without the thumbs' value bubble, which the surrounding row or menu would clip: the summary under the slider says
+     where the thumbs are instead, updated while they are dragged. -->
+<div class="slider-with-histogram">
+  <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+  <div
+    class="activity-histogram"
+    [attr.aria-hidden]="true">
+    @for (bar of histogram(); track $index) {
+      <div
+        class="activity-bar"
+        [style.height.%]="bar * 100"></div>
+    }
+  </div>
+  <mat-slider
+    class="time-range-slider"
+    [min]="0"
+    [max]="steps()"
+    step="1"
+    [displayWith]="displayWith()">
+    <!-- The native input event, not Material's valueChange output: a range thumb emits that only when the drag is let
+         go, so the summary would sit a whole drag behind the thumb. aria-valuetext is bound as well because displayWith
+         only reaches a thumb whose value has changed, and the one that kept its starting value would announce a bare
+         step number. -->
+    <input
+      matSliderStartThumb
+      #startThumb="matSliderRangeThumb"
+      aria-label="Range start"
+      i18n-aria-label="@@authLog.rangeStart"
+      [attr.aria-valuetext]="summaryFrom()"
+      [value]="start()"
+      (input)="startInput.emit(startThumb.value)"
+      (change)="commit.emit()" />
+    <input
+      matSliderEndThumb
+      #endThumb="matSliderRangeThumb"
+      aria-label="Range end"
+      i18n-aria-label="@@authLog.rangeEnd"
+      [attr.aria-valuetext]="summaryTo()"
+      [value]="end()"
+      (input)="endInput.emit(endThumb.value)"
+      (change)="commit.emit()" />
+  </mat-slider>
+</div>
+<div class="range-summary">
+  <span>{{ summaryFrom() }}</span>
+  <span>{{ summaryTo() }}</span>
+</div>

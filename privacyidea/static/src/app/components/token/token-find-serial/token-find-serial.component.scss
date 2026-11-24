@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .find-token-serial {
   @include styles.main-component-style;
@@ -20,4 +20,10 @@
   justify-content: center;
   align-items: center;
   margin-top: 16px;
+}
+
+// The count-window input sits beside the serial-substring input; its column takes a third of the row so
+// the lookahead hint wraps inside it rather than widening the row.
+.count-window-column {
+  width: 32%;
 }

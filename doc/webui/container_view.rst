@@ -7,7 +7,8 @@ Administrators can see and edit all containers of the realms they are allowed to
 realms. This enables the possibility that administrators of different realms can manage the same container.
 Users can only see and edit their own containers.
 
-The container view submenu contains four parts: Container list, container details, create container and templates.
+The containers are found in the *Token* menu: *Container* opens the container list, from which the container details
+and the page to create a container are reached. *Templates* opens the list of the container templates.
 
 Container List
 ~~~~~~~~~~~~~~
@@ -22,8 +23,9 @@ contained in a container, click on the container's row. Clicking on the containe
 serial will open the container details page.
 
 The container list can be filtered by the serial, type, description, state, user, realm of the user, container realm,
-the serial of a contained token, the template and whether a user is assigned. The list can also be sorted by the
-serial, type, and description in ascending and descending order.
+the serial of a contained token and whether a user is assigned. The template filter is only available in the header of
+the *Template* column while the comparison with the templates is shown, see :ref:`container_template_comparison`. The
+list can also be sorted by the serial, type, and description in ascending and descending order.
 
 Container Details
 ~~~~~~~~~~~~~~~~~
@@ -35,6 +37,10 @@ different actions on the container and the contained tokens.
    :width: 500
 
    *Container Details*
+
+At the top of the page are container actions such as *Delete*, *Enroll Token* or *Register*. Below, the container
+information is grouped into cards, where further actions apply to the specific information, such as editing the states
+or assigning a user. Which actions are shown depends on the container type and the rights of the administrator.
 
 Delete
 ......
@@ -59,9 +65,12 @@ is automatically in the realm of the user. This realm can not be removed without
 User
 ....
 
-To assign a user, click the *Assign User* button, select a realm in *Select Realm of User* and start typing the user's
-name in *Enter User*. Select one of the suggested users and save the assignment. Clicking on the assigned
-user's name redirects to the :ref:`user_details` page.
+To assign a user, click the assign button in the *User* card, select a realm in *Select Realm of User* and start typing
+the user's name in *Enter User*. Select one of the suggested users and save the assignment. The icon button next to the
+name of an assigned user unassigns the user. Clicking on the assigned user's name redirects to the :ref:`user_details`
+page.
+
+.. _container_template_comparison:
 
 Template
 ........
@@ -73,6 +82,18 @@ container was created. Clicking *Compare to Template* marks the differences in t
 each token type is compared: for every token the template defines but the container lacks, a row with the serial
 ``MISSING`` is added, and tokens beyond the number the template defines for their type are highlighted, also if the
 type is in the template.
+
+Click *Compare with templates* on the container list to compare all containers of the current page with their own
+templates. The button requires the admin right :ref:`policy_container_template_list`. While the comparison is visible,
+changing the page, the page size, the sort order or the filter compares the containers shown afterwards again. The
+container list then additionally shows the column *Differences* for the compared containers. Token types the template
+defines but the container lacks are marked red with a minus, token types the container has in addition are marked yellow
+with a plus. A container that matches its template is marked *Equal*, and a container without a template shows an empty
+cell in this column and cannot be compared. Containers that were not compared show nothing in this column. Click
+*Hide comparison* to remove the column again.
+
+While the comparison is visible, the filter menu in the header of the *Template* column offers three template filters:
+containers created with any template, containers without a template, or containers created from a selected template.
 
 Synchronization
 ...............
@@ -97,7 +118,7 @@ scan this QR code with the privacyIDEA Authenticator app to complete the registr
 .. figure:: images/container_details_synchronization.png
    :width: 500
 
-   *Synchronization Section on the Container Details Page*
+   *The Register Container Dialog*
 
 If the smartphone is successfully registered, the *Registration State* changes from ``client_wait``
 to ``registered``. In case the QR code gets lost or the passphrase needs to be changed, the QR code can be regenerated
@@ -126,13 +147,13 @@ with the server anymore.
 Tokens
 ......
 
-At the bottom of the container details page, all the tokens in the container are listed. You can enable and disable each
-token, and assign the container's user as owner of a token that has no owner (*Assign Owner*). You can also remove or
-delete tokens from the container. The *Actions* menu of the token list applies these actions to all tokens of the
-container at once. *Assign All* is available while at least one token of the container has no owner, and it assigns
-every token of the container to the container's user: tokens that belong to another user are unassigned first, without
-a confirmation, which also removes their OTP PIN.
-If another user's token is in the container, the user only sees its serial, and actions on that token are refused.
+The *Tokens in Container* card lists all the tokens in the container. You can enable and disable each token. For a token
+without owner, the icon button *Assign Owner* in the *User* column assigns the container's user. You can also remove or
+delete tokens from the container. The *Actions* menu of the card applies these actions to all tokens of the container at
+once. *Assign All* is available while at least one token of the container has no owner, and it assigns every token of
+the container to the container's user: tokens that belong to another user are unassigned first, without a confirmation,
+which also removes their OTP PIN. If another user's token is in the container, the user only sees its serial, and
+actions on that token are refused.
 
 There are two ways to add tokens to the container. Firstly, a new token can be enrolled. The user will be redirected to
 the enrollment page where the user of the container and the container are pre-selected. The second option is to add an
@@ -161,11 +182,13 @@ you can also assign the container only to a realm.
    *Container Create*
 
 For a simplified rollout, the container can be created from a template. This will enroll predefined tokens in the
-container. It is also possible to modify the template in place for the container. Note that the changes are only
-applied to this container and do not change the template itself. The container will not be linked to the template.
+container. It is also possible to modify the template in place for the container under *Added Tokens*. Note that the
+changes are only applied to this container and do not change the template itself. The container will not be linked to
+the template.
 
-After creating the container with a template, a dialog shows the enrollment information for each token.
-For HOTP tokens, for example, the QR code to enroll the token on a smartphone is displayed.
+After creating the container with a template, a dialog shows the enrollment information for each token. *Next* and
+*Previous* step through the tokens. For HOTP tokens, for example, the QR code to enroll the token on a smartphone is
+displayed.
 
 .. figure:: images/container_created_with_template.png
    :width: 500
@@ -173,10 +196,11 @@ For HOTP tokens, for example, the QR code to enroll the token on a smartphone is
    *Container Created With a Template*
 
 For smartphone containers, there is an additional option on the create page to register the container on a smartphone.
-The registration can be secured with a passphrase. To do this, a prompt that is displayed to the user in the app, and
-the actual passphrase response must be set. After creating the container, a dialog shows the registration QR code. The
-button next to *Create Container* (*Reopen enrollment dialog*) opens it again. Scan the QR code with the privacyIDEA
-authenticator app to finalize the registration.
+To register it, check *Generate a QR code to register the container on a smartphone* under *Registration*. The
+registration can be secured with a passphrase under *Optional Settings*. To do this, a prompt that is displayed to the
+user in the app, and the actual passphrase response must be set. After creating the container, a dialog shows the
+registration QR code. The button next to *Create Container* (*Reopen enrollment dialog*) opens it again. Scan the QR
+code with the privacyIDEA authenticator app to finalize the registration.
 
 If you create a smartphone container including the registration and also use a template, only the registration QR code
 and no enrollment information will be displayed. It is not required to enroll the tokens on the smartphone individually.
@@ -187,22 +211,27 @@ After a successful registration, the tokens are automatically added during synch
 
    *Container Created With Registration*
 
-On the user details page, *Create New Container* opens this page with the user preselected. In the previous WebUI, a
-basic container creation, which allows defining the container type, setting a description, and assigning the token
-owner to the container, is also possible on the token details page and during the enrollment of a new token.
+On the user details page, *Create New Container* opens this page with the user preselected. On the token details page
+and during the enrollment of a new token, the *Create new container* entry in the container selection opens a dialog for
+a basic container creation, which allows defining the container type, setting a description, and assigning the token
+owner to the container. The *Create new container* entry requires the right ``container_create``
+(:ref:`admin <policy_container_create>` or user policy). Assigning the new container to the token owner additionally
+requires the right ``container_assign_user`` (:ref:`admin <policy_container_assign_user>` or user policy) and a token
+owner.
 
 
 Templates
 ~~~~~~~~~
 
-Templates are used to enroll predefined tokens in a container. The templates menu consists of three parts: Template
-list, template details, and create template.
+Templates are used to enroll predefined tokens in a container. *Token > Templates* opens the template list, from
+which the template details and the page to create a template are reached.
 
 Template List
 .............
 
-The template list displays the name and the container type of each template. Clicking on the template name opens the
-template details page.
+The template list displays the name, the container type, whether the template is the default, and the tokens of each
+template. Clicking on the template name opens the template details page. *Create Template* opens the page to create a
+template; *Copy* and *Delete* act on the selected templates.
 
 .. figure:: images/container_template_list.png
    :width: 500
@@ -212,10 +241,10 @@ template details page.
 Template Details
 ................
 
-At the top of the page, the name and the container type are displayed. The checkbox *Set as default template* uses
-the template as the default for creating new containers.
-For each container type, one template can be the default. Setting a template as default will remove the default setting
-from the previous default template.
+At the top of the page, the name and the container type are displayed. The name of an existing template can not be
+changed; to save a template under another name, use *Copy* in the template list. The checkbox *Set as default template*
+uses the template as the default for creating new containers. For each container type, one template can be the default.
+Setting a template as default will remove the default setting from the previous default template.
 
 .. figure:: images/container_template_details.png
    :width: 500
@@ -239,13 +268,15 @@ after saving the template.
 
 **Containers Created With This Template**
 
-.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as described in
-   :ref:`legacy_webui`. In the WebUI, a container is compared to its template on the container details page.
+The template page does not list the containers created from the template. To see them, open the container list and click
+*Compare with templates*. Then select the template in the filter menu of the *Template* column. This compares the
+containers of the current page with their templates. The column *Differences* then shows the missing token types with a
+minus, the additional token types with a plus and *Equal* for matching containers.
 
-Optionally, a table of all containers created from the template can be displayed. Additionally, clicking the
-button *Compare* adds a new column to the table showing the differences for the token types between the containers
-and the template. The row *missing* lists the token types included in the template but not in the container.
-The row *additional* lists the token types included in the container but not in the template.
+.. note:: The previous WebUI, see :ref:`legacy_webui`, displays a table of the containers on the template page.
+   The button *Compare* adds a column to this table. The row *missing* lists the token types included in the
+   template but not in the container. The row *additional* lists the token types included in the container but not
+   in the template.
 
 .. figure:: images/container_template_details_containers.png
    :width: 500
@@ -256,8 +287,9 @@ The row *additional* lists the token types included in the container but not in 
 Template Create
 ................
 
-To create a new template, a unique name must be specified. If an existing name is entered, a warning will appear and
-creation will be disabled. Additionally, the container type has to be selected. All token types supported for
+To create a new template, a unique name must be specified. It may only contain letters, digits, dots, underscores and
+hyphens. If the name contains other characters or an existing name is entered, an error message appears and *Save* is
+disabled. Additionally, the container type has to be selected. All token types supported for
 templates of the container type are then offered under *Tokens*.
 
 With *Set as default template*, the template can be selected as the default for this container type. For each

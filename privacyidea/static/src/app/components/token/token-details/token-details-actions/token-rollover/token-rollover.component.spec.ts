@@ -40,6 +40,7 @@ import { of, Subject, throwError } from "rxjs";
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
+import { axe } from "@testing/axe";
 
 // Mock token enroll strategy
 function installStrategy(component: TokenRolloverComponent, strategy: unknown): void {
@@ -188,6 +189,28 @@ describe("TokenRolloverComponent", () => {
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ response: regenerated }) })
     );
+  });
+
+  it("gives the dialogs the type of the enrollment request, not the selected enrollment type", async () => {
+    component.token.set({ type: "totp", serial: "TOTP0001" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({
+        data: { type: "totp", serial: "TOTP0001", rollover: true },
+        mapper: { map: (x: unknown) => x }
+      })
+    });
+    tokenService.enrollToken.mockReturnValue(
+      of({
+        result: { status: true },
+        detail: { rollout_state: "enrolled", serial: "TOTP0001" }
+      } as unknown as EnrollmentResponse)
+    );
+    // The selected enrollment type is shared and falls back to hotp when the route changes
+    tokenService.selectedTokenType.set({ key: "hotp", name: "", text: "", info: "" });
+
+    await component.rolloverToken();
+
+    expect(component.enrolledDialogData()?.tokenType).toBe("totp");
   });
 
   it("should show a warning when opening the last step dialog without a response", () => {
@@ -471,5 +494,11 @@ describe("TokenRolloverComponent", () => {
       expect(dialogService.openDialog).not.toHaveBeenCalled();
       expect(finalizeSpy).toHaveBeenCalledWith(enrollResponse);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

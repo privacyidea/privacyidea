@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .certificate-data {
   display: flex;
@@ -27,10 +27,6 @@
   code {
     overflow-wrap: anywhere;
   }
-
-  app-copy-button {
-    --copy-icon-color: var(--mat-sys-on-surface);
-  }
 }
 
 .password-toggle {
@@ -48,7 +44,7 @@
   height: 16px;
   display: flex !important;
   justify-content: center;
-  color: var(--mat-sys-on-surface);
+  color: var(--status-ink);
 }
 
 .certificate-expansion {

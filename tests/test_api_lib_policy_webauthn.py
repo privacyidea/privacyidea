@@ -4,7 +4,8 @@
 
 
 from privacyidea.api.lib.prepolicy import (fido2_auth, webauthntoken_authz,
-                                           fido2_enroll, webauthntoken_request)
+                                           fido2_enroll, webauthntoken_request,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.lib.error import PolicyError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
@@ -21,6 +22,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
@@ -868,3 +870,26 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Delete policy
         delete_policy("WebAuthn")
+
+    def test_29g_rerun_for_the_token_owner_updates_the_copied_options(self):
+        class RequestMock:
+            pass
+
+        # An allow-list matched before the token owner was known, and no policy restricts the owner's authenticators
+        request = RequestMock()
+        request.all_data = {
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "pass": "",
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: ["foo"]
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        request.User = User("cornelius", self.realm1)
+        options = dict(request.all_data)
+        rerun_user_dependent_prepolicies(request, options)
+        self.assertNotIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, request.all_data)
+        self.assertNotIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, options)
+        # The parameters the pre-policies set reach the copy as well
+        self.assertEqual(ORIGIN, options["HTTP_ORIGIN"])
+        self.assertEqual(request.all_data[FIDO2PolicyAction.TIMEOUT], options[FIDO2PolicyAction.TIMEOUT])

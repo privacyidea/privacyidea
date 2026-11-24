@@ -3,3 +3,16 @@
   flex-direction: column;
   padding: 0 16px;
 }
+
+// The row layout drops the heading and the divider in the template and arranges the buttons in one wrapping line.
+.actions-otp-container--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  .actions-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

@@ -821,6 +821,25 @@ def _deserialize(raw: str) -> ChallengeDTO | None:
         return None
 
 
+# Write the field only if the challenge is still in the cache. A challenge another request has consumed stays
+# gone: re-creating it here would hand the consumed challenge back to a later request. Both keys are touched in
+# one script, which Redis Cluster would require to share a hash slot - the cache has no cluster client.
+_UPDATE_EXISTING_CHALLENGE = """
+if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 0 then
+    return 0
+end
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
+redis.call('EXPIRE', KEYS[1], ARGV[3], 'NX')
+redis.call('EXPIRE', KEYS[1], ARGV[3], 'GT')
+if KEYS[2] then
+    redis.call('SADD', KEYS[2], ARGV[4])
+    redis.call('EXPIRE', KEYS[2], ARGV[3], 'NX')
+    redis.call('EXPIRE', KEYS[2], ARGV[3], 'GT')
+end
+return 1
+"""
+
+
 def _update_challenge_in_cache(dto: ChallengeDTO):
     """Re-serialise a mutated ChallengeDTO back into Redis."""
     r = redis_client_for_feature("challenges")
@@ -835,27 +854,26 @@ def _update_challenge_in_cache(dto: ChallengeDTO):
             # TTL.
             return
         remaining = int((dto.expiration - utc_now()).total_seconds()) + _TTL_BUFFER_SECONDS
-        txn_key = _TXN_KEY.format(dto.transaction_id)
-        pipe = r.pipeline()
         # Rewrite just this token's field; sibling challenges in the same
-        # transaction are untouched. HSET preserves the hash's existing TTL
-        # when the hash already exists, but if the hash was evicted between the
-        # read and this save() the HSET re-creates it with NO TTL - so seed the
-        # TTL with NX (GT alone cannot set a TTL on a key that has none) and
-        # then extend with GT, exactly as cache_challenge does.
-        pipe.hset(txn_key, dto.serial, dto.to_payload())
-        pipe.expire(txn_key, remaining, nx=True)
-        pipe.expire(txn_key, remaining, gt=True)
-        # Re-assert the serial index. A bare HSET would otherwise leave a
-        # mutated challenge unreachable by serial if its index entry had been
-        # dropped (e.g. evicted while this DTO was held). NX seeds the set TTL
-        # if it was re-created here; GT only extends it, never shrinks it, so a
-        # shorter save() can't kill siblings.
+        # transaction are untouched. The script writes nothing when the field
+        # is gone, so a challenge that was consumed between the read and this
+        # save() is not brought back; the request then fails as it does for an
+        # expired challenge. The TTL is seeded with NX (GT alone cannot set a
+        # TTL on a key that has none) and then extended with GT, exactly as
+        # cache_challenge does.
+        keys = [_TXN_KEY.format(dto.transaction_id)]
+        # Re-assert the serial index, so a mutated challenge stays reachable by
+        # serial if its index entry had been dropped. GT only extends that TTL,
+        # never shrinks it, so a shorter save() can't kill siblings.
         if dto.serial:
-            pipe.sadd(_SERIAL_KEY.format(dto.serial), dto.transaction_id)
-            pipe.expire(_SERIAL_KEY.format(dto.serial), remaining, nx=True)
-            pipe.expire(_SERIAL_KEY.format(dto.serial), remaining, gt=True)
-        pipe.execute()
+            keys.append(_SERIAL_KEY.format(dto.serial))
+        # Through the pipeline, so the tests that patch pipeline() still cover the error path.
+        pipe = r.pipeline()
+        pipe.eval(_UPDATE_EXISTING_CHALLENGE, len(keys), *keys,
+                  dto.serial, dto.to_payload(), remaining, dto.transaction_id)
+        if not pipe.execute()[0]:
+            log.debug("Challenge %s of token %s is no longer in the cache; not saving it.",
+                      dto.transaction_id, dto.serial)
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
     # An HSMException from to_payload() is deliberately not caught. It can only

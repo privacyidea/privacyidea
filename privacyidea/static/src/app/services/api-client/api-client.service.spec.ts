@@ -298,6 +298,50 @@ describe("ApiClientService", () => {
     expect(notifyMock.error).toHaveBeenCalledWith("Failed to revoke remembered devices. Something went wrong");
   });
 
+  it("should list the remembered devices of a user on all clients", async () => {
+    const promise = service.getUserRememberedDevices("alice", "realm1", { page: 2, pageSize: 10 });
+
+    const req = httpMock.expectOne(
+      (r) => r.url === `${environment.proxyUrl}/clients/remembered_devices` && r.method === "GET"
+    );
+    expect(req.request.params.get("user")).toBe("alice");
+    expect(req.request.params.get("realm")).toBe("realm1");
+    expect(req.request.params.get("page")).toBe("2");
+    expect(req.request.params.get("pagesize")).toBe("10");
+    req.flush(MockPiResponse.fromValue({ devices: [], count: 0, prev: 1, next: null }));
+
+    const page = await promise;
+    expect(page.count).toBe(0);
+  });
+
+  it("should list the first page of a user's remembered devices by default", async () => {
+    const promise = service.getUserRememberedDevices("alice", "realm1");
+
+    const req = httpMock.expectOne(
+      (r) => r.url === `${environment.proxyUrl}/clients/remembered_devices` && r.method === "GET"
+    );
+    expect(req.request.params.get("page")).toBe("1");
+    expect(req.request.params.get("pagesize")).toBe("50");
+    req.flush(MockPiResponse.fromValue({ devices: [], count: 0, prev: null, next: null }));
+
+    await promise;
+  });
+
+  it("should revoke all remembered devices of a user on all clients", async () => {
+    const promise = service.revokeAllForUser("alice", "realm1");
+
+    const req = httpMock.expectOne(
+      (request) =>
+        request.url === `${environment.proxyUrl}/clients/remembered_devices` &&
+        request.params.get("realm") === "realm1" &&
+        request.params.get("user") === "alice"
+    );
+    expect(req.request.method).toBe("DELETE");
+    req.flush(MockPiResponse.fromValue(2));
+
+    expect(await promise).toBe(2);
+  });
+
   it("apiClientResource should not do a request and return undefined on unexpected route", () => {
     contentService.routeUrl.set(ROUTE_PATHS.EVENTS);
     const resource = service.apiClientResource.value();

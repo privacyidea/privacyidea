@@ -18,12 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyService } from "@services/policies/policies.service";
+import { By } from "@angular/platform-browser";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { RealmService } from "@services/realm/realm.service";
-import { ResolverService } from "@services/resolver/resolver.service";
 import { MockRealmService } from "@testing/mock-services";
-import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
-import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditAdminConditionsComponent } from "./edit-admin-conditions.component";
 
 describe("EditAdminConditionsComponent", () => {
@@ -33,11 +31,7 @@ describe("EditAdminConditionsComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditAdminConditionsComponent],
-      providers: [
-        { provide: PolicyService, useClass: MockPolicyService },
-        { provide: RealmService, useClass: MockRealmService },
-        { provide: ResolverService, useClass: MockResolverService }
-      ]
+      providers: [{ provide: RealmService, useClass: MockRealmService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditAdminConditionsComponent);
@@ -53,24 +47,42 @@ describe("EditAdminConditionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should add admin user and clear input", () => {
-    const spy = jest.spyOn(component.policyEdit, "emit");
-    component.addAdmin("admin2");
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        adminuser: ["admin1", "admin2"]
-      })
+  const chipList = () => fixture.debugElement.query(By.directive(ChipListInputComponent));
+  const chipTexts = () =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll(".mat-mdc-chip-action-label")).map((row) =>
+      row.textContent!.trim()
     );
-    expect(component.adminSignal()).toBe("");
+
+  it("should show the admin users as chips", () => {
+    expect(chipTexts()).toEqual(["admin1"]);
   });
 
-  it("should remove admin user", () => {
+  it("should emit only the admin users when an entry is added", () => {
     const spy = jest.spyOn(component.policyEdit, "emit");
-    component.removeAdmin("admin1");
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        adminuser: []
-      })
-    );
+    chipList().triggerEventHandler("valuesChange", ["admin1", "admin2"]);
+    expect(spy).toHaveBeenCalledWith({ adminuser: ["admin1", "admin2"] });
+  });
+
+  it("should emit only the admin users when an entry is removed", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    chipList().triggerEventHandler("valuesChange", []);
+    expect(spy).toHaveBeenCalledWith({ adminuser: [] });
+  });
+
+  it("should emit only the admin realms when they are selected", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.selectAdminRealm(["realm2"]);
+    expect(spy).toHaveBeenCalledWith({ adminrealm: ["realm2"] });
+  });
+
+  it("should add the chips an admin types", async () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    const input = (fixture.nativeElement as HTMLElement).querySelector("input")!;
+    input.value = "admin3";
+    input.dispatchEvent(new Event("input"));
+    const enter = new KeyboardEvent("keydown", { bubbles: true, cancelable: true });
+    Object.defineProperty(enter, "keyCode", { get: () => 13 });
+    input.dispatchEvent(enter);
+    expect(spy).toHaveBeenCalledWith({ adminuser: ["admin1", "admin3"] });
   });
 });

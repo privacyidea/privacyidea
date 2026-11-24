@@ -29,6 +29,7 @@ import {
 import { MockIntegrationsService } from "@testing/mock-services";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionsTabComponent", () => {
   let component: ViewConditionsColumnComponent;
@@ -95,6 +96,15 @@ describe("ConditionsTabComponent", () => {
     expect(component.userCaseInsensitive()).toBeTruthy();
   });
 
+  it("should mark the resolvers only if all resolvers of the user are checked", () => {
+    const markers = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".marker-chip"), (chip: Element) => chip.textContent!.trim());
+    expect(markers()).not.toContain("all resolvers of the user");
+    fixture.componentRef.setInput("policy", { ...mockPolicy, check_all_resolvers: true });
+    fixture.detectChanges();
+    expect(markers()).toContain("all resolvers of the user");
+  });
+
   it("should correctly compute selectedPinodes", () => {
     expect(component.selectedPinodes()).toEqual(["node1"]);
   });
@@ -107,10 +117,10 @@ describe("ConditionsTabComponent", () => {
     expect(component.selectedClient()).toEqual(["client1"]);
   });
 
-  it("should map a known user agent key to its display label", () => {
+  it("should show a known user agent with its display label and the stored value", () => {
     fixture.componentRef.setInput("policy", { ...mockPolicy, user_agents: ["privacyidea-cp"] });
     fixture.detectChanges();
-    expect(component.selectedUserAgents()).toEqual(["Windows Credential Provider"]);
+    expect(component.selectedUserAgents()).toEqual(["Windows Credential Provider (privacyidea-cp)"]);
   });
 
   it("should fall back to the raw identifier for an unknown/legacy user agent key", () => {
@@ -147,5 +157,11 @@ describe("ConditionsTabComponent", () => {
     expect(component.getMissingDataLabel("nonExistentKey" as unknown as HandleMissingDataOptionKey)).toBe(
       "nonExistentKey"
     );
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

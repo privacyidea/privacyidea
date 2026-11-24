@@ -20,6 +20,7 @@
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   Injectable,
@@ -30,7 +31,7 @@ import {
   viewChild,
   WritableSignal
 } from "@angular/core";
-import { form, FormField, required, validate, ValidationError } from "@angular/forms/signals";
+import { FieldTree, form, FormField, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
   DateAdapter,
@@ -47,10 +48,15 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  ContainerCreateDialogComponent,
+  ContainerCreateDialogData
+} from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
@@ -82,6 +88,8 @@ import {
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
+import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { firstValueFrom, lastValueFrom, Observable, of, Subject, switchMap, tap } from "rxjs";
 import { EnrollmentPoliciesLoad, enrollmentPolicyState, loadEnrollmentPolicies } from "./enrollment-policy-values";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
@@ -93,6 +101,10 @@ import {
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
 } from "./token-enrollment.constants";
+
+const DEFAULT_TIMEZONE_OFFSET = "+00:00";
+const DEFAULT_START_TIME = "00:00";
+const DEFAULT_END_TIME = "23:59";
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -163,6 +175,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollTokenTypeSwitchComponent,
     EnrollmentPinComponent,
     MatError,
+    MatIcon,
     TokenEnrollmentTypeSelectorComponent
   ],
   providers: [
@@ -185,6 +198,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
@@ -199,7 +213,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
   });
   serial = signal<string | null>(null);
-  protected readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
+  readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
   /** The owner the token is enrolled for, read once for the policy request and for the enrollment itself. */
@@ -286,28 +300,65 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   setPin = signal<string>("");
   repeatPin = signal<string>("");
   selectedContainer = signal<string>(this.containerService.selectedContainerSerial() ?? "");
-  selectedTimezoneOffset = signal<string>("+00:00");
+  selectedTimezoneOffset = signal<string>(DEFAULT_TIMEZONE_OFFSET);
   selectedStartDate = signal<Date | null>(null);
-  selectedStartTime = signal<string>("00:00");
+  selectedStartTime = signal<string>(DEFAULT_START_TIME);
   selectedEndDate = signal<Date | null>(null);
-  selectedEndTime = signal<string>("23:59");
-  isDirty = signal<boolean>(false);
+  selectedEndTime = signal<string>(DEFAULT_END_TIME);
+
+  // Bumped by the input reset after an enrollment, so the type-specific inputs are created anew with
+  // their defaults.
+  protected readonly inputsGeneration = signal(0);
+  // Set by each new enrollment and consumed by the first input reset for it. That reset runs when the
+  // last step dialog first opens, or when the flow stops before that dialog. A later reopen then keeps
+  // the inputs that the user entered for the next token.
+  private inputsResetPending = false;
+  // False keeps the inputs of the enrolled token, see the wizard.
+  protected readonly resetsInputsAfterEnrollment: boolean = true;
+
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
 
   descriptionForm = form(this.description, (f) => {
-    // required() also gives the field its required marker, the validator below adds the whitespace-only case.
-    required(f, { when: () => this.descriptionRequired() });
+    markRequired(f, () => this.descriptionRequired());
     validate(f, (ctx) => {
       const v = ctx.value();
       const errors: ValidationError[] = [];
-      if (this.descriptionRequired() && v !== "" && !v.trim()) errors.push({ kind: "required" });
-      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: "maxlength" });
+      if (this.descriptionRequired() && !v.trim()) errors.push({ kind: ERR.required });
+      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: ERR.maxLength });
       return errors;
     });
   });
 
   setPinForm = form(this.setPin);
   repeatPinForm = form(this.repeatPin, (f) => {
-    validate(f, (ctx) => (ctx.value() !== this.setPin() ? [{ kind: "pinMismatch" }] : []));
+    mustEqual(f, () => this.setPin());
+  });
+  selectedContainerForm = form(this.selectedContainer);
+  selectedTimezoneOffsetForm = form(this.selectedTimezoneOffset);
+  selectedStartDateForm = form(this.selectedStartDate);
+  selectedStartTimeForm = form(this.selectedStartTime);
+  selectedEndDateForm = form(this.selectedEndDate);
+  selectedEndTimeForm = form(this.selectedEndTime);
+
+  private readonly allForms: FieldTree<unknown>[] = [
+    this.descriptionForm,
+    this.setPinForm,
+    this.repeatPinForm,
+    this.selectedContainerForm,
+    this.selectedTimezoneOffsetForm,
+    this.selectedStartDateForm,
+    this.selectedStartTimeForm,
+    this.selectedEndDateForm,
+    this.selectedEndTimeForm
+  ];
+
+  isDirty = computed(() => this.allForms.some((field) => field().dirty()));
+
+  // Without the assignment component (self-service, wizard) the user comes from the session.
+  private readonly userValid = computed(() => {
+    const assignment = this.userAssignmentComponent();
+    return assignment ? assignment.valid() : !this.isUserRequired() || !!this.userService.selectedUser();
   });
 
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
@@ -318,12 +369,21 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     if (policyError) {
       return policyError;
     }
-    return this.enrollSwitch()?.currentStrategy()?.enrollmentBlockedReason() ?? null;
+    const sw = this.enrollSwitch();
+    if (!sw) {
+      return null;
+    }
+    const strategy = sw.currentStrategy();
+    if (strategy === undefined && !!this.tokenService.selectedTokenType()?.key) {
+      return $localize`:@@token.enrollmentUnsupportedType:Enrollment is not available for this token type.`;
+    }
+    return strategy?.enrollmentBlockedReason() ?? null;
   });
   isFormInvalid = computed(
     () =>
       !this.descriptionForm().valid() ||
       (this.showPinFields() && !this.repeatPinForm().valid()) ||
+      !this.userValid() ||
       !!this.enrollmentBlockedReason() ||
       !!this.enrollSwitch()?.currentStrategy()?.fieldsInvalid()
   );
@@ -345,15 +405,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
-    );
+    this.registerPendingChanges();
+  }
+
+  private registerPendingChanges(): void {
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(
-      () =>
-        !!this.tokenService.selectedTokenType()?.key &&
-        !this.isFormInvalid() &&
-        (!this.isUserRequired() || !!this.userService.selectedUser())
+      () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
     );
     this.pendingChangesService.registerSave(() => this.enrollToken());
   }
@@ -408,8 +466,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   // Enroll is disabled while the form is invalid, so a click on it shows every field error instead of submitting.
   revealFieldErrors(): void {
     if (!this.isFormInvalid()) return;
-    this.descriptionForm().markAsTouched();
-    this.repeatPinForm().markAsTouched();
+    this.touchFields();
     this.enrollSwitch()
       ?.currentStrategy()
       ?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenService.selectedTokenType().key));
@@ -454,25 +511,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       await firstValueFrom(this.policiesSettled);
     }
     const currentTokenType = this.tokenService.selectedTokenType();
-    let everythingIsValid = true;
     if (!currentTokenType) {
       this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;
     }
 
-    const owner = this.enrollmentOwner();
-    if (this.isUserRequired() && !owner.user) {
-      everythingIsValid = false;
-    }
-
     if (this.isFormInvalid()) {
-      this.descriptionForm().markAsTouched();
-      this.repeatPinForm().markAsTouched();
       this.revealFieldErrors();
-      everythingIsValid = false;
-    }
-
-    if (!everythingIsValid) {
       this.notificationService.warning(
         $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
       );
@@ -508,7 +553,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.enrolledDialogData.set({
       response: enrollmentResponse,
       enrollParameters: enrollmentArgs,
-      tokenType: this.tokenService.selectedTokenType().key,
+      tokenType: enrollmentArgs.data.type,
       username: enrollmentArgs.data.user,
       userRealm: enrollmentArgs.data.realm,
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
@@ -516,6 +561,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       showEnrollData: strategy.showEnrollDataInLastStep,
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
+    this.inputsResetPending = true;
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
@@ -523,14 +569,21 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       const stepResult = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
       if (stepResult === ENROLLMENT_CANCELLED) {
         this.resetEnrollment();
-        this.pendingChangesService.clearAllRegistrations();
         return true;
       }
       enrollmentResponse = stepResult;
     }
+    // The inputs of the enrolled token are not unsaved changes any more. The input reset registers
+    // the guard again for the next token.
+    this.pendingChangesService.clearAllRegistrations();
+    if (!enrollmentResponse) {
+      // The step stopped before the enrollment finished, for example because the user closed the push
+      // QR dialog in clientwait. The token exists, and the reopen button finishes its enrollment later.
+      this.resetInputsBeforeLastStep();
+      return true;
+    }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
-    this.pendingChangesService.clearAllRegistrations();
     return true;
   }
 
@@ -562,14 +615,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         this.resetEnrollment();
         return;
       }
-      if (result) {
-        this.enrollResponse.set(result);
-        this.enrolledDialogData.set({
-          ...this.enrolledDialogData()!,
-          showEnrollData: false
-        });
-        this.handleVerifyEnrollment(result);
+      if (!result) {
+        // Closed before the second step. The reopen button opens this dialog again.
+        this.resetInputsBeforeLastStep();
+        return;
       }
+      this.enrollResponse.set(result);
+      this.enrolledDialogData.set({
+        ...this.enrolledDialogData()!,
+        showEnrollData: false
+      });
+      this.handleVerifyEnrollment(result);
     });
   }
 
@@ -598,21 +654,106 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         this.resetEnrollment();
         return;
       }
-      if (result) {
-        this.enrollResponse.set(result);
-        this._handleEnrollmentResponse(result);
+      if (!result) {
+        // Closed before the verification. The reopen button opens this dialog again.
+        this.resetInputsBeforeLastStep();
+        return;
       }
+      this.enrollResponse.set(result);
+      this._handleEnrollmentResponse(result);
     });
   }
 
   resetEnrollment(): void {
+    this.inputsResetPending = false;
     this.enrollResponse.set(null);
     this.enrolledDialogData.set(null);
     this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
+    // The enrollment was cancelled and its token deleted, so the inputs are unsaved changes again.
+    if (!this.destroyRef.destroyed) {
+      this.registerPendingChanges();
+    }
   }
 
-  protected trackChange(): void {
-    this.isDirty.set(true);
+  protected clearContainer(): void {
+    clearField(this.selectedContainerForm, "");
+  }
+
+  // Marks every field touched so each required or invalid field shows its error.
+  private touchFields(): void {
+    for (const field of this.allForms) {
+      void touchAll(field);
+    }
+    const assignment = this.userAssignmentComponent();
+    if (assignment) {
+      void touchAll(assignment.realmForm);
+      void touchAll(assignment.userFilterForm);
+    }
+  }
+
+  // Clears the inputs of the enrolled token once per enrollment, so the next enrollment starts from
+  // the defaults, and registers the guard again for the next token. User, realm and container stay
+  // selected, so several tokens can be enrolled for them in a row. With recreateTypeInputs, the
+  // type-specific inputs are also created anew.
+  private resetInputsAfterEnrollment(recreateTypeInputs: boolean): void {
+    // A dialog can close after the user left the page. A guard registered then would outlive it.
+    if (!this.inputsResetPending || this.destroyRef.destroyed) {
+      return;
+    }
+    this.inputsResetPending = false;
+    if (!this.resetsInputsAfterEnrollment) {
+      return;
+    }
+    this.descriptionForm().reset("");
+    this.setPinForm().reset("");
+    this.repeatPinForm().reset("");
+    this.selectedTimezoneOffsetForm().reset(DEFAULT_TIMEZONE_OFFSET);
+    this.selectedStartDateForm().reset(null);
+    this.selectedStartTimeForm().reset(DEFAULT_START_TIME);
+    this.selectedEndDateForm().reset(null);
+    this.selectedEndTimeForm().reset(DEFAULT_END_TIME);
+    // The container stays selected, but it belongs to the enrolled token. A dirty container field
+    // makes the guard offer "Save and exit", which enrolls a second token.
+    this.selectedContainerForm().reset();
+    if (recreateTypeInputs) {
+      this.inputsGeneration.update((generation) => generation + 1);
+    }
+    this.registerPendingChanges();
+  }
+
+  // For a flow that stops after the token was created, but before the last step dialog. The
+  // type-specific inputs stay while their component holds the reopen action that finishes the
+  // enrollment (push, WebAuthn, passkey).
+  private resetInputsBeforeLastStep(): void {
+    const strategyHoldsReopenAction = !!this.enrollSwitch()?.currentStrategy()?.reopenDialog();
+    this.resetInputsAfterEnrollment(!strategyHoldsReopenAction);
+  }
+
+  protected containerCreateDialogData(): ContainerCreateDialogData {
+    const username = this.userAssignmentComponent()?.onlyAddToRealm()
+      ? ""
+      : (this.userService.selectedUser()?.username ?? "");
+    return {
+      username: username || undefined,
+      userRealm: username ? (this.userService.selectedUserRealm() ?? "") : undefined,
+      checkUserAssignment: true
+    };
+  }
+
+  protected openContainerCreateDialog(): void {
+    this.dialogService
+      .openDialog({
+        component: ContainerCreateDialogComponent,
+        data: this.containerCreateDialogData()
+      })
+      .afterClosed()
+      .subscribe((serial) => {
+        if (serial) {
+          this.selectedContainer.set(serial);
+          // A value set from code leaves the field pristine, so it is marked dirty for the pending-changes guard.
+          this.selectedContainerForm().markAsDirty();
+        }
+      });
   }
 
   protected lastStepDialogIsDismissable(): boolean {
@@ -653,6 +794,10 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     this.openLastStepDialog(response);
+    // The enrollment is complete. From now on, the reopen button opens the last step dialog from
+    // enrolledDialogData, not the first step of push, WebAuthn or passkey again.
+    this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
+    this.resetInputsAfterEnrollment(true);
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {

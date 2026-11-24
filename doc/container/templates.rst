@@ -9,7 +9,12 @@ template enrolls the tokens from the template in the new container. Each token i
 of the user or administrator who creates the container. A token they are not allowed to enroll (e.g. the token type is
 not allowed, the maximum number of tokens is reached, or a required description is missing) or that can not be created
 is skipped without an error: the container is created with the remaining tokens, and the response lists only the
-tokens that were created.
+tokens that were created. The same applies to a token for which an enrollment policy that is checked after the creation
+fails (e.g. ``verify_enrollment`` or ``change_pin_on_first_use``): the token is deleted again. A token that existed
+before (fixed serial in the template) is disabled instead, because it got a new key that nobody has. Each skipped token
+is reported in ``tokens_not_created`` of the response with its type, the error and its serial if it is known. This entry
+contains no enrollment data of the token. If all tokens were created, ``tokens_not_created`` is not contained in the
+response.
 
 Using container templates in combination with the synchronization feature allows for a simplified token rollout. The
 user only needs to scan the QR code for the container and gets all tokens on his smartphone without the need to scan
@@ -22,8 +27,29 @@ information during the rollout, e.g. the Questionnaire token.
 Additionally, one can set a default template for each container type. This template is preselected when creating a new
 container of this type.
 
-For each token in the template, you can choose whether it is assigned to the container owner. This setting is only
-applied to admin users. For normal users, all tokens of the template are always assigned to them.
+For each token in the template, you can choose whether it is assigned to the container owner (*Assign to user*). This
+setting is only applied to admin users. For normal users, all tokens of the template are always assigned to them. If
+*Assign to user* is selected but the container has no owner, the token gets no user, only the first realm of the
+container, if it has one. A token without *Assign to user* gets neither a user nor a realm.
+
+For each token in the template, you can also choose whether its PIN must be changed on first use (*Change PIN on first
+use*). The option applies to tokens that administrators create and to tokens that users create, also when a user enrolls
+a container via multichallenge. With this option, a user who gets a token without a PIN from a template must set a PIN.
+The option is in addition to the policy :ref:`policy_change_pin_first_use`, which still applies when an administrator
+creates a token from a template. If the option is not set, the policy decides as for a single token. The user is asked
+for the new PIN only if the application honors the PIN change or the policy :ref:`policy_change_pin_via_validate` is
+set.
+
+.. note:: privacyIDEA enforces the option only if it reads the template from the database. This is the case if a
+   container is created with the template name, as the :ref:`container_wizard` does, and for the enrollment via
+   multichallenge (:ref:`policy_enroll_via_multichallenge`). In the other cases, the client sends the template with the
+   request. Hence, a user who can create containers can also send the template without the option.
+
+.. versionadded:: 3.14.1 The option *Change PIN on first use*.
+
+The enrollment policies are checked for each token as for a single token enrollment: against the user and the realm the
+token gets, not against the user of the container. Hence, an administrator whose policies are restricted to certain
+realms can not create a token without *Assign to user*.
 
 During the creation of a container, the user can edit the template in place. However, these changes are only applied to
 the container and do not change the template itself. If the template is not changed, the container will be

@@ -49,13 +49,12 @@ from flask.cli import AppGroup
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
 
-from privacyidea.lib.error import PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token,
-                                   get_tokens_paginated_generator)
+                                   get_tokens_paginated_generator, get_orphaned_serials)
 from privacyidea.models import Token
 import re
 import sys
@@ -154,7 +153,7 @@ def _parse_datetime(key, value):
         # Special case for last_auth: Legacy values are given in UTC time!
         last_auth = parser.parse(value)
         if not last_auth.tzinfo:
-            last_auth.replace(tzinfo=tzutc())
+            last_auth = last_auth.replace(tzinfo=tzutc())
         return last_auth
     else:
         # Other values are given in local time
@@ -266,13 +265,14 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         iterable = [get_tokens(tokentype=tokentype,
                                active=active,
                                assigned=assigned)]
+    found_label = "Candidates" if orphaned is not None else "Tokens found"
     for tokenobj_list in iterable:
         filtered_list = []
         sys.stderr.write("++ Creating token object list.\n")
         tok_count = 0
         tok_found = 0
         for token_obj in tokenobj_list:
-            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r')
+            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} {found_label}\r')
             sys.stderr.flush()
             tok_count += 1
             if last_auth and token_obj.check_last_auth_newer(last_auth):
@@ -305,12 +305,16 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                     continue
                 if not all(comparator(value) for comparator in tokenattribute_filter):
                     continue
-            if orphaned is not None and token_obj.is_orphaned(orphaned_on_error) != orphaned:
-                continue
 
             tok_found += 1
             # if everything matched, we append the token object
             filtered_list.append(token_obj)
+
+        if orphaned is not None:
+            orphaned_serials = get_orphaned_serials(filtered_list, orphaned_on_error)
+            filtered_list = [token_obj for token_obj in filtered_list
+                             if (token_obj.token.serial in orphaned_serials) == orphaned]
+            tok_found = len(filtered_list)
 
         sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r\n')
         sys.stderr.write("++ Token object list created.\n")
@@ -367,6 +371,7 @@ def export_user_data(token_list, attributes=None):
             user = token_obj.user
         except Exception:
             sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial!s}.\n")
+            user = None
         if user:
             request_attributes = attributes.split(",") if attributes else []
             request_attributes += ["username", "givenname", "surname"]
@@ -397,8 +402,8 @@ def export_user_data(token_list, attributes=None):
 
 @find_cli.command("find")
 @click.option('--set-description', help='set a new description')
-@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key. Only a free-form key can be set, an entry '
-                                          'a token type maintains itself is written by the token and is skipped')
+@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key, including an entry a token type keeps '
+                                          'there itself, e.g. hashlib or next_pin_change')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
 @click.option('--tokeninfo-value-before', metavar='DATETIME',
               help='Interpret tokeninfo values as datetimes,'
@@ -581,13 +586,8 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         if set_tokeninfo_value and set_tokeninfo_key:
                             print(f"Setting tokeninfo for token {token_obj.token.serial!s}: "
                                   f"{set_tokeninfo_key!s}={set_tokeninfo_value!s}")
-                            try:
-                                token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
-                                token_obj.save()
-                            except PolicyError as error:
-                                # An entry the token type maintains itself. Report it as skipped rather than
-                                # as a failure, and keep going through the remaining tokens.
-                                print(f"Skipped tokeninfo of token {token_obj.token.serial!s}: {error!s}")
+                            token_obj.write_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                            token_obj.save()
                 except Exception as exx:
                     print(f"Failed to process token {token_obj.token.serial}.")
                     print(f"{exx}")

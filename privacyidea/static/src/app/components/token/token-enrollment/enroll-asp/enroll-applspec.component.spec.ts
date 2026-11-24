@@ -30,6 +30,8 @@ import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
 import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
   return {
@@ -248,5 +250,19 @@ describe("EnrollAspComponent", () => {
       settle();
       expect(keyInput()).toBeNull();
     });
+  });
+
+  it("writes a click on the checkbox to the model and enables the password field", async () => {
+    await clickCheckbox(fixture);
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.generateOnServerForm().dirty()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

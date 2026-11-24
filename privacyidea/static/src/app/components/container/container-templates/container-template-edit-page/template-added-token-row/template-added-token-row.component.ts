@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
@@ -30,7 +31,14 @@ import { tokenTypes } from "@utils/token.utils";
 @Component({
   selector: "app-template-added-token-row",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatCheckboxModule, MatExpansionModule, EnrollTokenTypeSwitchComponent],
+  imports: [
+    MatIconModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatExpansionModule,
+    FormField,
+    EnrollTokenTypeSwitchComponent
+  ],
   templateUrl: "./template-added-token-row.component.html",
   styleUrls: ["./template-added-token-row.component.scss"]
 })
@@ -44,6 +52,17 @@ export class TemplateAddedTokenRowComponent {
   private readonly elementRef = inject(ElementRef);
 
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
+  readonly userAssignField = form(this.userAssign);
+  readonly changePinOnFirstUse = linkedSignal(() => this.tokenEnrollmentPayload().change_pin_on_first_use === true);
+  readonly changePinOnFirstUseField = form(this.changePinOnFirstUse);
+  // The checkboxes reach the template only at save time, so the page asks the rows for unsaved changes.
+  readonly hasCheckboxChanges = computed(() => {
+    const payload = this.tokenEnrollmentPayload();
+    return (
+      this.userAssign() !== (payload.user === true) ||
+      this.changePinOnFirstUse() !== (payload.change_pin_on_first_use === true)
+    );
+  });
 
   readonly tokenTypeDescription = computed(() => {
     const type = this.tokenEnrollmentPayload().type;
@@ -66,21 +85,21 @@ export class TemplateAddedTokenRowComponent {
     const data = this.tokenEnrollmentData();
 
     if (!strategy || !data) {
-      return { ...payload, user: this.userAssign() };
+      return { ...payload, ...this.templateFlags() };
     }
     const args = strategy.buildEnrollmentArgs({ type: payload.type, ...data });
     if (!args) return null;
-    return { ...args.mapper.toApiPayload(args.data), user: this.userAssign() };
+    return { ...args.mapper.toApiPayload(args.data), ...this.templateFlags() };
+  }
+
+  private templateFlags(): Pick<TokenEnrollmentPayload, "user" | "change_pin_on_first_use"> {
+    return { user: this.userAssign(), change_pin_on_first_use: this.changePinOnFirstUse() };
   }
 
   // Called by the parent body when a save attempt fails:
   scrollIntoView(): void {
     this.expansionPanel()?.open();
     this.elementRef.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  toggleUserAssign(checked: boolean) {
-    this.userAssign.set(checked);
   }
 
   emitRemoveToken() {

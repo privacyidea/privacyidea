@@ -15,28 +15,27 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from sqlalchemy.orm.exc import StaleDataError
 from testfixtures import LogCapture
 
+from flask import Response
+
 from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.engine import is_user_locked
-from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
-                                                          ConditionalAccessPolicyStage,
-                                                          ConditionalAccessStageAction,
-                                                          ConditionalAccessPolicyCounterType, UserLockState)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
 from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.push_types import PushDeclineReason
+from privacyidea.lib.tokens.push_types import PushAllowPolling, PushDeclineReason
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
-                                              DEFAULT_CHALLENGE_TEXT, PushMode, PushTokenClass)
+                                              DEFAULT_CHALLENGE_TEXT, NOT_SENT_CHALLENGE_TEXT, PushMode,
+                                              PushTokenClass)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
@@ -46,6 +45,8 @@ from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase, force_expire_challenges
+from .conditional_access_base import ConditionalAccessApiTestCase, ConditionalAccessFixtureMixin
+from .test_api_conditional_access import _GateContract, _PostResponseGateContract, _UserGateContract
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -177,7 +178,7 @@ class PushTokenTestMixin:
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
 
-class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
+class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTestCase):
     """
     test the api.validate endpoints
     """
@@ -1003,7 +1004,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # This fails since the wrong presence_answer was given
             self.assertFalse(res.json.get("result").get("value"), res.json)
         # A rejected answer records no outcome, so the audit entry stays empty
-        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
+        self.assert_empty_string(self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id, endpoint='/ttype/push')
@@ -1817,7 +1818,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         self._enroll_push_for(user)
-        self._clear_ca()
+        self._clear()
 
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1839,15 +1840,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                             serials={self.serial_push}, transaction_id=transaction_id,
                                             endpoint='/ttype/push')
         finally:
-            self._clear_ca()
+            self._clear()
             remove_token(self.serial_push)
             delete_policy("push_config")
-
-    def _clear_ca(self):
-        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
-                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
 
     def _enroll_push_for(self, user: User) -> None:
         """Enroll ``self.serial_push`` for *user* through the real two-step flow."""
@@ -1874,11 +1869,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         # Lock the owner up front.
-        db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                        lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for(user=user)
         try:
             self.assertTrue(is_user_locked(user))
             # The enrollment step2 must succeed despite the lock.
@@ -1889,7 +1882,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             token = get_tokens(serial=self.serial_push)[0]
             self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
         finally:
-            self._clear_ca()
+            self._clear()
             remove_token(self.serial_push)
             delete_policy("push_config")
 
@@ -1902,7 +1895,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         try:
             # Trigger a real challenge while unlocked, then read its nonce.
@@ -1913,9 +1906,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             nonce = challenge.challenge
             transaction_id = challenge.transaction_id
             # Now lock the owner and answer with a VALID signature.
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-            db.session.commit()
+            self._lock_user_for(user=user)
             self.assertTrue(is_user_locked(user))
             logs_before = db.session.query(AuthenticationLog).count()
             signature = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode(),
@@ -1944,7 +1935,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(user.login, entry["user"], entry)
             self.assertEqual(user.realm, entry["realm"], entry)
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -1959,7 +1950,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1978,9 +1969,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("detail", ordinary.json, ordinary.json)
 
             # A silent lock: the valid answer is refused and says no more than the invalid one did.
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-            db.session.commit()
+            self._lock_user_for(user=user)
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
@@ -1989,11 +1978,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("detail", silent.json, silent.json)
 
             # With wording configured, the smartphone is told what happened.
-            db.session.query(UserLockState).delete()
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600),
-                                            error_message="Locked. Try again in about {duration}."))
-            db.session.commit()
+            self._lock_user_for(user=user, error_message="Locked. Try again in about {duration}.")
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
@@ -2008,7 +1993,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # The answer was never processed, so the challenge is still open through all three attempts.
             self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -2029,7 +2014,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         def answer_that_locks(error_message):
             """Trigger a challenge, then answer it correctly with a policy that locks on that very answer."""
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             create_conditional_access_policy(
                 name="ca_push_lock", time_window_seconds=3600,
@@ -2061,114 +2046,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("Locked", (worded.json.get("detail") or {}).get("message", ""), worded.json)
             self.assertTrue(is_user_locked(user))
         finally:
-            self._clear_ca()
-            delete_challenges(serial=self.serial_push)
-            remove_token(self.serial_push)
-            delete_policy("push_config")
-
-    def test_18i_push_auth_answer_gated_by_an_ip_block(self):
-        """The pre-check refuses a push answer for every reason it refuses anything, not only a locked owner: the
-        source IP is the other restriction it reads, and the smartphone answering from a blocked address is turned
-        away in this endpoint's shape, before the signature is verified."""
-        self.setUp_user_realms()
-        user = User("selfservice", self.realm1)
-        set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
-                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
-        self._enroll_push_for(user)
-        blocked_ip = "203.0.113.9"
-        try:
-            # Trigger a real challenge from an address that is not blocked, then read its nonce.
-            with self.app.test_request_context('/validate/check', method='POST',
-                                               data={"user": "selfservice", "pass": "push_pin"}):
-                self.app.full_dispatch_request()
-            challenge = get_challenges(serial=self.serial_push)[0]
-            signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
-
-            # Block the address the smartphone will answer from, with wording so the refusal is identifiable.
-            db.session.add(BlockList(ip=blocked_ip, block_expires_at=utc_now() + datetime.timedelta(seconds=600),
-                                     error_message="Blocked. Try again in about {duration}."))
-            db.session.commit()
-            logs_before = db.session.query(AuthenticationLog).count()
-
-            with self.app.test_request_context('/ttype/push', method='POST',
-                                               data={"serial": self.serial_push,
-                                                     "signature": b32encode(signature)},
-                                               environ_base={"REMOTE_ADDR": blocked_ip}):
-                response = self.app.full_dispatch_request()
-            self.assertEqual(200, response.status_code, response)
-            # A valid signature that would have authenticated, refused before it was checked.
-            self.assertFalse(response.json["result"]["value"], response.json)
-            self.assertEqual("Blocked. Try again in about 10 minute(s).",
-                             response.json["detail"]["message"], response.json)
-            # Still this endpoint's shape: it renders with rid 1, so no rejection may grow an authentication verdict.
-            self.assertNotIn("authentication", response.json["result"], response.json)
-            # Classified as the block, replacing the approval row the answer would otherwise have written.
-            new_entries = db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()[logs_before:]
-            self.assertListEqual([str(AuthEventType.IP_BLOCKED)], [entry.event_type for entry in new_entries])
-            # And the answer was never processed, so the challenge is still open.
-            self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
-        finally:
-            self._clear_ca()
-            delete_challenges(serial=self.serial_push)
-            remove_token(self.serial_push)
-            delete_policy("push_config")
-
-    def test_18j_push_auth_answer_refused_by_a_deny_policy(self):
-        """The pre-check's third reason at this endpoint: a conditional-access DENY. It stores no state and is
-        decided per request from the events already recorded, so the smartphone's answer is refused by policy
-        rather than by a row - and in the same shape a lock or a block is refused in."""
-        from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
-        from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
-
-        self.setUp_user_realms()
-        user = User("selfservice", self.realm1)
-        set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
-                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
-        self._enroll_push_for(user)
-        try:
-            # Trigger a real challenge. This writes the one CHALLENGE_TRIGGERED row the policy below counts, so
-            # the threshold is reached by the time the answer arrives - but not yet while the trigger itself runs.
-            with self.app.test_request_context('/validate/check', method='POST',
-                                               data={"user": "selfservice", "pass": "push_pin"}):
-                self.app.full_dispatch_request()
-            challenge = get_challenges(serial=self.serial_push)[0]
-            signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
-            # No {duration} in the wording: a DENY leaves no restriction behind, so there is no remaining time to
-            # substitute and the tag would reach the smartphone as written.
-            create_conditional_access_policy(
-                name="ca_push_deny", time_window_seconds=3600,
-                counter_types_to_track=[str(AuthEventType.CHALLENGE_TRIGGERED)],
-                stages=[{"failure_threshold": 1, "error_message": "Access has been denied.",
-                         "actions": [{"action_type": str(ConditionalAccessAction.DENY)}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-            logs_before = db.session.query(AuthenticationLog).count()
-
-            with self.app.test_request_context('/ttype/push', method='POST',
-                                               data={"serial": self.serial_push,
-                                                     "signature": b32encode(signature)}):
-                response = self.app.full_dispatch_request()
-            self.assertEqual(200, response.status_code, response)
-            # The same valid signature that authenticates in test_18h, refused before it was checked.
-            self.assertFalse(response.json["result"]["value"], response.json)
-            self.assertEqual("Access has been denied.", response.json["detail"]["message"], response.json)
-            # Still this endpoint's shape: it renders with rid 1, so no rejection may grow an authentication verdict.
-            self.assertNotIn("authentication", response.json["result"], response.json)
-            # Classified as the denial, replacing the approval row the answer would otherwise have written.
-            new_entries = db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()[logs_before:]
-            self.assertListEqual([str(AuthEventType.ACCESS_DENIED)], [entry.event_type for entry in new_entries])
-            # A DENY persists nothing, so nothing is left behind for an admin to lift.
-            self.assertFalse(is_user_locked(user))
-            self.assertEqual(0, db.session.query(UserLockState).count())
-            # And the answer was never processed, so the challenge is still open.
-            self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
-        finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -2705,6 +2583,132 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         delete_policy("push_config")
         delete_policy("push_wait")
 
+    def test_24c_push_without_challenge_is_not_offered(self):
+        """
+        A push token that creates no challenge (no firebase_configuration) is neither offered to the client nor
+        logged as challenged; only the tokens that got a challenge are. The reply says that the push notification was
+        not sent, and does not ask the user to confirm it.
+        """
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        clear_log()
+        self._enroll_push_token()
+        assert_authentication_log([])
+        get_one_token(serial=self.serial_push).remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        hotp = init_token({"type": "hotp", "genkey": 1, "pin": "push_pin"}, user=user)
+        hotp_serial = hotp.get_serial()
+
+        clear_log()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+        detail = res.json["detail"]
+        self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertCountEqual(["please enter otp: ", str(NOT_SENT_CHALLENGE_TEXT)], detail["messages"])
+        self.assertNotIn(str(DEFAULT_CHALLENGE_TEXT), detail["message"])
+        self.assertListEqual([], get_challenges(serial=self.serial_push))
+        self.assertEqual(hotp_serial, self.find_most_recent_audit_entry(action="POST /validate/check")["serial"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={hotp_serial},
+                                        transaction_id=detail["transaction_id"], endpoint='/validate/check')
+
+        clear_log()
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": "selfservice"}, headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        detail = res.json["detail"]
+        self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertCountEqual(["please enter otp: ", str(NOT_SENT_CHALLENGE_TEXT)], detail["messages"])
+        self.assertListEqual([], get_challenges(serial=self.serial_push))
+        self.assertEqual(hotp_serial,
+                         self.find_most_recent_audit_entry(action="POST /validate/triggerchallenge")["serial"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={hotp_serial},
+                                        transaction_id=detail["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+        # Without another challenge token, the trigger is rejected instead of naming a challenge that does not exist
+        remove_token(hotp_serial)
+        clear_log()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertListEqual([], res.json["detail"]["multi_challenge"])
+        self.assertEqual(str(NOT_SENT_CHALLENGE_TEXT), res.json["detail"]["message"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/check')
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("challenge_response")
+
+    def test_24d_push_wait_without_challenge_fails_at_once(self):
+        """
+        With push_wait, a push token whose push gateway fails while polling is not allowed creates no challenge. The
+        request fails at once as CHALLENGE_TRIGGER_FAIL, and an answered challenge of another transaction of the token
+        does not answer it. The failcounter only increases with increase_failcounter_on_challenge.
+        """
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_smsgateway(self.firebase_config_name, 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        self.addCleanup(delete_smsgateway, self.firebase_config_name)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policy, "push_config")
+        self._enroll_push_token()
+        self.addCleanup(remove_token, self.serial_push)
+        # A wait that is long enough for the test to time out if the request waited
+        set_policy("push_wait", scope=SCOPE.AUTH,
+                   action=f"{PushAction.WAIT}=600,{PushAction.ALLOW_POLLING}={PushAllowPolling.DENY}")
+        self.addCleanup(delete_policy, "push_wait")
+        other_transaction_id = "44440000444400004444"
+        answered = Challenge(self.serial_push, transaction_id=other_transaction_id, data={"type": "push"})
+        answered.set_otp_status(True)
+        answered.save()
+
+        def check() -> Response:
+            with mock.patch("privacyidea.lib.tokens.pushtoken._submit_push_message", return_value=False):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "selfservice", "pass": "push_pin"}):
+                    response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response.json)
+            return response
+
+        clear_log()
+        res = check()
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                         res.json["detail"]["message"])
+        self.assertEqual(0, get_one_token(serial=self.serial_push).token.failcount)
+        self.assertListEqual([other_transaction_id],
+                             [challenge.transaction_id for challenge in get_challenges(serial=self.serial_push)])
+        # push_wait logs CHALLENGE_TRIGGERED before it waits, so the single row also shows that it did not wait
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/check')
+
+        set_policy("increase_failcounter", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "increase_failcounter")
+        res = check()
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertEqual(1, get_one_token(serial=self.serial_push).token.failcount)
+
     def test_25_push_answer_challenge_deleted_concurrently(self):
         """
         If the challenge row is deleted concurrently while the smartphone answer is being
@@ -2744,7 +2748,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.assertFalse(res.json["result"]["value"], res.json)
 
         # The answer was rolled back, so the audit log must not claim an outcome
-        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
+        self.assert_empty_string(self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
@@ -3263,3 +3267,96 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
+
+
+class PushGateTestCase(PushTokenTestMixin, _GateContract, _UserGateContract, _PostResponseGateContract,
+                       ConditionalAccessApiTestCase):
+    """
+    The gate contract over ``/ttype/push``, where a smartphone answers a challenge out of band.
+
+    The endpoint that can neither return a rejection response nor raise: the push token hands its result back as a
+    ``(bool, dict)`` pair that ``prepare_result`` renders with ``rid`` 1, so there is no ``result.authentication``
+    verdict - and an ordinary failed answer carries no ``detail`` at all, so a silent refusal carries none either.
+    The opposite of ``/validate/*``, where every failure has a detail and a silent rejection therefore needs the
+    generic message to have one too.
+
+    The answer carries no user parameter, so the owner the gate decides on is resolved from the serial; that is
+    what makes the user half of the contract apply here at all.
+    """
+
+    endpoint_path = "/ttype/push"
+    audit_route = "/ttype/<ttype>"
+    username = "selfservice"
+    counted_event_type = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
+    # One: the answer consumes the challenge, and staging a second one would need a second trigger that the
+    # restriction written by the first is already in force for.
+    requests_to_trip = 1
+    # Left at None although /ttype does fire handlers: the smartphone's answer carries no user parameter for one to
+    # rewrite, the owner being resolved from the serial. Worth knowing that the gate here could not re-check a
+    # rewrite anyway - the pre-check runs inside the token class, so nothing sets gate_check for the event
+    # decorator to call back into.
+    event_name = None
+
+    def _assert_own_answer(self, response: Response) -> None:
+        """The answer verified, so it is accepted: the counted event here is a success, and the request that trips
+        the policy has to be seen to be one rather than merely to have been sent."""
+        self._assert_succeeded(response)
+
+    def _trip(self) -> Response:
+        """The verified answer is what a policy counts here: an out-of-band approval, not a wrong credential -
+        there is no wrong signature a rate limit would be written against. The request that trips it therefore
+        *succeeds*, and is answered as the approval it was."""
+        return self._authenticate()
+
+
+    def setUp(self) -> None:
+        super().setUp()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policy, "push_config")
+        self.addCleanup(remove_token, self.serial_push)
+        self._enroll_push_token()
+        # The challenge is triggered here, before any restriction is in force: triggering it afterwards would be
+        # refused by the very gate under test, and the contract needs an answer that would otherwise verify.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.username, "pass": "push_pin"}):
+            self.app.full_dispatch_request()
+        challenge = get_challenges(serial=self.serial_push)[0]
+        self.addCleanup(delete_challenges, serial=self.serial_push)
+        self.signature = b32encode(self.smartphone_private_key.sign(
+            f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256()))
+        self.transaction_id = challenge.transaction_id
+        # Setting the scene wrote the CHALLENGE_TRIGGERED row; the contract asserts the whole log, and what it is
+        # about is the row the answer produces.
+        db.session.query(AuthenticationLogReason).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+    def _authenticate(self, remote_addr: str | None = None) -> Response:
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": self.signature},
+                                           **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _assert_succeeded(self, response: Response) -> None:
+        self.assertEqual(200, response.status_code, response)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+    def _assert_refused(self, response: Response, message: str | None = None) -> None:
+        self.assertEqual(200, response.status_code, response)
+        body = response.json
+        self.assertIs(False, body["result"]["value"], body)
+        # rid 1: a rejection must not grow a verdict field the endpoint never carries.
+        self.assertNotIn("authentication", body["result"], body)
+        if message is None:
+            # An ordinary failed answer here carries no detail at all, so neither may a silent refusal - the
+            # generic message would be exactly the tell.
+            self.assertNotIn("detail", body, body)
+        else:
+            self.assertEqual(message, body["detail"]["message"], body)
+        # Refused before the signature was checked, so the challenge is still open.
+        self.assertTrue(get_challenges(transaction_id=self.transaction_id))
+
+

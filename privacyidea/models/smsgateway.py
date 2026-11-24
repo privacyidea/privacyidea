@@ -85,7 +85,8 @@ class SMSGateway(MethodsMixin, db.Model):
             matches = (option.Type == option_type) if option_type == "header" else (
                     option.Type == "option" or not option.Type)
             if matches:
-                value = option.Value
+                # Oracle stores an empty option as NULL, the providers expect a string
+                value = option.Value or ""
                 if option.Encrypted and value:
                     decrypted = decryptPassword(value)
                     if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, WritableSignal } from "@angular/core";
+import { Component, input, Signal, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 
@@ -24,6 +24,8 @@ export interface EditableElement<V = unknown> {
   keyMap: { key: string };
   isEditing: WritableSignal<boolean>;
   value: V;
+  /** False while the edited value must not be saved; the save button is disabled then. Absent means saveable. */
+  valid?: Signal<boolean>;
 }
 
 @Component({

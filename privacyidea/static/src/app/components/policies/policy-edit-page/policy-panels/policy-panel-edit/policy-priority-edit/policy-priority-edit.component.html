@@ -18,12 +18,20 @@
 -->
 
 <div class="action-priority-container">
-  <mat-form-field class="input-width-s">
+  <mat-form-field>
     <mat-label i18n="@@policy.priority">Priority</mat-label>
     <input
       matInput
       type="number"
-      [value]="priority()"
-      (input)="priority.set(+$any($event.target).value)" />
+      [formField]="priorityField" />
+    @if (hasError(priorityField, ERR.required) && !hasError(priorityField, ERR.parse)) {
+      <mat-error i18n="@@policy.priorityRequired">Priority is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(priorityField, ERR.parse)) {
+      <mat-error i18n="@@policy.priorityNotNumber">Enter a <strong>valid number</strong>.</mat-error>
+    }
+    @if (hasError(priorityField, ERR.min)) {
+      <mat-error i18n="@@policy.priorityMin">Priority must be at least <strong>1</strong>.</mat-error>
+    }
   </mat-form-field>
 </div>
