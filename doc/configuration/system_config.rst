@@ -112,7 +112,7 @@ provides a wrong OTP value. AutoResync works like this:
    step directly after the remembered one. privacyIDEA uses at least three time
    steps as **Auto resync timeout** for TOTP tokens. The token shows each value
    for one time step, so the user needs up to two time steps to read both
-   values. The third time step leaves time for the requests. Day password
+   values. The third time step leaves time for the requests. Day password and TAN
    tokens are not resynchronized automatically.
 
 
