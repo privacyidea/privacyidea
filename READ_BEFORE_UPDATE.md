@@ -41,6 +41,12 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **Email and SMS tokens are no longer resynchronized automatically.** privacyIDEA sends every value itself and moves
+  the counter on for each, so the counter of these tokens can not fall behind. A value that matches only in the sync
+  window is now refused, and the challenge no longer asks the user to resync the token (*resync_via_multichallenge*).
+  The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
+  successful authentication.
+
 ## Update from 3.14 to 3.14.1
 
 If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)
