@@ -34,6 +34,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { Subject, throwError } from "rxjs";
 
 const response = (detail: Record<string, unknown>) =>
   ({ result: { status: true }, detail: { serial: "OATH0001", ...detail } }) as unknown as EnrollmentResponse;
@@ -208,6 +209,58 @@ describe("EnrollmentFlow", () => {
     expect(dialogRef().close).toHaveBeenCalled();
     expect(options.onCancelled).toHaveBeenCalledTimes(1);
     expect(options.onIncomplete).not.toHaveBeenCalled();
+  });
+
+  describe("while the token is being deleted", () => {
+    const pushFlow = (): EnrollmentFlow => {
+      const first = response({ rollout_state: "clientwait" });
+      const flow = startFlow(first, { kind: "push" });
+      flow.continue(first);
+      return flow;
+    };
+
+    it("drops a step result once the token is gone", () => {
+      const flow = pushFlow();
+      const deletion = new Subject<void>();
+      flow.deleteToken(deletion).subscribe();
+
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+      deletion.next();
+      deletion.complete();
+      // A poll that was already running when the deletion finished.
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      flow.finishStep(ENROLLMENT_CANCELLED);
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+      expect(options.onCompleted).not.toHaveBeenCalled();
+      expect(options.onCancelled).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows the success step if the deletion fails after the token was registered", () => {
+      const flow = pushFlow();
+      const deletion = new Subject<void>();
+      flow.deleteToken(deletion).subscribe({ error: () => undefined });
+
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+      deletion.error(new Error("denied"));
+
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      expect(options.onCompleted).toHaveBeenCalledTimes(1);
+      expect(options.onCancelled).not.toHaveBeenCalled();
+    });
+
+    it("stays at the step if the deletion fails without a result and continues with the next one", () => {
+      const flow = pushFlow();
+      flow.deleteToken(throwError(() => new Error("denied"))).subscribe({ error: () => undefined });
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentPushComponent);
+      expect(dialogRef().close).not.toHaveBeenCalled();
+
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+    });
   });
 
   it("reports a dialog closed before the enrollment finished and resumes at the same step", () => {

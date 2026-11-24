@@ -31,7 +31,7 @@ import {
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
-import { Observable, Subject } from "rxjs";
+import { defer, Observable, Subject, tap } from "rxjs";
 
 export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "success";
 
@@ -105,6 +105,10 @@ export class EnrollmentFlow {
 
   private dialogRef: MatDialogRef<unknown> | null = null;
   private cancelled = false;
+  // Set from the start of a deletion until the dialog closes, or until the deletion fails.
+  private deleting = false;
+  // A step result that arrived while the token was being deleted.
+  private heldResult: EnrollmentStepResult | undefined = undefined;
 
   constructor(private readonly options: EnrollmentFlowOptions) {}
 
@@ -122,6 +126,7 @@ export class EnrollmentFlow {
     this.firstStep = firstStep;
     this.reopened = false;
     this.cancelled = false;
+    this.stopHolding();
     this.dialogData.set({
       ...data,
       onEnrollmentResponseChange: (response) => this.setResponse(response)
@@ -176,6 +181,10 @@ export class EnrollmentFlow {
    *   the dialog with the enrollment unfinished.
    */
   finishStep(result: EnrollmentStepResult): void {
+    if (this.deleting && result !== ENROLLMENT_CANCELLED) {
+      this.heldResult = result;
+      return;
+    }
     if (result === ENROLLMENT_CANCELLED) {
       this.cancelled = true;
       this.close();
@@ -204,6 +213,33 @@ export class EnrollmentFlow {
   // Closes the dialog without asking. Before the success step, the enrollment stays unfinished.
   close(): void {
     this.dialogRef?.close();
+  }
+
+  /**
+   * Deletes the token of the running enrollment. A step result that arrives meanwhile, e.g. a push token registered
+   * by the app, is held back: dropped once the token is gone, and applied if the deletion fails.
+   *
+   * @param deletion The request that deletes the token.
+   * @returns The deletion, failing as it does.
+   */
+  deleteToken<T>(deletion: Observable<T>): Observable<T> {
+    return defer(() => {
+      this.deleting = true;
+      return deletion.pipe(tap({ error: () => this.applyHeldResult() }));
+    });
+  }
+
+  private applyHeldResult(): void {
+    const held = this.heldResult;
+    this.stopHolding();
+    if (held !== undefined) {
+      this.finishStep(held);
+    }
+  }
+
+  private stopHolding(): void {
+    this.deleting = false;
+    this.heldResult = undefined;
   }
 
   private verify(response: EnrollmentResponse): void {
@@ -242,6 +278,7 @@ export class EnrollmentFlow {
         return;
       }
       this.dialogRef = null;
+      this.stopHolding();
       this.stepFinishedSubject.next();
       this.options.onStepClosed?.();
       if (this.cancelled) {

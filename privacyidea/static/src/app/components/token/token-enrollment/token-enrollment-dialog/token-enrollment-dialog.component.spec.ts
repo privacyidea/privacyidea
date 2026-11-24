@@ -229,6 +229,23 @@ describe("TokenEnrollmentDialogComponent", () => {
       expect(options.onIncomplete).not.toHaveBeenCalled();
     });
 
+    it("does not show the success step when the step finishes while the token is being deleted", () => {
+      const deletion = new Subject<void>();
+      tokenService.cancelEnrollment.mockReturnValue(deletion);
+      answer("discard");
+      harness.footerButton("Close")?.click();
+
+      harness.flow.finishStep(enrolled());
+      harness.fixture.detectChanges();
+      expect(harness.step()).toBeInstanceOf(TokenVerifyEnrollmentComponent);
+      deletion.next();
+      deletion.complete();
+
+      expect(harness.dialogRef.close).toHaveBeenCalled();
+      expect(options.onCancelled).toHaveBeenCalled();
+      expect(harness.flow.step()).toBe("verify");
+    });
+
     it("lets Escape and a backdrop click ask the same way", () => {
       answer(undefined);
       expect(harness.dialogRef.disableClose).toBe(true);

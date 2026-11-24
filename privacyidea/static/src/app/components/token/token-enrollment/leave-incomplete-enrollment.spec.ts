@@ -19,14 +19,13 @@
 
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockTokenService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { lastValueFrom, NEVER, of, Subject, throwError } from "rxjs";
+import { lastValueFrom, NEVER, Observable, of, Subject, throwError } from "rxjs";
 import { leaveIncompleteEnrollment } from "./leave-incomplete-enrollment";
 
 describe("leaveIncompleteEnrollment", () => {
   let dialogService: MockDialogService;
-  let tokenService: MockTokenService;
+  let deleteToken: jest.Mock<Observable<unknown>, []>;
 
   const answer = (result: SaveAndExitDialogResult | undefined) => {
     const dialogRef = new MockMatDialogRef();
@@ -34,11 +33,11 @@ describe("leaveIncompleteEnrollment", () => {
     dialogService.openDialog.mockReturnValue(dialogRef);
   };
 
-  const leave = () => lastValueFrom(leaveIncompleteEnrollment(dialogService, tokenService, "HOTP0001", NEVER));
+  const leave = () => lastValueFrom(leaveIncompleteEnrollment(dialogService, deleteToken, NEVER));
 
   beforeEach(() => {
     dialogService = new MockDialogService();
-    tokenService = new MockTokenService();
+    deleteToken = jest.fn(() => of(undefined));
   });
 
   it("offers to keep or delete the token", async () => {
@@ -60,47 +59,45 @@ describe("leaveIncompleteEnrollment", () => {
     answer("save-exit");
 
     expect(await leave()).toBe("keep");
-    expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    expect(deleteToken).not.toHaveBeenCalled();
   });
 
   it("deletes the token", async () => {
     answer("discard");
 
     expect(await leave()).toBe("deleted");
-    expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("HOTP0001");
+    expect(deleteToken).toHaveBeenCalledTimes(1);
   });
 
   it("stays when the dialog is cancelled", async () => {
     answer(undefined);
 
     expect(await leave()).toBe("stay");
-    expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    expect(deleteToken).not.toHaveBeenCalled();
   });
 
   it("closes the question and stays when the step closes by itself", async () => {
     const stepClosed = new Subject<void>();
-    const result = lastValueFrom(leaveIncompleteEnrollment(dialogService, tokenService, "HOTP0001", stepClosed));
+    const result = lastValueFrom(leaveIncompleteEnrollment(dialogService, deleteToken, stepClosed));
     const questionRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
 
     stepClosed.next();
 
     expect(questionRef.close).toHaveBeenCalled();
     expect(await result).toBe("stay");
-    expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    expect(deleteToken).not.toHaveBeenCalled();
   });
 
   it("stays when the token cannot be deleted", async () => {
     answer("discard");
-    tokenService.cancelEnrollment.mockReturnValue(throwError(() => new Error("denied")));
+    deleteToken.mockReturnValue(throwError(() => new Error("denied")));
 
     expect(await leave()).toBe("stay");
   });
 
   it("adds what deleting means in the current step to the question", async () => {
     answer(undefined);
-    await lastValueFrom(
-      leaveIncompleteEnrollment(dialogService, tokenService, "PIPU0001", NEVER, "Scanned codes stop working.")
-    );
+    await lastValueFrom(leaveIncompleteEnrollment(dialogService, deleteToken, NEVER, "Scanned codes stop working."));
 
     const message = dialogService.openDialog.mock.calls[0][0].data.message as string;
     expect(message).toMatch(/^The enrollment of this token is not complete\..* Scanned codes stop working\.$/);

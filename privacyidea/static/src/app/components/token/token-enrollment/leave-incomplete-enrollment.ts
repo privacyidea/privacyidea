@@ -22,7 +22,6 @@ import {
   SaveAndExitDialogResult
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogServiceInterface } from "@services/dialog/dialog.service";
-import { TokenServiceInterface } from "@services/token/token.service";
 import { catchError, map, Observable, of, switchMap, takeUntil } from "rxjs";
 
 export type LeaveIncompleteEnrollmentResult = "stay" | "keep" | "deleted";
@@ -33,16 +32,14 @@ export type LeaveIncompleteEnrollmentResult = "stay" | "keep" | "deleted";
  * The question closes with "stay" once the step closes by itself, e.g. when the push token was registered meanwhile.
  *
  * @param dialogService Opens the question.
- * @param tokenService Deletes the token.
- * @param serial The serial of the incomplete token.
+ * @param deleteToken Deletes the incomplete token once the user chose to.
  * @param stepClosed Emits when the step is left without the question.
  * @param deleteWarning Added to the question, what deleting means in this step.
  * @returns What the user chose, once it is done.
  */
 export function leaveIncompleteEnrollment(
   dialogService: DialogServiceInterface,
-  tokenService: TokenServiceInterface,
-  serial: string,
+  deleteToken: () => Observable<unknown>,
   stepClosed: Observable<unknown>,
   deleteWarning: string | null = null
 ): Observable<LeaveIncompleteEnrollmentResult> {
@@ -68,7 +65,7 @@ export function leaveIncompleteEnrollment(
       if (result !== "discard") {
         return of("stay");
       }
-      return tokenService.cancelEnrollment(serial).pipe(
+      return deleteToken().pipe(
         map((): LeaveIncompleteEnrollmentResult => "deleted"),
         catchError(() => of<LeaveIncompleteEnrollmentResult>("stay"))
       );

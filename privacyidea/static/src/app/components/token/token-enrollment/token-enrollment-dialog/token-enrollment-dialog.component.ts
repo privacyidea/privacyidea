@@ -143,8 +143,7 @@ export class TokenEnrollmentDialogComponent
     }
     return leaveIncompleteEnrollment(
       this.dialogService,
-      this.tokenService,
-      serial,
+      () => this.flow.deleteToken(this.tokenService.cancelEnrollment(serial)),
       this.flow.stepFinished,
       step?.deleteWarning
     ).pipe(
