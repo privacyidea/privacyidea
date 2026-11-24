@@ -17,20 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input } from "@angular/core";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
+import { signal } from "@angular/core";
 
-@Component({
-  selector: "app-registration-code",
-  imports: [MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle],
-  templateUrl: "./registration-code.component.html",
-  styleUrl: "./registration-code.component.scss"
-})
-export class RegistrationCodeComponent {
-  registrationCode = input.required<string>();
+/**
+ * Remembers once-only enrollment data by value. A component that pages between tokens keeps what was saved for each
+ * of them, and a regenerated value counts as unsaved again.
+ */
+export class SavedValues {
+  private readonly values = signal<ReadonlySet<string>>(new Set());
+
+  has(value: string): boolean {
+    return this.values().has(value);
+  }
+
+  add(value: string): void {
+    this.values.update((values) => new Set(values).add(value));
+  }
 }

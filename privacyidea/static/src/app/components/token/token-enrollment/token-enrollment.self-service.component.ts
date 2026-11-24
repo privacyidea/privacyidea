@@ -26,13 +26,11 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption } from "@angular/material/select";
-import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerCreateDialogData } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import {
   CUSTOM_DATE_FORMATS,
   CustomDateAdapter,
@@ -100,23 +98,5 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
       userRealm: this.authService.realm() || undefined,
       checkUserAssignment: true
     };
-  }
-
-  protected override openLastStepDialog(response: EnrollmentResponse | null): void {
-    if (!response) {
-      this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
-      return;
-    }
-
-    this.enrolledDialogData.set({
-      ...this.enrolledDialogData()!,
-      response: response
-    });
-
-    this.dialogService.openDialog({
-      component: TokenEnrollmentLastStepDialogSelfServiceComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
-    });
   }
 }

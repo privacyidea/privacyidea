@@ -27,7 +27,7 @@
       width="300px" />
   }
   <div class="flex-column gap-16 enrollment-data__details">
-    @if (url() && showQRCode()) {
+    @if (url() && showQRCode() && !compact()) {
       <app-qr-code-text
         [tokenType]="tokenType()"
         [url]="url()" />
@@ -42,11 +42,12 @@
         {{ regenerateButtonText() }}
       </button>
     }
-    @if (enrolledData()["password"]) {
-      <p i18n="@@token.yourPassword"
-        >Your Password: <strong>{{ enrolledData()["password"] }}</strong
-        >.</p
-      >
+    @if (password()) {
+      <app-enrollment-secret
+        (saved)="onPasswordSaved()"
+        [hint]="passwordGenerated() && !compact() ? passwordHint : ''"
+        [label]="passwordLabel"
+        [value]="password()" />
     }
     @if (enrolledData().otpkey?.value && !enrolledData()["otps"] && showQRCode()) {
       <app-otp-key
@@ -56,20 +57,35 @@
     @if (tokenType() === "tiqr") {
       <app-tiqr-enroll-url [url]="enrolledData()['tiqrenroll']?.value ?? ''" />
     }
-    @if (tokenType() === "registration") {
-      <app-registration-code [registrationCode]="enrolledData()['registrationcode'] ?? ''" />
+    @if (registrationCode()) {
+      <app-enrollment-secret
+        (saved)="onRegistrationCodeSaved()"
+        [hint]="compact() ? '' : registrationCodeHint"
+        [label]="registrationCodeLabel"
+        [value]="registrationCode()" />
     }
     @if (enrolledData()["otps"]) {
-      <app-otp-values [otpValues]="enrolledData()['otps'] ?? []" />
+      @if (!compact()) {
+        <p
+          class="dialog-prose"
+          i18n="@@token.otpValuesOnce"
+          >Print the OTP values now. They are shown here only once and cannot be retrieved again.</p
+        >
+      }
+      <app-otp-values
+        (printed)="onOtpValuesPrinted()"
+        [otpValues]="otpValues()" />
     }
     @if (isCertificate()) {
       <app-certificate-data
-        (closeBlockedReasonChange)="closeBlockedReasonChange.emit($event)"
+        (unsavedDataChange)="onCertificateUnsavedChange($event)"
+        (closeConfirmationChange)="onCertificateCloseConfirmationChange($event)"
         [certificate]="certificate()"
         [fromEnrollment]="true"
         [pkcs12]="pkcs12()"
         [pkcs12Password]="pkcs12Password()"
         [rolloutState]="enrolledData().rollout_state ?? ''"
+        [saveHint]="!compact()"
         [serial]="serial()" />
     }
   </div>

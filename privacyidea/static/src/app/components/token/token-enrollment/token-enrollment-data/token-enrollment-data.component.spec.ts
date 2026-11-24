@@ -121,6 +121,20 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component.showRegenerateButton()).toBe(true);
   });
 
+  it("should leave out the QR code text and the regenerate button in the compact layout", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "enrolled",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.componentRef.setInput("compact", true);
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(false);
+    expect(fixture.nativeElement.querySelector("app-qr-code-text")).toBeNull();
+    expect(fixture.nativeElement.querySelector("img.enrollment-data__qr")).not.toBeNull();
+  });
+
   it("should adopt regenerate button text to token type", () => {
     fixture.componentRef.setInput("tokenType", "spass");
     fixture.detectChanges();
@@ -386,6 +400,158 @@ describe("TokenEnrollmentDataComponent", () => {
     fixture.detectChanges();
     expect(component["qrCode"]()).toBe("push-qr-img");
     expect(component["url"]()).toBe("push://enroll-url");
+  });
+
+  describe("once-only data", () => {
+    let unsaved: string[];
+    let confirmations: string[];
+
+    const show = (tokenType: string, detail: Record<string, unknown>, data: Record<string, unknown> = {}) => {
+      fixture.componentRef.setInput("tokenType", tokenType);
+      fixture.componentRef.setInput("enrollmentParameters", {
+        data: { type: tokenType, ...data },
+        mapper: { map: jest.fn() }
+      });
+      fixture.componentRef.setInput("enrolledInputData", { serial: "TOK0001", ...detail });
+      fixture.detectChanges();
+    };
+    const text = () => fixture.nativeElement.textContent as string;
+    const revealSecret = () => {
+      fixture.nativeElement.querySelector(".enrollment-secret__toggle").click();
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => {
+      unsaved = [];
+      confirmations = [];
+      component.unsavedDataChange.subscribe((value) => unsaved.push(value));
+      component.closeConfirmationChange.subscribe((value) => confirmations.push(value));
+    });
+
+    it("shows the registration code masked and asks until it is revealed or copied", () => {
+      show("registration", { registrationcode: "12345808124095097608" });
+
+      expect(fixture.nativeElement.querySelector("app-enrollment-secret code").textContent).not.toContain("1234");
+      expect(text()).toContain("Save the registration code now.");
+      expect(unsaved.at(-1)).toBe("Show or copy the registration code.");
+      expect(confirmations.at(-1)).toContain("The registration code is shown only once.");
+
+      revealSecret();
+
+      expect(unsaved.at(-1)).toBe("");
+      expect(confirmations.at(-1)).toBe("");
+    });
+
+    it("asks for a generated password", () => {
+      show("applspec", { password: "generated-pw" }, { generateOnServer: true });
+
+      expect(text()).toContain("Save the password now.");
+      expect(confirmations.at(-1)).toContain("The password is shown only once.");
+
+      revealSecret();
+
+      expect(confirmations.at(-1)).toBe("");
+    });
+
+    it("shows a typed-in password without asking to save it", () => {
+      show("applspec", { password: "typed-pw" }, { generateOnServer: false });
+
+      expect(fixture.nativeElement.querySelector("app-enrollment-secret")).toBeTruthy();
+      expect(text()).not.toContain("Save the password now.");
+      expect(unsaved.filter(Boolean)).toEqual([]);
+      expect(confirmations.filter(Boolean)).toEqual([]);
+    });
+
+    it("asks until the OTP values have been printed", () => {
+      show("paper", { otps: { 0: "111111", 1: "222222" } });
+
+      expect(text()).toContain("Print the OTP values now.");
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+      expect(confirmations.at(-1)).toContain("The OTP values are shown only once.");
+
+      const printWindow = {
+        document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
+        focus: jest.fn(),
+        print: jest.fn(),
+        close: jest.fn()
+      };
+      jest.spyOn(window, "open").mockReturnValue(printWindow as unknown as Window);
+      fixture.nativeElement.querySelector("app-otp-values button").click();
+      fixture.detectChanges();
+
+      expect(unsaved.at(-1)).toBe("");
+      expect(confirmations.at(-1)).toBe("");
+    });
+
+    it("asks again for regenerated OTP values", () => {
+      show("tan", { otps: { 0: "111111" } });
+      component.onOtpValuesPrinted();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("");
+
+      component.enrolledData.set({ serial: "TOK0001", otps: { 0: "333333" } } as never);
+      fixture.detectChanges();
+
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+    });
+
+    it("asks while the printed values are being regenerated and again for the new ones", () => {
+      const pending = new Subject<EnrollmentResponse>();
+      mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+      show("paper", { otps: { 0: "111111" } });
+      component.onOtpValuesPrinted();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("");
+
+      component.regenerateQRCode();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+
+      pending.next({
+        type: "paper",
+        result: { status: true },
+        detail: { type: "paper", serial: "TOK0001", otps: { 0: "999999" } }
+      } as unknown as EnrollmentResponse);
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+    });
+
+    it("counts the printed values again when regenerating fails", () => {
+      const pending = new Subject<EnrollmentResponse>();
+      mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+      show("paper", { otps: { 0: "111111" } });
+      component.onOtpValuesPrinted();
+      component.regenerateQRCode();
+      fixture.detectChanges();
+      expect(unsaved.at(-1)).toBe("Print the OTP values.");
+
+      pending.error(new Error("failed"));
+      fixture.detectChanges();
+
+      expect(unsaved.at(-1)).toBe("");
+    });
+
+    it("leaves out the hints in the compact layout but still asks", () => {
+      fixture.componentRef.setInput("compact", true);
+      show("registration", { registrationcode: "12345808124095097608" });
+
+      expect(text()).not.toContain("Save the registration code now.");
+      expect(unsaved.at(-1)).toBe("Show or copy the registration code.");
+    });
+
+    it("passes the certificate's question about an unsaved passphrase on", () => {
+      show("certificate", { pkcs12: "MIIB", pkcs12_password: "generated-passphrase" });
+
+      expect(confirmations.at(-1)).toContain("The passphrase of the PKCS#12 container is shown only once.");
+    });
+
+    it("joins the certificate's open steps with its own", () => {
+      show("registration", { registrationcode: "12345808124095097608" });
+      component.onCertificateUnsavedChange("Download the certificate.");
+      fixture.detectChanges();
+
+      expect(unsaved.at(-1)).toBe("Download the certificate. Show or copy the registration code.");
+    });
   });
 
   it("passes the axe accessibility checks", async () => {

@@ -28,9 +28,9 @@ import {
   OnDestroy,
   OnInit,
   signal,
-  viewChild,
-  WritableSignal
+  viewChild
 } from "@angular/core";
+import { ComponentType } from "@angular/cdk/overlay";
 import { FieldTree, form, FormField, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
@@ -61,10 +61,10 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -90,7 +90,6 @@ import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-se
 import {
   CUSTOM_TOOLTIP_OPTIONS,
   ENROLLMENT_CANCELLED,
-  NO_DISMISS_LAST_STEP_TOKEN_TYPES,
   NO_PIN_TOKEN_TYPES,
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
@@ -244,6 +243,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private inputsResetPending = false;
   // False keeps the inputs of the enrolled token, see the wizard.
   protected readonly resetsInputsAfterEnrollment: boolean = true;
+  protected readonly lastStepDialogComponent: ComponentType<AbstractDialogComponent<TokenEnrollmentDialogData>> =
+    TokenEnrollmentLastStepDialogComponent;
 
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -311,10 +312,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       !!this.enrollmentBlockedReason()
   );
 
-  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
   canReopenEnrollmentDialog = computed(
     () => !!this.enrollSwitch()?.currentStrategy()?.reopenDialog() || !!this.enrolledDialogData()
   );
@@ -465,9 +462,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
       rollover: false,
       showEnrollData: strategy.showEnrollDataInLastStep,
+      wizard: this.wizard,
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
     this.inputsResetPending = true;
+    // The inputs belong to the enrolled token now, so they are no unsaved changes, also not while the first step of
+    // push, WebAuthn or passkey is open. The input reset registers the guard again for the next token.
+    this.pendingChangesService.clearAllRegistrations();
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
@@ -479,9 +480,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       }
       enrollmentResponse = stepResult;
     }
-    // The inputs of the enrolled token are not unsaved changes any more. The input reset registers
-    // the guard again for the next token.
-    this.pendingChangesService.clearAllRegistrations();
     if (!enrollmentResponse) {
       // The step stopped before the enrollment finished, for example because the user closed the push
       // QR dialog in clientwait. The token exists, and the reopen button finishes its enrollment later.
@@ -662,10 +660,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       });
   }
 
-  protected lastStepDialogIsDismissable(): boolean {
-    return !NO_DISMISS_LAST_STEP_TOKEN_TYPES.includes(this.enrolledDialogData()?.tokenType ?? "");
-  }
-
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
       this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
@@ -678,9 +672,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     });
 
     this.dialogService.openDialog({
-      component: TokenEnrollmentLastStepDialogComponent,
-      data: this.enrolledDialogData(),
-      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
+      component: this.lastStepDialogComponent,
+      data: this.enrolledDialogData()
     });
   }
 

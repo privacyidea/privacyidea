@@ -18,50 +18,32 @@
  **/
 
 import { Component, computed, inject, signal, Signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
-import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { map, Observable, of } from "rxjs";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
-  standalone: true,
-  imports: [
-    DialogWrapperComponent,
-    MatIconModule,
-    MatButtonModule,
-    TokenEnrollmentDataComponent,
-    TokenEnrolledTextComponent
-  ]
+  imports: [DialogWrapperComponent, TokenEnrollmentDataComponent, TokenEnrolledTextComponent]
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly Object = Object;
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly serial = this.data.response?.detail?.serial ?? "";
   protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
-  protected readonly qrCode =
-    this.data.response?.detail.googleurl?.img ??
-    this.data.response?.detail.motpurl?.img ??
-    this.data.response?.detail.otpkey?.img ??
-    this.data.response?.detail.tiqrenroll?.img ??
-    "";
-  protected readonly url =
-    this.data.response?.detail?.googleurl?.value ??
-    this.data.response?.detail?.motpurl?.value ??
-    this.data.response?.detail?.otpkey?.value ??
-    this.data.response?.detail?.tiqrenroll?.value ??
-    "";
   protected readonly rollover = this.data.rollover ?? false;
 
-  protected readonly closeBlockedReason = signal("");
+  // What closing would leave unsaved, so the dialog asks first; empty closes right away.
+  private readonly closeConfirmation = signal("");
+  // The links in the header ask the same way as Close.
+  protected readonly confirmLeave = () => this.confirmClose();
 
   title: Signal<string> = computed(() =>
     this.rollover
@@ -74,14 +56,43 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
+    this.dialogRef.disableClose = true;
+    this.dialogRef.backdropClick().subscribe(() => this.attemptClose());
+    this.dialogRef.keydownEvents().subscribe((event) => {
+      if (event.key === "Escape") {
+        this.attemptClose();
+      }
+    });
   }
 
-  showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
+  protected attemptClose(): void {
+    this.confirmClose().subscribe((confirmed) => {
+      if (confirmed) {
+        this.dialogRef.close();
+      }
+    });
   }
 
-  onCloseBlockedReasonChange(reason: string): void {
-    this.closeBlockedReason.set(reason);
+  protected confirmClose(confirmLabel = $localize`:@@common.close:Close`): Observable<boolean> {
+    const message = this.closeConfirmation();
+    if (!message) {
+      return of(true);
+    }
+    return this.dialogService
+      .openDialog({
+        component: MessageConfirmationDialogComponent,
+        data: {
+          title: $localize`:@@token.enrollmentDataNotSaved:Enrollment Data Not Saved`,
+          message,
+          confirmAction: { label: confirmLabel, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .pipe(map((confirmed) => !!confirmed));
+  }
+
+  onCloseConfirmationChange(message: string): void {
+    this.closeConfirmation.set(message);
   }
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {
@@ -89,11 +100,6 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   }
 
   onSwitchRoute() {
-    // Following a link closes the dialog, so it has to respect the same block as the close
-    // button: the enrollment data is shown exactly once and would be lost with the dialog.
-    if (this.closeBlockedReason()) {
-      return;
-    }
     this.dialogRef.close();
   }
 }

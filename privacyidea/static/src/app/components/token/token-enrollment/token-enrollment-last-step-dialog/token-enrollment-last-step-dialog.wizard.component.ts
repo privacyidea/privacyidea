@@ -16,134 +16,70 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AsyncPipe } from "@angular/common";
-import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { DomSanitizer } from "@angular/platform-browser";
-import { Router, RouterLink } from "@angular/router";
+
+import { Component, computed, inject } from "@angular/core";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { EnrollmentCustomizationFrameComponent } from "@components/token/token-enrollment/enrollment-customization-frame/enrollment-customization-frame.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
-import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
-import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
-import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
-import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
-import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
-import { environment } from "@env/environment";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { StringUtils } from "@utils/string.utils";
-import { map } from "rxjs";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+
+type WizardLastStepAction = "create_container" | "logout";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
+  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
   imports: [
-    AsyncPipe,
-    CertificateDataComponent,
-    OtpKeyComponent,
-    TiqrEnrollUrlComponent,
-    RegistrationCodeComponent,
-    OtpValuesComponent,
     DialogWrapperComponent,
-    MatButtonModule,
+    EnrollmentCustomizationFrameComponent,
+    TokenEnrollmentDataComponent,
     TokenEnrolledTextComponent
-  ],
-  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html"
+  ]
 })
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
-  protected override readonly Object = Object;
-  private readonly http = inject(HttpClient);
-  private readonly sanitizer = inject(DomSanitizer);
-  private readonly router = inject(Router);
-  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly isCertificate = this.data.tokenType === "certificate";
-  protected readonly certificate = (this.data.response?.detail?.["certificate"] as string) ?? "";
-  protected readonly pkcs12 = (this.data.response?.detail?.["pkcs12"] as string) ?? "";
-  protected readonly pkcs12Password = (this.data.response?.detail?.["pkcs12_password"] as string) ?? "";
-  protected readonly rolloutState = this.data.response?.detail?.rollout_state ?? "";
+  private readonly router = inject(Router);
 
-  tagData: Signal<Record<string, string>> = computed(() => ({
-    serial: this.serial,
-    qrCode: this.qrCode,
-    url: this.url
-  }));
-
-  protected readonly actions = computed(() => {
-    // Creating a container closes the dialog and logging out navigates away, so both discard
-    // whatever the dialog still shows for the last time.
-    const blocked = !!this.closeBlockedReason();
-    const actions: DialogAction<"create_container" | "logout">[] = [];
+  // The only ways on: the dialog cannot be closed, and Logout tells the user that they are done.
+  protected readonly actions = computed<DialogAction<WizardLastStepAction>[]>(() => {
+    const actions: DialogAction<WizardLastStepAction>[] = [];
     if (this.authService.containerWizard().enabled) {
       actions.push({
         type: "auxiliary",
         label: $localize`:@@common.createContainer:Create Container`,
         value: "create_container",
-        className: "button-width-m",
-        disabled: blocked
+        className: "button-width-m"
       });
     }
     actions.push({
       type: "auxiliary",
       label: $localize`:@@common.logout:Logout`,
       value: "logout",
-      primary: true,
-      disabled: blocked
+      primary: true
     });
     return actions;
   });
 
-  // TODO: Get custom path from pi.cfg
-  customizationPath = "/static/public/customize/";
-  readonly postTopHtml$ = this.http
-    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.post.top.html", {
-      responseType: "text"
-    })
-    .pipe(
-      map((raw) => ({
-        hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData()))
-      }))
-    );
-  readonly postBottomHtml$ = this.http
-    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.post.bottom.html", {
-      responseType: "text"
-    })
-    .pipe(
-      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
-    );
-
-  constructor() {
-    super();
+  protected override attemptClose(): void {
+    // Escape and a backdrop click do nothing: only the actions leave the wizard.
   }
 
-  protected readonly RouterLink = RouterLink;
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
-
-  onAction(value: "create_container" | "logout"): void {
-    switch (value) {
-      case "create_container":
-        this.createContainer();
-        break;
-      case "logout":
-        this.logout();
-        break;
-    }
-  }
-
-  private createContainer(): void {
-    this.dialogRef.close();
-    this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
-  }
-
-  logout(): void {
-    this.authService.logout();
+  onAction(action: WizardLastStepAction): void {
+    const label = this.actions().find((candidate) => candidate.value === action)?.label;
+    this.confirmClose(label).subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      if (action === "create_container") {
+        this.dialogRef.close();
+        this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
+        return;
+      }
+      this.authService.logout();
+    });
   }
 }
