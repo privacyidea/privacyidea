@@ -47,6 +47,12 @@
   The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
   successful authentication.
 
+* **The AutoResync of TOTP tokens accepts skipped codes.** The second OTP value no longer has to be the next one. It may
+  be later by as many time steps as the time window of the token and the *Auto resync timeout* allow, whichever is
+  smaller, six with the default time window of 180 seconds and a time step of 30 seconds. A TOTP token with a short
+  time window therefore needs the next value, as before. An OTP value of a TOTP token that was used already no longer
+  starts or completes an AutoResync.
+
 ## Update from 3.14 to 3.14.1
 
 If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)

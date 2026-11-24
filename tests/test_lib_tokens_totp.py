@@ -602,14 +602,15 @@ class TOTPTokenTestCase(MyTestCase):
 
         # counter = 47251640 => otp = 166325 is an old OTP value
         # counter = 47251641 => otp = 432730 is an old OTP value
-        # Autoresync with two times the same old OTP value must not work out!
+        # Autoresync with two times the same old OTP value must not work out! An old value does not start one.
+        token.auth_details.clear()
         r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
         r = token.check_otp("166325", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
-        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
         # Autoresync with two consecutive old OTP values must not work out!
         r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
@@ -617,10 +618,11 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("432730", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
-        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
-        # Autosync with a gap in the next otp value will fail
+        # Autosync with a gap in the next otp value will fail, if the time window allows no gap
         token.token.count = 47251640
+        token.write_tokeninfo("timeWindow", 30)
         # Just try some bullshit config value
         set_privacyidea_config("AutoResyncTimeout", "totally not a number")
         # counter = 47251648 => otp = 032819, is out of sync
@@ -1003,3 +1005,138 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(token._is_used_counter(7))
         self.assertFalse(token._is_used_counter(8))
         self.assertNotIn("_autosync", TotpTokenClass.__dict__)
+
+    # The autoresync with skipped codes. The token counter is COUNT, the server time step is NOW and all values the
+    # tests present are out of the normal window, but in the sync window.
+    COUNT = 47251640
+    NOW = COUNT + 3
+    FIRST = NOW + 3
+
+    def _autoresync_token(self, serial="TOTPSKIP", enable=True, **params):
+        token = init_token({"type": "totp", "serial": serial, "otpkey": self.otpkey, **params})
+        self.addCleanup(remove_token, serial)
+        if enable:
+            set_privacyidea_config("AutoResync", True)
+            self.addCleanup(delete_privacyidea_config, "AutoResync")
+        self.addCleanup(delete_privacyidea_config, "AutoResyncTimeout")
+        token.set_sync_window(100)
+        token.token.count = self.COUNT
+        token.token.save()
+        return token
+
+    def _present(self, token, counter, now=None):
+        """Present the OTP value of the counter to the token at the given time step and return the result"""
+        hmac2otp = HmacOtp(token.token.get_otpkey(), counter, 6, token.get_hashlib(token.hashlib))
+        token.auth_details.clear()
+        return token.check_otp(hmac2otp.generate(counter), window=token.timestep,
+                               options={"initTime": (now or self.NOW) * token.timestep})
+
+    def test_31_autoresync_skipped_codes(self):
+        token = self._autoresync_token()
+        self.assertEqual(6, token._max_autoresync_gap())
+
+        # The exact successor
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(self.FIRST + 1, self._present(token, self.FIRST + 1))
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+
+        # A skipped code completes the autoresync, the counter and the time shift come from the second value
+        token.token.count = self.COUNT
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        second = self.FIRST + 3
+        before = int(time.time())
+        self.assertEqual(second, self._present(token, second))
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(second, token.token.count)
+        self.assertAlmostEqual(second * 30 - before, token.timeshift, delta=5)
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+
+        # The gap of the cap succeeds, one more fails and removes the first value
+        token.token.count = self.COUNT
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertEqual(self.FIRST + 6, self._present(token, self.FIRST + 6))
+        token.token.count = self.COUNT
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertEqual(-1, self._present(token, self.FIRST + 7))
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+
+        # The same or an older value than the first one fails
+        for second in (self.FIRST, self.FIRST - 1):
+            self.assertEqual(-1, self._present(token, self.FIRST))
+            self.assertEqual(-1, self._present(token, second))
+            self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+            self.assertNotIn("otp1c", token.get_tokeninfo())
+
+    def test_32_autoresync_gap_cap(self):
+        # (timeWindow, AutoResyncTimeout, timeStep, cap)
+        for number, (window, timeout, step, cap) in enumerate([(180, None, 30, 6), (180, 3600, 30, 6), (300, 10, 30, 3),
+                                           (300, 100, 30, 3), (360, 3600, 60, 6), (300, 3600, 60, 5),
+                                           (10, None, 30, 1)]):
+            with self.subTest(window=window, timeout=timeout, step=step):
+                token = self._autoresync_token(f"TOTPCAP{number}", timeWindow=window, timeStep=step)
+                if timeout is not None:
+                    set_privacyidea_config("AutoResyncTimeout", timeout)
+                self.assertEqual(cap, token._max_autoresync_gap())
+                self.assertTrue(token._is_next_counter(10, 10 + cap))
+                self.assertFalse(token._is_next_counter(10, 10 + cap + 1))
+                self.assertFalse(token._is_next_counter(10, 10))
+                self.assertFalse(token._is_next_counter(10, 9))
+
+        # An invalid AutoResyncTimeout falls back to 300 seconds
+        token = self._autoresync_token()
+        set_privacyidea_config("AutoResyncTimeout", "no number")
+        self.assertEqual(6, token._max_autoresync_gap())
+
+    def test_33_autoresync_used_values(self):
+        token = self._autoresync_token()
+        # A first value that was used already does not start an autoresync
+        self.assertEqual(-1, self._present(token, self.COUNT - 2))
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        self.assertEqual(-1, self._present(token, self.COUNT))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+
+        # A used first value, stored by an older version, and a used second value fail
+        token.write_tokeninfo("otp1c", self.COUNT - 1)
+        token.write_tokeninfo("dueDate", int(time.time()) + 600)
+        self.assertEqual(-1, self._present(token, self.COUNT + 1))
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+
+        # A second value outside the sync window fails
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertEqual(-1, self._present(token, self.NOW + 101))
+        self.assertNotEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(self.COUNT, token.token.count)
+
+    def test_34_autoresync_deadline_and_switch(self):
+        token = self._autoresync_token()
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        # The deadline is exclusive, a value at the dueDate starts a new autoresync
+        token.write_tokeninfo("dueDate", int(time.time()))
+        self.assertEqual(-1, self._present(token, self.FIRST + 1))
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(str(self.FIRST + 1), token.get_tokeninfo("otp1c"))
+        # A dueDate in the future completes it
+        token.write_tokeninfo("dueDate", int(time.time()) + 100)
+        self.assertEqual(self.FIRST + 2, self._present(token, self.FIRST + 2))
+
+        # A stored counter without a dueDate restarts
+        token.token.count = self.COUNT
+        token.write_tokeninfo("otp1c", self.FIRST)
+        self.assertEqual(-1, self._present(token, self.FIRST + 1))
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        token.remove_tokeninfo("otp1c")
+        token.remove_tokeninfo("dueDate")
+
+        # Without the AutoResync nothing is stored
+        delete_privacyidea_config("AutoResync")
+        self.assertEqual(-1, self._present(token, self.FIRST))
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+        self.assertNotIn("otp1c", token.get_tokeninfo())

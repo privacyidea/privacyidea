@@ -555,6 +555,17 @@ class HotpTokenClass(TokenClass):
         """
         return hmac2Otp.checkOtp(anOtpVal, self.get_sync_window())
 
+    def _is_next_counter(self, first: int, second: int) -> bool:
+        """
+        Whether the second OTP value of an autoresync follows the first one. A HOTP token needs the next value, TOTP
+        tokens accept a later one, see TotpTokenClass._max_autoresync_gap.
+
+        :param first: The counter of the first OTP value
+        :param second: The counter of the second OTP value
+        :return: True if the second value can complete the autoresync
+        """
+        return second == first + 1
+
     def _is_used_counter(self, counter: int) -> bool:
         """
         Whether the counter of an OTP value was used already. A HOTP counter in the sync window is ahead of the token
@@ -615,10 +626,10 @@ class HotpTokenClass(TokenClass):
 
                 log.debug(f"otp1c: {otp1c!r}, otp2c: {otp2c!r}")
 
-                if (otp1c + 1) != otp2c:
+                if not self._is_next_counter(otp1c, otp2c):
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. OTP values too far apart.")
                     res = -1
-                elif self._is_used_counter(otp2c):
+                elif self._is_used_counter(otp1c) or self._is_used_counter(otp2c):
                     # The resync was done with previous (old) OTP values
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. Previous OTP values used.")
                     res = -1
@@ -630,6 +641,9 @@ class HotpTokenClass(TokenClass):
                 self.remove_tokeninfo("dueDate")
                 self.remove_tokeninfo("otp1c")
 
+            elif self._is_used_counter(res):
+                log.debug(f"Autoresync of token {self.token.serial!s} not started. The OTP value was used already.")
+                res = -1
             else:
                 if "otp1c" in info:
                     log.debug(f"Autoresync of token {self.token.serial!s} expired. This OTP value starts a new one.")
