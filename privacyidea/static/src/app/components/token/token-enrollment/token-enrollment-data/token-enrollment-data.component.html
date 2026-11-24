@@ -66,7 +66,9 @@
     }
     @if (enrolledData()["otps"]) {
       @if (!compact()) {
-        <p i18n="@@token.otpValuesOnce"
+        <p
+          class="dialog-prose"
+          i18n="@@token.otpValuesOnce"
           >Print the OTP values now. They are shown here only once and cannot be retrieved again.</p
         >
       }

@@ -18,7 +18,8 @@
 -->
 <app-dialog-wrapper
   width="l"
-  [fixedSize]="true"
+  [scrollBody]="true"
+  [fixedSize]="flow.fixedSize()"
   [title]="step()?.title() ?? ''"
   [actions]="step()?.actions() ?? []"
   [showCloseButton]="step()?.closable !== false"

@@ -96,6 +96,7 @@ describe("TokenEnrollmentDialogComponent", () => {
       open(twoStep());
       const wrapper = harness.element.querySelector(".pi-dialog");
       expect(wrapper?.classList).toContain("pi-dialog-fixed");
+      expect(harness.element.classList).toContain("enrollment-dialog-fixed");
       expect(harness.step()).toBeInstanceOf(TokenCompleteEnrollmentTwoStepComponent);
       expect(title()).toBe("Complete Token Enrollment");
 
@@ -113,6 +114,18 @@ describe("TokenEnrollmentDialogComponent", () => {
       expect(footerLabels()).toEqual(["Close"]);
       expect(harness.element.querySelector(".pi-dialog")).toBe(wrapper);
       expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("fits a dialog that opens at the success step to its content, at least one row of the header cards", () => {
+      open(enrolled(), {
+        enrollParameters: { data: { user: "alice", realm: "realm1" } } as unknown as EnrollTokenArguments
+      });
+      const wrapper = harness.element.querySelector(".pi-dialog");
+      expect(wrapper?.classList).not.toContain("pi-dialog-fixed");
+      expect(wrapper?.classList).toContain("pi-dialog-scroll-body");
+      expect(harness.element.classList).not.toContain("enrollment-dialog-fixed");
+      expect(harness.element.querySelectorAll(".enrolled__card")).toHaveLength(3);
+      expect(harness.element.style.getPropertyValue("--enrolled-card-count")).toBe("3");
     });
 
     it("stays one dialog from the push QR code to the success step", () => {

@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgComponentOutlet } from "@angular/common";
-import { afterNextRender, Component, computed, ElementRef, forwardRef, inject, Injector, signal } from "@angular/core";
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  forwardRef,
+  inject,
+  Injector,
+  signal,
+  viewChild
+} from "@angular/core";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import type { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
@@ -56,7 +66,12 @@ export interface EnrollmentDialogData {
     TokenEnrolledTextComponent
   ],
   providers: [{ provide: ENROLLMENT_STEP_HOST, useExisting: forwardRef(() => TokenEnrollmentDialogComponent) }],
-  templateUrl: "./token-enrollment-dialog.component.html"
+  templateUrl: "./token-enrollment-dialog.component.html",
+  styleUrl: "./token-enrollment-dialog.component.scss",
+  host: {
+    "[class.enrollment-dialog-fixed]": "flow.fixedSize()",
+    "[style.--enrolled-card-count]": "header()?.cardCount() ?? 0"
+  }
 })
 export class TokenEnrollmentDialogComponent
   extends AbstractDialogComponent<EnrollmentDialogData, void>
@@ -70,6 +85,7 @@ export class TokenEnrollmentDialogComponent
 
   readonly flow = this.data.flow;
   protected readonly step = signal<EnrollmentStep | null>(null);
+  protected readonly header = viewChild(TokenEnrolledTextComponent);
   protected readonly enrollment = computed(() => this.flow.dialogData());
   protected readonly detail = computed(() => this.enrollment()?.response?.detail);
   protected readonly request = computed(() => this.enrollment()?.enrollParameters?.data);

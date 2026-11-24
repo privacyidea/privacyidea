@@ -1,0 +1,16 @@
+// One row of the header cards. A dialog that fits its content is at least this wide, see the cards.
+:host {
+  --enrolled-cards-width: max(
+    0px,
+    calc(
+      var(--enrolled-card-count) * (var(--enrolled-card-width) + var(--enrolled-card-gap)) - var(--enrolled-card-gap)
+    )
+  );
+  // Text stops at the readable measure, or at the card row where that is wider.
+  --dialog-prose-max-width: max(var(--dialog-prose-width), var(--enrolled-cards-width));
+}
+
+// The fixed size fits the widest step, so the text uses all of it.
+:host(.enrollment-dialog-fixed) {
+  --dialog-prose-max-width: none;
+}

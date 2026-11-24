@@ -91,6 +91,10 @@ export class EnrollmentFlow {
     }
   });
 
+  // Set when the dialog opens. A dialog that opens before the success step keeps its size through all steps, one
+  // that opens at the success step shows only that and fits its content.
+  readonly fixedSize = signal(false);
+
   // Whether resume() can finish the enrollment once the dialog is closed in the current step.
   readonly resumable = computed(() => this.step() !== "fido2");
 
@@ -266,6 +270,7 @@ export class EnrollmentFlow {
   }
 
   private openDialog(): void {
+    this.fixedSize.set(this.step() !== "success");
     const dialogRef = this.dialogService.openDialog({
       component: TokenEnrollmentDialogComponent,
       data: { flow: this },

@@ -84,6 +84,8 @@ describe("EnrollmentFlow", () => {
     expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(flow.dialogData()?.response).toBe(enrolled);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
+    // The success step alone never changes the step, so the dialog fits its content.
+    expect(flow.fixedSize()).toBe(false);
   });
 
   it("runs two-step completion, verification and success in one dialog", () => {
@@ -94,6 +96,7 @@ describe("EnrollmentFlow", () => {
 
     flow.continue(first);
     expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+    expect(flow.fixedSize()).toBe(true);
 
     flow.finishStep(completed);
     expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
@@ -104,6 +107,8 @@ describe("EnrollmentFlow", () => {
     flow.finishStep(verified);
     expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(flow.dialogData()?.response).toBe(verified);
+    // The size chosen when the dialog opened stays, so it does not change at the last step.
+    expect(flow.fixedSize()).toBe(true);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
     expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
     expect(options.onStepClosed).toHaveBeenCalledTimes(2);

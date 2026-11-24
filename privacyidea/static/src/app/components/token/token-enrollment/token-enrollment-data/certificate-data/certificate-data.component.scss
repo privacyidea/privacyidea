@@ -4,12 +4,17 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-width: var(--dialog-prose-max-width, var(--dialog-prose-width));
 }
 
 .certificate-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.certificate-expansion {
+  max-width: var(--dialog-prose-max-width, var(--dialog-prose-width));
 }
 
 .certificate-pem {

@@ -30,10 +30,13 @@
   }
 }
 
+// At least as wide as one row of all cards, so the dialog makes room for them, but never wider than the
+// dialog can get on a narrow screen: the viewport margin, the content padding on both sides and the body indent.
 .enrolled__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 220px));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, var(--enrolled-card-width)));
+  gap: var(--enrolled-card-gap);
+  min-width: min(var(--enrolled-cards-width, 0px), calc(100vw - 2 * 32px - 3 * 16px));
 }
 
 .enrolled__card {

@@ -1,7 +1,9 @@
 .otpkey-expansion {
   margin-bottom: 16px;
+  max-width: var(--dialog-prose-max-width, var(--dialog-prose-width));
 }
 
 .otpkey-p {
   word-wrap: anywhere;
+  max-width: var(--dialog-prose-max-width, var(--dialog-prose-width));
 }

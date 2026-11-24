@@ -58,11 +58,10 @@
 }
 
 // Header and footer stay in place, only the body between them scrolls.
-.pi-dialog.pi-dialog-fixed {
+.pi-dialog.pi-dialog-scroll-body {
   display: flex;
   flex-direction: column;
-  width: min(var(--pi-dialog-width), calc(100vw - 2 * 32px));
-  height: min(var(--dialog-height-fixed), calc(100vh - 2 * 32px));
+  max-height: calc(100vh - 2 * 32px);
 
   .pi-dialog-header,
   .pi-dialog-footer {
@@ -73,6 +72,12 @@
     flex: 1 1 auto;
     overflow: auto;
   }
+}
+
+// Keeps its size while the content changes.
+.pi-dialog.pi-dialog-fixed {
+  width: min(var(--pi-dialog-width), calc(100vw - 2 * 32px));
+  height: min(var(--dialog-height-fixed), calc(100vh - 2 * 32px));
 }
 
 .cancel-button-host {

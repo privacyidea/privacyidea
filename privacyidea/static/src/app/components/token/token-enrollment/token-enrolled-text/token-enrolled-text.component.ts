@@ -58,6 +58,14 @@ export class TokenEnrolledTextComponent {
   );
   protected readonly pending = computed(() => this.state() !== "done");
   protected readonly showRealmOnly = computed(() => this.isAdmin() && !!this.userRealm() && !!this.onlyAddToRealm());
+  // The number of cards shown, so the dialog can make room for one row of them.
+  readonly cardCount = computed(() => {
+    if (this.summaryOnly()) {
+      return 0;
+    }
+    const cards = [true, !!this.containerSerial(), this.showUser(), this.showUser() || this.showRealmOnly()];
+    return cards.filter(Boolean).length;
+  });
 
   tokenSelected() {
     const serial = this.serial();
