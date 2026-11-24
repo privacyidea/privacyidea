@@ -224,7 +224,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   // their defaults.
   protected readonly inputsGeneration = signal(0);
   // Set by each new enrollment and consumed by the first input reset for it. That reset runs when the
-  // last step dialog first opens, or when the flow stops before that dialog. A later reopen then keeps
+  // success step first opens, or when the enrollment stops before that step. A later reopen then keeps
   // the inputs that the user entered for the next token.
   private inputsResetPending = false;
   // False keeps the inputs of the enrolled token, see the wizard.

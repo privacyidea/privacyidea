@@ -52,7 +52,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   token: WritableSignal<TokenEnrollmentData | null> = signal(null);
   title = computed(() => $localize`:@@token.rolloverToken:Rollover Token ${this.token()?.serial || ""}:SERIAL:`);
   serial = signal<string | null | undefined>(null);
-  // The rollover dialog closes after the first step, the flow runs the remaining steps on its own.
+  // The rollover dialog closes before the enrollment dialog opens, the flow runs all steps on its own.
   readonly enrollmentFlow = new EnrollmentFlow({
     successStep: () => TokenEnrollmentSuccessComponent,
     onStepClosed: () => this.tokenService.tokenDetailResource.reload()
