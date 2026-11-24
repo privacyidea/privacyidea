@@ -103,7 +103,13 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { endOfLocalDayIso, parseFilterTimestamp, startOfLocalDayIso, toFilterDisplay } from "@utils/date-format.utils";
+import {
+  endOfLocalDayIso,
+  parseFilterEndTimestamp,
+  parseFilterTimestamp,
+  startOfLocalDayIso,
+  toFilterDisplay
+} from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
@@ -555,14 +561,20 @@ export class AuthenticationLog {
 
   // Drives the time filter from the start_time/end_time entries in the filter text; guards keep the signal-to-chip
   // mirroring from looping, leave an unparsable in-progress edit untouched without clearing an active filter, and clear
-  // a bound only when its entry is removed or emptied.
+  // a bound only when its entry is removed or emptied. A typed end that is only a date includes that whole local
+  // period, as a day picked as the end in the calendar does.
   private syncTimeFilterFromText(): void {
     const map = this.authenticationLogService.authenticationLogFilter().filterMap;
-    this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom);
-    this.syncBoundFromText(map, "end_time", this.authenticationLogService.timestampTo);
+    this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom, parseFilterTimestamp);
+    this.syncBoundFromText(map, "end_time", this.authenticationLogService.timestampTo, parseFilterEndTimestamp);
   }
 
-  private syncBoundFromText(map: Map<string, string>, key: string, bound: WritableSignal<string | null>): void {
+  private syncBoundFromText(
+    map: Map<string, string>,
+    key: string,
+    bound: WritableSignal<string | null>,
+    parse: (value: string) => string | null
+  ): void {
     const current = bound();
     const chip = map.get(key);
     // Chip still equals what we mirrored out of the signal -> the user did not edit it; nothing to do.
@@ -575,7 +587,7 @@ export class AuthenticationLog {
       }
       return;
     }
-    const parsed = parseFilterTimestamp(chip);
+    const parsed = parse(chip);
     if (parsed && parsed !== current) {
       bound.set(parsed);
     }
