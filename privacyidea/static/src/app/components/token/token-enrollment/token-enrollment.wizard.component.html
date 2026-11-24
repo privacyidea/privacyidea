@@ -19,9 +19,7 @@
 <div
   #scrollContainer
   appScrollToTop
-  aria-label="Token Enrollment"
-  class="token-enrollment-container"
-  i18n-aria-label="@@common.tokenEnrollment">
+  class="token-enrollment-container">
   @let preTopHtml = preTopHtml$ | async;
   @if (preTopHtml?.hasContent) {
     <div
@@ -74,11 +72,11 @@
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.required)) {
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
-        } @else if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+        } @else if (hasError(descriptionForm, ERR.maxLength)) {
           <mat-error i18n="@@token.descriptionCannot"
-            >Description cannot exceed <strong>80 characters</strong>.</mat-error
+            >Description must not exceed <strong>80 characters</strong>.</mat-error
           >
         }
       </mat-form-field>

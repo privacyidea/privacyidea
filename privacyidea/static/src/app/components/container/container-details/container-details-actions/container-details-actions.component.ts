@@ -67,6 +67,8 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
 
   containerSerial = input.required<string>();
   containerType = input.required<string>();
+  /** "column" stacks the actions under a heading with a divider; "row" lays them out in one wrapping line. */
+  layout = input<"column" | "row">("column");
 
   passphrasePrompt = "";
   passphraseResponse = "";

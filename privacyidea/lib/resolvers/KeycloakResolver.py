@@ -29,6 +29,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     CONFIG_CREATE_USER, CONFIG_DELETE_USER, CONFIG_EDIT_USER,
                                                     CONFIG_USER_AUTH, Error, ACTIVE,
                                                     USER_GROUPS_ATTRIBUTE, PI_USER_GROUPS_KEY)
+from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
 from privacyidea.lib.resolvers.util import delete_user_error_handling_no_content
 
 log = logging.getLogger(__name__)
@@ -133,14 +134,22 @@ class KeycloakResolver(HTTPResolver):
         """
         Searches for a user by its name. Keycloak does not have an explicit endpoint for this purpose. Hence, we use
         the endpoint to get all users but filter for the username.
+
+        :param login_name: The username to resolve
+        :return: The user ID for the given username or an empty string if the user does not exist
+        :raises ResolverError: if the user store could not answer the request, or several users have the username
         """
+        if not login_name:
+            # An empty username would not filter at all and match every user of the realm
+            return ""
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         try:
             users = self._get_user_list({}, config, ["userid"])
-        except ResolverError as error:
-            log.info(f"Failed to resolve user '{login_name}': {error}")
-            return ""
+        except (ResolverError, ValueError) as error:
+            # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
+            log.error(f"Could not look up the user {login_name!r}: {error}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
 
         if len(users) == 1:
             user_id = users[0].get("userid")
@@ -211,17 +220,21 @@ class KeycloakResolver(HTTPResolver):
     # Error Handling
 
     @staticmethod
-    def get_error(response: Response) -> Error | None:
+    def get_error(response: Response) -> Error:
         """
         Extracts the error message from the response if available.
         It tries to get the error message under the key "errorMessage" or "error".
 
         :param response: The response object from the HTTP request
-        :return: The error message if available, otherwise None
+        :return: The error, with ``error`` False if the response carries none in the expected format, e.g. the HTML
+            error page of a proxy
         """
         error = Error(False, "", "")
         try:
             data = response.json()
+        except ValueError:
+            return error
+        if isinstance(data, dict):
             error_message = data.get("errorMessage")
             if not error_message:
                 error_code = data.get("error", "")
@@ -230,8 +243,6 @@ class KeycloakResolver(HTTPResolver):
                     error = Error(True, error_code, error_message)
             else:
                 error = Error(True, "", error_message)
-        except ValueError:
-            error = None
         return error
 
     def _get_user_list_error_handling(self, response: Response, config: RequestConfig):

@@ -31,9 +31,9 @@ The webhook to post to, selected from the configured ones. Listing them requires
 :ref:`policy_webhook_read`; without it the select has nothing to offer.
 
 Delivery is synchronous and there are no retries, so a slow endpoint delays the request that triggered the
-event; see :ref:`webhook_synchronous`. A webhook that fails never fails the event -- the failure is logged
-and audited, and the remaining handlers still run. The :ref:`webhook_outbound_guard` applies to what the
-handler sends, as it does to every webhook.
+event; see :ref:`webhook_synchronous`. By default, a webhook that fails does not fail the request: the failure
+is logged and audited, and the remaining handlers still run. See :ref:`event_abort_on_error`. The
+:ref:`webhook_outbound_guard` applies to what the handler sends, as it does to every webhook.
 
 **URL** and **content_type** (shown only)
 
@@ -79,14 +79,16 @@ If enabled, the placeholders in the data are replaced.
 .. deprecated:: 3.15
     Before privacyIDEA 3.15 the handler carried the endpoint itself, in its own ``URL`` and ``content_type``
     options. Such a handler keeps working and shows its stored values in the two fields above, but it always
-    verifies TLS, waits a fixed 10 seconds, counts an HTTP error status as a run and can not carry
-    authentication. The options will be removed in privacyIDEA 3.16, after which it sends nothing.
+    verifies TLS, waits a fixed 10 seconds and can not carry authentication. The options will be removed in
+    privacyIDEA 3.16, after which it sends nothing.
 
     Convert it before that release by selecting a webhook above. The upgrade to 3.15 does it automatically,
     and ``pi-manage config import`` converts an export taken before 3.15 on the way in. A handler that sends
     nothing as it stands -- no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded -- cannot
-    be converted: the upgrade names it in the log and leaves it alone, and the import refuses it, failing the
-    whole import unless ``--skip-invalid`` is given. Correct it and run the upgrade or import again.
+    be converted: the upgrade names it in the log and leaves it alone. The import plan shows it as ``skip``
+    with the reason, and the import does not write it. The import writes the other event handlers. Without
+    ``--skip-invalid``, the command then ends with an error. With ``--replace``, the event handlers of the
+    same name and handler module stay on the system. Correct the handler and run the upgrade or import again.
 
 Auditing
 ~~~~~~~~

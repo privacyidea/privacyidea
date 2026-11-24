@@ -14,6 +14,7 @@ on:
       - "branch-*"
     paths:
       - "requirements.txt"
+      - "deploy/docker/requirements-image.txt"
       - ".github/workflows/osv-scanner-backend.yml"
   push:
     branches:
@@ -21,6 +22,7 @@ on:
       - "branch-*"
     paths:
       - "requirements.txt"
+      - "deploy/docker/requirements-image.txt"
       - ".github/workflows/osv-scanner-backend.yml"
   schedule:
     # Nightly at 22:47 UTC — offset from frontend scan (22:53) to avoid simultaneous load.
@@ -63,11 +65,12 @@ jobs:
         run: |
           osv-scanner scan \
             --lockfile=requirements.txt \
+            --lockfile=deploy/docker/requirements-image.txt \
             --format=sarif \
             --output-file=osv-results.sarif
 
       - name: Upload SARIF to the Security tab
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: osv-results.sarif
           category: osv-scanner-backend

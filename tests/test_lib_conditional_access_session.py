@@ -41,7 +41,7 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         db.session.commit()
         super().tearDown()
 
-    def test_01_session_is_cached_per_app_context(self):
+    def test_session_is_cached_per_app_context(self):
         session = get_ca_session()
         self.assertIs(session, get_ca_session())
         # A fresh app context has its own ``g``, and therefore its own session.
@@ -49,14 +49,14 @@ class ConditionalAccessSessionTestCase(MyTestCase):
             self.assertIsNot(session, get_ca_session())
             close_ca_session()
 
-    def test_02_session_is_not_the_request_session(self):
+    def test_session_is_not_the_request_session(self):
         # ``db.session`` is a scoped_session proxy, so compare against the session it proxies to.
         self.assertIsNot(db.session(), get_ca_session())
 
-    def test_03_bound_to_the_same_engine(self):
+    def test_bound_to_the_same_engine(self):
         self.assertIs(db.engine, get_ca_session().get_bind())
 
-    def test_04_write_is_visible_to_the_request_session(self):
+    def test_write_is_visible_to_the_request_session(self):
         ca_session = get_ca_session()
         ca_session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="alice"))
         ca_session.commit()
@@ -65,14 +65,14 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         self.assertEqual(1, len(entries))
         self.assertEqual("alice", entries[0].username)
 
-    def test_05_close_is_idempotent_and_reopens(self):
+    def test_close_is_idempotent_and_reopens(self):
         session = get_ca_session()
         close_ca_session()
         # Closing again must not raise, even though there is nothing left to close.
         close_ca_session()
         self.assertIsNot(session, get_ca_session())
 
-    def test_06_request_finalizer_closes_the_session(self):
+    def test_request_finalizer_closes_the_session(self):
         session = get_ca_session()
         entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="bob")
         session.add(entry)
@@ -83,7 +83,7 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         self.assertNotIn(entry, session)
         self.assertIsNot(session, get_ca_session())
 
-    def test_08_release_returns_the_connection_and_keeps_the_session(self):
+    def test_release_returns_the_connection_and_keeps_the_session(self):
         session = get_ca_session()
         session.scalars(select(AuthenticationLog)).all()
         # A read opens a transaction, and the connection is checked out for as long as it is open.
@@ -97,13 +97,13 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         self.assertListEqual([], session.scalars(select(AuthenticationLog)).all())
         self.assertTrue(session.in_transaction())
 
-    def test_09_release_without_a_session_is_a_no_op(self):
+    def test_release_without_a_session_is_a_no_op(self):
         close_ca_session()
         # Must neither raise nor open a session just to release it.
         release_ca_connection()
         self.assertNotIn(_SESSION_KEY, get_request_local_store())
 
-    def test_10_release_does_not_commit_pending_writes(self):
+    def test_release_does_not_commit_pending_writes(self):
         session = get_ca_session()
         session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="carol"))
 
@@ -111,7 +111,7 @@ class ConditionalAccessSessionTestCase(MyTestCase):
 
         self.assertListEqual([], db.session.scalars(select(AuthenticationLog)).all())
 
-    def test_07_closer_registered_as_appcontext_teardown(self):
+    def test_closer_registered_as_appcontext_teardown(self):
         # Covers callers with no request (pi-manage, scripts, periodic tasks), where call_finalizers() never runs.
         self.assertIn(close_ca_session, self.app.teardown_appcontext_funcs)
 
@@ -139,7 +139,7 @@ class GuardedWriteTestCase(MyTestCase):
     def _stored_usernames(self):
         return db.session.scalars(select(AuthenticationLog.username).order_by(AuthenticationLog.username)).all()
 
-    def test_01_commits_on_success(self):
+    def test_commits_on_success(self):
         with guarded_write("an authentication log entry") as outcome:
             get_ca_session().add(self._entry("alice"))
 
@@ -147,7 +147,7 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertIsNone(outcome.error)
         self.assertListEqual(["alice"], self._stored_usernames())
 
-    def test_02_rolls_back_and_swallows_on_failure(self):
+    def test_rolls_back_and_swallows_on_failure(self):
         error = RuntimeError("write failed")
         with guarded_write("an authentication log entry") as outcome:
             get_ca_session().add(self._entry("alice"))
@@ -158,7 +158,7 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertIs(error, outcome.error)
         self.assertListEqual([], self._stored_usernames())
 
-    def test_03_reraise_propagates_and_still_rolls_back(self):
+    def test_reraise_propagates_and_still_rolls_back(self):
         with self.assertRaises(RuntimeError):
             with guarded_write("an authentication log entry", reraise=True):
                 get_ca_session().add(self._entry("alice"))
@@ -166,7 +166,7 @@ class GuardedWriteTestCase(MyTestCase):
 
         self.assertListEqual([], self._stored_usernames())
 
-    def test_04_session_is_usable_after_a_failure(self):
+    def test_session_is_usable_after_a_failure(self):
         with guarded_write("an authentication log entry"):
             get_ca_session().add(self._entry("alice"))
             raise RuntimeError("write failed")
@@ -178,7 +178,7 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertTrue(outcome.succeeded)
         self.assertListEqual(["bob"], self._stored_usernames())
 
-    def test_05_commit_does_not_commit_pending_request_work(self):
+    def test_commit_does_not_commit_pending_request_work(self):
         # This is the point of the dedicated session: a conditional-access commit must never persist whatever
         # else the request has pending on db.session.
         db.session.add(self._entry("pending-on-request-session"))
@@ -190,7 +190,7 @@ class GuardedWriteTestCase(MyTestCase):
         db.session.rollback()
         self.assertListEqual(["alice"], self._stored_usernames())
 
-    def test_06_rollback_does_not_discard_pending_request_work(self):
+    def test_rollback_does_not_discard_pending_request_work(self):
         # The mirror image: a failed conditional-access write must not roll back the request's own changes.
         pending = self._entry("pending-on-request-session")
         db.session.add(pending)
@@ -205,7 +205,7 @@ class GuardedWriteTestCase(MyTestCase):
         db.session.commit()
         self.assertListEqual(["pending-on-request-session"], self._stored_usernames())
 
-    def test_07_write_lock_on_the_request_session_is_a_contained_failure(self):
+    def test_write_lock_on_the_request_session_is_a_contained_failure(self):
         # This test is SQLite-specific: MariaDB and PostgreSQL use row-level locking, so it does not apply there.
         if db.engine.dialect.name != "sqlite":
             self.skipTest("Database write locking behavior is SQLite-specific. On MariaDB and PostgreSQL, "
@@ -227,12 +227,15 @@ class GuardedWriteTestCase(MyTestCase):
         db.session.commit()
         self.assertListEqual(["flushed-on-request-session"], self._stored_usernames())
 
-    def test_07b_flushed_lock_succeeds_on_non_sqlite(self):
+    def test_flushed_lock_succeeds_on_non_sqlite(self):
         # MariaDB and PostgreSQL use row-level locking, so this write succeeds even with a flushed-but-uncommitted
-        # request-session transaction, unlike SQLite in test_07; this documents production database behavior.
+        # request-session transaction, unlike SQLite in
+        # test_write_lock_on_the_request_session_is_a_contained_failure; this documents production
+        # database behavior.
         if db.engine.dialect.name == "sqlite":
             self.skipTest("This test documents non-SQLite (row-level locking) behavior. "
-                          "See test_07 for SQLite's database-level locking behavior.")
+                          "See test_write_lock_on_the_request_session_is_a_contained_failure "
+                          "for SQLite's database-level locking behavior.")
 
         # Add work to the request session and flush it, without committing.
         pending = self._entry("flushed-on-request-session")
@@ -248,7 +251,7 @@ class GuardedWriteTestCase(MyTestCase):
         db.session.commit()
         self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())
 
-    def test_08_commits_once_the_request_session_released_its_lock(self):
+    def test_commits_once_the_request_session_released_its_lock(self):
         # Once the request session is committed (or rolled back) first, there is no competing write lock, so the
         # conditional-access write goes through. Nothing releases db.session on the request's behalf before the
         # conditional-access flush - Flask-SQLAlchemy removes it on app-context teardown, which runs after the
@@ -264,7 +267,7 @@ class GuardedWriteTestCase(MyTestCase):
         self.assertTrue(outcome.succeeded)
         self.assertListEqual(["alice", "flushed-on-request-session"], self._stored_usernames())
 
-    def test_09_rollback_failure_is_swallowed_and_logged(self):
+    def test_rollback_failure_is_swallowed_and_logged(self):
         # Cover the contained-failure path where the original write fails and rollback fails as well.
         session = get_ca_session()
         with mock.patch.object(session, "rollback", side_effect=RuntimeError("rollback failed")) as rollback_mock:

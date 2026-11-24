@@ -31,11 +31,10 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import yaml
 import binascii
 import re
 
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_, or_,
                         create_engine, select, insert, delete, update, RowMapping)
@@ -308,13 +307,16 @@ class IdResolver (UserIdResolver):
         return userinfo
 
     @track_resolver_op("get_user_info_batch")
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several user IDs with one query per chunk of IDs, instead
         of one query per ID. IDs without a matching row are omitted from the result.
 
         :param user_ids: The user IDs in this resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: Accepted for the common interface, nothing is added to it: an ID the userid column
+                                 can not hold is a user that does not exist, as for :py:func:`get_user_info`
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
@@ -324,18 +326,20 @@ class IdResolver (UserIdResolver):
 
         for chunk_start in range(0, len(unique_ids), BATCH_QUERY_CHUNK_SIZE):
             chunk = unique_ids[chunk_start:chunk_start + BATCH_QUERY_CHUNK_SIZE]
-            # The rows are mapped back to the requested IDs over the same string conversion the
-            # userid attribute goes through, so an int column matches a string ID.
-            requested_ids = {}
+            # The rows are mapped back to the requested IDs over the spelling the userid column
+            # stores them in, so an int column matches a string ID.
+            requested_ids: dict[str, list[int | str]] = {}
             userid_filters = []
             for user_id in chunk:
                 try:
+                    returned_id = self._normalize_userid(user_id)
                     userid_filters.append(self._get_userid_filter(user_id))
                 except ValueError as error:
                     # e.g. a non-numeric ID against an integer column
                     log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
                     continue
-                requested_ids[convert_column_to_unicode(user_id)] = user_id
+                # Several requested IDs can name the same row, for example "3" and "0003" against an integer column
+                requested_ids.setdefault(returned_id, []).append(user_id)
             if not userid_filters:
                 continue
 
@@ -357,24 +361,28 @@ class IdResolver (UserIdResolver):
 
             for row in result.mappings():
                 returned_id = convert_column_to_unicode(row.get(userid_column))
-                user_id = requested_ids.get(returned_id)
-                if user_id is None:  # pragma: no cover
+                matching_ids = requested_ids.get(returned_id)
+                if matching_ids is None:
                     log.info(f"Ignoring row with user id {returned_id!r}, which was not searched for.")
                     continue
-                user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
+                for user_id in matching_ids:
+                    user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
 
         return user_info_map
 
     @track_resolver_op("get_usernames_batch")
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users with one query per chunk of IDs.
 
         :param user_ids: The user IDs in this resolver
+        :param unresolvable_ids: Accepted for the common interface. An ID the userid column can not hold, e.g. a
+                                 non-numeric ID against an integer column, is a user that does not exist here,
+                                 as for a single lookup, so nothing is added to it.
         :return: dictionary mapping each user ID to its login name. IDs without a matching row are
                  mapped to an empty string, as getUsername does for a single user.
         """
-        return self._usernames_via_user_info_batch(user_ids)
+        return self._usernames_via_user_info_batch(user_ids, unresolvable_ids=unresolvable_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """
@@ -398,6 +406,24 @@ class IdResolver (UserIdResolver):
         # otherwise we cast the column to string (in case of postgres UUIDs)
         return cast(column, String).like(escape_sql_like(str(userId)), escape=SQL_LIKE_ESCAPE)
 
+    def _normalize_userid(self, user_id: int | str) -> str:
+        """
+        Return the user ID in the spelling the userid column holds it in, so that a row can be
+        mapped back to the ID it was searched for. This mirrors the comparison
+        :py:func:`_get_userid_filter` builds, and raises the same ValueError for an ID the column
+        can not hold.
+
+        :param user_id: The userid in this resolver
+        :return: the user ID as the userid column returns it
+        """
+        column = self.TABLE.columns[self.map.get("userid")]
+        if isinstance(column.type, String):
+            return str(user_id)
+        elif isinstance(column.type, Integer):
+            return str(int(user_id))
+
+        return convert_column_to_unicode(user_id)
+
     @track_resolver_op("get_username")
     def getUsername(self, userId):
         """
@@ -412,17 +438,14 @@ class IdResolver (UserIdResolver):
         return info.get('username', "")
 
     @track_resolver_op("get_user_id")
-    def getUserId(self, LoginName):
+    def getUserId(self, LoginName: str) -> str:
         """
         resolve the loginname to the userid.
 
         :param LoginName: The login name from the credentials
-        :type LoginName: string
-        :return: UserId as found for the LoginName
-        :rtype: str
+        :return: UserId as found for the LoginName, an empty string if the user store has no such user
+        :raises ResolverError: if the user store could not be queried
         """
-        userid = ""
-
         try:
             conditions = []
             column = self.map.get("username")
@@ -432,18 +455,21 @@ class IdResolver (UserIdResolver):
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            result = self.session.execute(select(self.TABLE).filter(filter_condition))
+            rows = self.session.execute(select(self.TABLE).filter(filter_condition)).mappings().all()
+        except Exception as error:
+            # A failed query is not "no such user": that would let the realm try its next resolver and the
+            # passOnNoUser policy accept the request. The session is cached for the request, see get_user_info.
+            self.session.rollback()
+            log.error(f"Could not look up the user {LoginName!r}: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
 
-            for r in result.mappings():
-                if userid != "":    # pragma: no cover
-                    raise Exception("More than one user with loginname"
-                                    f" {LoginName} found!")
-                user = self._get_user_from_mapped_object(r)
-                userid = convert_column_to_unicode(user["userid"])
-        except Exception as exx:    # pragma: no cover
-            log.error(f"Could not get the user ID: {exx!r}")
-
-        return userid
+        if not rows:
+            return ""
+        if len(rows) > 1:
+            log.error(f"More than one user with loginname {LoginName!r} found, using the first one.")
+        user = self._get_user_from_mapped_object(rows[0])
+        # A row without a value in the user ID column is no user
+        return convert_column_to_unicode(user.get("userid", ""))
 
     def _get_user_from_mapped_object(self, row: RowMapping, attributes: list[str] = None) -> dict:
         """
@@ -565,12 +591,14 @@ class IdResolver (UserIdResolver):
     def getResolverType():
         return IdResolver.getResolverClassType()
 
-    def loadConfig(self, config):
+    def loadConfig(self, config: dict) -> "IdResolver":
         """
-        Load the config from conf.
+        Load the config from conf and the table of the users from the database.
 
         :param config: The configuration from the Config Table
-        :type config: dict
+        :return: The resolver itself
+        :raises ResolverError: with the message USER_LOOKUP_FAILED if the table can not be loaded, e.g. because the
+            database is not reachable
         """
         self.server = config.get('Server', "")
         self.driver = config.get('Driver', "")
@@ -584,7 +612,7 @@ class IdResolver (UserIdResolver):
         self._editable = config.get("Editable", False)
         self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
         usermap = config.get('Map', {})
-        self.map = yaml.safe_load(usermap)
+        self.map = parse_config_yaml(usermap)
         self.reverse_map = {v: k for k, v in self.map.items()}
         self.where = config.get('Where', "")
         self.encoding = str(config.get('Encoding') or "latin1")
@@ -625,7 +653,12 @@ class IdResolver (UserIdResolver):
         schema = table_parts[0] if len(table_parts) > 1 else None
         self.table = table_parts[-1]
         log.debug(f"Loading table {self.table!s} from schema {schema!s}")
-        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
+        try:
+            self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
+        except Exception as error:
+            log.error(f"Could not load the table {self.table!r} of the user store "
+                      f"{censor_connect_string(self.connect_string)!r}: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         return self
 
     def _finalize_session(self) -> None:
@@ -651,6 +684,15 @@ class IdResolver (UserIdResolver):
             log.debug("connecting without pool_size.")
             engine = create_engine(self.connect_string)
         return engine
+
+    @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        The SQL resolver is documented by the driver of the database it reads the users from.
+        """
+        documented = super().get_config_for_documentation(config)
+        documented["driver"] = config.get("Driver")
+        return documented
 
     @classmethod
     def getResolverClassDescriptor(cls):
@@ -883,7 +925,8 @@ class IdResolver (UserIdResolver):
 
 def hash_password(password, hashtype):
     """
-    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+    Hash a password with PHPASS, SHA, SSHA, SSHA256, SSHA512, OTRS,
+    SHA256CRYPT, SHA512CRYPT or MD5CRYPT
 
     :param password: The password in plain text
     :type password: str

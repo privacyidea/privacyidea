@@ -20,6 +20,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -36,6 +37,8 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { PrivacyideaServersComponent } from "./privacyidea-servers.component";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("PrivacyideaServersComponent", () => {
   let component: PrivacyideaServersComponent;
@@ -121,10 +124,10 @@ describe("PrivacyideaServersComponent", () => {
   });
 
   it("should navigate to details route on openEditDialog with server", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const server = privacyideaServerServiceMock.remoteServerOptions()[0];
     component.openEditDialog(server);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS, server.identifier]);
   });
 
   it("should delete server after confirmation", () => {
@@ -136,5 +139,143 @@ describe("PrivacyideaServersComponent", () => {
     confirmClosed.complete();
 
     expect(privacyideaServerServiceMock.deletePrivacyideaServer).toHaveBeenCalledWith("server1");
+  });
+
+  describe("toolbar actions", () => {
+    it("offers create and delete in that order", () => {
+      expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
+      expect(toolbarAction(component, "create").label).toBe("Create PrivacyIDEA Server");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
+    });
+
+    it("shows both actions with privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+
+      expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
+      expect(toolbarButton(fixture, "Create PrivacyIDEA Server")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create PrivacyIDEA Server")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+    });
+
+    it("offers row selection only with privacyideaserver_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["privacyideaserver_read"]);
+      expect(selectColumn()).toBeNull();
+    });
+
+    it("draws no toolbar while the read right is denied", () => {
+      setRights(fixture, []);
+
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
+      expect(toolbarButton(fixture, "Create PrivacyIDEA Server")).toBeUndefined();
+    });
+
+    it("keeps create enabled and disables delete until a row is selected", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create PrivacyIDEA Server")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
+
+      component.selector.selectRow(privacyideaServerServiceMock.remoteServerOptions()[0]);
+      fixture.detectChanges();
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
+    });
+
+    it("runs create by opening the new-entry route", () => {
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarAction(component, "create").run?.();
+
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
+    });
+
+    it("runs delete by confirming and then deleting the selected row", () => {
+      component.selector.selectRow(privacyideaServerServiceMock.remoteServerOptions()[0]);
+
+      toolbarAction(component, "delete").run?.();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+      expect(privacyideaServerServiceMock.deletePrivacyideaServer).not.toHaveBeenCalled();
+      confirmClosed.next(true);
+      confirmClosed.complete();
+
+      expect(privacyideaServerServiceMock.deletePrivacyideaServer).toHaveBeenCalledTimes(1);
+      expect(privacyideaServerServiceMock.deletePrivacyideaServer).toHaveBeenCalledWith("server1");
+    });
+
+    it("runs create from its rendered button", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarButton(fixture, "Create PrivacyIDEA Server")?.click();
+
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
+    });
+
+    it("runs delete from its rendered button once a row is selected", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+      component.selector.selectRow(privacyideaServerServiceMock.remoteServerOptions()[0]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "Delete")?.click();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      privacyideaServerServiceMock.remoteServerOptions.set([]);
+    });
+
+    it("offers the create button and hint with privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create PrivacyIDEA Server");
+      expect(state.textContent).toContain(
+        "Create a privacyIDEA server to forward authentication requests to another instance."
+      );
+    });
+
+    it("offers neither button nor hint without privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a privacyIDEA server to forward authentication requests to another instance."
+      );
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

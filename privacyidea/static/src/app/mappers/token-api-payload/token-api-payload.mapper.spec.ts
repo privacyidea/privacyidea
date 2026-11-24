@@ -795,6 +795,20 @@ describe("PasskeyFinalizeApiPayloadMapper", () => {
     const p = mapper.toApiPayload(d);
     expect(p.credProps).toEqual({ rk: true });
   });
+
+  it("includes transports only if the list is not empty", () => {
+    expect(mapper.toApiPayload({ ...base(), transports: ["nfc", "usb"] }).transports).toEqual(["nfc", "usb"]);
+    expect(mapper.toApiPayload({ ...base(), transports: [] }).transports).toBeUndefined();
+    expect(mapper.toApiPayload(base()).transports).toBeUndefined();
+  });
+
+  it("includes only the PRF flag, never the PRF results", () => {
+    const results = { first: new Uint8Array([1]).buffer };
+    expect(mapper.toApiPayload({ ...base(), prf: { enabled: true, results } }).prf).toStrictEqual({ enabled: true });
+    expect(mapper.toApiPayload({ ...base(), prf: { enabled: false } }).prf).toStrictEqual({ enabled: false });
+    expect(mapper.toApiPayload({ ...base(), prf: { results } }).prf).toBeUndefined();
+    expect(mapper.toApiPayload(base()).prf).toBeUndefined();
+  });
 });
 
 describe("PushApiPayloadMapper", () => {

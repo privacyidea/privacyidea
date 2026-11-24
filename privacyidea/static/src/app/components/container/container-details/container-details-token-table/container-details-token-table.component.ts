@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { RouterLink } from "@angular/router";
 import { NgClass } from "@angular/common";
 import {
   AfterViewInit,
@@ -59,11 +60,16 @@ import {
   ContainerService,
   ContainerServiceInterface
 } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -76,6 +82,12 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    TruncationTooltipDirective,
+    TokenActiveToggleComponent,
+    RouterLink,
+    ScrollFocusableDirective,
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     MatCell,
     MatFormField,
     MatHeaderCell,
@@ -100,19 +112,24 @@ interface ContainerDetailTokenData {
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent implements AfterViewInit {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "tokentype", "active", "username");
+  // Width tier of each data column (see the col-width-* classes in styles.scss). The card is
+  // card-width(l) = 696px, 680px of it table, so the four data columns stay on the s tier (4 * 140px)
+  // and the actions column takes the remaining 118px (.col-actions in the stylesheet).
+  readonly columnWidths: Record<string, "s" | "m" | "l" | "xl"> = {
+    serial: "s",
+    tokentype: "s",
+    active: "s",
+    username: "s"
+  };
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   displayedColumns: string[] = [...this.columnKeys, "actions"];
   pageSize = 5;
@@ -301,20 +318,6 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
           }
         }
       });
-  }
-
-  handleColumnClick(columnKey: string, token: ContainerDetailToken) {
-    if (columnKey === "active") {
-      this.toggleActive(token);
-    }
-  }
-
-  toggleActive(token: ContainerDetailToken): void {
-    this.tokenService.toggleActive(token.serial, token.active).subscribe({
-      next: () => {
-        this.containerService.containerDetailsResource.reload();
-      }
-    });
   }
 
   deleteAllTokens() {

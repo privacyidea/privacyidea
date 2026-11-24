@@ -902,7 +902,8 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 scope.addToken = function (tokenType) {
                     scope.form = {
                         type: tokenType,
-                        user: true
+                        user: true,
+                        change_pin_on_first_use: false
                     };
                     if (scope.markAddRemove) {
                         scope.form.state = "add";

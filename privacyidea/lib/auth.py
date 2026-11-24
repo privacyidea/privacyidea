@@ -27,7 +27,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                           AuthEventReason, AUTH_EVENT_REASON_KEY)
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
-from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError
+from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError, ResolverError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.utils import fetch_one_resource
@@ -186,6 +186,9 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
                 details[AUTH_EVENT_REASON_KEY] = AuthEventReason.TOKEN_REVOKED
             elif isinstance(e, (UserError, AuthError)) and (not user or not user.exist()):
                 details[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
+            elif isinstance(e, ResolverError):
+                # The user store failed on a later lookup, e.g. of the owner of a token
+                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
     else:
         # check the password of the user against the user store
         details = {}

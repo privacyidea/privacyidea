@@ -19,6 +19,9 @@
 <button
   (click)="onCopy(); $event.stopPropagation()"
   [cdkCopyToClipboard]="copyText()"
-  class="copy-button">
+  aria-label="Copy"
+  class="copy-button"
+  i18n-aria-label="@@common.copy"
+  type="button">
   <mat-icon class="copy-icon">{{ copied() ? "check" : "content_copy" }}</mat-icon>
 </button>

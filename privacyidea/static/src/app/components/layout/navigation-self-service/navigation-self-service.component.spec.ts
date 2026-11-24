@@ -100,6 +100,7 @@ import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
+import { axe } from "@testing/axe";
 
 describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
@@ -347,5 +348,11 @@ describe("NavigationSelfServiceComponent", () => {
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
       .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.CONTAINERS);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

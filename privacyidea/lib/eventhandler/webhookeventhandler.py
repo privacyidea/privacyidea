@@ -30,6 +30,7 @@ import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError, ResourceNotFoundError
+from privacyidea.lib.log import get_url_origin
 from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
                                      get_webhook_identifiers, guard_target,
                                      media_type, outbound_guard_check)
@@ -163,7 +164,7 @@ class WebHookHandler(BaseEventHandler):
         }}
         return actions
 
-    def _replace_tags(self, webhook_text, content_type, g, request):
+    def _replace_tags(self, webhook_text, content_type, g, request, response=None):
         """
         Substitute the placeholders in the payload.
 
@@ -181,7 +182,9 @@ class WebHookHandler(BaseEventHandler):
         :param content_type: the MIME type the payload will be sent as
         :param g: the flask g object
         :param request: the request that triggered the event
-        :return: the payload with the placeholders replaced
+        :param response: the response of the request, for a post handler
+        :return: the payload with the placeholders replaced, and None. If the placeholders can not be replaced, the
+            payload as it is configured and the reason for the audit entry.
         """
         user = request.User if hasattr(request, 'User') else None
         if not user:
@@ -191,12 +194,17 @@ class WebHookHandler(BaseEventHandler):
             except (UserError, AttributeError) as e:  # pragma: no cover
                 log.info(f'Could not determine user: {e}')
 
-        # Gather information about the user and token
-        token_serial = request.all_data.get('serial', '') if request else ""
+        # Gather information about the user and token. The serial is the token of the event, if the event names
+        # one. The tokens of the owner are no substitute for it, a receiver takes the serial as the token the event
+        # is about.
+        content = self._get_response_content(response)
+        token_serial = (self._get_token_serials(request, content, g) or "") if request else ""
         tokenowner = self._get_tokenowner(request) if request else None
         logged_in_user = g.logged_in_user if hasattr(g, 'logged_in_user') else {}
         try:
-            token_serial, tokentype, tokendescription = self._get_token_data(token_serial, tokenowner)
+            tokentype = tokendescription = None
+            if token_serial:
+                token_serial, tokentype, tokendescription = self._get_token_data(token_serial, tokenowner)
 
             tags = create_tag_dict(logged_in_user=logged_in_user,
                                    request=request,
@@ -238,15 +246,14 @@ class WebHookHandler(BaseEventHandler):
                              f"text instead.")
 
             if isinstance(document, (dict, list)):
-                webhook_text = json.dumps(replace_recursive(document))
-            else:
-                webhook_text = safe_format(webhook_text, tags)
+                return json.dumps(replace_recursive(document)), None
+            return safe_format(webhook_text, tags), None
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
         except (ValueError, TypeError) as err:
             log.warning(f"Unable to substitute the payload: {err}")
-
-        return webhook_text
+        # The data is still sent as it is configured
+        return webhook_text, "Unable to replace the placeholders in the data."
 
     def do(self, action, options=None):
         """
@@ -269,14 +276,15 @@ class WebHookHandler(BaseEventHandler):
             log.warning(f'Unknown action value: {action}')
             return False
 
+        response = options.get("response")
         webhook_identifier = handler_options.get("webhook")
         if webhook_identifier:
-            return self._post_to_webhook_object(webhook_identifier, webhook_text, replace, g, request)
+            return self._post_to_webhook_object(webhook_identifier, webhook_text, replace, g, request, response)
 
         _warn_inline_shape_is_deprecated(handler_def)
-        return self._post_inline(handler_options, webhook_text, replace, g, request)
+        return self._post_inline(handler_options, webhook_text, replace, g, request, response)
 
-    def _post_to_webhook_object(self, identifier, webhook_text, replace, g, request):
+    def _post_to_webhook_object(self, identifier, webhook_text, replace, g, request, response=None):
         """
         Post to a configured webhook definition.
 
@@ -285,7 +293,8 @@ class WebHookHandler(BaseEventHandler):
         :param replace: whether the placeholders in the payload are substituted
         :param g: the flask g object
         :param request: the request that triggered the event
-        :return: True if the endpoint answered with a 2xx status
+        :param response: the response of the request, for a post handler
+        :return: True if the endpoint answered with a 2xx status and the placeholders could be replaced
         """
         try:
             config = get_webhook(identifier)
@@ -295,19 +304,23 @@ class WebHookHandler(BaseEventHandler):
             self.run_details = f"webhook {identifier!r} is not configured"
             return False
 
+        replace_problem = None
         if replace and webhook_text:
-            webhook_text = self._replace_tags(webhook_text, content_type, g, request)
+            webhook_text, replace_problem = self._replace_tags(webhook_text, content_type, g, request, response)
 
         log.info(f"Posting to the webhook {identifier!r}")
         result = fire_webhook(identifier, payload=webhook_text or None, config=config)
 
-        if result["success"]:
-            self.run_details = f"webhook {identifier!r}: HTTP {result['status_code']}"
-        else:
+        if not result["success"]:
             self.run_details = f"webhook {identifier!r} failed: {result['error']}"
-        return result["success"]
+            return False
+        if replace_problem:
+            self.run_details = f"webhook {identifier!r}: {replace_problem}"
+            return False
+        self.run_details = f"webhook {identifier!r}: HTTP {result['status_code']}"
+        return True
 
-    def _post_inline(self, handler_options, webhook_text, replace, g, request):
+    def _post_inline(self, handler_options, webhook_text, replace, g, request, response=None):
         """
         Post to the URL configured inline in the event handler definition.
 
@@ -323,7 +336,8 @@ class WebHookHandler(BaseEventHandler):
         :param replace: whether the placeholders in the payload are substituted
         :param g: the flask g object
         :param request: the request that triggered the event
-        :return: True if the request was sent successfully
+        :param response: the response of the request, for a post handler
+        :return: True if the endpoint answered with a 2xx status and the placeholders could be replaced
         """
         webhook_url = handler_options.get("URL")
         # Map the database entries, which might contain the older values, to the actual content type value
@@ -334,8 +348,9 @@ class WebHookHandler(BaseEventHandler):
             self.run_details = f'unknown content type {handler_options.get("content_type")!r}'
             return False
 
+        replace_problem = None
         if replace:
-            webhook_text = self._replace_tags(webhook_text, content_type, g, request)
+            webhook_text, replace_problem = self._replace_tags(webhook_text, content_type, g, request, response)
 
         # The outbound request guard applies here too. This path does not go through
         # fire_webhook(), so without this an inline definition would be the one way to reach an
@@ -366,27 +381,37 @@ class WebHookHandler(BaseEventHandler):
         # default, so an installation that has not opted in sees no change and a trial run does
         # not alter delivery.
         follow_redirects = mode != GuardMode.ENFORCE
+        # The URL of a webhook is the credential of the receiving service, and the data can hold the details of a
+        # user, so the log and the audit entry name only the server
+        webhook_origin = get_url_origin(webhook_url)
         try:
-            log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
-            response = requests.post(webhook_url, data=webhook_text,
-                                     headers={'Content-Type': content_type}, timeout=TIMEOUT,
-                                     allow_redirects=follow_redirects)
-            log.info(response.status_code)
-            log.debug(response)
+            log.info(f"A webhook is called at {webhook_origin}")
+            webhook_response = requests.post(webhook_url, data=webhook_text,
+                                             headers={'Content-Type': content_type}, timeout=TIMEOUT,
+                                             allow_redirects=follow_redirects)
+            # Responses will be logged when running debug. The HTTP response code is shown in the audit too
+            log.info(webhook_response.status_code)
+            log.debug(webhook_response)
         except (HTTPError, ConnectionError, RequestException, Timeout) as err:
-            log.warning(err)
-
-            self.run_details = f"{webhook_url} failed: {err.__class__.__name__}"
+            # The message of the error names the URL
+            log.warning(f"The webhook at {webhook_origin} could not be called: {type(err).__name__}")
+            self.run_details = f"{webhook_origin} could not be called ({type(err).__name__})"
             return False
 
-        if not follow_redirects and 300 <= response.status_code < 400:
-            log.warning(f"The webhook at '{webhook_url}' answered with HTTP "
-                        f"{response.status_code} and the outbound request guard ({mode}) does not "
+        if not follow_redirects and 300 <= webhook_response.status_code < 400:
+            log.warning(f"The webhook at {webhook_origin} answered with HTTP "
+                        f"{webhook_response.status_code} and the outbound request guard ({mode}) does not "
                         f"follow redirects, so nothing was delivered. Configure the handler with "
                         f"the final URL.")
-            self.run_details = (f"{webhook_url}: HTTP {response.status_code} not followed by the "
+            self.run_details = (f"{webhook_origin}: HTTP {webhook_response.status_code} not followed by the "
                                 f"outbound request guard ({mode}), nothing was delivered")
             return False
 
-        self.run_details = f"{webhook_url}: HTTP {response.status_code}"
+        self.run_details = f"{webhook_origin}: HTTP {webhook_response.status_code}"
+        if not webhook_response.ok:
+            # A receiver that answers with an error did not take the data
+            return False
+        if replace_problem:
+            self.run_details = f"{webhook_origin}: {replace_problem}"
+            return False
         return True

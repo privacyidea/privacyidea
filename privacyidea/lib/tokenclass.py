@@ -85,7 +85,7 @@ from datetime import datetime, timedelta, UTC
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
-from sqlalchemy import select, delete
+from sqlalchemy import ColumnElement, select, delete, update
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
@@ -96,8 +96,8 @@ from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
-                                   parse_legacy_time, split_pin_pass)
-from .challenge import get_challenges
+                                   parse_legacy_time, split_pin_pass, convert_column_to_unicode)
+from .challenge import get_challenges, consume_challenge
 from .challenge_types import ChallengeSession
 # Re-exported for backwards compatibility: these live in challenge_types so that
 # models.challenge and lib.cache.redis can import them without a circular import.
@@ -113,10 +113,9 @@ from .error import (TokenAdminError,
 from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .resolver import get_resolver_type
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, TokenCredentialIdHash)
+                      Token, Tokengroup, TokenCredentialIdHash)
 from ..models.token import TOKENINFO_TYPE_SUFFIX
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
@@ -152,14 +151,42 @@ class ClientMode:
     WEBAUTHN = 'webauthn'
 
 
+def lock_token_row(condition: ColumnElement[bool]) -> None:
+    """
+    Lock the row of the token that matches the condition until the end of the transaction, so that a read, compare
+    and write on the token or its token info is not interleaved with the one of another request.
+
+    :param condition: The condition that selects the token, e.g. ``Token.id == token_id``
+    """
+    if db.session.get_bind().dialect.name == "sqlite":
+        # SQLite has no row locks and drops FOR UPDATE. A write takes the lock of the whole database and holds it
+        # until the commit, so the transaction starts with one that changes nothing.
+        db.session.execute(update(Token).where(condition).values(id=Token.id)
+                           .execution_options(synchronize_session=False))
+    else:
+        # Only the id is selected: the eagerly loaded relations of the whole entity would turn the statement into an
+        # outer join, which PostgreSQL refuses to lock.
+        db.session.execute(select(Token.id).where(condition).with_for_update())
+
+
 class TokenClass:
     # Class properties
     using_pin = True
+    # The PIN is the whole credential, there is no OTP value next to it. The otppin policy "none" does not
+    # apply to such a token: its PIN is always checked.
+    pin_is_whole_credential = False
     hKeyRequired = False
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether the token can verify a login. A token that only stores a key or a certificate for another purpose sets
+    # this to False.
+    verifies_login = True
+    # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
+    # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
+    # challenge for it once no further challenge follows.
+    consumes_answered_challenge = True
 
     desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
@@ -210,6 +237,11 @@ class TokenClass:
         "validity_period_start",
     })
     settable_tokeninfo_prefixes = frozenset()
+
+    # Settable keys that must not be empty, declared the same way. The token needs a value to work, so the
+    # enrollment requires one and POST /token/set refuses an empty value.
+    required_tokeninfo_keys = frozenset()
+    required_tokeninfo_prefixes = frozenset()
 
     @classmethod
     def _collect_tokeninfo_declaration(cls, keys_attribute: str, prefixes_attribute: str) -> tuple:
@@ -289,6 +321,18 @@ class TokenClass:
                                                             "settable_tokeninfo_prefixes")
         return key in keys or any(key.startswith(prefix) for prefix in prefixes)
 
+    @classmethod
+    def is_required_tokeninfo_key(cls, key: str) -> bool:
+        """
+        Whether POST /token/set refuses an empty value for the given token info key, see required_tokeninfo_keys.
+
+        :param key: The token info key to check
+        :return: True if the key must not be set to an empty value
+        """
+        keys, prefixes = cls._collect_tokeninfo_declaration("required_tokeninfo_keys",
+                                                            "required_tokeninfo_prefixes")
+        return key in keys or any(key.startswith(prefix) for prefix in prefixes)
+
     @log_with(log)
     def __init__(self, db_token):
         """
@@ -308,6 +352,8 @@ class TokenClass:
         # These are temporary details to store during authentication
         # like the "matched_otp_counter".
         self.auth_details = {}
+        # init_token sets this to True if it created the token, False if it updated an existing token
+        self.newly_created = False
 
     def set_type(self, tokentype):
         """
@@ -463,33 +509,19 @@ class TokenClass:
             self.token.save()
         return user_object
 
-    def is_orphaned(self, orphaned_on_error=True):
+    def is_orphaned(self, orphaned_on_error: bool = True) -> bool:
         """
         Return True if the token is orphaned.
 
         An orphaned token means, that it has a user assigned, but the user
-        does not exist in the user store (anymore)
+        does not exist in the user store (anymore). It decides exactly like
+        :py:func:`privacyidea.lib.token.get_orphaned_serials`, which the token janitors use.
 
+        :param orphaned_on_error: Whether the token is orphaned if its owner can not be looked up
         :return: True / False
-        :rtype: bool
         """
-        orphaned = False
-        owner = self.token.first_owner
-        if owner:
-            if owner.resolver and not get_resolver_type(owner.resolver):
-                # The resolver of the owner was deleted, so the user can not exist any more. This is certain, unlike
-                # an error of the user store, which orphaned_on_error decides about.
-                return True
-            try:
-                if not self.user or not self.user.login or not self.user.realm:
-                    # The token is assigned, but the username does not resolve
-                    orphaned = True
-            except Exception:
-                # If any other resolving error occurs, we also assume the
-                # token to be orphaned per default, You can change this with
-                # the parameter orphaned_on_error.
-                orphaned = orphaned_on_error
-        return orphaned
+        from privacyidea.lib.token import get_orphaned_serials
+        return self.token.serial in get_orphaned_serials([self], orphaned_on_error)
 
     def get_user_displayname(self):
         """
@@ -556,11 +588,12 @@ class TokenClass:
     @check_token_locked
     def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
-        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused, see owned_tokeninfo_keys: its value decides
-        how the token authenticates, so it is maintained by the server and is not free-form metadata.
+        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused, see owned_tokeninfo_keys: its value decides how the token authenticates, so it
+        is maintained by the server and is not free-form metadata.
 
-        Server side code that maintains such a key writes it with write_tokeninfo() instead.
+        Server side code that maintains such a key writes it with write_tokeninfo() instead, and so do the token
+        event handler and the command line tools, which are configured or run by whoever operates the server.
 
         :param key:
         :param value:
@@ -613,8 +646,9 @@ class TokenClass:
             token_info = TokenInfo(token_id=self.token.id, Key=key, Value=value, Type=value_type)
             db.session.add(token_info)
         else:
-            # Update existing info
-            token_info.Value = value
+            # Update existing info. The value is converted to a string like in the constructor of a new entry, so
+            # that for example True is saved as "True" and not as an engine specific value like 1.
+            token_info.Value = convert_column_to_unicode(value)
             token_info.Type = value_type
         if commit_db_session:
             db.session.commit()
@@ -1000,6 +1034,15 @@ class TokenClass:
         """
         return True
 
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        Whether a challenge can be triggered for this token without a PIN, as at /validate/triggerchallenge.
+
+        :param options: The request options
+        :return: True if the token type has a challenge mode
+        """
+        return AuthenticationMode.CHALLENGE in self.mode
+
     @property
     def rollout_state(self):
         return self.token.rollout_state
@@ -1158,6 +1201,38 @@ class TokenClass:
         self.token.save()
 
     @check_token_locked
+    def advance_otp_count(self, new_count: int) -> bool:
+        """
+        Move the OTP counter forward with a single conditional UPDATE and report whether this call moved it.
+
+        An OTP value may be used once, so the request that advances the counter past it is the only one that may
+        accept it. Of several requests that verify the same value at the same time, this returns True for one of
+        them and False for the others, whose value is then as spent as it is for a later, sequential replay.
+
+        The condition is ``count < new_count`` and not ``count = old``: it also refuses a counter that moves
+        backwards, and it does not refuse a request whose own, higher value is still unused while a lower one was
+        consumed in parallel.
+
+        Callers that check an OTP value against a counter of their own - resync - keep ``set_otp_count``, which
+        writes the value unconditionally.
+
+        :param new_count: the counter value that follows the OTP value this request used
+        :return: True only for the call that advanced the counter
+        """
+        # Read the id before the commit: reading it afterwards reloads the expired token first, and the lost
+        # update stays. The commit ends the transaction that read the counter, so the UPDATE compares with the
+        # current row and MariaDB >= 11.6.2 does not refuse it with 1020.
+        token_id = self.token.id
+        db.session.commit()
+        statement = (update(Token)
+                     .where(Token.id == token_id, Token.count < int(new_count))
+                     .values(count=int(new_count))
+                     .execution_options(synchronize_session=False))
+        advanced = db.session.execute(statement).rowcount == 1
+        db.session.commit()
+        return advanced
+
+    @check_token_locked
     def set_pin(self, pin, encrypt=False):
         """
         set the PIN of a token.
@@ -1225,6 +1300,15 @@ class TokenClass:
 
     @check_token_locked
     def inc_failcount(self):
+        # Serialize on the token row, so every failed attempt is counted: without the lock two requests read the
+        # same failcount and write the same value, and several attempts count as one. Read the id before the
+        # commit (reading it after reloads the expired token before the lock is held) and take the lock with a
+        # plain SELECT: refresh(with_for_update=True) fails on PostgreSQL, because the Token mapper eager-loads
+        # with outer joins. The save() below commits and releases the lock.
+        token_id = self.token.id
+        db.session.commit()
+        lock_token_row(Token.id == token_id)
+        db.session.refresh(self.token)
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
             if self.token.failcount == self.token.maxfail:
@@ -1251,6 +1335,14 @@ class TokenClass:
 
     def get_sync_window(self):
         return self.token.sync_window
+
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync, so that a challenge can ask for it.
+
+        :return: True if the next OTP value can still complete an autoresync of the token
+        """
+        return False
 
     # hashlib algorithms:
     # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib
@@ -1318,11 +1410,12 @@ class TokenClass:
 
     def delete_tokeninfo(self, key: str = None):
         """
-        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused unless it is declared deletable, and so is
-        deleting the whole token info, because that would remove the owned keys along with the free-form ones.
+        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused unless it is declared deletable, and so is deleting the whole token info,
+        because that would remove the owned keys along with the free-form ones.
 
-        Server side code that maintains such a key removes it with remove_tokeninfo() instead.
+        Server side code that maintains such a key removes it with remove_tokeninfo() instead, and so do the token
+        event handler and the command line tools.
 
         :param key: The key to delete
         :raises PolicyError: If the key may not be deleted, or if no key is given.
@@ -1350,6 +1443,20 @@ class TokenClass:
             statement = statement.where(TokenInfo.Key == key)
         db.session.execute(statement)
         db.session.commit()
+
+    def remove_tokeninfo_keys(self, keys: list[str], commit_db_session: bool = True) -> None:
+        """
+        Deletes the token info for the given keys in one statement, without checking whether the token class owns
+        the keys. Like remove_tokeninfo(), this is for server side code that maintains the token info of a token.
+
+        :param keys: The keys to delete. If the list is empty, nothing is deleted.
+        :param commit_db_session: Whether to commit the database session after the delete
+        """
+        if not keys:
+            return
+        db.session.execute(delete(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key.in_(keys)))
+        if commit_db_session:
+            db.session.commit()
 
     def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None) -> bool:
         """
@@ -1996,8 +2103,14 @@ class TokenClass:
                     options["challenge"] = challenge.challenge
                     options["data"] = challenge.get_data()
                     if challenge.session == ChallengeSession.ENROLLMENT:
+                        # Claim the challenge before enrolling, so a second request cannot overwrite what this one
+                        # enrolls. An enrollment that rejects its input ends the enrollment either way: the only
+                        # class that can reject it deletes the token before it raises.
+                        if not consume_challenge(challenge):
+                            log.info(f"The enrollment challenge of token {self.token.serial} was used by another "
+                                     f"request.")
+                            break
                         self.enroll_via_validate_2nd_step(passw, options=options)
-                        challenge.delete()
                         # Basically we have a successfully answered challenge
                         otp_counter = 0
                     else:
@@ -2013,8 +2126,12 @@ class TokenClass:
                             otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
-                            # successful result and delete the challenge object.
-                            challenge.delete()
+                            # successful result and delete the challenge object. Only the request that removes it
+                            # is accepted; another one that answered it at the same time is not.
+                            if not consume_challenge(challenge):
+                                log.info(f"The challenge {transaction_id} of token {self.token.serial} was used by "
+                                         f"another request.")
+                                otp_counter = -1
                             break
                         else:
                             # increase the received_count

@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { CommonModule } from "@angular/common";
 import {
   Component,
@@ -38,7 +40,6 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -49,17 +50,23 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandler, EventService, isValidOrdering, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-event",
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     CommonModule,
     MatTableModule,
@@ -77,8 +84,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatTooltip,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
-    MatMenuModule
+    PaginatorCompactRangeDirective
   ],
   standalone: true,
   templateUrl: "./event.component.html",
@@ -125,6 +131,29 @@ export class EventComponent {
   });
 
   detailedView = signal(false);
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@event.createNewEvent:Create New Event Handler`,
+      tone: "primary",
+      width: "xl",
+      icon: "flag",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("eventhandling_write"),
+      run: () => this.onCreateNewEventHandler()
+    },
+    {
+      id: "detailed-view",
+      label: $localize`:@@common.detailedView:Detailed View`,
+      tone: "secondary",
+      width: "m",
+      kind: "toggle",
+      checked: this.detailedView(),
+      run: () => this.toggleDetailedView()
+    }
+  ]);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   paginator = viewChild(MatPaginator);
@@ -197,7 +226,7 @@ export class EventComponent {
   }
 
   onEditEventHandler(eventHandler: EventHandler) {
-    this.router.navigateByUrl(ROUTE_PATHS.EVENTS_DETAILS + eventHandler.id);
+    this.router.navigate([ROUTE_PATHS.EVENTS_DETAILS, eventHandler.id]);
   }
 
   onCreateNewEventHandler() {
@@ -234,7 +263,7 @@ export class EventComponent {
     const ordering = Number(input.value);
     // The upper bound is the largest value the ordering column holds, so an out-of-range value is rejected
     // here instead of failing in the database
-    if (!Number.isInteger(ordering) || ordering < 0 || ordering > MAX_ORDERING || input.value.trim() === "") {
+    if (input.value.trim() === "" || !isValidOrdering(ordering)) {
       input.value = String(eventHandler.ordering);
       this.notificationService.warning(
         $localize`:@@event.orderingHasToBeAWholeNumber:The ordering has to be a whole number between 0 and ${MAX_ORDERING}:MAXIMUM:.`

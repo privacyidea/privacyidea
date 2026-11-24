@@ -170,11 +170,14 @@ Sat, Sun.
 """
 import ast
 import copy
+import functools
 import logging
 import re
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from operator import itemgetter
+from types import MappingProxyType
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
@@ -182,6 +185,7 @@ from sqlalchemy import Text, select
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.cache.user import cached_user_id
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
@@ -190,15 +194,16 @@ from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundE
 from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms, get_ordered_resolvers
-from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict,
-                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like,
+                                   USER_AGENT_NAME_PATTERN)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names, import_entries)
 from .log import log_with
 from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
@@ -207,6 +212,28 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ResolverLogin:
+    """
+    A login name in a resolver, the key for remembering whether the resolver contains the user.
+    """
+    resolver: str
+    login: str
+
+
+def _user_in_resolver(login: str, resolver_name: str) -> bool:
+    """
+    Check if a user with the given login name is contained in the resolver.
+
+    :param login: The login name of the user
+    :param resolver_name: The name of the resolver
+    :return: True if the resolver knows a user id for the login name
+    :raises ResolverError: if the resolver can not load its config, e.g. because its user store is not reachable
+    """
+    resolver = get_resolver_object(resolver_name)
+    return resolver is not None and cached_user_id(resolver, resolver_name, login) not in (None, "")
 
 
 def check_policy_name(name):
@@ -229,6 +256,8 @@ def check_policy_name(name):
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
 DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll']
+# The name of a user agent as get_plugin_info_from_useragent extracts it from the request
+USER_AGENT_NAME_RE = re.compile(USER_AGENT_NAME_PATTERN)
 
 comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
                                  "need to escape it with a backslash.")
@@ -259,6 +288,11 @@ class SCOPE:
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
                         cls.CONTAINER, cls.TOKEN, cls.HARDENING, cls.CONDITIONAL_ACCESS]
         return valid_scopes
+
+
+# The scopes that grant rights. In these scopes, a policy without actions applies to every action of the scope. In the
+# other scopes, a policy without actions applies to no action.
+SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS = (SCOPE.ADMIN, SCOPE.USER, SCOPE.CONTAINER)
 
 
 class TYPE:
@@ -356,10 +390,13 @@ class PolicyClass:
     config object which contains the current set of policies.
 
     Hence, reloading the request-local config object also reloads the set of policies.
+
+    The object remembers whether a user is contained in a resolver checked for a policy with
+    ``check_all_resolvers``, so that each resolver is asked once per object, i.e. once per request.
     """
 
     def __init__(self):
-        pass
+        self._resolver_membership: dict[ResolverLogin, bool] = {}
 
     @property
     def policies(self):
@@ -434,7 +471,8 @@ class PolicyClass:
 
         If additional_realms are passed as well as a user, all policies applicable to a realm of the additional_realms
         list or applicable to the user realm combination are returned. The user is only matched in combination with the
-        realm parameter and not with the additional realms.
+        realm parameter and not with the additional realms. A policy for users without a realm matches these users in
+        every realm, as it does without additional realms.
 
         :param name: The name of the policy
         :param scope: The scope of the policy
@@ -497,6 +535,9 @@ class PolicyClass:
                     if not policy.get(searchkey):
                         # We also find the policies with no distinct information
                         # about the request value
+                        if (searchkey == "action"
+                                and policy.get("scope") not in SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS):
+                            continue
                         new_policies.append(policy)
                     else:
                         value_found, value_excluded = self._search_value(policy.get(searchkey), searchvalue)
@@ -530,8 +571,12 @@ class PolicyClass:
                         value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             if searchkey == "user" and additional_realms and len(additional_realms) > 1 and realm:
-                                # we need to check if the policy is for the correct user realm
-                                if user in policy.get("user") and realm in policy.get("realm"):
+                                # The user only matches together with the user realm, not with one of the additional
+                                # realms. A policy without realms matches the user in every realm.
+                                policy_realms = policy.get("realm")
+                                realm_found, realm_excluded = (self._search_value(policy_realms, realm)
+                                                               if policy_realms else (True, False))
+                                if realm_found and not realm_excluded:
                                     new_policies.append(policy)
                             else:
                                 new_policies.append(policy)
@@ -539,46 +584,12 @@ class PolicyClass:
                 log.debug("Policies after matching {!s}={!s}: {!s}".format(
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
 
-        # We need to act individually on the resolver key word
-        # We either match the resolver exactly or we match another resolver (
-        # which is not the first resolver) of the user, but only if the
-        # check_all_resolvers flag in the policy is set.
-        if resolver is not None:
-            new_policies = []
-            user_resolvers = []
-            for policy in reduced_policies:
-                if policy.get("check_all_resolvers"):
-                    if realm and user:
-                        # We have a realm and a user, so get all resolvers of that realm
-                        # in priority order to match against the policy's resolver list.
-                        if not user_resolvers:
-                            user_resolvers = get_ordered_resolvers(realm)
-                        for reso in user_resolvers:
-                            value_found, value_excluded = self._search_value(
-                                policy.get("resolver"), reso)
-                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
-                            if value_found and not value_excluded:
-                                new_policies.append(policy)
-                                break
-                elif not policy.get("resolver"):
-                    # We also find the policies with no distinct information
-                    # about the request value
-                    new_policies.append(policy)
-                else:
-                    value_found, value_excluded = self._search_value(
-                        policy.get("resolver"), resolver)
-                    if value_found and not value_excluded:
-                        new_policies.append(policy)
-
-            reduced_policies = new_policies
-            log.debug("Policies after matching resolver={!s}: {!s}".format(
-                resolver, [p.get('name') for p in reduced_policies]))
-
         # Match the privacyIDEA node
         if pinode is not None:
             new_policies = []
             for policy in reduced_policies:
-                # The policy either matches if it has no pinode defined or if the pinode is contained in the list
+                # The policy either matches if it has no pinode defined or if the pinode is contained in the list.
+                # The node names are compared exactly, set_policy rejects wildcards and negations.
                 if not policy.get("pinode") or pinode in policy.get("pinode"):
                     new_policies.append(policy)
 
@@ -637,6 +648,60 @@ class PolicyClass:
             reduced_policies = new_policies
             log.debug("Policies after matching client={!s}: {!s}".format(
                 client, [p.get('name') for p in reduced_policies]))
+
+        # We need to act individually on the resolver key word
+        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
+        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
+        # This filter runs last, because check_all_resolvers can ask the user store. A policy that another filter
+        # removes does not cause a request to the user store.
+        if resolver is not None:
+            new_policies = []
+            user_resolvers = []
+            for policy in reduced_policies:
+                if policy.get("check_all_resolvers"):
+                    if realm and user:
+                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
+                        # A resolver ranked above can not hold another possible resolver of the user.
+                        # If the user's resolver is not in the list of the realm, for example because it is pinned
+                        # to another node, its rank is unknown and all resolvers of the realm are checked.
+                        if not user_resolvers:
+                            realm_resolvers = get_ordered_resolvers(realm)
+                            if resolver in realm_resolvers:
+                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
+                            else:
+                                user_resolvers = [resolver] + realm_resolvers
+                        for reso in user_resolvers:
+                            value_found, value_excluded = self._search_value(
+                                policy.get("resolver"), reso)
+                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            # A listed resolver only counts if the user is contained in it.
+                            if value_found and not value_excluded:
+                                key = ResolverLogin(resolver=reso, login=user)
+                                if key not in self._resolver_membership:
+                                    try:
+                                        self._resolver_membership[key] = (reso == resolver
+                                                                          or _user_in_resolver(user, reso))
+                                    except Exception as error:
+                                        log.error(f"Could not check if the user {user!r} is contained in the "
+                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
+                                                  f"check_all_resolvers: {error}")
+                                        raise
+                                if self._resolver_membership[key]:
+                                    new_policies.append(policy)
+                                    break
+                elif not policy.get("resolver"):
+                    # We also find the policies with no distinct information
+                    # about the request value
+                    new_policies.append(policy)
+                else:
+                    value_found, value_excluded = self._search_value(
+                        policy.get("resolver"), resolver)
+                    if value_found and not value_excluded:
+                        new_policies.append(policy)
+
+            reduced_policies = new_policies
+            log.debug("Policies after matching resolver={!s}: {!s}".format(
+                resolver, [p.get('name') for p in reduced_policies]))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -984,7 +1049,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of MENUs to be displayed
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         role = logged_in_user.get("role")
         user_rights = self.ui_get_rights(role,
                                          logged_in_user.get("realm"),
@@ -992,12 +1056,9 @@ class PolicyClass:
                                          client,
                                          user_agent)
         main_menus = []
-        static_rights = get_static_policy_definitions(role)
-        enroll_rights = get_dynamic_policy_definitions(role)
-        static_rights.update(enroll_rights)
+        action_menus = get_policy_action_menus(role)
         for r in user_rights:
-            menus = static_rights.get(r, {}).get("mainmenu", [])
-            main_menus.extend(menus)
+            main_menus.extend(action_menus.get(r, ()))
 
         main_menus = list(set(main_menus))
         return main_menus
@@ -1018,7 +1079,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of actions
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1061,8 +1121,7 @@ class PolicyClass:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope)
-            rights.update(get_dynamic_policy_definitions(scope))
+            rights = get_policy_action_menus(scope)
         rights = list(rights)
         log.debug(f"returning the admin rights: {rights!s}")
         return rights
@@ -1187,10 +1246,79 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _action_definitions_for_scope(scope: str) -> dict:
+    """Return the definitions of the actions of the given scope (static + dynamic), keyed by the action name."""
+    from .token import get_dynamic_policy_definitions
+    return get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
+
+
 def _allowed_actions_for_scope(scope: str) -> set:
     """Return the set of action names defined for the given scope (static + dynamic)."""
-    from .token import get_dynamic_policy_definitions
-    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+    return set(_action_definitions_for_scope(scope))
+
+
+def _bool_actions_for_scope(scope: str) -> set:
+    """Return the names of the boolean actions of the given scope."""
+    return {name for name, definition in _action_definitions_for_scope(scope).items()
+            if definition.get("type") == "bool"}
+
+
+def _bool_action_value(value) -> bool | None:
+    """
+    What the value of a boolean action means: True for an empty value or a value is_true accepts, False for False, 0,
+    "0" and "false" in any case, None for any other value, like "hotp".
+    """
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ("false", "0"):
+            return False
+        return True if value == "" or is_true(value) else None
+    if value is None or is_true(value):
+        return True
+    return False if value is False or value == 0 else None
+
+
+def negate_disabled_bool_actions(scope: str, action: str | dict) -> str | dict:
+    """
+    Turn a boolean action with a false value (like ``policywrite=False``) into the excluded action ``-policywrite``.
+    The policy matching only checks whether an action is set, so a disabled boolean action is stored as its exclusion.
+    A boolean action with an empty value is stored without the value, any other value stays as it is.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: The policy actions in the same form
+    """
+    bool_actions = _bool_actions_for_scope(scope)
+
+    def stored_key(key, value):
+        # The key a boolean action is stored with, or None if it keeps its value
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return key
+        if _bool_action_value(value) is False:
+            return f"-{key}"
+        return None
+
+    if isinstance(action, dict):
+        negated_action = {}
+        for key, value in action.items():
+            new_key = stored_key(key, value) if key in bool_actions else None
+            if new_key:
+                negated_action[new_key] = True
+            else:
+                negated_action[key] = value
+        return negated_action
+
+    # Only replace the changed actions, so that the other actions are stored exactly as given
+    parts = []
+    for part in re.split(r'(?<!\\),', action):
+        key_value = part.strip().split("=", 1)
+        if len(key_value) == 2 and key_value[0] in bool_actions:
+            new_key = stored_key(*key_value)
+            if new_key:
+                # Keep the space after the separating comma
+                part = part[:len(part) - len(part.lstrip())] + new_key
+        parts.append(part)
+    return ",".join(parts)
 
 
 def validate_actions(scope: str, action: str | dict) -> bool:
@@ -1211,11 +1339,11 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
-    invalid_actions = list(set(raw_actions) - allowed_actions)
+    invalid_actions = sorted(set(raw_actions) - allowed_actions)
 
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
-        raise ParameterError(f"Invalid actions {invalid_actions}!")
+        raise ParameterError(f"Invalid actions for scope '{scope}': {invalid_actions}!")
 
     # Evaluate the action values
     for action_key, action_value in actions.items():
@@ -1279,12 +1407,50 @@ def validate_values(values: str | list | None, allowed_values: list, name: str) 
         if isinstance(values, str):
             values = values.replace(" ", "").split(",")
         elif not isinstance(values, list):
-            raise ParameterError(f"Invalid {name.capitalize()} type '{type(values)}'!")
+            raise ParameterError(f"Invalid {name} type '{type(values)}'!")
         values = remove_wildcards_and_negations(values)
-        undefined_values = list(set(values) - set(allowed_values))
+        undefined_values = sorted(set(values) - set(allowed_values))
         if undefined_values:
-            raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
+            raise ParameterError(f"Undefined {name}: {undefined_values}!")
     return True
+
+
+def _split_values(values: str | list | None, name: str) -> list[str]:
+    """
+    Splits the values into a list of stripped, non-empty strings. Each entry of a list is also split at the commas,
+    as the stored value is split at the commas when the policy is read.
+
+    :param values: Either a list of strings or a comma separated list as single string
+    :param name: The name of the parameter used for an error message
+    :return: A list of the values
+    """
+    if values is None:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    elif not isinstance(values, list):
+        raise ParameterError(f"Invalid {name} type '{type(values)}'!")
+    if any(value is not None and not isinstance(value, str) for value in values):
+        raise ParameterError(f"Invalid {name}: all values must be strings!")
+    return [part.strip() for value in values if value for part in value.split(",") if part.strip()]
+
+
+def validate_user_agents(user_agents: str | list | None) -> list[str]:
+    """
+    Checks that each user agent is a plain user agent name like "privacyidea-cp". The policy match compares the
+    name from the user agent of the request (see :func:`privacyidea.lib.utils.get_useragent_name`), so a version,
+    a comment, a wildcard or a "!" would let the policy apply on no request. A leading "-" is part of the name, as
+    in the request.
+
+    :param user_agents: Either a list of strings or a comma separated list as single string
+    :return: The user agents without empty entries, raise a ParameterError if one is invalid
+    """
+    agents = _split_values(user_agents, "User-Agents")
+    invalid_agents = sorted(agent for agent in agents if not USER_AGENT_NAME_RE.fullmatch(agent))
+    if invalid_agents:
+        raise ParameterError(f"Invalid User-Agents: {invalid_agents}! A user agent must be a plain name that only "
+                             f"contains letters, digits, '_' and '-', without a version or wildcards.")
+    return agents
 
 
 @log_with(log)
@@ -1380,15 +1546,16 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
 def set_policy(name: str | None = None, scope: str | None = None, action: str | list | None = None,
                realm: str | list | None = None, resolver: str | list | None = None,
                user: str | list | None = None, time: str | None = None, client: str | None = None,
-               active: bool = True, adminrealm: str | list | None = None, adminuser: str | list | None = None,
-               priority: int | str | None = None, check_all_resolvers: bool = False,
+               active: bool | None = None, adminrealm: str | list | None = None, adminuser: str | list | None = None,
+               priority: int | str | None = None, check_all_resolvers: bool | None = None,
                conditions: list | None = None, pinode: str | list | None = None,
-               description: str | None = None, user_case_insensitive: bool = False,
+               description: str | None = None, user_case_insensitive: bool | None = None,
                user_agents: str | list[str] | None = None) -> int:
     """
     Function to set a policy.
 
-    If the policy with this name already exists, it updates the policy.
+    If the policy with this name already exists, it updates the policy. Parameters that are None keep their
+    stored value.
     It expects a dict of with the following keys:
 
     :param name: The name of the policy
@@ -1445,8 +1612,22 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     validate_values(resolver, valid_resolvers, "Resolvers")
 
     # check for valid nodes
-    valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
-    validate_values(pinode, valid_nodes, "privacyIDEA Nodes")
+    if pinode is not None:
+        nodes = _split_values(pinode, "privacyIDEA Nodes")
+        valid_nodes = [node["name"] for node in get_privacyidea_nodes()]
+        # The node match compares the node names exactly, so a wildcard or a negation would apply on no node
+        unsupported_nodes = [node for node in nodes if "*" in node or node[0] in ("!", "-")]
+        if unsupported_nodes:
+            raise ParameterError(f"Wildcards and negations are not supported for privacyIDEA Nodes: "
+                                 f"{unsupported_nodes}! Select the nodes on which the policy applies.")
+        validate_values(nodes, valid_nodes, "privacyIDEA Nodes")
+        # Store the cleaned values, which also drops empty entries and None from a list
+        pinode = ", ".join(nodes)
+
+    # check for valid user agents. The user agent match compares the name of the user agent of the request.
+    if user_agents is not None:
+        # Store the cleaned values, which also drops empty entries and None from a list
+        user_agents = ", ".join(validate_user_agents(user_agents))
 
     # check for valid time
     if time is not None and len(time) > 0:
@@ -1455,9 +1636,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
         except (ValueError, ParameterError):
             raise ParameterError(f"Invalid time format '{time}'!")
 
-    active = is_true(active)
-    check_all_resolvers = is_true(check_all_resolvers)
-    user_case_insensitive = is_true(user_case_insensitive)
+    if active is not None:
+        active = is_true(active)
+    if check_all_resolvers is not None:
+        check_all_resolvers = is_true(check_all_resolvers)
+    if user_case_insensitive is not None:
+        user_case_insensitive = is_true(user_case_insensitive)
 
     if isinstance(action, list):
         action = ", ".join(action)
@@ -1478,15 +1662,6 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
             check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
         except AddrFormatError:
             raise PrivacyIDEAError(_("Invalid client definition!"), id=302)
-    if isinstance(pinode, list):
-        pinode = ", ".join(pinode)
-    if isinstance(user_agents, list):
-        # Remove None or empty values
-        user_agents = [user_agent for user_agent in user_agents if user_agent]
-        user_agents = ", ".join(user_agents)
-    if isinstance(user_agents, str):
-        # Remove empty or whitespace-only entries from a comma-separated string
-        user_agents = ", ".join([ua.strip() for ua in user_agents.split(",") if ua.strip()])
     # Evaluate condition parameter and convert tuple into PolicyConditionClass object
     conditions_data = []
     if conditions is not None:
@@ -1499,11 +1674,13 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     # validate action values
     if action is not None:
         if scope is not None:
-            validate_actions(scope, action)
+            action_scope = scope
         elif policy:
-            validate_actions(policy.scope, action)
+            action_scope = policy.scope
         else:
             raise ParameterError("Scope is required to set action values!")
+        validate_actions(action_scope, action)
+        action = negate_disabled_bool_actions(action_scope, action)
     if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
@@ -1541,9 +1718,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
             policy.pinode = pinode
         if user_agents is not None:
             policy.user_agents = user_agents
-        policy.active = active
-        policy.check_all_resolvers = check_all_resolvers
-        policy.user_case_insensitive = user_case_insensitive
+        if active is not None:
+            policy.active = active
+        if check_all_resolvers is not None:
+            policy.check_all_resolvers = check_all_resolvers
+        if user_case_insensitive is not None:
+            policy.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             # only update the conditions if there are any
             set_policy_conditions(conditions_data, policy)
@@ -1564,8 +1744,9 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
                                                        PolicyDescription.object_type == "policy")
     description_db = db.session.scalars(description_stmt).first()
     if description_db:
-        description_db.description = description
-    else:
+        if description is not None:
+            description_db.description = description
+    elif description:
         new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
         db.session.add(new_description)
     save_config_timestamp()
@@ -1658,10 +1839,31 @@ def export_policies(policies):
         for policy in policies:
             file_contents += "[{!s}]\n".format(policy.get("name"))
             for key, value in policy.items():
-                file_contents += f"{key!s} = {value!s}\n"
+                file_contents += f"{key!s} = {_quote_policy_file_value(str(value), policy.get('name'), key)}\n"
             file_contents += "\n"
 
     return file_contents
+
+
+def _quote_policy_file_value(value: str, policy_name: str, key: str) -> str:
+    """
+    Puts a value of the policy file in triple quotes if it contains a "#" or a line break. Without the quotes,
+    ConfigObj reads a "#" as the start of a comment and cuts the value there, and a line break ends the value.
+    Other values are written as they are, as in the files of older versions.
+
+    :param value: The value as it is written to the file
+    :param policy_name: The name of the policy, used for a log message
+    :param key: The key of the value, used for a log message
+    :return: The value for the policy file
+    """
+    if "#" not in value and "\n" not in value:
+        return value
+    for quote in ('"""', "'''"):
+        if quote not in value:
+            return f"{quote}{value}{quote}"
+    log.warning(f"The value of '{key}' in the policy '{policy_name}' contains both kinds of triple quotes and can "
+                f"not be quoted. The import of the policy file will fail for this policy.")
+    return value
 
 
 @log_with(log)
@@ -1676,30 +1878,37 @@ def import_policies(file_contents):
 
     and key value pairs.
 
+    Each policy is imported on its own. If a policy can not be imported, the other policies are still imported.
+
     :param file_contents: The contents of the file
     :type file_contents: basestring
     :return: number of imported policies
     :rtype: int
+    :raises ParameterError: if at least one policy could not be imported. The message names the failed and the
+        imported policies.
     """
-    policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
-    res = 0
-    for policy_name, policy in policies.items():
-        ret = set_policy(name=policy_name,
-                         action=ast.literal_eval(policy.get("action")),
-                         scope=policy.get("scope"),
-                         realm=ast.literal_eval(policy.get("realm", "[]")),
-                         user=ast.literal_eval(policy.get("user", "[]")),
-                         resolver=ast.literal_eval(policy.get("resolver", "[]")),
-                         client=ast.literal_eval(policy.get("client", "[]")),
-                         pinode=ast.literal_eval(policy.get("pinode", "[]")),
-                         time=policy.get("time", ""),
-                         priority=policy.get("priority", "1"),
-                         user_agents=ast.literal_eval(policy.get("user_agents", "[]"))
-                         )
-        if ret > 0:
-            log.debug(f"import policy {policy_name!s}: {ret!s}")
-            res += 1
-    return res
+    # The values are Python literals like "['realm1', 'realm2']" for ast.literal_eval. Without list_values=False,
+    # ConfigObj splits a value with a comma into a list and fails on these literals. A value with a "#" or a line
+    # break is in triple quotes (see export_policies), which ConfigObj removes.
+    policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8", list_values=False)
+
+    def import_policy_entry(policy_name: str, policy: dict) -> int:
+        return set_policy(name=policy_name,
+                          action=ast.literal_eval(policy.get("action")),
+                          scope=policy.get("scope"),
+                          realm=ast.literal_eval(policy.get("realm", "[]")),
+                          user=ast.literal_eval(policy.get("user", "[]")),
+                          resolver=ast.literal_eval(policy.get("resolver", "[]")),
+                          client=ast.literal_eval(policy.get("client", "[]")),
+                          pinode=ast.literal_eval(policy.get("pinode", "[]")),
+                          time=policy.get("time", ""),
+                          priority=policy.get("priority", "1"),
+                          user_agents=ast.literal_eval(policy.get("user_agents", "[]")))
+
+    # ParameterError keeps the HTTP status 400 of POST /policy/import for a policy that can not be imported
+    imported_policies = import_entries(policies.items(), import_policy_entry, "policies",
+                                       error_class=ParameterError)
+    return len(imported_policies)
 
 
 @log_with(log)
@@ -2070,8 +2279,8 @@ def get_static_policy_definitions(scope=None):
                                               "group": GROUP.SYSTEM,
                                               'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_DOWNLOAD: {'type': 'bool',
-                                          "desc": _("The admin is allowed to download "
-                                                    "the complete auditlog."),
+                                          "desc": _("The admin is allowed to download the audit log entries "
+                                                    "that their auditlog policies let them see."),
                                           "group": GROUP.SYSTEM,
                                           'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.ADDUSER: {'type': 'bool',
@@ -2684,32 +2893,6 @@ def get_static_policy_definitions(scope=None):
                 'value': list(range(1, 61)),
                 'desc': _('The length of the validity for the temporary '
                           'token (in days).')},
-            PolicyAction.REGISTRATIONCODE_LENGTH: {
-                'type': 'int',
-                'value': list(range(1, 32)),
-                "desc": _("Set the length of registration codes."),
-                'group': GROUP.TOKEN},
-            PolicyAction.REGISTRATIONCODE_CONTENTS: {
-                'type': 'str',
-                "desc": _("Specify the required "
-                          "contents of the registration code. "
-                          "(c)haracters, (n)umeric, "
-                          "(s)pecial. Use modifiers +/- or a list "
-                          "of allowed characters [1234567890]"),
-                'group': GROUP.TOKEN},
-            PolicyAction.PASSWORD_LENGTH: {
-                'type': 'int',
-                'value': list(range(1, 32)),
-                "desc": _("Set the length of the password of generated password tokens."),
-                'group': GROUP.TOKEN},
-            PolicyAction.PASSWORD_CONTENTS: {
-                'type': 'str',
-                "desc": _("Specify the required "
-                          "contents of the password of a password token. "
-                          "(c)haracters, (n)umeric, "
-                          "(s)pecial. Use modifiers +/- or a list "
-                          "of allowed characters [1234567890]"),
-                'group': GROUP.TOKEN},
             PolicyAction.EMAILVALIDATION: {
                 'type': 'str',
                 'desc': _("Specify the email validator that should be used to validate "
@@ -2734,10 +2917,19 @@ def get_static_policy_definitions(scope=None):
                           "by an identified API client (the X-API-Key header): without one, no "
                           "cookie is issued and the recognition endpoint returns 401.")},
             PolicyAction.REMEMBER_DEVICE_VALIDITY: {
-                'type': 'int',
-                'desc': _("How many days a 'remember this device' cookie stays valid "
-                          "(default 30 if unset). Scope it with a realm/user condition to give "
-                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+                'type': 'str',
+                'desc': _("How long a 'remember this device' cookie stays valid after it is issued, "
+                          "like 30d, 8h or 90m. A number without a unit counts as days. The default "
+                          "is 30d. Recognizing the device does not extend it. Scope it with a "
+                          "realm/user condition to give different lifetimes, e.g. a shorter one for "
+                          "admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT: {
+                'type': 'str',
+                'desc': _("A remembered device that is not recognized for this long, like 7d or 4h, "
+                          "is no longer recognized and needs a new login with the second factor. "
+                          "Each recognition starts it again, but the device never stays longer than "
+                          "its remember_device_validity. A number without a unit counts as days. If "
+                          "unset, a device stays recognized until its remember_device_validity ends.")},
             PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
                 'type': 'int',
                 'desc': _("Maximum number of remembered devices a single user may have per API "
@@ -3365,6 +3557,23 @@ def get_static_policy_definitions(scope=None):
     return ret
 
 
+@functools.lru_cache(maxsize=2)
+def get_policy_action_menus(scope: str) -> MappingProxyType:
+    """
+    Return the WebUI main menus of every policy action in the scope, in the order of the policy definitions.
+
+    The action names and their menus come from the code, the token classes and the token types that pi.cfg allows to
+    enroll (PI_ENABLE_TOKEN_TYPE_ENROLLMENT). These change only when the process restarts, so the menus are built once
+    per scope and process. The full policy definitions are not cached: they also hold database entries like the SMTP
+    servers, and descriptions in the language of the request.
+
+    :param scope: SCOPE.ADMIN or SCOPE.USER
+    :return: A read-only mapping from the action name to a tuple of main menus
+    """
+    return MappingProxyType({action: tuple(definition.get("mainmenu", []))
+                             for action, definition in _action_definitions_for_scope(scope).items()})
+
+
 def get_action_values_from_options(scope, action, options):
     """
     This function is used in the library level to fetch policy action values
@@ -3710,14 +3919,15 @@ class Match:
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner and the token realms.
+        From the token object we try to determine the user as the owner, the token realms and the container of the
+        token.
         The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
         condition.
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token: The token where the user object or the realm should match.
+        :param token: The token where the user object, the realm or the container should match.
         :rtype: Match
         """
         if token:
@@ -3725,12 +3935,16 @@ class Match:
             realms = token.get_realms()
             # serial is required for the extended condition checks (TODO: allow passing the token object)
             serial = token.get_serial()
+            containers = token.token.container
+            container_serial = containers[0].serial if containers else None
         else:
             log.debug("No token available. Matching policies without user and realm.")
             owner = User()
             realms = None
             serial = None
-        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
+            container_serial = None
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial,
+                           container_serial=container_serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":
@@ -3925,10 +4139,9 @@ def import_policy(data, name=None, skip_invalid=False):
         whole policy. A policy that has no valid action left after dropping is
         skipped without causing a failure.
     """
-    log.debug(f'Import policy config: {data!s}')
-    imported = []
+    log.debug(f'Import policy config: {get_import_names(data)}')
+    entries = []
     skipped = []
-    failed = {}
     for res_data in data:
         policy_name = res_data.get('name')
         if name and name != policy_name:
@@ -3948,23 +4161,14 @@ def import_policy(data, name=None, skip_invalid=False):
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)
                 continue
-        try:
-            rid = set_policy(**res_data)
-        except Exception as e:
-            log.warning(f'Could not import policy "{policy_name}": {e!r}')
-            failed[policy_name] = e
-            continue
-        # TODO: we have no information if a new policy was created or an
-        #  existing policy updated. We would need to enhance "set_policy()"
-        #  to either force overwriting or not and also return if the policy
-        #  existed before.
-        imported.append(policy_name)
-        log.info(f'Import of policy "{policy_name}" finished, id: {rid!s}')
+        entries.append((policy_name, res_data))
 
     if skipped:
         log.warning(f'Skipped policies with no valid actions: {skipped}')
 
-    if failed:
-        failure_summary = ', '.join(f'"{n}" ({e!r})' for n, e in failed.items())
-        raise PolicyError(f"Could not import the following policies: "
-                          f"{failure_summary}. Successfully imported: {imported}.")
+    # TODO: we have no information if a new policy was created or an
+    #  existing policy updated. We would need to enhance "set_policy()"
+    #  to either force overwriting or not and also return if the policy
+    #  existed before.
+    import_entries(entries, lambda policy_name, res_data: set_policy(**res_data), "policies",
+                   error_class=PolicyError)

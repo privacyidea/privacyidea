@@ -383,6 +383,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                             "No recipients will be notified.")
                 self.run_details = ("No admin realm configured for the notification. "
                                     "No notification was sent.")
+                ret = False
         elif notify_type == NOTIFY_TYPE.LOGGED_IN_USER:
             # Send notification to the logged in user
             if logged_in_user.get("username") and not logged_in_user.get(
@@ -414,7 +415,13 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "email": email
             }
 
-        if recipient or action.lower() == "savefile":
+        if not recipient and action.lower() != "savefile":
+            if ret:
+                # The audit entry of the handler records that nobody was notified
+                log.warning(f"Unable to determine the recipient {notify_type!r} of the notification.")
+                self.run_details = f"No recipient {notify_type!r} found, no notification was sent."
+                ret = False
+        else:
             # In case of "savefile" we do not need a recipient
             # Collect all data
             body = handler_options.get("body") or DEFAULT_BODY
@@ -429,9 +436,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     log.debug(traceback.format_exc())
 
             subject = handler_options.get("subject") or "An action was performed on your token."
-            serial = (request.all_data.get("serial")
-                      or content.get("detail", {}).get("serial")
-                      or g.audit_object.audit_data.get("serial"))
+            serial = self._get_token_serials(request, content, g)
             container_serial = request.all_data.get("container_serial")
             registrationcode = content.get("detail", {}).get("registrationcode")
             pin = content.get("detail", {}).get("pin")
@@ -557,12 +562,16 @@ class UserNotificationEventHandler(BaseEventHandler):
                 outfile = os.path.normpath(os.path.join(spooldir, filename))
                 if not outfile.startswith(spooldir):
                     log.error(f'Cannot write outside of spooldir {spooldir}!')
+                    self.run_details = "The notification file is outside of the spool directory."
+                    ret = False
                 else:
                     try:
                         with open(outfile, "w") as f:
                             f.write(body)
                     except Exception as err:
                         log.error(f"Failed to write notification file: {err}")
+                        self.run_details = "The notification file could not be written."
+                        ret = False
 
             elif action.lower() == "sendsms":
                 if not recipient:
@@ -578,5 +587,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                     log.info(f"Sent a notification sms to user {recipient}")
                 else:
                     log.warning(f"Failed to send a notification sms to user {recipient}")
+                    # The phone number is not written to the audit entry
+                    self.run_details = "Failed to send the SMS notification."
 
         return ret

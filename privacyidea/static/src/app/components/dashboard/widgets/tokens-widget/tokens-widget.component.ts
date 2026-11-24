@@ -113,6 +113,9 @@ export class TokensWidgetComponent extends DashboardWidget {
 
   readonly canListUsers = computed(() => this.authService.actionAllowed("userlist"));
 
+  /** Realm creation is guarded by the same right as the realm endpoint itself. */
+  readonly canCreateRealm = computed(() => this.authService.actionAllowed("resolverwrite"));
+
   /**
    * The realm counted, which is always a single one: users can only be listed per realm, and across
    * every realm the "without tokens" count would walk every user store. The stored choice wins, then
@@ -285,7 +288,9 @@ export class TokensWidgetComponent extends DashboardWidget {
    * filter drops the exact marking.
    */
   private withRealm(filter: FilterValue): FilterValue {
-    return filter.addEntry("tokenrealm", this.realm()).withExactKey("tokenrealm");
+    const realm = this.realm();
+    // Without a realm there is nothing to add: an empty tokenrealm would ask for tokens without a realm.
+    return realm ? filter.addEntry("tokenrealm", realm).withExactKey("tokenrealm") : filter;
   }
 
   /** Dropped, or the entries of every realm ever loaded would be refetched on each refresh. */

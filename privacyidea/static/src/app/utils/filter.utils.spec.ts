@@ -22,6 +22,7 @@ import {
   exactMatch,
   filterParamsEqual,
   matchesFilterTerm,
+  realmPresenceFilterOptions,
   splitExactMatch,
   toBooleanParam,
   toWildcardParam,
@@ -204,5 +205,15 @@ describe("withUser", () => {
     const filter = withUser(new FilterValue({ value: "serial: OATH" }), "bob", "realmB");
 
     expect(filter.getValueOfKey("serial")).toBe("OATH");
+  });
+});
+
+describe("realmPresenceFilterOptions", () => {
+  it("realmPresenceFilterOptions offers with and without realm before the realms", () => {
+    const options = realmPresenceFilterOptions(["realm1"]);
+
+    expect(options.map((o) => o.value)).toEqual(["*", "", "realm1"]);
+    expect(options[0].label).toBe("With realm");
+    expect(options[1].label).toBe("Without realm");
   });
 });

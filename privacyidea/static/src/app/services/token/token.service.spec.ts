@@ -501,6 +501,26 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
+  describe("tokenDetailResource", () => {
+    it("requests the token of the details URL", () => {
+      contentServiceMock.onTokenDetails = signal(true);
+      contentServiceMock.tokenSerial.set("SER1");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("serial")).toBe("SER1");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends no request while the serial is empty", () => {
+      contentServiceMock.onTokenDetails = signal(true);
+      contentServiceMock.tokenSerial.set("");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === "/token/");
+    });
+  });
+
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
@@ -629,6 +649,86 @@ describe("TokenService", () => {
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
 
+    it("drops a token realm filter that maps to an empty value", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: ," }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("tokenrealm")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends tokenrealm=* for a typed wildcard and tokenrealm= for a quoted empty value", () => {
+      contentServiceMock.onTokens = signal(true);
+      const cases: { filter: string; expected: string | null }[] = [
+        { filter: "tokenrealm: *", expected: "*" },
+        { filter: "tokenrealm: **", expected: "*" },
+        { filter: "tokenrealm: \"\"", expected: "" },
+        { filter: "tokenrealm: \"\" serial: abc", expected: "" }
+      ];
+      // Each case carries its own description, because a case whose params equal the previous ones sends no request.
+      cases.forEach(({ filter, expected }, index) => {
+        tokenService.activeFilter.set(new FilterValue({ value: `${filter} description: case${index}` }));
+        TestBed.tick();
+
+        const req = mockBackend.expectOne((r) => r.url === "/token/");
+        const params = req.request.params;
+        expect({ filter, has: params.has("tokenrealm"), value: params.get("tokenrealm") }).toEqual({
+          filter,
+          has: expected !== null,
+          value: expected
+        });
+        req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+      });
+    });
+
+    it("sends no tokenrealm for a bare keyword the user is still typing", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm:" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("tokenrealm")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: serial: abc" }));
+      TestBed.tick();
+
+      const req2 = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req2.request.params.has("tokenrealm")).toBe(false);
+      expect(req2.request.params.get("serial")).toBe("*abc*");
+      req2.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("lets a wildcard entry in a token realm list dominate the named realms", () => {
+      contentServiceMock.onTokens = signal(true);
+      // Each case carries its own description, because a case whose params equal the previous ones sends no request.
+      ["tokenrealm: *,realm1", "tokenrealm: realm1,*", "tokenrealm: *,*"].forEach((filter, index) => {
+        tokenService.activeFilter.set(new FilterValue({ value: `${filter} description: case${index}` }));
+        TestBed.tick();
+
+        const req = mockBackend.expectOne((r) => r.url === "/token/");
+        expect({ filter, value: req.request.params.get("tokenrealm") }).toEqual({ filter, value: "*" });
+        req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+      });
+    });
+
+    it("keeps the wildcard and the quoted empty value meaning no filter for every other key", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "tokenrealm: * serial: * description: \"\" rollout_state: **" })
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*");
+      expect(req.request.params.has("serial")).toBe(false);
+      expect(req.request.params.has("description")).toBe(false);
+      expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
     it("sends a key marked exact as it is, so a realm handed over by a widget is not widened", () => {
       contentServiceMock.onTokens = signal(true);
       tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm"));
@@ -649,6 +749,22 @@ describe("TokenService", () => {
       const req = mockBackend.expectOne((r) => r.url === "/token/");
       expect(req.request.params.get("tokenrealm")).toBe("*realm1*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends container_serial= for an empty container_serial, bare or quoted, visible or hidden", () => {
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial:" }));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial: \"\"" }));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+
+      tokenService.activeFilter.set(new FilterValue().addHiddenKey("container_serial"));
+      expect(tokenService.filterParams()).toEqual({ container_serial: "" });
+    });
+
+    it("sends no container_serial for a wildcard-only container_serial", () => {
+      tokenService.activeFilter.set(new FilterValue({ value: "container_serial: *" }));
+      expect(tokenService.filterParams()).toEqual({});
     });
 
     it("waits for the token table to take over a preset instead of loading without it", () => {
@@ -689,15 +805,24 @@ describe("TokenService", () => {
       expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
     });
 
-    it("uses the full info string as the label when it contains no colon", async () => {
+    it("falls back to the display name of a known type when the info string carries no colon", async () => {
       await flushRights({
         hotp: "Beta",
         totp: "Alpha"
       });
 
       const options = tokenService.tokenTypeOptions();
-      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
-      expect(options[0].info).toBe("Alpha");
+      expect(options.map((o) => o.key)).toEqual(["hotp", "totp"]);
+      expect(options[0].info).toBe("Beta");
+    });
+
+    it("falls back to the key of a type this UI does not know", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        aaa_custom: "A token class of its own, without a name in front"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["aaa_custom", "hotp"]);
     });
   });
 
@@ -1241,6 +1366,18 @@ describe("TokenService", () => {
   });
 
   describe("verifyToken()", () => {
+    it("POSTs only the serial and the OTP value to /init", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.verifyToken("TOTP1", "123456").subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}init`,
+        { serial: "TOTP1", verify: "123456" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
     it("notifies on error", (done) => {
       const boom = new HttpErrorResponse({
         error: { result: { error: { message: "vt" } } },
@@ -1248,7 +1385,7 @@ describe("TokenService", () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.verifyToken({} as unknown as TokenEnrollmentData).subscribe({
+      tokenService.verifyToken("ABC123", "123456").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
@@ -1458,6 +1595,15 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(tokenService.userTokenResource.value()).toBeUndefined();
+    });
+
+    it("sends no request while the details user is empty", () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/");
+      contentServiceMock.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      // Another token resource may load the unfiltered list; the user's tokens must not be requested.
+      TestBed.inject(HttpTestingController).expectNone((r) => r.url === "/token/" && r.params.has("user"));
     });
 
     it("should do request if route is USER_DETAILS", async () => {

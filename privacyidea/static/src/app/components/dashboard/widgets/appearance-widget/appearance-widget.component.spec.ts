@@ -29,6 +29,7 @@ import {
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { AppearanceWidgetComponent } from "./appearance-widget.component";
+import { axe } from "@testing/axe";
 
 describe("AppearanceWidgetComponent", () => {
   let fixture: ComponentFixture<AppearanceWidgetComponent>;
@@ -41,7 +42,7 @@ describe("AppearanceWidgetComponent", () => {
     setLightSource: jest.Mock;
     setCorners: jest.Mock;
     setPreset: jest.Mock;
-    resetToDefaults: jest.Mock;
+    resetLook: jest.Mock;
   };
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
@@ -62,7 +63,7 @@ describe("AppearanceWidgetComponent", () => {
         appearanceService.corners.set(corner);
         appearanceService.lightSource.set(lightSource);
       }),
-      resetToDefaults: jest.fn()
+      resetLook: jest.fn()
     };
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
 
@@ -169,7 +170,7 @@ describe("AppearanceWidgetComponent", () => {
 
     reset?.click();
 
-    expect(appearanceService.resetToDefaults).toHaveBeenCalled();
+    expect(appearanceService.resetLook).toHaveBeenCalled();
     expect(themeService.setTheme).toHaveBeenCalledWith("system");
   });
 
@@ -189,5 +190,11 @@ describe("AppearanceWidgetComponent", () => {
   it("should do nothing on reload(): there is no data to refresh", () => {
     expect(() => component.reload()).not.toThrow();
     expect(component.state()).toBe("ready");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

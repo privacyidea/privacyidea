@@ -56,6 +56,11 @@ describe("TemplateAddedTokenRowComponent", () => {
     fixture.componentRef.setInput("index", 0);
   });
 
+  const checkboxes = (): HTMLInputElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-checkbox input[type=checkbox]"));
+  const assignCheckbox = (): HTMLInputElement => checkboxes()[0];
+  const changePinCheckbox = (): HTMLInputElement => checkboxes()[1];
+
   describe("Core Functionality", () => {
     it("should create", () => {
       fixture.detectChanges();
@@ -83,6 +88,13 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(component.tokenTypeDescription()).toContain("HOTP");
     });
 
+    it("names the delete button", () => {
+      fixture.detectChanges();
+
+      const deleteBtn: HTMLButtonElement = fixture.nativeElement.querySelector("button[mat-icon-button]");
+      expect(deleteBtn.getAttribute("aria-label")).toBe("Remove Token");
+    });
+
     it("should emit removeToken when delete button is clicked", () => {
       fixture.componentRef.setInput("index", 5);
       const spy = jest.spyOn(component.removeToken, "emit");
@@ -94,26 +106,157 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(spy).toHaveBeenCalledWith(5);
     });
 
-    it("toggleUserAssign updates the userAssign signal without side effects", () => {
+    it("the assign-to-user checkbox writes the userAssign signal and marks its field dirty", () => {
       fixture.detectChanges();
       expect(component.userAssign()).toBe(false);
 
-      component.toggleUserAssign(true);
+      assignCheckbox().click();
+      fixture.detectChanges();
+
       expect(component.userAssign()).toBe(true);
+      expect(component.userAssignField().dirty()).toBe(true);
     });
 
-    it("getCurrentPayload falls back to the input payload (with user flag) when no strategy is available", () => {
+    it("the assign-to-user checkbox shows the user flag of the payload", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: true });
+      fixture.detectChanges();
+
+      expect(assignCheckbox().checked).toBe(true);
+    });
+
+    it("the assign-to-user checkbox follows a new payload", () => {
+      fixture.detectChanges();
+      assignCheckbox().click();
+      fixture.detectChanges();
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: false });
+      fixture.detectChanges();
+
+      expect(component.userAssign()).toBe(false);
+      expect(assignCheckbox().checked).toBe(false);
+    });
+
+    it("clicking the assign-to-user checkbox leaves the expansion panel closed", () => {
+      fixture.detectChanges();
+
+      assignCheckbox().click();
+      fixture.detectChanges();
+
+      expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
+    });
+
+    it("the change-PIN checkbox is unchecked by default", () => {
+      fixture.detectChanges();
+
+      expect(component.changePinOnFirstUse()).toBe(false);
+      expect(changePinCheckbox().checked).toBe(false);
+    });
+
+    it("the change-PIN checkbox writes the changePinOnFirstUse signal and marks its field dirty", () => {
+      fixture.detectChanges();
+
+      changePinCheckbox().click();
+      fixture.detectChanges();
+
+      expect(component.changePinOnFirstUse()).toBe(true);
+      expect(component.changePinOnFirstUseField().dirty()).toBe(true);
+      expect(component.userAssign()).toBe(false);
+    });
+
+    it("the change-PIN checkbox shows the flag of the payload", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", change_pin_on_first_use: true });
+      fixture.detectChanges();
+
+      expect(changePinCheckbox().checked).toBe(true);
+    });
+
+    it("the change-PIN checkbox follows a new payload", () => {
+      fixture.detectChanges();
+      changePinCheckbox().click();
+      fixture.detectChanges();
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", change_pin_on_first_use: false });
+      fixture.detectChanges();
+
+      expect(component.changePinOnFirstUse()).toBe(false);
+      expect(changePinCheckbox().checked).toBe(false);
+    });
+
+    it("hasCheckboxChanges is true while a checkbox differs from the payload", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: true });
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(false);
+
+      changePinCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(true);
+
+      changePinCheckbox().click();
+      assignCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(true);
+
+      assignCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(false);
+    });
+
+    it("clicking the change-PIN checkbox leaves the expansion panel closed", () => {
+      fixture.detectChanges();
+
+      changePinCheckbox().click();
+      fixture.detectChanges();
+
+      expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
+    });
+
+    for (const [name, checkbox] of [
+      ["assign-to-user", assignCheckbox],
+      ["change-PIN", changePinCheckbox]
+    ] as const) {
+      for (const [key, keyCode] of [
+        ["Enter", 13],
+        [" ", 32]
+      ] as const) {
+        it(`pressing "${key}" on the ${name} checkbox leaves the expansion panel closed`, () => {
+          fixture.detectChanges();
+          const event = new KeyboardEvent("keydown", { key, keyCode, bubbles: true, cancelable: true });
+
+          checkbox().dispatchEvent(event);
+          fixture.detectChanges();
+
+          expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
+          expect(event.defaultPrevented).toBe(false);
+        });
+      }
+    }
+
+    it("getCurrentPayload falls back to the input payload (with template flags) when no strategy is available", () => {
       fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
       fixture.detectChanges();
-      component.toggleUserAssign(true);
+      component.userAssign.set(true);
 
-      expect(component.getCurrentPayload()).toEqual({ type: "hotp", description: "x", user: true });
+      expect(component.getCurrentPayload()).toEqual({
+        type: "hotp",
+        description: "x",
+        user: true,
+        change_pin_on_first_use: false
+      });
+    });
+
+    it("getCurrentPayload sends the current value of the change-PIN checkbox", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", change_pin_on_first_use: true });
+      fixture.detectChanges();
+
+      expect(component.getCurrentPayload()).toEqual({ type: "hotp", user: false, change_pin_on_first_use: true });
+
+      component.changePinOnFirstUse.set(false);
+
+      expect(component.getCurrentPayload()).toEqual({ type: "hotp", user: false, change_pin_on_first_use: false });
     });
 
     it("getCurrentPayload returns the strategy's mapped payload when valid", () => {
       fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
       fixture.detectChanges();
-      component.toggleUserAssign(true);
+      component.userAssign.set(true);
 
       const buildEnrollmentArgs = jest.fn().mockReturnValue({
         data: { type: "hotp", customField: "v" },
@@ -128,7 +271,8 @@ describe("TemplateAddedTokenRowComponent", () => {
         type: "hotp",
         customField: "v",
         mapped: true,
-        user: true
+        user: true,
+        change_pin_on_first_use: false
       });
       expect(buildEnrollmentArgs).toHaveBeenCalledWith(expect.objectContaining({ type: "hotp" }));
     });

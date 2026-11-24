@@ -18,8 +18,9 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import base64
+import binascii
+import os
 import pathlib
-import sys
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -29,6 +30,7 @@ from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
 
+from privacyidea.app import TABLES_WITHOUT_STAMP_HINTS, SchemaState, get_schema_state
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
 
@@ -38,13 +40,14 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout, show_default=False,
+@click.option("-o", "--outfile", type=click.Path(dir_okay=False, allow_dash=True), default="-", show_default=False,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
 @click.password_option(help="The password to encrypt the encryption key. "
                             "If this option is not given the user will be "
                             "prompted for the password.")
-def encrypt_enckey(encfile, outfile, password):
+@click.pass_context
+def encrypt_enckey(ctx, encfile, outfile, password):
     """
     You will be asked for a password and the given encryption key in the specified
     file will be encrypted with an AES key derived from your password.
@@ -61,8 +64,27 @@ def encrypt_enckey(encfile, outfile, password):
     # TODO: get the name/path of the encfile from the pi.cfg
     enckey = encfile.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
-    outfile.write(res)
-    outfile.write('\n')
+    if outfile == "-":
+        click.echo(res)
+        return
+    out_path = pathlib.Path(outfile)
+    # Writing the encrypted key into the key file itself would destroy the key, if writing fails
+    if out_path.exists():
+        key_stat = os.fstat(encfile.fileno())
+        out_stat = out_path.stat()
+        if (key_stat.st_dev, key_stat.st_ino) == (out_stat.st_dev, out_stat.st_ino):
+            click.secho("Error: The encrypted key can not be written to the key file itself. Write it to another "
+                        "file and point PI_ENCFILE to it.", fg="red", err=True)
+            ctx.exit(1)
+    # A new file is only readable by its owner. An existing file keeps its owner and permissions, which the server
+    # may need to read it.
+    try:
+        with os.fdopen(os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(res)
+            f.write('\n')
+    except OSError as e:
+        click.secho(f"Error: Could not write the encrypted key to {out_path}: {e}", fg="red", err=True)
+        ctx.exit(1)
 
 
 @setup_cli.command("create_enckey")
@@ -79,21 +101,41 @@ def create_enckey(ctx, enckey_b64):
     Warning: passing the encryption key as a parameter is considered harmful!
     """
     enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
+    # An existing key file is reported before the given key is checked. The exclusive open below also refuses a
+    # file that another process creates in the meantime.
     if enc_file.is_file():
         click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
                     fg="yellow")
         ctx.exit(1)
-    with open(enc_file, "wb") as f:
-        if enckey_b64 is None:
-            f.write(DefaultSecurityModule.random(96))
-        else:
-            click.secho("Warning: Passing enckey via cli input is considered harmful.",
-                        fg="yellow")
-            bin_enckey = base64.b64decode(enckey_b64)
-            if len(bin_enckey) != 96:
-                click.secho("Error: enckey must be 96 bytes length", fg="red")
-                ctx.exit(1)
+    if enckey_b64 is None:
+        bin_enckey = DefaultSecurityModule.random(96)
+    else:
+        click.secho("Warning: Passing enckey via cli input is considered harmful.",
+                    fg="yellow")
+        try:
+            # The base64 command wraps its output, so whitespace is removed before the strict check
+            bin_enckey = base64.b64decode("".join(enckey_b64.split()), validate=True)
+        except binascii.Error as e:
+            click.secho(f"Error: enckey is not valid base64: {e}", fg="red")
+            ctx.exit(1)
+        if len(bin_enckey) != 96:
+            click.secho("Error: enckey must be 96 bytes length", fg="red")
+            ctx.exit(1)
+    # The key file is created read-only for its owner, so it is never readable for others, and an existing file is
+    # not overwritten
+    try:
+        fd = os.open(enc_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+    except FileExistsError:
+        click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!", fg="yellow")
+        ctx.exit(1)
+    try:
+        with os.fdopen(fd, "wb") as f:
             f.write(bin_enckey)
+    except OSError as e:
+        # An empty or partial key file is not usable, and every later run would refuse to overwrite it
+        enc_file.unlink(missing_ok=True)
+        click.secho(f"Error: Could not write the encryption key to {enc_file}: {e}", fg="red", err=True)
+        ctx.exit(1)
     click.secho(f"Encryption key written to {enc_file}", fg="green")
     enc_file.chmod(0o400)
     click.secho(f"The file permission of {enc_file} was set to 400!", fg="yellow")
@@ -114,7 +156,7 @@ def create_pgp_keys(ctx, keysize, force):
     gpg_home = pathlib.Path(current_app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg"))
     if not gpg_home.exists():
         try:
-            gpg_home.mkdir(parents=True)
+            gpg_home.mkdir(mode=0o700, parents=True)
         except OSError as e:
             click.secho(f"Could not create PGP directory {gpg_home}: {e}", fg="red")
             ctx.exit(1)
@@ -181,20 +223,53 @@ def create_audit_keys(ctx, keysize):
     click.secho("Please ensure, that it is owned by the right user.", fg="yellow")
 
 
+def _existing_schema_refusal(schema_state: SchemaState, no_stamp: bool) -> click.ClickException:
+    """
+    The error for a database that already holds a schema revision stamp or the tables of privacyIDEA. It gives the
+    same advice for a database without stamp as the schema upgrade, see privacyidea.app._check_revision_stamp.
+    """
+    database = db.engine.url.render_as_string(hide_password=True)
+    if schema_state.stamped:
+        state = f"The database {database} already holds a schema revision stamp."
+        hints = ["To update the database, run 'pi-manage db upgrade'."]
+    else:
+        state = f"The database {database} already holds privacyIDEA tables, but no schema revision stamp."
+        hints = list(TABLES_WITHOUT_STAMP_HINTS)
+    if no_stamp:
+        reason = ("This command does not change existing tables. It adds the missing tables in the newest layout, but "
+                  "the schema upgrade later runs its migrations on them too and can fail.")
+    else:
+        reason = ("This command does not change existing tables, but it stamps the newest revision, so the schema "
+                  "upgrade skips the migrations that the database needs.")
+    return click.ClickException("\n  ".join(
+        [state, reason] + hints + ["To create the missing tables anyway, run the command again with '--force'."]))
+
+
 @setup_cli.command("create_tables")
 @click.option("-n", "--no-stamp", is_flag=True, default=False,
               show_default=True, help='Do not stamp the database to a revision.')
 @click.option("-s", "--stamp", is_flag=True, default=False, hidden=True)
-def create_tables(no_stamp, stamp):
+@click.option("-f", "--force", is_flag=True, default=False,
+              help="Also run on a database that holds privacyIDEA tables or a schema revision stamp.")
+def create_tables(no_stamp: bool, stamp: bool, force: bool) -> None:
     """
     Initially create the tables in the database. The database must exist
     (an SQLite database will be created).
+
+    The command stops on a database that holds privacyIDEA tables or a schema
+    revision stamp, unless --force is given. It does not change existing
+    tables, so the schema upgrade of such a database skips migrations or
+    fails afterwards.
     """
     click.echo(f"Using connect string {db}")
     if stamp:
         click.secho("The parameter \"--stamp\" is deprecated, the database "
                     "will be stamped by default. Use parameter \"--no-stamp\" "
                     "to prevent this.", fg="yellow")
+    if not force:
+        schema_state = get_schema_state()
+        if schema_state.stamped or schema_state.has_tables:
+            raise _existing_schema_refusal(schema_state, no_stamp)
     db.create_all()
     if not no_stamp:
         # The migration directory is already configured during the app creation

@@ -101,6 +101,8 @@ export class MockUserService implements UserServiceInterface {
   hiddenApiFilterKeys: string[] = [];
   apiFilterKeyMap: Record<string, string> = {};
   exactMatchKeys = new Set<string>();
+  keepEmptyKeys = new Set<string>();
+  presenceKeys = new Set<string>();
   allFilterKeys: Signal<string[]> = signal([
     ...this.apiFilterKeys,
     ...this.advancedApiFilterKeys,

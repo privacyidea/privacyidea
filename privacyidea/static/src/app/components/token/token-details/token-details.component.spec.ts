@@ -20,21 +20,19 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ElementRef, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { of, throwError } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
-import { PiResponse } from "@app/app.component";
 import { AuditService } from "@services/audit/audit.service";
-import { AuthResponse, AuthService } from "@services/auth/auth.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenInfo, Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
+import { TokenDetails, TokenInfo, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
@@ -62,7 +60,6 @@ describe("TokenDetailsComponent", () => {
 
   let tokenSvc: MockTokenService;
   let machineSvc: MockMachineService;
-  let validateSvc: MockValidateService;
   let router: { navigateByUrl: jest.Mock };
 
   const matDialogOpen = jest.fn();
@@ -108,7 +105,6 @@ describe("TokenDetailsComponent", () => {
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
-    validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -145,14 +141,19 @@ describe("TokenDetailsComponent", () => {
       {
         keyMap: { key: "description", label: "Description", group: "assignment" },
         value: "some description",
-        isEditing: signal(true)
+        isEditing: signal(false)
       }
     ]);
+    jest.spyOn(component["authService"], "actionAllowed").mockReturnValue(true);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.details-card--description button[aria-label="Edit"]').click();
     fixture.detectChanges();
 
     const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
     expect(textarea).toBeTruthy();
     expect(textarea.getAttribute("rows")).toBe("3");
+    expect(component.isAnyEditingOrRevoked()).toBe(true);
   });
 
   it("resetFailCount calls service and reloads", () => {
@@ -161,23 +162,6 @@ describe("TokenDetailsComponent", () => {
     component.resetFailCount();
     expect(tokenSvc.resetFailCount).toHaveBeenCalledWith("Mock serial");
     expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("saveTokenEdit('description') calls saveTokenDetail and toggles editing off", () => {
-    const el: EditableElement = {
-      keyMap: { key: "description" },
-      value: "newdesc",
-      isEditing: signal(true)
-    };
-
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveTokenEdit(el);
-
-    expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
-    expect(reloadSpy).toHaveBeenCalled();
-    expect(el.isEditing()).toBe(false);
   });
 
   it("isEditableElement defers to policy: true/false", () => {
@@ -207,13 +191,14 @@ describe("TokenDetailsComponent", () => {
     // all false
     expect(component.isAnyEditingOrRevoked()).toBe(false);
 
-    // mark an element editing
-    const detail = component.tokenDetailData()[0];
-    detail.isEditing.set(true);
+    // an inline field in edit mode
+    const editing = signal(true);
+    const handle = { isEditing: editing, save: jest.fn(), cancel: jest.fn() };
+    component["editRegistry"].register(handle);
     expect(component.isAnyEditingOrRevoked()).toBe(true);
 
     // reset, set revoked
-    detail.isEditing.set(false);
+    editing.set(false);
     component.tokenIsRevoked.set(true);
     expect(component.isAnyEditingOrRevoked()).toBe(true);
 
@@ -412,98 +397,32 @@ describe("TokenDetailsComponent", () => {
     });
   });
 
-  describe("testPasskey", () => {
-    it("reports success when the credential_id hash matches the current token", async () => {
-      const credentialId = "AAA"; // any base64url string
-      const expectedHash = await sha256HexFromBase64Url(credentialId);
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: expectedHash } as TokenInfo
-      });
+  describe("verify enrollment card", () => {
+    const verifyCard = (): HTMLElement | null => fixture.nativeElement.querySelector("app-verify-enrollment");
+    const showToken = (tokentype: TokenTypeKey, rollout_state: string) => {
+      component.tokenDetails.set({ ...component.tokenDetails(), tokentype, rollout_state });
+      fixture.detectChanges();
+    };
 
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.(credentialId);
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "alice", serial: "Mock serial" }
-        } as unknown as AuthResponse);
-      });
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("success");
-      expect(result?.message).toMatch(/alice/);
+    beforeEach(() => {
+      jest.spyOn(component["authService"], "actionAllowed").mockImplementation((action) => action === "enrollTOTP");
     });
 
-    it("reports a mismatch with matched serial/user/realm when the hash differs", async () => {
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as TokenInfo
-      });
-
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.("AAA");
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "bob", serial: "OTHER-SERIAL" }
-        } as unknown as AuthResponse);
-      });
-      (tokenSvc.getTokenDetails as jest.Mock).mockReturnValueOnce(
-        of({ result: { value: { tokens: [{ user_realm: "themis" }] } } } as unknown as PiResponse<Tokens>)
-      );
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("warning");
-      expect(result?.message).toMatch(/different passkey/);
-      expect(result?.mismatch?.serial).toBe("OTHER-SERIAL");
-      expect(result?.mismatch?.username).toBe("bob");
-      expect(result?.mismatch?.realm).toBe("themis");
+    it("is shown above the grid while the enrollment waits for its verification", () => {
+      showToken("totp", "verify");
+      const card = verifyCard();
+      expect(card).not.toBeNull();
+      expect(card!.nextElementSibling?.classList).toContain("details-grid");
     });
 
-    it("skips mismatch detection for self-service users (non-admin)", async () => {
-      const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authSvc.role.set("user");
-
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as TokenInfo
-      });
-
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.("AAA");
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "carol", serial: "OTHER-SERIAL" }
-        } as unknown as AuthResponse);
-      });
-      const getDetailsSpy = tokenSvc.getTokenDetails as jest.Mock;
-      getDetailsSpy.mockClear();
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("success");
-      expect(result?.mismatch).toBeUndefined();
-      expect(getDetailsSpy).not.toHaveBeenCalled();
+    it("is hidden without the right to enroll the token type", () => {
+      showToken("hotp", "verify");
+      expect(verifyCard()).toBeNull();
     });
 
-    it("reports 'No user found' when the validate response is falsy", async () => {
-      jest
-        .spyOn(validateSvc, "authenticatePasskey")
-        .mockReturnValue(of({ result: { value: false, status: true }, detail: {} } as unknown as AuthResponse));
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("warning");
-      expect(result?.message).toMatch(/No user found/);
+    it("is hidden once the token is enrolled", () => {
+      showToken("totp", "enrolled");
+      expect(verifyCard()).toBeNull();
     });
   });
 
@@ -532,41 +451,75 @@ describe("TokenDetailsComponent", () => {
     consoleSpy.mockRestore();
   });
 
-  it("cancelTokenEdit on a generic key reloads the resource", () => {
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.cancelTokenEdit({
-      keyMap: { key: "description" },
-      value: "",
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
   it("showTokenAuditLog sets the audit filter with the token serial", () => {
     const auditSvc = TestBed.inject(AuditService) as unknown as MockAuditService;
     component["showTokenAuditLog"]();
     expect(auditSvc.activeFilter().value).toBe("serial: Mock serial");
   });
 
-  it("saveAllInlineEdits saves editing rows and open user/info edits", async () => {
-    const row = component.tokenDetailData()[0];
-    row.isEditing.set(true);
-    const saveTokenEditSpy = jest.spyOn(component, "saveTokenEdit").mockReturnValue(undefined);
+  it("saveAllInlineEdits saves the editing fields and open user/info edits", async () => {
+    const handle = { isEditing: signal(true), save: jest.fn(), cancel: jest.fn() };
+    component["editRegistry"].register(handle);
 
     component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsComponent["userChild"];
     component.isEditingUser.set(true);
 
-    component.infoChild = { saveInfo: jest.fn() } as unknown as TokenDetailsComponent["infoChild"];
+    component.infoChild = { canSave: signal(true), saveInfo: jest.fn() } as unknown as TokenDetailsComponent["infoChild"];
     component.isEditingInfo.set(true);
 
     await expect(component.saveAllInlineEdits()).resolves.toBe(true);
 
-    expect(saveTokenEditSpy).toHaveBeenCalledWith(row);
+    expect(handle.save).toHaveBeenCalled();
     expect(component.userChild!.saveUser).toHaveBeenCalled();
     expect(component.infoChild!.saveInfo).toHaveBeenCalledWith(component.infoData()[0]);
+  });
+
+  describe("validity of the inline edits", () => {
+    const registerInvalidField = () => {
+      const handle = { isEditing: signal(true), valid: signal(false), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(handle);
+      return handle;
+    };
+
+    it("saveAllInlineEdits saves nothing while an inline field is invalid", async () => {
+      const handle = registerInvalidField();
+      component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsComponent["userChild"];
+      component.isEditingUser.set(true);
+
+      await expect(component.saveAllInlineEdits()).resolves.toBe(false);
+
+      expect(handle.save).not.toHaveBeenCalled();
+      expect(component.userChild!.saveUser).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves nothing while the info 'add' row is incomplete", async () => {
+      const handle = { isEditing: signal(true), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(handle);
+      component.infoChild = {
+        canSave: signal(false),
+        saveInfo: jest.fn()
+      } as unknown as TokenDetailsComponent["infoChild"];
+      component.isEditingInfo.set(true);
+
+      await expect(component.saveAllInlineEdits()).resolves.toBe(false);
+
+      expect(handle.save).not.toHaveBeenCalled();
+      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
+    });
+
+    it("reports the validity to the pending changes service", () => {
+      const pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      const validChanges = (pending.registerValidChanges as jest.Mock).mock.calls.at(-1)![0] as () => boolean;
+      const hasChanges = (pending.registerHasChanges as jest.Mock).mock.calls.at(-1)![0] as () => boolean;
+
+      expect(validChanges()).toBe(true);
+      expect(hasChanges()).toBe(false);
+
+      registerInvalidField();
+
+      expect(validChanges()).toBe(false);
+      expect(hasChanges()).toBe(true);
+    });
   });
 
   it("saveAllInlineEdits turns off info editing when no info element exists", async () => {
@@ -749,28 +702,3 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
     expect(created).toBeUndefined();
   });
 });
-
-// Helper: drain microtasks AND a macrotask (crypto.subtle.digest may settle on next tick).
-async function flushAsync(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
-
-// Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
-async function sha256HexFromBase64Url(b64url: string): Promise<string> {
-  const pad = b64url
-    .padEnd((b64url.length | 3) + 1, "=")
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
-  const binary = atob(pad);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-  const digest = await crypto.subtle.digest("SHA-256", buffer);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}

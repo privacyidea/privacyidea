@@ -6,20 +6,32 @@ Assert how many user store and database lookups one page of the token list costs
 The counts are what keeps the token list from resolving its owners and containers one token at a
 time. A timing assertion would say the same thing far less reliably, so this counts round trips.
 """
+import re
 from contextlib import contextmanager
+from datetime import datetime
+from itertools import product
 
 from unittest import mock
+import requests
+import responses
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
+from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.error import ResolverError
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
+from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
-from privacyidea.lib.token import (convert_token_objects_to_dicts, get_tokens, get_tokens_paginate, init_token,
-                                   remove_token)
+from privacyidea.lib.token import (convert_token_objects_to_dicts, get_orphaned_serials, get_tokens,
+                                   get_tokens_paginate, init_token, remove_token)
+from privacyidea.lib.token import query as token_query
+from privacyidea.lib.token.tokengroups import set_tokengroups
+from privacyidea.lib.tokengroup import delete_tokengroup, set_tokengroup
 from privacyidea.lib.user import User
-from privacyidea.models import db, Token, TokenContainerToken, TokenOwner
+from privacyidea.lib.usercache import EXPIRATION_SECONDS, delete_user_cache
+from privacyidea.models import db, NodeName, Realm, Token, TokenContainerToken, TokenOwner, UserCache
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -47,6 +59,24 @@ LDAP_PARAMS = {"LDAPURI": "ldap://localhost",
                "resolver": "ldapreso",
                "type": "ldapresolver"}
 
+HTTP_PARAMS = {"resolver": "orphanhttp",
+               "type": "httpresolver",
+               "endpoint": "http://localhost:8080/get-data",
+               "method": "GET",
+               "requestMapping": """{"id": "{userid}"}""",
+               "responseMapping": """{"username": "{data.the_username}"}""",
+               "hasSpecialErrorHandler": False}
+
+SQL_PARAMS = {"resolver": "orphansql",
+              "type": "sqlresolver",
+              "Driver": "sqlite",
+              "Server": "/tests/testdata/",
+              "Database": "testuser.sqlite",
+              "Table": "users",
+              "Encoding": "utf8",
+              "Map": '{"username": "username", "userid": "id", "email": "email", '
+                     '"surname": "name", "givenname": "givenname", "password": "password"}'}
+
 
 @contextmanager
 def count_ldap_searches():
@@ -54,9 +84,10 @@ def count_ldap_searches():
     search_filters = []
     original_search = LDAPResolver._search
 
-    def counting_search(self, search_base, search_filter, attributes):
+    def counting_search(self: LDAPResolver, search_base: str, search_filter: str, attributes: list[str],
+                        **kwargs: bool) -> list[dict]:
         search_filters.append(search_filter)
-        return original_search(self, search_base, search_filter, attributes)
+        return original_search(self, search_base, search_filter, attributes, **kwargs)
 
     with mock.patch.object(LDAPResolver, "_search", counting_search):
         yield search_filters
@@ -79,6 +110,28 @@ def count_statements():
 
 def count_containing(statements, fragment):
     return len([statement for statement in statements if fragment in statement])
+
+
+class CountingRedisClient:
+    """
+    A Redis client that answers every read of the Redis user cache as a miss and counts the commands
+    it is sent, so a test can tell a batched read from one command per user.
+
+    Only the commands the user cache sends are implemented, and a write is accepted without storing
+    anything, since a run that reads only misses never reads a value back.
+    """
+
+    def __init__(self) -> None:
+        self.get = mock.Mock(return_value=None)
+        self.mget = mock.Mock(side_effect=self._mget)
+        self.srem = mock.Mock(return_value=0)
+        self.unlink = mock.Mock(return_value=0)
+        self.pipeline = mock.Mock(side_effect=lambda *args, **kwargs: mock.MagicMock())
+
+    @staticmethod
+    def _mget(*args: object) -> list[None]:
+        keys = args[0] if len(args) == 1 and not isinstance(args[0], str) else args
+        return [None] * len(list(keys))
 
 
 class TokenListLookupTestCase(MyTestCase):
@@ -175,6 +228,31 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(1, len([name for name in usernames.values() if name == "**resolver error**"]), usernames)
 
     @ldap3mock.activate
+    def test_04a_an_id_the_batch_can_not_search_for_is_marked(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        trim_user_id = LDAPResolver._trim_user_id
+
+        def failing_trim_user_id(resolver: LDAPResolver, user_id: str) -> str:
+            # Like an objectGUID that is no UUID: the batch reports it instead of searching for it
+            if user_id == "7":
+                raise ValueError("badly formed hexadecimal UUID string")
+            return trim_user_id(resolver, user_id)
+
+        with mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        tokens_by_serial = {token["serial"]: token for token in result["tokens"]}
+        marked_token = tokens_by_serial["LIST07"]
+        self.assertEqual("**resolver error**", marked_token["username"], marked_token)
+        self.assertEqual("", marked_token["user_realm"], marked_token)
+        self.assertNotIn("user_editable", marked_token, marked_token)
+
+        resolved_token = tokens_by_serial["LIST00"]
+        self.assertEqual("user00", resolved_token["username"], resolved_token)
+        self.assertEqual("ldaprealm", resolved_token["user_realm"], resolved_token)
+        self.assertIn("user_editable", resolved_token, resolved_token)
+
+    @ldap3mock.activate
     def test_05_an_owner_without_a_resolver_is_marked(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
 
@@ -231,9 +309,8 @@ class TokenListLookupTestCase(MyTestCase):
         original_resolver = owner.resolver
 
         # An assignment that names no resolver leaves the login name unknowable, so that token is
-        # marked while the rest of the page renders. Such a token is not reachable through the
-        # paginated list, whose node filter matches the owner against the configured resolvers, so
-        # this goes through the conversion the container endpoints use.
+        # marked while the rest of the page renders. This goes through the conversion the container
+        # endpoints use.
         owner.resolver = ""
         db.session.commit()
         try:
@@ -247,6 +324,115 @@ class TokenListLookupTestCase(MyTestCase):
             db.session.commit()
 
     @ldap3mock.activate
+    def test_07b_a_token_whose_owner_has_no_resolver_is_listed(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        owner_without_resolver, owner_of_deleted_resolver = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id)
+            .where(Token.serial.in_(["LIST00", "LIST01"])).order_by(Token.serial)
+        ).unique().all()
+        original_resolver = owner_without_resolver.resolver
+        other_node = "11111111-2222-3333-4444-555555555555"
+
+        # These tokens belong to no node: they are listed with and without node-specific resolvers, also if only
+        # another node serves the realm of their owner
+        owner_without_resolver.resolver = None
+        owner_of_deleted_resolver.resolver = "deletedreso"
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        try:
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+            usernames = {token["serial"]: token["username"] for token in result["tokens"]}
+            self.assertEqual("**resolver error**", usernames["LIST00"], usernames)
+            self.assertEqual("**resolver error**", usernames["LIST01"], usernames)
+
+            set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+            try:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                self.assertEqual(NUM_TOKENS, result["count"], result)
+                self.assertEqual(1, len(get_tokens(serial="LIST00")))
+            finally:
+                delete_realm("noderealm")
+
+            # Only the other node serves the realm of the owners: the tokens of the owners it serves are left out
+            set_realm("ldaprealm", [{"name": "ldapreso", "node": other_node}])
+            try:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                self.assertSetEqual({"LIST00", "LIST01"}, {token["serial"] for token in result["tokens"]}, result)
+                self.assertEqual(1, len(get_tokens(serial="LIST00")))
+                self.assertEqual(1, len(get_tokens(serial="LIST01")))
+                self.assertEqual([], get_tokens(serial="LIST02"))
+                self.assertEqual(1, len(get_tokens(serial="LIST02", all_nodes=True)))
+
+                # The resolver of the other owners also serves this node, in another realm: the realm of the
+                # owners still leaves their tokens out
+                set_realm("localrealm", [{"name": "ldapreso"}])
+                try:
+                    result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                    self.assertSetEqual({"LIST00", "LIST01"}, {token["serial"] for token in result["tokens"]},
+                                        result)
+                finally:
+                    delete_realm("localrealm")
+            finally:
+                set_realm("ldaprealm", [{"name": "ldapreso"}])
+        finally:
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            owner_without_resolver.resolver = original_resolver
+            owner_of_deleted_resolver.resolver = original_resolver
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_07c_the_owner_of_a_listed_token_is_read_again_afterwards(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial="LIST00")
+        token_dicts = convert_token_objects_to_dicts(tokens, user=None, user_role="admin")
+        self.assertEqual("user00", token_dicts[0]["username"], token_dicts)
+
+        # The owner is removed in the same transaction, after the list was built: the token does not report the
+        # owner the list read
+        db_token = tokens[0].token
+        db.session.execute(delete(TokenOwner).where(TokenOwner.token_id == db_token.id))
+        try:
+            self.assertIsNone(db_token.first_owner)
+        finally:
+            db.session.rollback()
+        self.assertEqual("user00", get_tokens(serial="LIST00")[0].user.login)
+
+    @ldap3mock.activate
+    def test_07d_the_node_filter_keeps_tokens_without_owner_realm_or_realm_resolver(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        owner_without_realm, owner_in_a_realm_without_resolver = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id)
+            .where(Token.serial.in_(["LIST02", "LIST03"])).order_by(Token.serial)
+        ).unique().all()
+        original_realm_id = owner_without_realm.realm_id
+        other_node = "11111111-2222-3333-4444-555555555555"
+        init_token({"type": "hotp", "genkey": 1, "serial": "LISTUNASSIGNED"})
+        set_realm("realmwithoutresolver", [])
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+        try:
+            # With a node-specific resolver in the configuration, the token without an owner, the owner without a
+            # realm and the owner in a realm without a resolver are all listed
+            owner_without_realm.realm_id = None
+            owner_in_a_realm_without_resolver.realm_id = db.session.scalar(
+                select(Realm.id).where(Realm.name == "realmwithoutresolver"))
+            db.session.commit()
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS + 1, page=1)
+            self.assertEqual(NUM_TOKENS + 1, result["count"], result)
+            self.assertIn("LISTUNASSIGNED", [token["serial"] for token in result["tokens"]])
+        finally:
+            owner_without_realm.realm_id = original_realm_id
+            owner_in_a_realm_without_resolver.realm_id = original_realm_id
+            db.session.commit()
+            delete_realm("noderealm")
+            delete_realm("realmwithoutresolver")
+            remove_token("LISTUNASSIGNED")
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            db.session.commit()
+
+    @ldap3mock.activate
     def test_08_tokens_sharing_an_owner_are_looked_up_once(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
         init_token({"type": "hotp", "genkey": 1, "serial": "LISTSHARED"},
@@ -255,9 +441,9 @@ class TokenListLookupTestCase(MyTestCase):
         requested_user_ids = []
         original_batch = LDAPResolver.get_usernames_batch
 
-        def recording_batch(self, user_ids):
+        def recording_batch(self, user_ids, **kwargs):
             requested_user_ids.extend(user_ids)
-            return original_batch(self, user_ids)
+            return original_batch(self, user_ids, **kwargs)
 
         try:
             # A resolver without a batch lookup of its own pays for every repeated ID, so the page
@@ -353,3 +539,680 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
         container_serials = {token["container_serial"] for token in result["tokens"]}
         self.assertSetEqual({self.container_serial}, container_serials, container_serials)
+
+    @ldap3mock.activate
+    def test_12_token_details_of_a_page_are_read_with_one_query_each(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_tokengroup("listgroup")
+        set_tokengroups("LIST03", ["listgroup"])
+        try:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+            # The token info, the token groups and the owners are read once for the page, not per token
+            self.assertEqual(1, count_containing(statements, "FROM tokeninfo"), statements)
+            self.assertEqual(1, count_containing(statements, "tokentokengroup"), statements)
+            self.assertEqual(1, count_containing(statements, "FROM tokenowner"), statements)
+
+            # The page is the same as when every token reads its own details
+            with mock.patch("privacyidea.lib.token.query._load_page_details"):
+                result_per_token = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            self.assertEqual(result_per_token["tokens"], result["tokens"])
+            tokens = {token["serial"]: token for token in result["tokens"]}
+            self.assertEqual(["listgroup"], tokens["LIST03"]["tokengroup"], tokens["LIST03"])
+            self.assertEqual("ldapreso", tokens["LIST05"]["resolver"], tokens["LIST05"])
+            self.assertEqual("5", tokens["LIST05"]["user_id"], tokens["LIST05"])
+            self.assertIn("tokenkind", tokens["LIST05"]["info"], tokens["LIST05"])
+        finally:
+            set_tokengroups("LIST03", [])
+            delete_tokengroup("listgroup")
+
+    @ldap3mock.activate
+    def test_13_token_details_that_can_not_be_read_for_the_page_are_read_per_token(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        expected = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        with mock.patch("privacyidea.lib.token.query.selectinload",
+                        side_effect=Exception("the details of the page can not be read")):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        self.assertEqual(expected["tokens"], result["tokens"])
+
+    @ldap3mock.activate
+    def test_14_a_token_whose_owners_could_not_be_read_reads_its_owner_itself(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        token_id = get_tokens(serial="LIST05")[0].token.id
+        original_select_owners = token_query._select_owners
+
+        def failing_select_owners(token_ids: list[int]) -> list[TokenOwner]:
+            # The page query, its retry and the query of the one token fail
+            if len(token_ids) > 1 or token_ids == [token_id]:
+                raise Exception("the owners can not be read")
+            return original_select_owners(token_ids)
+
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=failing_select_owners):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        # The token is not shown without an owner: it still reads its owner, only its login name is unknown
+        tokens = {token["serial"]: token for token in result["tokens"]}
+        self.assertEqual("ldapreso", tokens["LIST05"]["resolver"], tokens["LIST05"])
+        self.assertEqual("5", tokens["LIST05"]["user_id"], tokens["LIST05"])
+        self.assertEqual("", tokens["LIST05"]["username"], tokens["LIST05"])
+        self.assertEqual("ldapreso", tokens["LIST06"]["resolver"], tokens["LIST06"])
+        self.assertEqual("user06", tokens["LIST06"]["username"], tokens["LIST06"])
+
+    @ldap3mock.activate
+    def test_15_the_owners_are_only_joined_for_node_specific_resolvers(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+
+        # Without a resolver that is restricted to a node, every node serves every owner: the list neither
+        # joins the owners nor filters by node
+        with count_statements() as statements:
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+        count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+        self.assertNotIn("tokenowner", count_statement)
+        self.assertEqual(NUM_TOKENS, result["count"], result)
+
+        other_node = "11111111-2222-3333-4444-555555555555"
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+        try:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+            self.assertIn("tokenowner", count_statement)
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+        finally:
+            delete_realm("noderealm")
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_16_the_realm_filter_uses_the_realm_ids(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+
+        for realm_filter in ("ldaprealm", "LDAPrealm", "ldap*", "*realm", "other,ldaprealm"):
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1,
+                                             realm=realm_filter)
+            self.assertEqual(NUM_TOKENS, result["count"], realm_filter)
+            # The realm names are matched without a query on the realm table
+            self.assertEqual(0, count_containing(statements, "FROM realm"), statements)
+
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, realm="ldap")["count"])
+        self.assertEqual(NUM_TOKENS, get_tokens_paginate(serial=self.serial_wildcard,
+                                                         allowed_realms=["LdapRealm"])["count"])
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, allowed_realms=["ldap*"])["count"])
+        self.assertEqual(NUM_TOKENS, get_tokens_paginate(serial=self.serial_wildcard,
+                                                         realm="*" * 50 + "realm")["count"])
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, realm="*" * 50 + "x")["count"])
+
+    @ldap3mock.activate
+    def test_17_the_realm_ids_are_compared_in_chunks(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_realm("chunkrealm", [{"name": "ldapreso"}])
+        chunked = token_query._chunked
+        try:
+            with (mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=1)),
+                  count_statements() as statements):
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1,
+                                             realm="ldaprealm,chunkrealm", allowed_realms=["chunkrealm", "ldaprealm"])
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+            count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+            self.assertEqual(4, count_statement.count("tokenrealm.realm_id IN"), count_statement)
+        finally:
+            delete_realm("chunkrealm")
+
+    @ldap3mock.activate
+    def test_18_a_page_costs_the_same_queries_whatever_its_size(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_tokengroup("listgroup")
+        set_tokengroups("LIST01", ["listgroup"])
+
+        def selects_of_a_page(page_size: int) -> list[str]:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=page_size, page=1)
+            self.assertEqual(page_size, len(result["tokens"]), result)
+            return [statement for statement in statements if statement.lstrip().upper().startswith("SELECT")]
+
+        try:
+            selects_of_a_small_page = selects_of_a_page(2)
+            self.assertEqual(len(selects_of_a_small_page), len(selects_of_a_page(NUM_TOKENS)))
+
+            # Reading the owners is rolled back once, which expires the tokens of the page: they are loaded again
+            # with the details of the page, not one by one
+            original_select_owners = token_query._select_owners
+            calls = []
+
+            def select_owners_failing_once(token_ids: list[int]) -> list[TokenOwner]:
+                calls.append(token_ids)
+                if len(calls) == 1:
+                    raise Exception("the owners can not be read")
+                return original_select_owners(token_ids)
+
+            with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=select_owners_failing_once):
+                self.assertEqual(len(selects_of_a_small_page), len(selects_of_a_page(NUM_TOKENS)))
+            self.assertEqual(2, len(calls), calls)
+        finally:
+            set_tokengroups("LIST01", [])
+            delete_tokengroup("listgroup")
+
+    def test_19_an_owner_of_a_user_store_that_does_not_answer_is_marked(self) -> None:
+        save_resolver({**HTTP_PARAMS, "resolver": "listhttp",
+                       "endpoint": "http://userstore.example.org/get-user"})
+        set_realm("listhttprealm", [{"name": "listhttp"}])
+        token = init_token({"type": "spass", "serial": "LISTHTTPOWNER"})
+        TokenOwner(token_id=token.token.id, user_id="4711", resolver="listhttp",
+                   realmname="listhttprealm").save()
+        try:
+            # A user store that fails to answer must not read like a login name the list does not know,
+            # so that token is marked instead of shown without a user
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "http://userstore.example.org/get-user",
+                                     status=503, body="{}")
+                result = get_tokens_paginate(serial="LISTHTTPOWNER", psize=1, page=1)
+        finally:
+            remove_token("LISTHTTPOWNER")
+            delete_realm("listhttprealm")
+            delete_resolver("listhttp")
+
+        marked_token = result["tokens"][0]
+        self.assertEqual("**resolver error**", marked_token["username"], marked_token)
+        self.assertEqual("", marked_token["user_realm"], marked_token)
+        self.assertNotIn("user_editable", marked_token, marked_token)
+
+
+class RealmIdsTestCase(MyTestCase):
+
+    def test_01_get_realm_ids(self):
+        realms = {"realm1": {"id": 1}, "Realm.Two": {"id": 2}, "realm_3": {"id": 3}, "realmx3": {"id": 4}}
+
+        # Exact names compare case-insensitively
+        self.assertEqual([1], token_query._get_realm_ids(realms, ["REALM1"]))
+        self.assertEqual([2], token_query._get_realm_ids(realms, ["realm.two"]))
+        # "*" matches any characters, "." and "_" only themselves
+        self.assertEqual([1, 2, 3, 4], token_query._get_realm_ids(realms, [], ["realm*"]))
+        self.assertEqual([2], token_query._get_realm_ids(realms, [], ["*.two"]))
+        self.assertEqual([3], token_query._get_realm_ids(realms, [], ["realm_*"]))
+        self.assertEqual([1, 3], token_query._get_realm_ids(realms, ["realm1"], ["*_3"]))
+        self.assertEqual([], token_query._get_realm_ids(realms, ["realm"], ["x*"]))
+
+    @staticmethod
+    def _matches_wildcard(realm_name: str, pattern: str) -> bool:
+        return token_query._get_realm_ids({realm_name: {"id": 1}}, [], [pattern]) == [1]
+
+    def test_02_get_realm_ids_by_wildcard(self):
+        matching = [("realm1", "realm1"), ("realm1", "*"), ("realm1", "realm*"), ("realm1", "*1"),
+                    ("realm1", "*alm*"), ("realm1", "r*a*1"), ("realm1", "r**1"), ("realm1", "***"),
+                    ("realm1", "realm1*"), ("realm1", "*realm1"), ("aa", "a*a"), ("aaa", "*a*a*"), ("", "*"),
+                    ("realm?", "realm?"), ("realm[1]", "realm[1]"), ("realm[1]", "*[*]"), ("realm]", "*]")]
+        for realm_name, pattern in matching:
+            self.assertTrue(self._matches_wildcard(realm_name, pattern), (realm_name, pattern))
+
+        # Only "*" is a wildcard, "?" and "[...]" match only themselves
+        not_matching = [("realm1", "realm"), ("realm1", "realm1x"), ("realm1", "x*"), ("realm1", "*x"),
+                        ("realm1", "*1*1"), ("a", "a*a"), ("realm1", "realm*11*"), ("realm1", "r*z*1"),
+                        ("ab", "*b*a*"), ("", "x*"), ("realm1", "realm?"), ("realm1", "realm[0-9]"),
+                        ("realm1", "realm[!x]"), ("realm1", "realm[1]")]
+        for realm_name, pattern in not_matching:
+            self.assertFalse(self._matches_wildcard(realm_name, pattern), (realm_name, pattern))
+
+        # A pattern with many wildcards, in a row or in between other characters, is checked about as fast as a
+        # short one
+        self.assertFalse(self._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "x"))
+        self.assertTrue(self._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "m"))
+        self.assertFalse(self._matches_wildcard("a" * 200, "*a" * 100 + "b"))
+        self.assertTrue(self._matches_wildcard("a" * 200, "*a" * 100 + "*"))
+
+    def test_03_get_realm_ids_by_wildcard_like_a_regular_expression(self):
+        # Every name of up to three characters matches a pattern of up to four characters exactly when the regular
+        # expression with ".*" for each "*" and every other character escaped matches
+        realm_names = ["".join(characters) for length in range(4) for characters in product("ab?[]", repeat=length)]
+        realms = {realm_name: {"id": realm_id} for realm_id, realm_name in enumerate(realm_names)}
+        patterns = ["".join(characters) for length in range(5) for characters in product("ab?[]*", repeat=length)]
+        for pattern in patterns:
+            regular_expression = re.compile(".*".join(re.escape(piece) for piece in pattern.split("*")), re.DOTALL)
+            self.assertEqual([realm_id for realm_id, realm_name in enumerate(realm_names)
+                              if regular_expression.fullmatch(realm_name)],
+                             token_query._get_realm_ids(realms, [], [pattern]), pattern)
+
+
+class OrphanedTokenTestCase(MyTestCase):
+    """
+    Check which tokens get_orphaned_serials finds orphaned, while asking each resolver once for a whole
+    chunk of tokens instead of once per token.
+    """
+
+    serial_wildcard = "ORPH*"
+
+    @classmethod
+    @ldap3mock.activate
+    def setUpClass(cls):
+        super().setUpClass()
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        save_resolver({**LDAP_PARAMS, "resolver": "orphanldap"})
+        set_realm("orphanldaprealm", [{"name": "orphanldap"}])
+        save_resolver(HTTP_PARAMS)
+        set_realm("orphanhttprealm", [{"name": "orphanhttp"}])
+
+        for i in range(3):
+            init_token({"type": "spass", "serial": f"ORPHEXISTS{i}"},
+                       user=User(login=f"user{i:02d}", realm="orphanldaprealm"))
+        init_token({"type": "spass", "serial": "ORPHNOOWNER"})
+        owners = {"ORPHDELETEDUSER": {"user_id": "99", "resolver": "orphanldap", "realmname": "orphanldaprealm"},
+                  "ORPHDELETEDRESOLVER": {"user_id": "1000", "resolver": "deletedresolver"},
+                  "ORPHNOREALM": {"user_id": "1", "resolver": "orphanldap"},
+                  "ORPHNORESOLVER": {"user_id": "1", "resolver": ""},
+                  "ORPHUNREACHABLE": {"user_id": "1", "resolver": "orphanhttp", "realmname": "orphanhttprealm"}}
+        for serial, owner in owners.items():
+            token = init_token({"type": "spass", "serial": serial})
+            TokenOwner(token_id=token.token.id, **owner).save()
+
+    @ldap3mock.activate
+    def test_01_orphaned_tokens(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        self.assertEqual(9, len(tokens), tokens)
+
+        with mock.patch.object(HTTPResolver, "_get_user", side_effect=Exception("not reachable")):
+            certainly_orphaned = {"ORPHDELETEDUSER", "ORPHDELETEDRESOLVER", "ORPHNOREALM"}
+            self.assertSetEqual(certainly_orphaned | {"ORPHNORESOLVER", "ORPHUNREACHABLE"},
+                                get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(certainly_orphaned, get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    @ldap3mock.activate
+    def test_02_each_resolver_is_asked_once(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+
+        with (mock.patch.object(HTTPResolver, "getUsername") as http_get_username,
+              mock.patch.object(HTTPResolver, "lookup_username", return_value="user01") as http_lookup_username):
+            with count_ldap_searches() as search_filters:
+                orphaned_serials = get_orphaned_serials(tokens)
+
+        # Five tokens of the LDAP resolver are resolved with one search. The user the search did not find does not
+        # exist, so it is not looked up once more. The deleted resolver and the owner without a resolver are not
+        # asked at all.
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertIn("ORPHDELETEDUSER", orphaned_serials)
+        # The HTTP resolver has no batch lookup of its own, so its user is asked through lookup_username
+        self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
+        self.assertEqual(1, http_lookup_username.call_count)
+        self.assertNotIn("ORPHUNREACHABLE", orphaned_serials)
+
+    def test_03_no_tokens(self) -> None:
+        self.assertSetEqual(set(), get_orphaned_serials([]))
+
+    @ldap3mock.activate
+    def test_04_id_the_batch_can_not_search_for(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        token = init_token({"type": "spass", "serial": "MALFORMEDID"})
+        TokenOwner(token_id=token.token.id, user_id="malformed", resolver="orphanldap",
+                   realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial="MALFORMEDID")
+        trim_user_id = LDAPResolver._trim_user_id
+
+        def failing_trim_user_id(resolver: LDAPResolver, user_id: str) -> str:
+            # Like an objectGUID that is no UUID: the batch skips it, a single lookup raises
+            if user_id == "malformed":
+                raise ValueError("badly formed hexadecimal UUID string")
+            return trim_user_id(resolver, user_id)
+
+        with (mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id),
+              count_ldap_searches() as search_filters):
+            self.assertSetEqual({"MALFORMEDID"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+        # The batch reports the ID it skipped, so it is neither searched for nor looked up on its own
+        self.assertEqual([], search_filters)
+
+    def test_05_http_user_store_error(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        # Not "no such user": a user store that fails to answer leaves the decision to orphaned_on_error
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=503, body="{}")
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+            # The event condition asks is_orphaned, which has to decide like the token janitors
+            self.assertTrue(tokens[0].is_orphaned(orphaned_on_error=True))
+            self.assertFalse(tokens[0].is_orphaned(orphaned_on_error=False))
+
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=404, body="{}")
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    def test_06_owners_can_not_be_read(self) -> None:
+        tokens = get_tokens(serial="ORPHDELETEDUSER")
+        # The token is not known to have an owner, so it can not be orphaned
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=Exception("lock wait timeout")):
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    @ldap3mock.activate
+    def test_07_owner_without_user_id(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        for serial, user_id in [("NOUSERIDNULL", None), ("NOUSERIDEMPTY", "")]:
+            token = init_token({"type": "spass", "serial": serial})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="NOUSERID*")
+        self.assertEqual(2, len(tokens), tokens)
+
+        # An owner without a user ID has no login name, so it is orphaned whatever orphaned_on_error says,
+        # without asking the user store
+        with count_ldap_searches() as search_filters:
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"},
+                                    get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        self.assertEqual([], search_filters)
+
+    def test_08_unreachable_user_store_is_asked_per_user(self) -> None:
+        # Five tokens of one user and one of another, all in a user store that can not be reached
+        for i, user_id in enumerate(["1"] * 5 + ["2"]):
+            token = init_token({"type": "spass", "serial": f"DOWNSTORE{i}"})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="DOWNSTORE*")
+        self.assertEqual(6, len(tokens), tokens)
+
+        with mock.patch.object(HTTPResolver, "lookup_username",
+                               side_effect=ResolverError("user store not reachable")) as http_lookup_username:
+            orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+
+        # The HTTP resolver has no batch lookup of its own, so each of the two users is asked exactly once
+        self.assertEqual(2, http_lookup_username.call_count, http_lookup_username.call_args_list)
+        self.assertSetEqual({f"DOWNSTORE{i}" for i in range(6)}, orphaned_serials)
+
+    @ldap3mock.activate
+    def test_09_failing_ldap_batch_lookup(self):
+        # The first lookups write the found users to the Redis user cache, which would then answer
+        # before the unreachable user store mocked below is asked
+        self.pin_to_database("users")
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        ldap_serials = {"ORPHEXISTS0", "ORPHEXISTS1", "ORPHEXISTS2", "ORPHDELETEDUSER", "ORPHNOREALM"}
+        tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                  if token.token.serial in ldap_serials]
+
+        with mock.patch.object(LDAPResolver, "get_usernames_batch",
+                               side_effect=ResolverError("batch search failed")) as ldap_batch:
+            # The users are looked up one by one instead
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual({"ORPHDELETEDUSER", "ORPHNOREALM"},
+                                    get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+            self.assertEqual(2, ldap_batch.call_count, ldap_batch.call_args_list)
+
+            # If the single lookups fail as well, the user store can not be reached and orphaned_on_error decides
+            with mock.patch.object(LDAPResolver, "getUsername", side_effect=ResolverError("not reachable")):
+                self.assertSetEqual(ldap_serials, get_orphaned_serials(tokens, orphaned_on_error=True))
+                self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    @ldap3mock.activate
+    def test_10_owners_in_the_user_cache_are_not_looked_up(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        UserCache("cachedldapuser", "cachedldapuser", "orphanldap", "99", datetime.now()).save()
+        UserCache("cachedhttpuser", "cachedhttpuser", "orphanhttp", "1", datetime.now()).save()
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username",
+                                    side_effect=ResolverError("not reachable")) as http_lookup_username,
+                  count_ldap_searches() as search_filters):
+                orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+
+        # As for a User object, a cached user is taken from the cache, even if the user store would not find it
+        # or can not be reached
+        self.assertSetEqual({"ORPHDELETEDRESOLVER", "ORPHNOREALM", "ORPHNORESOLVER"}, orphaned_serials)
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    def test_11_owners_in_the_redis_user_cache_are_not_looked_up(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        with (mock.patch.object(token_query, "read_cached_usernames",
+                                return_value={"1": "cachedhttpuser"}) as read_cached,
+              mock.patch.object(HTTPResolver, "lookup_username",
+                                side_effect=ResolverError("not reachable")) as http_lookup_username):
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
+        read_cached.assert_called_once_with("orphanhttp", ["1"])
+        self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    @ldap3mock.activate
+    def test_12_a_user_cache_that_can_not_be_read_is_skipped(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                  if token.token.serial in {"ORPHEXISTS0", "ORPHDELETEDUSER"}]
+        with (mock.patch.object(token_query, "get_cached_usernames", side_effect=Exception("lock wait timeout")),
+              mock.patch.object(db.session, "rollback", wraps=db.session.rollback) as rollback):
+            # The owners are looked up in the user store instead
+            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))
+        # A failed query leaves the session unusable until it is rolled back
+        rollback.assert_called_once_with()
+
+    @ldap3mock.activate
+    def test_13_looked_up_owners_are_written_to_the_user_caches(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username", return_value="httpuser") as http_lookup_username,
+                  mock.patch.object(token_query, "write_cached_usernames",
+                                    wraps=token_query.write_cached_usernames) as write_redis):
+                first_run = get_orphaned_serials(tokens)
+                with count_ldap_searches() as search_filters:
+                    second_run = get_orphaned_serials(tokens)
+            cached_logins = {(entry.resolver, entry.user_id): entry.username
+                             for entry in db.session.scalars(select(UserCache))}
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+
+        # As a User built for each owner did, the first run fills the user caches, so the second one only asks the
+        # user store for the user it does not know, and decides the same
+        self.assertSetEqual(first_run, second_run)
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertIn("(oid=99)", search_filters[0], search_filters)
+        self.assertEqual(1, http_lookup_username.call_count, http_lookup_username.call_args_list)
+        # Once per resolver in the first run, the second run looks nothing up
+        self.assertEqual(2, write_redis.call_count, write_redis.call_args_list)
+        self.assertEqual("httpuser", cached_logins[("orphanhttp", "1")])
+        self.assertTrue({"user00", "user01", "user02"}.issubset(cached_logins.values()), cached_logins)
+        # A user the user store does not know is not cached
+        self.assertNotIn(("orphanldap", "99"), cached_logins)
+
+    @ldap3mock.activate
+    def test_14_a_user_cache_that_can_not_be_written_is_skipped(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                  if token.token.serial in {"ORPHEXISTS0", "ORPHDELETEDUSER"}]
+        with (mock.patch.object(token_query, "add_many_to_cache", side_effect=Exception("lock wait timeout")),
+              mock.patch.object(db.session, "rollback", wraps=db.session.rollback) as rollback):
+            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))
+        rollback.assert_called_once_with()
+
+    @ldap3mock.activate
+    def test_15_the_user_caches_are_written_after_the_verdicts(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        previous_expiration = get_from_config(EXPIRATION_SECONDS, 0)
+        # Without an enabled user cache nothing is written and nothing is committed, so the run would
+        # read every owner from the identity map whether the caches are written first or last
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username", return_value="httpuser"),
+                  count_statements() as statements):
+                orphaned_serials = get_orphaned_serials(tokens)
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, previous_expiration)
+
+        self.assertSetEqual({"ORPHDELETEDUSER", "ORPHDELETEDRESOLVER", "ORPHNOREALM", "ORPHNORESOLVER"},
+                            orphaned_serials)
+        insert_indexes = [index for index, statement in enumerate(statements)
+                          if "INSERT INTO usercache" in statement]
+        self.assertTrue(insert_indexes, statements)
+        # The commit of the last insert expires every owner and token that was already read, so nothing
+        # may be read after it
+        statements_after_the_inserts = statements[insert_indexes[-1] + 1:]
+        self.assertEqual([], [statement for statement in statements_after_the_inserts
+                              if statement.lstrip().upper().startswith("SELECT")], statements)
+
+    def test_16_sql_owner_with_a_padded_user_id(self) -> None:
+        save_resolver(SQL_PARAMS)
+        set_realm("orphansqlrealm", [{"name": "orphansql"}])
+        token = init_token({"type": "spass", "serial": "PADDEDUSERID"})
+        TokenOwner(token_id=token.token.id, user_id="0003", resolver="orphansql",
+                   realmname="orphansqlrealm").save()
+        try:
+            # An integer userid column matches a padded ID, so the owner does exist in the user store
+            self.assertEqual("cornelius", User(resolver="orphansql", realm="orphansqlrealm", uid="0003").login)
+
+            tokens = get_tokens(serial="PADDEDUSERID")
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        finally:
+            remove_token("PADDEDUSERID")
+            delete_realm("orphansqlrealm")
+            delete_resolver("orphansql")
+
+    @ldap3mock.activate
+    def test_17_the_redis_user_cache_is_read_in_one_round_trip(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        for user_id in range(4):
+            token = init_token({"type": "spass", "serial": f"BULKREAD{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="BULKREAD*")
+        self.assertEqual(4, len(tokens), tokens)
+
+        client = CountingRedisClient()
+        try:
+            with mock.patch("privacyidea.lib.cache.user._cache_client", return_value=client):
+                self.assertSetEqual(set(), get_orphaned_serials(tokens))
+        finally:
+            for user_id in range(4):
+                remove_token(f"BULKREAD{user_id}")
+
+        # One command per resolver and chunk of owners, not one per owner
+        self.assertEqual(0, client.get.call_count, client.get.call_args_list)
+        self.assertEqual(1, client.mget.call_count, client.mget.call_args_list)
+        self.assertEqual(1, client.srem.call_count, client.srem.call_args_list)
+
+    def test_18_a_resolver_that_can_not_be_loaded_is_reported_with_its_cause(self) -> None:
+        for user_id in range(2):
+            token = init_token({"type": "spass", "serial": f"BROKENRESO{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="BROKENRESO*")
+        self.assertEqual(2, len(tokens), tokens)
+
+        try:
+            with (mock.patch.object(token_query, "get_resolver_object",
+                                    side_effect=Exception("the resolver configuration is broken")),
+                  self.assertLogs("privacyidea.lib.token.query", level="ERROR") as logs):
+                orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+        finally:
+            for user_id in range(2):
+                remove_token(f"BROKENRESO{user_id}")
+
+        self.assertSetEqual({"BROKENRESO0", "BROKENRESO1"}, orphaned_serials)
+        messages = "\n".join(logs.output)
+        # Every owner of the resolver reports why it could not be loaded, not what the failed load left behind
+        self.assertIn("the resolver configuration is broken", messages, messages)
+        self.assertNotIn("NoneType", messages, messages)
+
+    def test_19_a_user_store_that_can_not_be_reached_is_asked_once(self) -> None:
+        user_ids = ["21", "22", "23"]
+        serials = {f"DEADSTORE{user_id}" for user_id in user_ids}
+        for user_id in user_ids:
+            token = init_token({"type": "spass", "serial": f"DEADSTORE{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="DEADSTORE*")
+        self.assertEqual(3, len(tokens), tokens)
+
+        def orphaned_serials_of_an_unreachable_store(orphaned_on_error: bool) -> tuple[set[str], int]:
+            with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked_responses:
+                mocked_responses.add(responses.GET, "http://localhost:8080/get-data",
+                                     body=requests.exceptions.ConnectionError("connection refused"))
+                return get_orphaned_serials(tokens, orphaned_on_error), len(mocked_responses.calls)
+
+        try:
+            orphaned, requests_of_the_orphaning_run = orphaned_serials_of_an_unreachable_store(True)
+            kept, requests_of_the_keeping_run = orphaned_serials_of_an_unreachable_store(False)
+        finally:
+            for user_id in user_ids:
+                remove_token(f"DEADSTORE{user_id}")
+
+        # A user store that can not be reached costs one request for the whole chunk, while both
+        # verdicts stay the ones of a store that did not answer
+        self.assertSetEqual(serials, orphaned)
+        self.assertSetEqual(set(), kept)
+        self.assertEqual(1, requests_of_the_orphaning_run)
+        self.assertEqual(1, requests_of_the_keeping_run)
+
+    @ldap3mock.activate
+    def test_20_is_orphaned_decides_like_the_batch(self):
+        """A single token and a whole chunk have to reach the same verdict, so both can not drift apart."""
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        # The fixture has no owner without a user ID, which the batch decides about without a lookup
+        for serial, user_id in [("PARITYNOUSERID", None), ("PARITYEMPTYUSERID", "")]:
+            token = init_token({"type": "spass", "serial": serial})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        try:
+            tokens = get_tokens(serial_wildcard=self.serial_wildcard) + get_tokens(serial_wildcard="PARITY*")
+            self.assertEqual(11, len(tokens), tokens)
+
+            with mock.patch.object(HTTPResolver, "_get_user", side_effect=Exception("not reachable")):
+                for orphaned_on_error in [True, False]:
+                    orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error)
+                    for token in tokens:
+                        serial = token.token.serial
+                        self.assertEqual(serial in orphaned_serials, token.is_orphaned(orphaned_on_error),
+                                         f"{serial} with orphaned_on_error={orphaned_on_error}")
+        finally:
+            for serial in ["PARITYNOUSERID", "PARITYEMPTYUSERID"]:
+                remove_token(serial)
+
+    def test_21_the_fallback_of_a_failing_batch_tells_an_unreachable_store_from_a_deleted_user(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        # A resolver whose batch lookup raises, like one that does not know the unresolvable_ids parameter
+        with (mock.patch.object(HTTPResolver, "get_usernames_batch",
+                                side_effect=TypeError("unexpected keyword argument 'unresolvable_ids'")),
+              mock.patch.object(HTTPResolver, "getUsername", return_value="") as http_get_username,
+              mock.patch.object(HTTPResolver, "lookup_username",
+                                side_effect=ResolverError("not reachable")) as http_lookup_username):
+            # The fallback asks the user store the way the batch does, so a store that can not be reached
+            # leaves the decision to orphaned_on_error instead of reading like a user that was deleted
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+
+        self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
+        self.assertEqual(2, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    @ldap3mock.activate
+    def test_22_the_redis_user_cache_is_read_and_written_in_chunks(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        for user_id in range(4):
+            token = init_token({"type": "spass", "serial": f"CHUNKCACHE{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="CHUNKCACHE*")
+        self.assertEqual(4, len(tokens), tokens)
+
+        client = CountingRedisClient()
+        chunked = token_query._chunked
+        try:
+            with (mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=2)),
+                  mock.patch("privacyidea.lib.cache.user._cache_client", return_value=client)):
+                self.assertSetEqual(set(), get_orphaned_serials(tokens))
+        finally:
+            for user_id in range(4):
+                remove_token(f"CHUNKCACHE{user_id}")
+
+        # Redis runs one command at a time, so neither the read nor the write of a whole run may grow
+        # into a single command over every owner, which would block every authentication while it runs
+        self.assertEqual(2, client.mget.call_count, client.mget.call_args_list)
+        self.assertEqual(2, client.pipeline.call_count, client.pipeline.call_args_list)

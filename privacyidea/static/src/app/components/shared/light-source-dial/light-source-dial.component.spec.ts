@@ -19,6 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { LightSourceDialComponent, LightSourceDialItem } from "./light-source-dial.component";
+import { axe } from "@testing/axe";
 
 describe("LightSourceDialComponent", () => {
   let fixture: ComponentFixture<LightSourceDialComponent>;
@@ -112,5 +113,11 @@ describe("LightSourceDialComponent", () => {
     expect(labels[1].textContent?.trim()).toBe("Item A");
     expect(labels[2].textContent?.trim()).toBe("Item B");
     expect(labels[3].textContent?.trim()).toBe("Item C");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

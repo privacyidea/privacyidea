@@ -1,12 +1,16 @@
 """
 This test file tests the lib.subscriptions.py
 """
+import os
+import shutil
+import tempfile
 import time
 from datetime import datetime, timedelta
 
 from unittest import mock
 import requests
 
+from privacyidea.config import ConfigKey
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.subscriptions import (save_subscription,
                                            delete_subscription,
@@ -30,6 +34,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            _subscription_state,
                                            SubscriptionState,
                                            EXPIRING_THRESHOLD_DAYS,
+                                           SUBSCRIPTION_DATE_FORMAT,
                                            APPLICATIONS,
                                            DASHBOARD_PLUGINS)
 from privacyidea.lib.integrations import AGENT_TO_INTEGRATION
@@ -76,6 +81,19 @@ SUBSCRIPTION4 = {'by_address': 'Ludwig-Erhard-Str. 12 / Kassel / Germany', 'for_
                  'signature': '372419503710461285591842418538761559282413229240720090557923804849100327490030827850375196139230113552116202922029981331597920712394735102466193468010812554108965786364991883624093221808379787006099302170716894108468573305266838502513202877298055991493230671361578214252391379062951849546705621046771082383334140647522704329871918780977581375630796944085344217320782641958679429060755746450827151909666930051757502732076512867428969118682344284654992115575621563152961247080771694528053850258206185895605450540216483689014860648650207500221090509505419925316612375990016110921654488851062485457242696296180966814588',  # noqa: E501
                  'for_name': 'Dummy Customer', 'by_phone': 'N/A', 'for_comment': 'Unittest',
                  'by_name': 'NetKnights GmbH'}
+
+
+def _subscription_with_dates(subscription: dict) -> dict:
+    """
+    Return a copy of the subscription with its dates as datetime objects, as check_signature() expects them.
+    save_subscription() converts the dates of the given dictionary in place, so they can be strings or datetime
+    objects here.
+    """
+    copied_subscription = dict(subscription)
+    for date_key in ("date_from", "date_till"):
+        if isinstance(copied_subscription[date_key], str):
+            copied_subscription[date_key] = datetime.strptime(copied_subscription[date_key], SUBSCRIPTION_DATE_FORMAT)
+    return copied_subscription
 
 
 class SubscriptionApplicationTestCase(MyTestCase):
@@ -254,19 +272,42 @@ class SubscriptionApplicationTestCase(MyTestCase):
         mock_get_subscription.assert_not_called()
         mock_token_users.assert_not_called()
 
-    def test_07_freeradius_is_metered_like_the_server(self):
-        # FreeRADIUS is covered by the server's subscription and counts against the same
-        # free tier, so it resolves to "privacyidea" for metering and for display.
-        self.assertEqual("privacyidea", get_metered_application("FreeRADIUS"))
+    def test_07_freeradius_is_never_enforced(self):
+        # FreeRADIUS is shown under the server's subscription, but the server only has a
+        # soft limit, so RADIUS authentications must never be refused, however many users
+        # have tokens.
         self.assertEqual("privacyidea", get_subscription_owner("FreeRADIUS"))
-        self.assertEqual(APPLICATIONS["privacyidea"], APPLICATIONS[get_metered_application("FreeRADIUS")])
+        self.assertNotIn(get_metered_application("FreeRADIUS"), APPLICATIONS)
 
-        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
-                        return_value=0):
-            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
-                            return_value=[]) as mock_get_subscription:
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        with (mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                         return_value=100_000) as mock_token_users,
+              mock.patch("random.randrange", return_value=100_000),
+              mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                         return_value=[]) as mock_get_subscription):
+            for _ in range(20):
                 self.assertTrue(check_subscription("FreeRADIUS"))
-        mock_get_subscription.assert_called_once_with("privacyidea")
+            mock_get_subscription.assert_not_called()
+            mock_token_users.assert_not_called()
+
+            # The same setup refuses a metered client, so the checks above did exceed a limit.
+            with self.assertRaises(SubscriptionError):
+                check_subscription("privacyidea-cp")
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+
+    def test_07a_server_status_warns_over_the_free_tier(self):
+        # The server's free tier is only a warning: subscription_status() reports it, and
+        # the WebUI shows it, while authentications go on.
+        with mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[]):
+            with mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=50):
+                self.assertEqual(0, subscription_status())
+            with mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=51):
+                self.assertEqual(1, subscription_status())
+
+        expired = {"application": "privacyidea", "date_till": datetime.now() - timedelta(days=100)}
+        with (mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[expired]),
+              mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=51)):
+            self.assertEqual(2, subscription_status())
 
     def test_08_simplesamlphp_checks_the_legacy_application_name_too(self):
         # "simplesamlphp" and "privacyidea-simplesamlphp" were merged into one product
@@ -318,6 +359,40 @@ class SubscriptionApplicationTestCase(MyTestCase):
         with self.assertRaises(SubscriptionError) as cm:
             check_signature(subscription)
         self.assertIn("Invalid vendor", f"{cm.exception}")
+
+    def test_12_public_key_is_read_from_the_configured_folder(self):
+        # Without PI_SUBSCRIPTION_KEY_DIRECTORY, the public key is read next to the encryption key, which is
+        # tests/testdata in the test configuration.
+        self.assertNotIn(ConfigKey.SUBSCRIPTION_KEY_DIRECTORY, self.app.config)
+        self.assertTrue(check_signature(_subscription_with_dates(SUBSCRIPTION1)))
+
+        with tempfile.TemporaryDirectory() as key_directory:
+            self.app.config[ConfigKey.SUBSCRIPTION_KEY_DIRECTORY] = key_directory
+            try:
+                # The configured folder replaces the folder of the encryption key, so the key in tests/testdata
+                # is not used as a fallback.
+                with self.assertLogs("privacyidea.lib.subscriptions", level="WARNING") as captured_logs:
+                    with self.assertRaises(SubscriptionError) as cm:
+                        check_signature(_subscription_with_dates(SUBSCRIPTION1))
+                self.assertIn("Verifying the signature of your subscription failed", f"{cm.exception}")
+                key_file_path = os.path.join(key_directory, "NetKnights.pem")
+                self.assertIn(key_file_path, captured_logs.output[0])
+
+                # An empty file and a file without a valid public key are also named in the log
+                for key_file_content in (b"", b"no public key"):
+                    with open(key_file_path, "wb") as key_file:
+                        key_file.write(key_file_content)
+                    with self.assertLogs("privacyidea.lib.subscriptions", level="WARNING") as captured_logs:
+                        with self.assertRaises(SubscriptionError) as cm:
+                            check_signature(_subscription_with_dates(SUBSCRIPTION1))
+                    self.assertIn("Verifying the signature of your subscription failed", f"{cm.exception}")
+                    self.assertIn(key_file_path, captured_logs.output[0])
+
+                shutil.copy(os.path.join(os.path.dirname(self.app.config[ConfigKey.ENCFILE]), "NetKnights.pem"),
+                            key_directory)
+                self.assertTrue(check_signature(_subscription_with_dates(SUBSCRIPTION1)))
+            finally:
+                self.app.config.pop(ConfigKey.SUBSCRIPTION_KEY_DIRECTORY, None)
 
     def test_09_subscription_status_never_enforced_product(self):
         # subscription_status() must honor free_users=None (the Authenticator App's
@@ -745,6 +820,34 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         nextcloud = overview["privacyidea-nextcloud"]
         self.assertTrue(nextcloud["in_use"])
         self.assertListEqual(["1.2.0"], nextcloud["versions"])
+
+    def test_20_owncloud_row_matches_the_user_agent_the_app_sends(self):
+        # Older versions of the ownCloud app send "ownCloud Plugin", newer ones
+        # "ownCloud/<version>". The server reads the name "ownCloud" from both, which is
+        # metered against the owncloud product and marks the owncloud row. Only the
+        # second form adds a version.
+        self.assertEqual("owncloud", get_metered_application("ownCloud"))
+        self.assertEqual(50, APPLICATIONS["owncloud"])
+        for clienttype in ("ownCloud Plugin", "ownCloud/3.3.0"):
+            db.session.add(ClientApplication(
+                ip="1.2.3.4",
+                clienttype=clienttype,
+                node="localnode",
+                lastseen=datetime.now()))
+        db.session.commit()
+        self._add_subscription("owncloud", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        owncloud = overview["owncloud"]
+        self.assertTrue(owncloud["in_use"])
+        self.assertIsNotNone(owncloud["last_seen"])
+        self.assertListEqual(["3.3.0"], owncloud["versions"])
+        self.assertEqual("valid", owncloud["subscription"])
 
 
 class SubscriptionDayCountTestCase(MyTestCase):

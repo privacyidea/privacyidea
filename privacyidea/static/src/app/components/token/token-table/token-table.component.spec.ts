@@ -52,6 +52,7 @@ import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -126,6 +127,36 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture.detectChanges();
   };
 
+  it("links the serial, the container serial and the user to their details pages", () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    const tokens: Tokens = {
+      tokens: [{ serial: "T-1", container_serial: "C-1", username: "alice", user_realm: "r1" } as TokenDetails],
+      count: 1,
+      current: 1
+    };
+    tokenService.tokenResource.value.set(MockPiResponse.fromValue<Tokens>(tokens));
+    tokenService.tokenResourceValue.set(tokens);
+    tableFixture.detectChanges();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(tableFixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
+    expect(hrefOf("alice")).toBe("/users/details/alice?realm=r1");
+  });
+
+  it(
+    "passes the axe accessibility checks with a token row",
+    async () => {
+      showsTokens();
+
+      expect(await axe(tableFixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
+
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
       state: table.tableState,
@@ -152,44 +183,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     expect(table.tokenSelection).toBe(tokenService.tokenSelection);
     expect(table.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
-  });
-
-  it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: ["disable", "enable"]
-    } as JwtData);
-
-    table.toggleActive(t);
-
-    expect(tokenService.toggleActive).toHaveBeenCalledWith("A", true);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it("toggleActive does nothing if action not allowed", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: []
-    } as JwtData);
-
-    table.toggleActive(t);
-
-    expect(tokenService.toggleActive).not.toHaveBeenCalled();
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
-  });
-
-  it("toggleActive does nothing if revoked or locked", () => {
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: ["disable", "enable"]
-    } as JwtData);
-
-    table.toggleActive({ serial: "X", active: true, revoked: true, locked: false } as TokenDetails);
-    table.toggleActive({ serial: "Y", active: false, revoked: false, locked: true } as TokenDetails);
-
-    expect(tokenService.toggleActive).not.toHaveBeenCalled();
   });
 
   it("resetFailCount calls service and reloads when allowed & not revoked/locked", () => {
@@ -220,6 +213,49 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     table.resetFailCount({ serial: "B", revoked: true, locked: false } as TokenDetails);
     table.resetFailCount({ serial: "B", revoked: false, locked: true } as TokenDetails);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
+  });
+
+  describe("active and fail counter cells", () => {
+    const cell = (column: string): HTMLElement => tableFixture.nativeElement.querySelector(`td.mat-column-${column}`);
+    const showsTokenWithRights = (rights: string[]): void => {
+      authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist", ...rights] } as JwtData);
+      tableUtilsService.getDisplayText.mockImplementation((columnKey: string) => `${columnKey} value`);
+      const tokens: Tokens = {
+        tokens: [{ serial: "T-1", active: true, failcount: 3 } as TokenDetails],
+        count: 1,
+        current: 1
+      };
+      tokenService.tokenResource.value.set(MockPiResponse.fromValue<Tokens>(tokens));
+      tokenService.tokenResourceValue.set(tokens);
+      tableFixture.detectChanges();
+    };
+
+    it("offers the toggle and the reset as buttons when the token may be toggled and with the reset right", () => {
+      tableUtilsService.canToggleActive.mockReturnValue(true);
+      showsTokenWithRights(["reset"]);
+
+      expect(cell("active").querySelector("button")?.textContent).toContain("active value");
+      expect(cell("failcount").querySelector('[role="button"]')?.textContent).toContain("failcount value");
+    });
+
+    it("shows the active state and the fail counter read-only otherwise", () => {
+      showsTokenWithRights([]);
+
+      expect(cell("active").textContent).toContain("active value");
+      expect(cell("failcount").textContent).toContain("failcount value");
+      expect(cell("active").querySelector("button")).toBeNull();
+      expect(cell("failcount").querySelector('[role="button"]')).toBeNull();
+    });
+
+    it("reloads the tokens once the active state was toggled", () => {
+      tableUtilsService.canToggleActive.mockReturnValue(true);
+      showsTokenWithRights([]);
+
+      cell("active").querySelector("button")!.click();
+
+      expect(tokenService.toggleActive).toHaveBeenCalledWith("T-1", true);
+      expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("onPageEvent updates page size, index and service's eventPageSize", () => {
@@ -405,6 +441,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter()).toBe(keywordResult);
   });
 
+  it("toggleFilter uses the boolean toggler for 'assigned' too, so its first click sets assigned: true", () => {
+    const booleanResult = new FilterValue().addEntry("assigned", "true");
+    tableUtilsService.toggleBooleanInFilter.mockReturnValue(booleanResult);
+    table.toggleFilter("assigned");
+    expect(tableUtilsService.toggleBooleanInFilter).toHaveBeenCalledWith({
+      keyword: "assigned",
+      currentValue: expect.any(FilterValue)
+    });
+    expect(tokenService.activeFilter()).toBe(booleanResult);
+  });
+
   it("toggleFilter adds the default realm when a user filter without a realm is set", () => {
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
 
@@ -548,8 +595,69 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
   });
 
+  it("setFilterValues keeps without realm exclusive", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }));
+
+    table.setFilterValues("tokenrealm", ["realm1", ""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", ["", "realm2"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: realm2");
+  });
+
+  it("setFilterValues keeps with realm exclusive", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }));
+
+    table.setFilterValues("tokenrealm", ["realm1", "*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+
+    table.setFilterValues("tokenrealm", ["*", "realm2"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: realm2");
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: *" }));
+    table.setFilterValues("tokenrealm", ["*", ""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", ["", "*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+  });
+
+  it("setFilterValues writes with realm as tokenrealm: * and without realm as tokenrealm: \"\"", () => {
+    tokenService.activeFilter.set(new FilterValue());
+
+    table.setFilterValues("tokenrealm", ["*"]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: *");
+
+    table.setFilterValues("tokenrealm", [""]);
+    expect(tokenService.activeFilter().filterString).toBe("tokenrealm: \"\"");
+
+    table.setFilterValues("tokenrealm", []);
+    expect(tokenService.activeFilter().hasKey("tokenrealm")).toBe(false);
+  });
+
+  it("selectedFilterValues checks with realm and without realm from the filter text", () => {
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: *" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual(["*"]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: \"\"" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual([""]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm:" }));
+    expect(table.selectedFilterValues("tokenrealm")).toEqual([]);
+
+    tokenService.activeFilter.set(new FilterValue({ value: "serial: *" }));
+    expect(table.selectedFilterValues("serial")).toEqual([]);
+  });
+
   it("tokenTypeFilterOptions offers the token type keys", () => {
     expect(table.tokenTypeFilterOptions()).toEqual(["hotp", "totp", "push"]);
+  });
+
+  it("tokenRealmFilterOptions offers with and without realm before the realms", () => {
+    const realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    realmService.realmOptions.set(["realm1"]);
+
+    expect(table.tokenRealmFilterOptions().map((o) => o.value)).toEqual(["*", "", "realm1"]);
   });
 
   describe("filterColumnTooltip", () => {

@@ -22,11 +22,12 @@ import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-details-header",
   standalone: true,
-  imports: [CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
+  imports: [TooltipAriaLabelDirective, CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
   templateUrl: "./details-header.component.html",
   styleUrl: "./details-header.component.scss"
 })

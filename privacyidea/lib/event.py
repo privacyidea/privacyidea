@@ -24,6 +24,8 @@ import functools
 import logging
 import re
 import traceback
+from collections import defaultdict
+from itertools import zip_longest
 
 from sqlalchemy import select, delete
 
@@ -32,8 +34,8 @@ from privacyidea.lib.conditional_access.request_context import recheck_condition
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.webhook import get_webhook, get_webhook_identifiers, set_webhook
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
+from privacyidea.lib.webhook import _stage_webhook, get_webhook, get_webhook_identifiers
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
                                 audit_column_length)
 
@@ -61,20 +63,21 @@ def _handler_failure_info(e_handler_def: dict, exception: Exception) -> str:
     return info[:audit_column_length.get("info")]
 
 
-def _aborts_on_error(e_handler_def: dict, exception: Exception) -> bool:
+def _aborts_on_error(e_handler_def: dict, exception: Exception | None) -> bool:
     """
     Return whether the failure of an event handler must abort the request.
 
     A failing handler is best-effort by default: the failure is logged and audited, and the request continues
     without it. That is wrong for a handler whose result the request itself consumes - a response mangler that
     does not run leaves the data it was configured to remove in the response - so such a binding can be
-    configured to abort instead. A handler that raises ``HandlerAbortError`` always aborts, regardless of the
-    configuration, which is how a handler decides by its own options (see the Script handler's ``raise_error``)
-    that the request must not succeed.
+    configured to abort instead. This holds for a handler that raises as well as for one that reports that it
+    could not do what it is configured for. A handler that raises ``HandlerAbortError`` always aborts, regardless
+    of the configuration, which is how a handler decides by its own options (see the Script handler's
+    ``raise_error``) that the request must not succeed.
 
     :param e_handler_def: The definition of the event handler
-    :param exception: The exception raised by the handler
-    :return: True if the exception should be re-raised
+    :param exception: The exception raised by the handler, None for a handler that reported a failure
+    :return: True if the request has to be aborted
     """
     return isinstance(exception, HandlerAbortError) or is_true(e_handler_def.get("abort_on_error"))
 
@@ -105,7 +108,8 @@ class event:
         event_audit_data = dict(self.g.audit_object.audit_data)
         event_audit_data["action"] = (f"{position} {self.eventname}>>"
                                       f"{e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}")
-        event_audit_data["action_detail"] = f"{e_handler_def.get('options')}"
+        # The options are listed by their names: a value can hold a credential, like the URL of a WebHook
+        event_audit_data["action_detail"] = ", ".join(sorted(e_handler_def.get("options") or {}))
         event_audit_data["info"] = e_handler_def.get("name")
         return event_audit, event_audit_data
 
@@ -139,7 +143,8 @@ class event:
         Evaluate the conditions of one event handler and run its action.
 
         A failure of either is logged, rolled back and audited. Whether it also aborts the request is decided
-        by the configuration of the handler, see ``_aborts_on_error``. Evaluating the conditions is part of
+        by the configuration of the handler, see ``_aborts_on_error``, also for a handler that returns False because
+        it could not do what it is configured for. Evaluating the conditions is part of
         this: an error while checking them is a failure of the handler, not an unmet condition, and a handler
         that is configured to be best-effort must not fail the request because its conditions could not be
         evaluated.
@@ -155,7 +160,9 @@ class event:
         try:
             if not event_handler.check_condition(options=options):
                 return False
-            log.debug(f"{position} handling event {self.eventname} with options {options}")
+            log.debug(f"{position} handling event {self.eventname} with the event handler "
+                      f"{e_handler_def.get('name')!r} ({e_handler_def.get('handlermodule')}, "
+                      f"action {e_handler_def.get('action')})")
             event_audit, event_audit_data = self._new_handler_audit(position, e_handler_def)
             event_audit.log(event_audit_data)
             result = event_handler.do(e_handler_def.get("action"), options=options)
@@ -179,6 +186,13 @@ class event:
         # set audit object to success
         event_audit.log({"success": result})
         event_audit.finalize_log()
+        if result is False and _aborts_on_error(e_handler_def, None):
+            # The handler could not do what it is configured for, which fails the request like an error does. The
+            # reason is in the audit entry of the handler.
+            log.warning(f"{position.capitalize()} handler {e_handler_def.get('name')!r} "
+                        f"({e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}) failed: "
+                        f"{event_handler.run_details}")
+            raise HandlerAbortError(f"The event handler {e_handler_def.get('name')!r} failed.")
         return True
 
     def __call__(self, func):
@@ -198,27 +212,25 @@ class event:
             # do Pre-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname, position="pre")
             for e_handler_def in e_handles:
-                log.debug(f"Pre-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Pre-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
-                user_before_handler = getattr(self.request, "User", None)
                 self._run_handler(event_handler, e_handler_def, options, "PRE-EVENT")
-                if getattr(self.request, "User", None) != user_before_handler:
-                    # The handler replaced the user after the conditional-access gate checked the one the request
-                    # named, so the new user is gated before any later handler or the view acts for them.
-                    rejection = recheck_conditional_access_gate()
-                    if rejection is not None:
-                        return rejection
+                # The handler may have changed who the request is for after the conditional-access gate checked it,
+                # so a changed identity is gated before any later handler or the view acts for it.
+                rejection = recheck_conditional_access_gate()
+                if rejection is not None:
+                    return rejection
 
             f_result = func(*args, **kwds)
 
             # Post-Event Handling
             e_handles = self.g.event_config.get_handled_events(self.eventname)
             for e_handler_def in e_handles:
-                log.debug(f"Post-Handling event {self.eventname} with {e_handler_def}")
+                log.debug(f"Post-Handling event {self.eventname} with the event handler {e_handler_def.get('name')!r}")
                 event_handler_name = e_handler_def.get("handlermodule")
                 event_handler = get_handler_object(event_handler_name)
                 # The action is determined by the event configuration
@@ -297,8 +309,10 @@ def enable_event(event_id, enable=True):
     return r
 
 
-def set_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
-              ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+def set_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+              action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+              options: dict | None = None, id: int | None = None, active: bool | None = True,
+              position: str | None = "post", abort_on_error: bool | None = None) -> int:
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
@@ -335,6 +349,22 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     :type abort_on_error: bool
     :return: The id of the event.
     """
+    event_id = _stage_event(name=name, event=event, handlermodule=handlermodule, action=action,
+                            conditions=conditions, ordering=ordering, options=options, id=id, active=active,
+                            position=position, abort_on_error=abort_on_error)
+    save_config_timestamp()
+    db.session.commit()
+    return event_id
+
+
+def _stage_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+                 action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+                 options: dict | None = None, id: int | None = None, active: bool | None = True,
+                 position: str | None = "post", abort_on_error: bool | None = None) -> int:
+    """
+    Write the event handler like :func:`set_event`, but neither save the config timestamp nor commit, so that several
+    event handlers can be written in one transaction.
+    """
     if isinstance(event, list):
         event = ",".join(event)
 
@@ -363,9 +393,12 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
             # not silently best-effort. Once stored, only the binding decides.
             handler_object = get_handler_object(handlermodule)
             abort_on_error = handler_object.default_abort_on_error if handler_object else False
-        id = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action, ordering=ordering,
-                          id=id, active=active, position=position, abort_on_error=abort_on_error).save()
-    save_config_timestamp()
+        event_handler = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action,
+                                     ordering=ordering, id=id, active=active, position=position,
+                                     abort_on_error=abort_on_error)
+        db.session.add(event_handler)
+        db.session.flush()
+        id = event_handler.id
 
     # --- Event Handler Options ---
     # Only touch the options if a value was supplied. ``None`` means "keep the
@@ -389,7 +422,6 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
         for k, v in conditions.items():
             db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
 
-    db.session.commit()
     return id
 
 
@@ -523,8 +555,8 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
     The caller has already ruled out the definitions that cannot be converted
     (:func:`_inline_webhook_defect`), so this always produces a webhook.
 
-    :param handler_id: the id ``set_event()`` gave the imported handler
-    :param handler_name: the name of the imported handler, which may be empty
+    :param handler_id: the id ``_stage_event()`` gave the imported handler
+    :param handler_name: the name of the imported handler
     :param options: the handler options as imported
     :return: the identifier of the webhook the handler is to be linked to
     """
@@ -534,87 +566,130 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
     raw_content_type = options.get("content_type") or ContentType.JSON
     content_type = DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type)
 
-    if handler_name:
-        base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
-    else:
-        base = f"webhook_from_handler_{handler_id}"
+    base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
     identifier = _free_webhook_identifier(base, handler_id)
 
     # timeout=10 is the inline shape's fixed TIMEOUT, kept so the imported handler behaves
     # exactly as it did (a webhook created by hand defaults to 3).
-    set_webhook(identifier,
-                url=options["URL"],
-                description=f"{IMPORT_MARKER} - created from the inline options of WebHook "
-                            f"event handler {handler_id} (#5751)",
-                http_method="POST",
-                content_type=content_type,
-                auth_type="none",
-                verify_tls=True,
-                timeout=10)
+    _stage_webhook(identifier,
+                   url=options["URL"],
+                   description=f"{IMPORT_MARKER} - created from the inline options of WebHook "
+                               f"event handler {handler_id} (#5751)",
+                   http_method="POST",
+                   content_type=content_type,
+                   auth_type="none",
+                   verify_tls=True,
+                   timeout=10)
     return identifier
 
 
-@register_import('event')
-def import_event(data, name=None, skip_invalid=False):
-    """
-    Import event handler configuration.
+def _is_inline_webhook(res_data: dict) -> bool:
+    """Return whether an imported event handler is a WebHook handler in the pre-3.15 inline shape."""
+    options = res_data.get("options") or {}
+    return res_data.get("handlermodule") == "WebHook" and not options.get("webhook")
 
-    Each definition is imported independently. A WebHook definition still in the pre-3.15 inline
-    shape is converted to a webhook object on the way in - the migration that does this at upgrade
-    time has already run on this installation and will not run again, so an export taken from an
-    older release would otherwise bring the shape back past the release that removes it.
+
+def inline_webhook_defect(res_data: dict) -> str | None:
+    """
+    Return why :func:`import_event` does not import an event handler definition, because it is a WebHook handler in
+    the pre-3.15 inline shape that cannot be converted to a webhook. The import plan shows the same reason.
+
+    :param res_data: the event handler definition as exported
+    :return: a short reason, or None if the definition is no such handler
+    """
+    if not _is_inline_webhook(res_data):
+        return None
+    return _inline_webhook_defect(res_data.get("options") or {})
+
+
+@register_import('event')
+def import_event(data: list[dict], name: str | None = None, skip_invalid: bool = False) -> None:
+    """
+    Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
+    by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
+    handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
+    these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
+
+    A WebHook definition still in the pre-3.15 inline shape is converted to a webhook object on the way in - the
+    migration that does this at upgrade time has already run on this installation and will not run again, so an
+    export taken from an older release would otherwise bring the shape back past the release that removes it.
 
     :param data: the exported event handler definitions
-    :param name: import only the definition of this name (default: import all)
-    :param skip_invalid: If True, a WebHook definition that cannot be converted because it sends
-        nothing as it stands - no ``URL``, or a ``content_type`` that is neither JSON nor
-        urlencoded - is skipped instead of failing the import. Without it such a definition is
-        reported at the end, the way an unimportable policy is, so that a configuration that
-        cannot be restored faithfully does not look like one that was.
+    :param name: import only the definitions of this name (default: import all)
+    :param skip_invalid: If True, a WebHook definition that cannot be converted because it sends nothing as it
+        stands - no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded - is skipped. Without it
+        such a definition is reported in the ConfigAdminError, the way an unimportable policy is, so that a
+        configuration that cannot be restored faithfully does not look like one that was.
     """
-    log.debug(f'Import event config: {data!s}')
+    log.debug(f'Import event config: {get_import_names(data)}')
+    existing = defaultdict(list)
+    for handler_id, handler_name, handlermodule in db.session.execute(
+            select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):
+        existing[(handler_name, handlermodule)].append(handler_id)
+    imported = defaultdict(list)
+    without_name = 0
     skipped = []
     failed = {}
-    for entry in data:
-        if name and name != entry.get('name'):
+    for res_data in data:
+        if name and name != res_data.get('name'):
             continue
-        res_data = {key: value for key, value in entry.items() if key != "condition"}
-        options = res_data.get("options") or {}
-        inline_webhook = (res_data.get("handlermodule") == "WebHook"
-                          and not options.get("webhook"))
-        if inline_webhook:
-            defect = _inline_webhook_defect(options)
-            if defect:
-                handler_name = res_data.get("name")
-                if not skip_invalid:
-                    failed[handler_name] = defect
-                    continue
-                log.warning(f'Skipping the import of WebHook event handler "{handler_name}": '
+        res_data.pop('id', None)
+        # condition is apparently not used anymore
+        del res_data["condition"]
+        if not res_data.get('name'):
+            without_name += 1
+            continue
+        defect = inline_webhook_defect(res_data)
+        if defect:
+            if skip_invalid:
+                log.warning(f'Skipping the import of WebHook event handler "{res_data["name"]}": '
                             f'{defect}, so it sends nothing and cannot be given a webhook. '
                             f'Correct it in the exported configuration and import again.')
-                skipped.append(handler_name)
-                continue
+                skipped.append(res_data["name"])
+            else:
+                failed[res_data["name"]] = defect
+            continue
+        imported[(res_data['name'], res_data.get('handlermodule'))].append(res_data)
 
-        rid = set_event(**res_data)
+    conflicts = []
+    writes = []
+    for (event_name, handlermodule), entries in imported.items():
+        targets = existing[(event_name, handlermodule)]
+        if len(entries) < len(targets):
+            count = f"{len(entries)} " if len(entries) > 1 else ""
+            conflicts.append(f'{count}"{event_name}" with handler module "{handlermodule}"')
+            continue
+        writes.extend(zip_longest(targets, entries))
+    if without_name:
+        conflicts.append(f'{without_name} handlers without a name' if without_name > 1
+                         else 'one handler without a name')
 
-        if inline_webhook:
-            identifier = _convert_inline_webhook_handler(rid, res_data.get("name"), options)
-            db.session.add(EventHandlerOption(
-                eventhandler_id=rid, Key="webhook", Value=identifier,
-                Description="Added by the configuration import: links this WebHook handler to "
-                            "the webhook created from its inline options (#5751)"))
-            save_config_timestamp()
-            db.session.commit()
-            log.info(f"Imported WebHook handler {rid} was converted to the webhook "
-                     f"{identifier!r}.")
-
-        log.info('Import of event "{!s}" finished,'
-                 ' id: {!s}'.format(res_data['name'], rid))
-
+    try:
+        for target_id, res_data in writes:
+            rid = _stage_event(id=target_id, **res_data)
+            if _is_inline_webhook(res_data):
+                identifier = _convert_inline_webhook_handler(rid, res_data["name"], res_data.get("options") or {})
+                db.session.add(EventHandlerOption(
+                    eventhandler_id=rid, Key="webhook", Value=identifier,
+                    Description="Added by the configuration import: links this WebHook handler to "
+                                "the webhook created from its inline options (#5751)"))
+                log.info(f"Imported WebHook handler {rid} was converted to the webhook {identifier!r}.")
+            log.info(f'Importing event "{res_data["name"]}", id: {rid}')
+        save_config_timestamp()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        log.warning("Import of event handlers failed, all changes were rolled back.")
+        raise
+    log.info(f"Import of {len(writes)} event handlers finished.")
     if skipped:
         log.warning(f"Skipped WebHook event handlers that send nothing as they stand: {skipped}")
 
+    problems = []
+    if conflicts:
+        problems.append(f"Skipped ambiguous event handlers: {'; '.join(conflicts)}.")
     if failed:
-        failure_summary = ', '.join(f'"{n}" ({reason})' for n, reason in failed.items())
-        raise ConfigAdminError(f"Could not import the following WebHook event handlers: "
-                               f"{failure_summary}.")
+        failure_summary = ', '.join(f'"{handler_name}" ({reason})' for handler_name, reason in failed.items())
+        problems.append(f"Could not import the following WebHook event handlers: {failure_summary}.")
+    if problems:
+        raise ConfigAdminError(" ".join(problems))

@@ -16,34 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input, output } from "@angular/core";
-
+import { Component, computed, input } from "@angular/core";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import { clearField } from "@utils/form-state.utils";
 import { labeledOptions } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-hotp-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent, FormField],
   templateUrl: "./hotp-config.component.html"
 })
 export class HotpConfigComponent {
-  formData = input.required<Record<string, string | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
   hashLibs = input.required<string[]>();
   readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
-  formDataChange = output<Record<string, string | undefined>>();
 
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
-
-  clearField(fieldName: string): void {
-    this.updateFormData(fieldName, "");
+  clearValue(field: FieldTree<string>): void {
+    clearField(field, "");
   }
 
   protected readonly HOTP_HASHLIB = HOTP_HASHLIB;

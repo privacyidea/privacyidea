@@ -339,6 +339,24 @@ def _clear_subscription_user_count():
     yield
 
 
+@pytest.fixture(scope="class", autouse=True)
+def _no_app_context_left_by_the_class(request: pytest.FixtureRequest) -> Iterator[None]:
+    """
+    Fail a test class that leaves a Flask app context active.
+
+    A test class pushes the app context of its own app in setUpClass, and tearDownClass of the base class pops it. A
+    context that stays active is used by every later test on this worker that relies on the active app, for example
+    a CLI command behind ``flask.cli.with_appcontext``. That test then works on the app and the database of another
+    class: it passes when its file runs alone and fails after the file with the active context.
+    """
+    import flask
+    context_was_active = flask.has_app_context()
+    yield
+    if flask.has_app_context() and not context_was_active:
+        pytest.fail(f"{request.node.nodeid} leaves the app context of {flask.current_app.name} active. Pop it in "
+                    "tearDownClass, for example with super().tearDownClass().", pytrace=False)
+
+
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"

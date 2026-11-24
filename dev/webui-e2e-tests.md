@@ -1,0 +1,136 @@
+# WebUI end-to-end tests (Playwright)
+
+Browser tests for the layout, style and accessibility of the WebUI. They live in `privacyidea/static/playwright-e2e/`
+and run against an already running WebUI and backend. They only read: they log in, visit pages, type into filters and
+open menus, and never save anything.
+
+All commands run in `privacyidea/static`, and all paths below are relative to that directory.
+
+```
+npm run test:e2e            # everything
+npm run test:e2e:a11y       # axe only
+npx playwright test --config playwright-e2e/playwright.config.ts layout -g "policies"
+npx playwright show-report playwright-e2e/playwright-report/<run id>
+```
+
+Every run writes its HTML report to `playwright-e2e/playwright-report/<run id>` and its artifacts to
+`playwright-e2e/test-results/<run id>`, where the run id is the process id of the run. Both directories and the stored
+login session (`playwright-e2e/.auth/`) are ignored by git.
+
+| Variable                          | Default                                                   |
+| --------------------------------- | --------------------------------------------------------- |
+| `BASE_URL`                        | `https://localhost:4200/app/v2/`                          |
+| `E2E_USER`                        | `admin`                                                   |
+| `E2E_PASS`                        | `admin`                                                   |
+| `E2E_SELF_USER` / `E2E_SELF_PASS` | a self-service user for `self-service.spec.ts` (optional) |
+| `E2E_CSP`                         | not set; set it if the instance runs with `PI_ENABLE_CSP` |
+| `E2E_WORKERS`                     | `8`, the number of pages tested side by side              |
+
+The browser is Chromium (`npx playwright install chromium`). The instance should hold some data: tests on empty
+tables skip their row-dependent checks rather than fail.
+
+The suite is for local use for now. Only `csp.spec.ts` runs in CI (see below). To run the suite against an instance
+other than the local `ng serve`, point `BASE_URL` at its WebUI
+(`https://<instance>/app/v2/`). With `CI` set and no `BASE_URL`, the run stops instead of testing localhost. The
+tests that force loading, error and empty states intercept the API both behind the `/proxy/` prefix of `ng serve` and
+at the root of an instance that serves the WebUI and the API from one origin.
+
+## Specs
+
+- `playwright-e2e/pages.spec.ts` - the main spec. Every page is loaded once and all of its checks run against that
+  load: language, title and landmarks, table name and `aria-sort`, the accessibility tree (names, heading outline),
+  nothing animating under reduced motion, `col-width-*` tiers, Tab order, a visible focus indicator on the controls of
+  the page content, and last the layout at 100/125/150/200% browser zoom and at 320 CSS px (no sideways page scroll,
+  filter row inside its card, paginator range, columns stable under row hover). That every page has a title of its own
+  is checked by the Jest spec `src/app/route-titles.spec.ts`. A failing test attaches the URL and a screenshot of the shared page.
+- `playwright-e2e/accessibility.spec.ts` - axe-core (WCAG 2.2 A/AA) on every page, light and dark theme.
+- `playwright-e2e/login.spec.ts` - the login page without a session: axe in both themes, the heading that names the
+  page, and the keyboard order of the form.
+- `playwright-e2e/states.spec.ts` - the panel a table shows while loading, after an error, on an instance without data
+  and when a filter matches nothing, in both themes (axe, accessible names, heading and retry button). The backend is
+  held, failed or answered with an empty list by route interception. Every table page must show the panel; the realms
+  page is skipped (its list comes from an endpoint the app shell needs) as are pages without a filter for the filtered
+  state.
+- `playwright-e2e/details.spec.ts` - the detail and edit pages, reached from the first row of their list: axe in both
+  themes, landmarks, Tab order and no sideways scroll at each zoom. A list without rows skips its tests; a click on a
+  row that does not open a `/details/` or `/edit/` page fails.
+- `playwright-e2e/truncation.spec.ts` - no control is cut off by a clipping ancestor or covers the text of its own
+  cell (#6275): every table page and detail page at each browser zoom, plus the container details page with a very
+  long user name and a token with a very long serial (the backend response is rewritten by route interception), and
+  the container details page with the user editor open, whose user input must be as wide as the realm select above
+  it and fill its cell. Scrolling areas and collapsed
+  (`inert`) cards are not clipping; see `support/clipping.ts`.
+- `playwright-e2e/surface-contrast.spec.ts` - a label (`--mat-sys-on-surface-variant`) keeps 7:1 (WCAG AAA) against
+  the less favourable end of every surface gradient, in both themes at each depth level of the UI settings. The
+  theme and depth classes are set on `<html>` for the measurement; nothing is stored.
+- `playwright-e2e/panels.spec.ts` - an expansion panel header is as tall closed as open, its chevron's circle stands
+  out on the hovered header (read from a screenshot, as the colours are translucent layers), and the policy form's
+  "Add Actions" panel shows the number of actions it lists while no scope is chosen.
+- `playwright-e2e/form-layout.spec.ts` - the form fields in the resolver attribute mapping table fill their row, and
+  the info icon of the conditional access re-trigger checkbox stays on the checkbox's row at each zoom.
+- `playwright-e2e/overlays.spec.ts` - menus (opened from the keyboard, first item focused, Escape returns focus, items
+  named, axe on the overlay) and the delete confirmations (named, focus trapped, Escape closes; nothing is confirmed),
+  in both themes.
+- `playwright-e2e/forced-colors.spec.ts` - focus stays marked in forced colors.
+- `playwright-e2e/layout.spec.ts` - table and card width unchanged by filtering or the sticky header, and the sticky
+  header position.
+- `playwright-e2e/self-service.spec.ts` - the self-service pages, with `E2E_SELF_USER` / `E2E_SELF_PASS`; skipped
+  without them.
+- `playwright-e2e/csp.spec.ts` - the Content Security Policy, with `E2E_CSP` on an instance with
+  `PI_ENABLE_CSP = True`; skipped without `E2E_CSP`. See below.
+
+The page lists the specs iterate over are in `playwright-e2e/support/routes.ts`; a new page has to be added there to be
+covered.
+
+## The Content Security Policy check
+
+With `PI_ENABLE_CSP = True`, the server sends a Content Security Policy. It allows an inline style only with the nonce
+of the response, and no inline script at all. Angular puts the nonce on the styles that it adds at runtime. The build
+writes no inline style or script into `index.html`, because it does not inline the critical CSS (`inlineCritical` in
+`angular.json`).
+
+`csp.spec.ts` loads the login page, every admin page and every self-service page. It also opens a menu, a select list,
+a tooltip and a delete confirmation, because Angular adds their styles only when they open. The tests select, save and
+confirm nothing. A test fails in these cases:
+
+- The policy of the response has no nonce in `style-src`, or a nonce in `script-src`.
+- The browser blocked an inline style or script (a `securitypolicyviolation` event).
+- A stylesheet of the page does not apply to the screen.
+- The trigger of an overlay is missing. The delete confirmation needs a realm on the instance.
+
+With `E2E_CSP`, the self-service user is required. A run without it fails instead of skipping these pages.
+
+The workflow `.github/workflows/webui-csp.yml` runs this spec every night on `master`. It builds the WebUI and sets up
+privacyIDEA with SQLite, an administrator and the users of `tests/testdata/passwords`. If the scheduled run fails, the
+workflow opens or updates the GitHub issue "Nightly WebUI CSP check failed on master". The artifact `webui-csp-report`
+of the run holds the Playwright report and the server logs. You can also start the workflow by hand (workflow
+dispatch). A pull request that changes the workflow or the spec runs it as well.
+
+To run the spec locally, start privacyIDEA with `PI_ENABLE_CSP = True`, `PI_FORCE_HTTPS = False` and the built WebUI.
+`ng serve` does not work for this check, because it serves its own `index.html` without the policy.
+
+```
+E2E_CSP=1 BASE_URL=http://127.0.0.1:5000/app/v2/ E2E_SELF_USER=<user> E2E_SELF_PASS=<password> \
+  npx playwright test --config playwright-e2e/playwright.config.ts playwright-e2e/csp.spec.ts
+```
+
+The theme of a run is the emulated colour scheme. The app applies the theme stored with the user ahead of
+`prefers-color-scheme`, so `openPage` (and every spec that navigates by itself) calls `forceTheme`, which puts the
+`light` or `dark` class on `<html>` without writing the setting and asserts that the page really renders in that theme.
+
+The focus check (`playwright-e2e/support/focus.ts`) tabs past the shell until it has checked 40 controls inside the
+page content (at most 150 stops) and reports how many it checked; the tests require at least three. It compares each
+focused control with the same control unfocused, with the text caret hidden.
+
+Not covered: the localized builds (the dev server serves English only) and the real output of a screen reader.
+
+## The accessibility baseline
+
+`playwright-e2e/accessibility-baseline.json` lists, per page and theme, the axe rules known to fail, so the suite
+fails on a rule that is new to a page and stays green on a known backlog. All lists are empty at the moment: every
+axe check has to pass. To record a backlog, or to drop a rule after fixing it, regenerate the file
+(`npm run test:e2e:baseline`) and review the diff: it also records anything that regressed. The command rewrites the
+entries of the axe checks that run; those of skipped checks (no rows, no self-service user) stay as they are.
+
+A test marked `test.fail()` is a known failure that should start passing; when it does, Playwright reports it,
+and the marker goes.

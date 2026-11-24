@@ -18,8 +18,12 @@
  **/
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
+import { PAGE_NAMES } from "@core/route-titles";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
+import { PasswordRecoveryRequestComponent } from "./components/password-recovery/request/password-recovery-request.component";
+import { PasswordRecoveryResetComponent } from "./components/password-recovery/reset/password-recovery-reset.component";
 import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
 import { ApiClientService } from "@services/api-client/api-client.service";
 import { ApplicationService } from "@services/application/application.service";
@@ -44,6 +48,7 @@ import { PeriodicTaskService } from "@services/periodic-task/periodic-task.servi
 import { PolicyService } from "@services/policies/policies.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { NoRealmDialogService } from "@services/no-realm-dialog/no-realm-dialog.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
@@ -59,7 +64,16 @@ import { UserService } from "@services/user/user.service";
 import { WebhookService } from "@services/webhook/webhook.service";
 
 export const routes: Routes = [
-  { path: "login", component: LoginComponent, canActivate: [loginGuard] },
+  { path: "login", title: PAGE_NAMES.login, component: LoginComponent, canActivate: [loginGuard] },
+  {
+    path: "recover",
+    title: PAGE_NAMES.passwordRecovery,
+    component: PasswordRecoveryRequestComponent,
+    canActivate: [loginGuard]
+  },
+  // The link in the recovery email opens this route: the login name with the realm in the path, the recovery code
+  // in the fragment.
+  { path: "reset/:user", title: PAGE_NAMES.passwordReset, component: PasswordRecoveryResetComponent },
   { path: "", redirectTo: "login", pathMatch: "full" },
   {
     path: "",
@@ -78,12 +92,14 @@ export const routes: Routes = [
       ContainerService,
       ContainerTemplateService,
       ContentService,
+      DashboardLayoutService,
       DialogService,
       DocumentationService,
       EventService,
       IntegrationsService,
       MachineResolverService,
       MachineService,
+      NoRealmDialogService,
       PendingChangesService,
       PeriodicTaskService,
       PolicyService,

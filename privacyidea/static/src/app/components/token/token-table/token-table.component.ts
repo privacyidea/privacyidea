@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
@@ -64,11 +65,22 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withDefaultRealm, withUser } from "@utils/filter.utils";
+import {
+  REALM_FILTER_WITH_REALM,
+  REALM_FILTER_WITHOUT_REALM,
+  realmPresenceFilterOptions,
+  splitRealmFilterList,
+  withDefaultRealm,
+  withUser
+} from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -91,6 +103,12 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    TokenActiveToggleComponent,
+    TableActionsTriggerComponent,
+    ScrollFocusableDirective,
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
@@ -129,10 +147,6 @@ export class TokenTableComponent implements OnDestroy {
     return $localize`:@@token.selectTokenNamed:Select token ${serial}:SERIAL:`;
   }
 
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -156,6 +170,7 @@ export class TokenTableComponent implements OnDestroy {
     )
   );
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
+  readonly tokenRealmFilterOptions = computed(() => realmPresenceFilterOptions(this.realmService.realmOptions()));
   readonly rolloutStateFilterOptions = ROLLOUT_STATE_VALUES.map((value) => ({
     value,
     label: valueDisplayLabel(value, ROLLOUT_STATE_VALUES, { vocabulary: true })
@@ -252,21 +267,6 @@ export class TokenTableComponent implements OnDestroy {
     this.tokenSelection.deselectAllRows();
   }
 
-  toggleActive(tokenDetails: TokenDetails): void {
-    if (
-      !tokenDetails.revoked &&
-      !tokenDetails.locked &&
-      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
-        (!tokenDetails.active && this.authService.actionAllowed("enable")))
-    ) {
-      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
-        next: () => {
-          this.tokenResource.reload();
-        }
-      });
-    }
-  }
-
   resetFailCount(tokenDetails: TokenDetails): void {
     if (!tokenDetails.revoked && !tokenDetails.locked && this.authService.actionAllowed("reset")) {
       this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
@@ -305,7 +305,7 @@ export class TokenTableComponent implements OnDestroy {
   toggleFilter(filterKeyword: string): void {
     this.tokenService.updateFilter((current) => {
       let newValue =
-        filterKeyword === "active"
+        filterKeyword === "active" || filterKeyword === "assigned"
           ? this.tableUtilsService.toggleBooleanInFilter({
               keyword: filterKeyword,
               currentValue: current
@@ -376,10 +376,22 @@ export class TokenTableComponent implements OnDestroy {
   }
 
   selectedFilterValues(keyword: string): string[] {
-    return StringUtils.splitFilterList(this.tokenService.filterDraft().getValueOfKey(keyword));
+    const filter = this.tokenService.filterDraft();
+    // The raw map keeps the "*" of "With realm" and the quoted "" of "Without realm".
+    return this.tokenService.presenceKeys.has(keyword)
+      ? splitRealmFilterList(filter.rawFilterMap.get(keyword))
+      : StringUtils.splitFilterList(filter.getValueOfKey(keyword));
   }
 
   setFilterValues(keyword: string, values: string[]): void {
+    // "With realm" and "Without realm" are exclusive: a newly selected presence entry replaces everything else,
+    // otherwise a remaining presence entry is dropped in favour of the concrete realms.
+    if (this.tokenService.presenceKeys.has(keyword) && values.length > 1) {
+      const presence = [REALM_FILTER_WITH_REALM, REALM_FILTER_WITHOUT_REALM];
+      const before = this.selectedFilterValues(keyword);
+      const added = values.find((v) => presence.includes(v) && !before.includes(v));
+      values = added !== undefined ? [added] : values.filter((v) => !presence.includes(v));
+    }
     this.tokenService.updateFilter((current) =>
       values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword)
     );

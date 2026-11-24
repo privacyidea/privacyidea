@@ -19,9 +19,7 @@
 <div
   #scrollContainer
   appScrollToTop
-  i18n-aria-label="@@common.tokenEnrollment"
-  aria-label="Token Enrollment"
-  class="token-enrollment-container">
+  class="token-enrollment-container token-enrollment-fixed-width">
   <h3
     class="margin-8"
     i18n="@@token.enrollNewToken"
@@ -31,14 +29,18 @@
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
       [formInvalid]="isFormInvalid()"
+      [enrollBlockedReason]="enrollmentBlockedReason()"
       [scrollContainer]="scrollContainer"
       (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">
-      <div class="width-948 margin-bottom-0">
+      <div class="enroll-content-width margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n="@@token.tokenConfiguration">Token Configuration</h4>
-      <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
+      <!-- Each new inputsGeneration recreates the type-specific inputs with their defaults. -->
+      @for (generation of [inputsGeneration()]; track generation) {
+        <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
+      }
       <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n="@@common.description">Description</mat-label>
         <textarea
@@ -48,10 +50,10 @@
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.required)) {
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
-        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.maxLength)) {
           <mat-error i18n="@@token.descriptionMust"
             >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
           >
@@ -70,18 +72,24 @@
             <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (clearButtonClick)="selectedContainer.set(''); trackChange()"
+                (clearButtonClick)="clearContainer()"
                 [showClearButton]="selectedContainer() !== ''">
                 <input
-                  [value]="selectedContainer()"
-                  (input)="selectedContainer.set($any($event.target).value); trackChange()"
+                  [formField]="selectedContainerForm"
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
               <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
-              <mat-autocomplete
-                #containerAuto="matAutocomplete"
-                (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
+              <mat-autocomplete #containerAuto="matAutocomplete">
+                @if (authService.actionAllowed("container_create")) {
+                  <mat-option
+                    class="create-container-option"
+                    [value]="selectedContainer()"
+                    (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
+                    <mat-icon>add</mat-icon>
+                    <span i18n="@@container.createNewContainerOption">Create new container</span>
+                  </mat-option>
+                }
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }

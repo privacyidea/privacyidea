@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (authService.actionAllowed("container_add_token")) {
-  <div class="flex-column width-100">
+  <div class="flex-column width-full">
     <h4
       class="details-card-title"
       i18n="@@container.addToken"
@@ -32,7 +32,7 @@
         </mat-checkbox>
       </section>
     </div>
-    <mat-form-field class="add-token-filter-field width-100">
+    <mat-form-field class="add-token-filter-field width-full">
       <mat-label i18n="@@container.addTokenContainer">Add Token to Container</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
@@ -63,8 +63,10 @@
       }
       <mat-autocomplete
         #tokenAuto="matAutocomplete"
+        [displayWith]="clearInputOnSelect"
         class="token-option-panel"
-        (opened)="applyCompatibleTokenTypesFilter()">
+        (opened)="applyCompatibleTokenTypesFilter()"
+        (optionSelected)="addToken.emit($event.option.value)">
         @if (tokenOptions().length === 0) {
           <mat-option
             [disabled]="true"
@@ -74,7 +76,7 @@
         }
         @for (option of tokenOptions(); track option) {
           <mat-option
-            (click)="addToken.emit(option)"
+            [value]="option"
             class="token-option">
             <span class="token-option-span"> {{ option["serial"] }} </span>
             <span class="token-option-span">

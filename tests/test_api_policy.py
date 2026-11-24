@@ -255,6 +255,30 @@ class APIPolicyTestCase(MyApiTestCase):
 
         delete_policy(policy_name)
 
+    def test_01d_update_keeps_omitted_values(self):
+        policy_name = "keep_values"
+        expected = {"active": False, "check_all_resolvers": True, "user_case_insensitive": True,
+                    "priority": 3, "description": "keep me"}
+        with self.app.test_request_context(f"/policy/{policy_name}",
+                                           method="POST",
+                                           json={"scope": SCOPE.USER, "action": "disable", **expected},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        with self.app.test_request_context(f"/policy/{policy_name}",
+                                           method="POST",
+                                           data={"scope": SCOPE.USER,
+                                                 "action": "disable"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        policy = get_policies(name=policy_name)[0]
+        self.assertEqual(expected, {key: policy.get(key) for key in expected})
+
+        delete_policy(policy_name)
+
     def test_02_set_policy_conditions(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -584,6 +608,18 @@ class APIPolicyTestCase(MyApiTestCase):
             data = res.json
             result = data.get("result")
             self.assertEqual(result['error'], {'code': 302, 'message': 'ERR302: Invalid client definition!'})
+
+    def test_06_disabled_bool_action_is_negated(self):
+        # A boolean action saved with the value False is stored as the excluded action
+        for action in [f"{PolicyAction.PASSONNOTOKEN}=False", {PolicyAction.PASSONNOTOKEN: False}]:
+            with self.app.test_request_context('/policy/boolValue',
+                                               method='POST',
+                                               json={"scope": SCOPE.AUTH, "action": action},
+                                               headers={'PI-Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.json)
+            self.assertEqual({f"-{PolicyAction.PASSONNOTOKEN}": True}, get_policies(name="boolValue")[0].get("action"))
+        delete_policy("boolValue")
 
     def test_02_rename_policy(self):
         # create a policy pol_old

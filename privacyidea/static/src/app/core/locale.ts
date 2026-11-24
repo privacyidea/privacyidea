@@ -30,8 +30,8 @@ export const SCRIPT_ROOT_META_NAME = "pi-script-root";
  * index.html. Empty string when mounted at the web server root, and when the dev
  * server serves the bundle without the backend templating it.
  *
- * A meta tag rather than an injected global, because the backend's CSP allows only
- * script-src 'self' and would block the inline script that set one.
+ * A meta tag rather than an injected global, because the meta tag holds only data and
+ * the backend's CSP does not have to allow it like an inline script.
  */
 export function scriptRoot(): string {
   const meta = document.querySelector(`meta[name="${SCRIPT_ROOT_META_NAME}"]`);

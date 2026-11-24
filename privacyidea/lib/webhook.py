@@ -21,6 +21,7 @@ import logging
 import socket
 import ssl
 import time
+from collections.abc import Iterable
 from urllib.parse import urlsplit
 
 import requests
@@ -487,6 +488,30 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :return: the database id of the webhook
     :raises ParameterError: if a parameter is missing or invalid
     """
+    webhook_id = _stage_webhook(identifier, url=url, description=description, http_method=http_method,
+                                content_type=content_type, default_payload=default_payload,
+                                auth_type=auth_type, username=username, password=password,
+                                verify_tls=verify_tls, tls_ca_bundle=tls_ca_bundle,
+                                client_certificate=client_certificate, client_key=client_key,
+                                client_key_password=client_key_password,
+                                http_proxy=http_proxy, https_proxy=https_proxy, timeout=timeout,
+                                headers=headers, secret_headers=secret_headers, header_renames=header_renames)
+    db.session.commit()
+    return webhook_id
+
+
+def _stage_webhook(identifier: str, url: str | None = None, description: str | None = None,
+                   http_method: str | None = None, content_type: str | None = None,
+                   default_payload: str | None = None, auth_type: str | None = None, username: str | None = None,
+                   password: str | None = None, verify_tls: bool | None = None, tls_ca_bundle: str | None = None,
+                   client_certificate: str | None = None, client_key: str | None = None,
+                   client_key_password: str | None = None, http_proxy: str | None = None,
+                   https_proxy: str | None = None, timeout: int | None = None, headers: dict | None = None,
+                   secret_headers: Iterable[str] | None = None, header_renames: dict | None = None) -> int:
+    """
+    Write the webhook like :func:`set_webhook`, but do not commit, so that the configuration import can write
+    webhooks and event handlers in one transaction.
+    """
     stmt = select(Webhook).filter(Webhook.identifier == identifier)
     webhook = db.session.execute(stmt).scalar_one_or_none()
     creating = webhook is None
@@ -564,7 +589,6 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     elif header_renames:
         raise ParameterError("Renaming a header requires sending the header set it belongs to.")
 
-    db.session.commit()
     log.info(f"{'Created' if creating else 'Updated'} webhook {identifier!r} "
              f"(id {webhook.id})")
     return webhook.id

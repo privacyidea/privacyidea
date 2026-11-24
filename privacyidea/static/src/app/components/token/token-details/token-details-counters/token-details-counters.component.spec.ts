@@ -26,6 +26,7 @@ import { MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsCountersComponent } from "./token-details-counters.component";
+import { axe } from "@testing/axe";
 
 describe("TokenDetailsCountersComponent", () => {
   let component: TokenDetailsCountersComponent;
@@ -65,5 +66,11 @@ describe("TokenDetailsCountersComponent", () => {
 
     expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "maxfail", "15");
     expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output, signal } from "@angular/core";
-
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -25,6 +25,9 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface ApiKeyData {
   apiId: string;
@@ -42,34 +45,33 @@ export interface ApiKeyData {
     MatButtonModule,
     MatIconModule,
     MatDivider,
-    MatCheckbox
+    MatCheckbox,
+    FormField
   ],
   templateUrl: "./yubikey-config.component.html",
   styleUrl: "./yubikey-config.component.scss"
 })
 export class YubikeyConfigComponent {
-  formData = input.required<Record<string, string | undefined>>();
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+
+  config = input.required<TokenTypeConfigForm>();
   yubikeyApiIds = input.required<string[]>();
 
   yubikeyCreateNewKey = output<ApiKeyData>();
   deleteRequest = output<string>();
 
-  newYubikeyApiId = signal("");
-  newYubikeyApiKey = signal("");
-  newYubikeyGenKey = signal(true);
+  readonly newKey = signal<ApiKeyData>({ apiId: "", apiKey: "", generateKey: true });
+  readonly newKeyForm = form(this.newKey, (path) => {
+    identifierName(path.apiId);
+    disabled(path.apiKey, () => this.newKey().generateKey);
+  });
 
   createNewKey() {
-    const apiId = this.newYubikeyApiId();
-    if (apiId && /^[a-zA-Z0-9._-]*$/.test(apiId)) {
-      const newKeyData = {
-        apiId: this.newYubikeyApiId(),
-        apiKey: this.newYubikeyApiKey(),
-        generateKey: this.newYubikeyGenKey()
-      };
-      this.yubikeyCreateNewKey.emit(newKeyData);
-      this.newYubikeyApiId.set("");
-      this.newYubikeyApiKey.set("");
-    }
+    if (!this.newKeyForm().valid()) return;
+    this.yubikeyCreateNewKey.emit(this.newKey());
+    this.newKey.update((key) => ({ ...key, apiId: "", apiKey: "" }));
+    this.newKeyForm().reset();
   }
 
   deleteEntry(key: string) {

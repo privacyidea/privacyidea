@@ -328,6 +328,21 @@ class ResolverTestCase(MyTestCase):
         delete_resolver("resolver1")
         delete_resolver("Resolver2")
 
+    def test_30a_import_resolver_with_node_none(self):
+        # A resolver whose node is None in the import data is assigned without a node
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/etc/passwd"})
+        import_realms({"realm_none": {"default": False, "resolver": [
+            {"priority": None, "name": self.resolvername1, "type": "passwdresolver", "node": None}]}})
+
+        resolver_list = get_realms("realm_none")["realm_none"]["resolver"]
+        self.assertEqual([self.resolvername1], [resolver.get("name") for resolver in resolver_list])
+        self.assertEqual("", resolver_list[0].get("node"))
+
+        delete_realm("realm_none")
+        delete_resolver(self.resolvername1)
+
     def test_30_delete_realm_warns_about_conditional_access_policies(self):
         from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
                                                                 delete_conditional_access_policy)
@@ -368,3 +383,21 @@ class ResolverTestCase(MyTestCase):
         delete_conditional_access_policy(excludes_id)
         delete_conditional_access_policy(restricted_id)
         delete_resolver(self.resolvername1)
+
+    def test_31_import_clears_default_of_imported_realm(self):
+        # Importing a realm with "default": false takes away its default, also without --replace, so that a
+        # repeated import of the same data leads to the same configuration.
+        realm = "realm-imp-default"
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": "/etc/passwd"})
+        self.addCleanup(delete_resolver, self.resolvername1)
+        set_realm(realm, [{"name": self.resolvername1}])
+        self.addCleanup(lambda: realm_is_defined(realm) and delete_realm(realm))
+        set_default_realm(realm)
+        self.assertEqual(realm, get_default_realm())
+
+        import_realms({realm: {"default": False, "resolver": [
+            {"priority": None, "name": self.resolvername1, "type": "passwdresolver", "node": ""}]}})
+
+        self.assertFalse(get_default_realm(), "the imported realm is still the default realm")
+        self.assertFalse(get_realms(realm)[realm]["default"])
+        self.assertEqual([self.resolvername1], [r["name"] for r in get_realms(realm)[realm]["resolver"]])

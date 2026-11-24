@@ -89,6 +89,7 @@ import copy
 import json
 import logging
 import threading
+from functools import partial
 
 from flask import (Blueprint, request, g, Response)
 from flask_babel import _
@@ -97,13 +98,14 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
-                                            check_tokeninfo,
+                                            check_tokeninfo, serial_allowed, tokeninfo_mismatch,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
                                             add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            multichallenge_enroll_via_validate, preferred_client_mode)
+                                            multichallenge_enroll_via_validate, preferred_client_mode,
+                                            issue_remembered_device, RememberedDeviceRequest)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -111,40 +113,49 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types, load_challenge_text)
+                                           disabled_token_types, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
-                                                    REMEMBER_DEVICE_REJECTION)
+                                                    RejectionShape, REMEMBER_DEVICE_REJECTION,
+                                                    TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit, get_auth_token_from_request,
+                                       verify_auth_token)
 from privacyidea.api.recover import recover_blueprint
-from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
-                                               user_identity, count_user_devices, apply_cookie_action,
+from privacyidea.lib.remembered_device import (consume_remember_device_cookie, user_identity, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft)
+                                               handle_device_theft, token_usability, MissReason)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError)
+                                   TokenAdminError, EnrollmentError, ValidateError, ResolverError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.helper import check_auth_time_limit, check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token)
+                                   check_otp, get_one_token, trigger_challenges)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
+from privacyidea.lib.token.auth import check_token_state
+from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
+from privacyidea.lib.tokens.pushtoken import PushAction
+from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
+                                                 require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
-from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
+from .lib.policyhelper import (check_last_auth_policy, get_realm_for_authentication, get_request_identity,
+                               get_remember_device_duration, name_conflicting_action, check_token_action_allowed,
+                               get_token_user_attributes, user_is_owner, UserAttributes)
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
                         log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
@@ -152,9 +163,12 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
-from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
+from ..lib.autoresync import LOG_AUTORESYNC_KEY
+from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
+                                                      confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
+from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
+                                   record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -216,7 +230,15 @@ def before_request():
     # Check if a policy defines the realm
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
-    request.User = User(username, realm, resolver)
+    try:
+        request.User = User(username, realm, resolver)
+    except ResolverError:
+        if request.blueprint == validate_blueprint.name:
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
     request.all_data["realm"] = realm
 
     # Replace the requested user with the user it was resolved to
@@ -226,7 +248,53 @@ def before_request():
         "realm": request.User.realm})
 
 
+def _offline_refill_identity() -> User:
+    """
+    The owner of the token a ``/validate/offlinerefill`` request names, for the conditional-access gate to check.
+
+    Read from the serial alone: the refill hands out the material of whatever token the serial names, so a ``user``
+    parameter naming somebody else must not be what the gate checks. Falls back to an empty user when the serial does
+    not resolve to exactly one owned token, so the source-IP block still applies.
+    """
+    serial = get_optional(request.all_data, "serial")
+    if not serial:
+        return User()
+    try:
+        token = get_one_token(serial=serial, silent_fail=True)
+    except Exception as ex:
+        log.debug(f"Conditional-access pre-check could not resolve the owner of {serial!r}: {ex!r}")
+        return User()
+    return token.user if (token and token.user) else User()
+
+
+def _hide_offline_refill_error() -> bool:
+    """Whether a failed refill is answered with the unspecific error rather than its own."""
+    return Match.user(g, scope=SCOPE.TOKEN, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+                      user_object=request.User if hasattr(request, "User") else None).any()
+
+
+def _refuse_offline_refill(message: str | None) -> tuple[Response, int]:
+    """
+    Answer a refill conditional access refused the way every failed refill is answered: an error response. A silent
+    rejection is masked like any other failure; a configured message is shown either way, as it is past
+    ``hide_specific_error_message`` on the other endpoints.
+
+    A ``ValidateError`` (401), the code a wrong OTP is answered with, and never a ``ParameterError`` (905): the
+    privacyIDEA Credential Provider reads 905 on a refill as "no longer an offline token" and deletes the
+    WebAuthn/Passkey offline data, which a restriction that lifts again must not cost.
+    """
+    error = ValidateError(message or _("Failed offline token refill"))
+    if not message and _hide_offline_refill_error():
+        return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
+
+
+OFFLINE_REFILL_REJECTION = RejectionShape(render=_refuse_offline_refill)
+
+
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+@conditional_access_gate(_offline_refill_identity, shape=OFFLINE_REFILL_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
@@ -267,6 +335,7 @@ def offlinerefill():
     serial = get_required(request.all_data, "serial")
     refilltoken_request = get_required(request.all_data, "refilltoken")
     password = get_required(request.all_data, "pass", allow_empty=True)
+    reason = None
     try:
         tokens = get_tokens(serial=serial)
         if len(tokens) != 1:
@@ -276,85 +345,47 @@ def offlinerefill():
         # check if token is disabled or otherwise not fit for auth
         message_list = []
         if not token.check_all(message_list):
+            reason = token.auth_details.get(AUTH_EVENT_REASON_KEY)
             log.info(f"Failed to offline refill: {message_list}")
             raise ParameterError(_("The token is not valid."))
         token_attachments = list_machine_tokens(serial=serial, application="offline")
         if token_attachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
-            # check refill token depending on token type
-            refilltoken_stored = None
-            if token.type.lower() == "hotp":
-                refilltoken_stored = token.get_tokeninfo("refilltoken")
-            elif token.type.lower() in ["webauthn", "passkey"]:
-                computer_name = get_computer_name_from_user_agent(request.user_agent.string)
-                if not computer_name:
-                    log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
-                                f"{request.user_agent.string}")
-                    raise ParameterError(_("Machine can not be identified by user agent!"))
-                refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
-
-            if refilltoken_stored and refilltoken_stored == refilltoken_request:
+            if (token.type.lower() in ["webauthn", "passkey"]
+                    and not get_computer_name_from_user_agent(request.user_agent.string)):
+                reason = AuthEventReason.MACHINE_NOT_IDENTIFIED
+                log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
+                            f"{request.user_agent.string}")
+                raise ParameterError(_("Machine can not be identified by user agent!"))
+            # The refill token of a JSON request can be any JSON value
+            if isinstance(refilltoken_request, str):
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
                 options = token_attachments[0].get("options")
-                otps = MachineApplication.get_refill(token, password, options)
-                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
-                response = send_result(True)
-                content = response.json
-                content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
-                                                      "response": otps,
-                                                      "serial": serial}]}
-                response.set_data(json.dumps(content))
-                return response
+                try:
+                    refill = MachineApplication.refill(token, password, refilltoken_request, options,
+                                                       request.user_agent.string)
+                except ValidateError:
+                    reason = AuthEventReason.WRONG_OTP
+                    raise
+                if refill is not None:
+                    response = send_result(True)
+                    content = response.json
+                    content["auth_items"] = {"offline": [{"refilltoken": refill.refilltoken,
+                                                          "response": refill.otps,
+                                                          "serial": serial}]}
+                    response.set_data(json.dumps(content))
+                    log_authentication(AuthEventType.OFFLINE_REFILL_SUCCESS, request, serial=serial)
+                    return response
+        reason = AuthEventReason.REFILLTOKEN_MISMATCH if token_attachments else AuthEventReason.NOT_AN_OFFLINE_TOKEN
         raise ParameterError(_("Token is not an offline token or refill token is incorrect"))
 
     except Exception as e:
-        if Match.user(
-                g,
-                scope=SCOPE.TOKEN,
-                action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
-                user_object=request.User if hasattr(request, "User") else None).any():
+        log_authentication(AuthEventType.OFFLINE_REFILL_FAIL, request, serial=serial,
+                           reasons=[reason] if reason else None)
+        if _hide_offline_refill_error():
             return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
-
-
-def _conditional_access_identity():
-    """
-    Resolve the identity the conditional-access pre-check must gate on, for the endpoints that accept a token
-    instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
-
-    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
-    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm —
-    and the user-lock / DENY checks would be silently skipped, letting a locked user authenticate by credential id or
-    serial, or an admin trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in
-    that case so the lock is enforced before any token work runs.
-
-    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
-    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
-    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
-    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
-    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
-    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
-    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
-    itself, so an attempt that does reach a token is still counted.
-    """
-    if request.User and request.User.login:
-        return request.User
-    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
-    serial = get_optional(request.all_data, "serial")
-    token = None
-    try:
-        if serial:
-            token = get_one_token(serial=serial, silent_fail=True)
-        elif credential_id:
-            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
-            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
-            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
-            # a challenge lookup plus otpkey decrypt on every request.
-            token = get_fido2_token_by_credential_id(credential_id)
-    except Exception as ex:
-        log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
-    return token.user if (token and token.user) else request.User
 
 
 def _challenge_owner(challenge) -> User:
@@ -376,6 +407,7 @@ def _challenge_owner(challenge) -> User:
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
+@postpolicy(issue_remembered_device, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(mangle_challenge_response, request=request)
@@ -395,7 +427,7 @@ def _challenge_owner(challenge) -> User:
 @prepolicy(mangle, request=request)
 # Below set_realm and mangle in particular, because both *rewrite the identity*
 # Besides of them, CA gate should the first step to run before any other authentication step starts
-@conditional_access_gate(_conditional_access_identity)
+@conditional_access_gate(partial(get_request_identity, request))
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
@@ -453,7 +485,12 @@ def check():
         is supplied.
     :jsonparam otponly: ``1`` to skip the PIN check and only verify
         the OTP value. Used by the management UI; only meaningful
-        with ``serial``.
+        with ``serial``. The request needs the session token of a login in
+        the ``PI-Authorization`` header: of an administrator with the admin
+        right ``tokenlist`` for the token, or of the owner of the token.
+        Without such a session, the request is refused. The token has to be
+        usable (active, within its validity period, below its fail counter),
+        and a wrong value counts as a failed authentication.
     :jsonparam transaction_id: transaction id for the second leg of
         a challenge-response flow.
     :jsonparam state: alias of ``transaction_id`` for legacy callers.
@@ -465,6 +502,19 @@ def check():
     :jsonparam cancel_enrollment: ``1`` together with
         ``transaction_id`` cancels an in-progress
         ``enroll_via_multichallenge`` flow without authenticating.
+
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (FIDO2), then ``serial``, then ``user`` with
+    ``pass``. A request that does not carry everything the selected
+    method needs is malformed and is answered with a 400, without
+    counting as an authentication attempt. A FIDO2 request always
+    needs ``transaction_id`` and the ``Origin`` header, and beyond
+    that either the assertion (``authenticatorData``,
+    ``clientDataJSON`` and ``signature``, or their legacy spellings
+    ``authenticatordata``, ``clientdata`` and ``signaturedata``) or,
+    when it answers an ``enroll_via_multichallenge`` enrollment, the
+    registration (``attestationObject``, ``clientDataJSON``, ``rawId``
+    and ``authenticatorAttachment``).
 
     **Example Validation Request**:
 
@@ -547,7 +597,9 @@ def check():
     """
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
-        return _handle_enrollment_cancellation(request.all_data)
+        response = _handle_enrollment_cancellation(request.all_data)
+        get_ca_context().answered_by_view = True
+        return response
 
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
@@ -558,12 +610,16 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
+        # Whether a token (or a container) verified this request, rather than a policy accepting it without one
+        "token_verified": False,
         AUTH_EVENT_TYPE_KEY: None,
         AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
         # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
         # a failure was made against belong on the authentication-log row alone.
         AUTH_EVENT_SERIALS_KEY: [],
+        # Audit-only, never part of the response (see LOG_AUTORESYNC_KEY)
+        LOG_AUTORESYNC_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -590,10 +646,15 @@ def check():
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
             _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
         raise
+    except ResolverError:
+        # A user store that failed after the request was let in, e.g. on a later lookup of the token owner
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
+        raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
+    get_ca_context().answered_by_view = True
     return response
 
 
@@ -689,6 +750,18 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
     # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
+    # The same applies to the rest of the request: the parameters the answer is verified with are read in the
+    # token class, after the checks below have classified the request. Requiring them here keeps an incomplete
+    # request a malformed request instead of a failed authentication. Which ones are required follows from the
+    # method the request selected, so the registration data decides that before anything else is read.
+    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+    if attestation_object:
+        require_fido2_registration(request.all_data)
+    else:
+        require_fido2_assertion(request.all_data)
+    # The origin binds the answer to the site it was made for and is taken from the request environment, never
+    # from a parameter, so it is required from there.
+    get_required(request.environ, "HTTP_ORIGIN")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
     confirm_attempt(transaction_id)
@@ -698,6 +771,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if serial:
         try:
             token = get_one_token(serial=serial)
+            if token.get_type() not in (PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()):
+                # Only a FIDO2 token answers on this path, so any other token counts as not found
+                raise ResourceNotFoundError(_("The requested token could not be found."))
         except ResourceNotFoundError:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
             context[AUTH_EVENT_SERIALS_KEY] = [serial]
@@ -750,9 +826,11 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
-    # Handle Enrollment vs Authentication
-    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+    # Also for the answers of enrollment challenges, as check_user_pass does
+    if not _check_time_limit(context, user, token.get_serial()):
+        return  # Result remains False
 
+    # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:
         # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
         # enrollment started at /token/init is completed there.
@@ -764,7 +842,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
             log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
             context["details"]["message"] = _("Authentication failed.")
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # The transaction holds no enrollment challenge of this token
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             return  # Result remains False
 
@@ -807,7 +888,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             webauthntoken_request(request, None)
             webauthntoken_authz(request, None)
 
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
@@ -817,28 +898,35 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            context["details"]["message"] = "Token is disabled"
-            # Explicit audit for disabled token
+        token_state = check_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            context["details"]["message"] = token_state.message
+            # Explicit audit for the unusable token
             g.audit_object.log({
-                "info": log_used_user(user, "Token is disabled"),
+                "info": log_used_user(user, token_state.message),
                 "success": False,
                 "authentication": AUTH_RESPONSE.REJECT,
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
+            # Owned-but-unusable token (disabled, expired, counters exceeded) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
-            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
+            _record_context_reason(context, token_state.reason, token.get_serial())
             return
 
         try:
             fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
-        except (ResourceNotFoundError, AuthError):
+        except (ResourceNotFoundError, AuthError) as error:
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure; record it on the
-            # context since check() logs it once in its finally.
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # context since check() logs it once in its finally. No first factor was checked on this path, so it is
+            # a failed answer to a challenge, like for any other token.
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_EXPIRED
+                                   if isinstance(error, ChallengeExpiredError)
+                                   else AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             raise
         except PolicyError:
@@ -849,9 +937,14 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
             raise
         context["result"] = fido_verification_result.success > 0
+        if context["result"]:
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
 
     # Success Handling
     if context["result"]:
+        context["token_verified"] = True
         context["details"].update({
             "username": user.login,
             "message": _("Found matching challenge"),
@@ -871,7 +964,59 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if context["result"]:
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
     elif not attestation_object:
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+        context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+        _record_context_reason(context, AuthEventReason.CHALLENGE_WRONG_RESPONSE, token.get_serial())
+
+
+def _check_time_limit(context: dict, user: User, serial: str) -> bool:
+    """
+    Check the auth_max_fail and auth_max_success policies of the user, which check_user_pass applies to an
+    authentication with a user, and record a refusal in the context.
+
+    :param context: The context of the authentication request
+    :param user: The user who authenticates
+    :param serial: The serial of the token the request authenticates with
+    :return: True if the user may authenticate
+    """
+    time_limit = check_auth_time_limit(user)
+    if not time_limit.allowed:
+        context["details"].update(time_limit.reply_dict)
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+        context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        _record_context_reason(context, time_limit.reason)
+    return time_limit.allowed
+
+
+def _require_otponly_session(serial: str) -> None:
+    """
+    ``otponly`` skips the PIN check, so only a logged-in administrator or the owner of the token can use it. The
+    request carries the session token of the login in the ``PI-Authorization`` header. An administrator needs the
+    admin right ``tokenlist`` for the owner or for a realm of the token, matched as for the other actions on a token.
+
+    :param serial: The serial of the token that the request checks
+    :raises PolicyError: if the request has no session that may check the token without the PIN
+    """
+    refusal = PolicyError(_("The parameter otponly requires the session of an administrator who may list the token, "
+                            "or of the owner of the token."))
+    try:
+        session = verify_auth_token(get_auth_token_from_request(), required_role=[ROLE.ADMIN, ROLE.USER])
+    except AuthError as error:
+        log.warning(f"Refused otponly for the token {serial}, because the request has no valid session: {error!s}")
+        raise refusal
+    role = session.get("role")
+    username = session.get("username")
+    realm = session.get("realm")
+    if role == ROLE.ADMIN:
+        admin_attributes = UserAttributes(role=ROLE.ADMIN, adminuser=username, adminrealm=realm)
+        allowed = check_token_action_allowed(g, PolicyAction.TOKENLIST, serial, admin_attributes)
+    else:
+        token_owner = get_token_user_attributes(serial).user
+        allowed = user_is_owner(User(login=username, realm=realm), token_owner)
+    if not allowed:
+        log.warning(f"Refused otponly for the token {serial}, because the {role} {username} in the realm "
+                    f"'{realm}' may not check it.")
+        raise refusal
 
 
 def _handle_serial_auth(context: dict, serial: str):
@@ -881,6 +1026,8 @@ def _handle_serial_auth(context: dict, serial: str):
     user = context["user"]
     password = get_optional(request.all_data, "pass")
     otp_only = get_optional(request.all_data, "otponly")
+    if otp_only:
+        _require_otponly_session(serial)
 
     # Validate ownership if user is present
     if user:
@@ -900,6 +1047,16 @@ def _handle_serial_auth(context: dict, serial: str):
             request.User = user
             context["user"] = user
             context["options"]["user"] = user
+            rerun_user_dependent_prepolicies(request, context["options"])
+            # Not one of the shared pre-policies, since /auth disables the push wait
+            pushtoken_validate(request, None)
+            context["options"][PushAction.WAIT] = request.all_data[PushAction.WAIT]
+
+    if user and user.exist():
+        # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+        confirm_attempt_for_serials([serial])
+        if not _check_time_limit(context, user, serial):
+            return  # Result remains False
 
     # Perform Check
     if not otp_only:
@@ -910,13 +1067,20 @@ def _handle_serial_auth(context: dict, serial: str):
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
-        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
+        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
+        # token that can not be used is classified by check_otp.
+        context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None) or (
+            AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
+        context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
-        # a message, so without this the row would name no token although the request named exactly one.
+        # a message, so without this the rows would name no token although the request named exactly one. The audit
+        # entry is logged directly, since serial_list would also update the last authentication on success.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        g.audit_object.log({"serial": serial})
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
+    context["token_verified"] = success
     context["details"] = details
 
     if "serial" in details:
@@ -949,6 +1113,9 @@ def _handle_standard_auth(context: dict):
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
+    # The token layer classifies every request it decides. A policy that accepts a login without a token (passOnNoToken,
+    # passOnNoUser, passthru, the authentication cache) leaves it unclassified.
+    context["token_verified"] = success and (context["is_container_challenge"] or AUTH_EVENT_TYPE_KEY in details)
     if AUTH_EVENT_TYPE_KEY not in details:
         # An absent key means nothing classified this request; a token suppressing its own terminal event (push_wait
         # timeout) leaves it present but None, which must survive so nothing overwrites the logged CHALLENGE_TRIGGERED.
@@ -970,6 +1137,7 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -981,7 +1149,13 @@ def _handle_standard_auth(context: dict):
         # token at all, since there is no single token the response could be attributed
         # to. Take the tokens that were challenged from the transaction instead, so that
         # the failed attempt is logged against the tokens it was made against.
-        context["serial_list"].extend(_challenged_token_serials(transaction_id, context["user"]))
+        challenged_serials = _challenged_token_serials(transaction_id, context["user"])
+        context["serial_list"].extend(challenged_serials)
+        if challenged_serials:
+            # The event handlers take the token of the event from the audit entry. The
+            # response is attributed to none of these tokens, so a handler does not act on
+            # them either.
+            g.audit_serial_unattributed = True
 
 
 def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:
@@ -1036,9 +1210,9 @@ def _finalize_auth_response(context):
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # Client Mode Per User Policy
+            # Client Mode Per User Policy: an opt-in, the last used token type is only stored when the policy is set
             if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                          user_object=user).allowed():
+                          user_object=user).enforced():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
@@ -1058,18 +1232,12 @@ def _finalize_auth_response(context):
 
     serials_str = ",".join(context["serial_list"])
 
-    # Decide whether to issue a persistent "remember device" cookie. This is an
-    # optional enhancement on an already-successful auth, so a failure here (e.g.
-    # a transient DB error while creating the device) must never turn that success
-    # into a 500 - fall back to issuing no cookie.
-    try:
-        cookie_action = _resolve_persistent_cookie(user, success)
-    except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
-        log.warning(f"Could not issue a remember-device cookie: {exc}")
-        cookie_action = None
+    if success:
+        # The issue_remembered_device postpolicy issues the remembered device the client may have asked for, once all
+        # other postpolicies have accepted this authentication.
+        g.remembered_device_request = RememberedDeviceRequest(user, context["token_verified"])
 
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
-    apply_cookie_action(ret, cookie_action)
 
     audit_entry = {
         "info": log_used_user(user, details.get("message")),
@@ -1084,6 +1252,7 @@ def _finalize_auth_response(context):
     if details.get("type"):
         audit_entry["token_type"] = details.get("type")
     g.audit_object.log(audit_entry)
+    add_autoresync_to_audit(context[LOG_AUTORESYNC_KEY])
 
     return ret
 
@@ -1117,67 +1286,136 @@ def _log_authentication_event(context):
     )
 
 
-def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None:
-    """
-    Decide whether to *issue* a new persistent ("remember device") cookie on a
-    successful authentication, returning a ``"set"`` :class:`CookieAction` or
-    ``None``.
+# Why a presented cookie is dead, as the audit info and the log say it
+_MISS_INFO = {
+    MissReason.MALFORMED: "the cookie is malformed",
+    MissReason.UNKNOWN: "the cookie matches no remembered device of the user on this client",
+    MissReason.EXPIRED: "the remembered device expired and is removed",
+    MissReason.IDLE: "the remembered device was not used within the remember_device_idle_timeout and is removed",
+}
 
-    ``/validate/check`` only issues cookies. A presented cookie is consumed and
-    rotated by the dedicated recognition endpoint (``/validate/remember_device``),
-    never here, so this endpoint carries no cookie theft/rotation logic. A cookie
-    is issued when the request is made by an identified API client, opts in
-    (``request_persistent_cookie``) and the ``remember_device`` policy (scope
-    auth, matched on user/realm) allows it.
+
+def _recognition_refusal(user: User, idle_timeout_conflict: str | None) -> str | None:
     """
-    if not success or not g.get("client_id"):
-        return None
-    if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
-        return None
-    identity = user_identity(user)
-    if not identity:
-        # The recognition endpoint binds and matches on the resolver-stable user
-        # identity, so a remembered device for a userless (serial-only) auth could
-        # never be recognised. Do not issue a cookie that can never be redeemed.
-        return None
-    if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
-        return None
-    # Optional per-user device cap (remember_device_max_devices, off by default):
-    # once the user has this many live devices for this client, opt-in issues no
-    # new cookie - the existing devices keep working. Unset / invalid / <=0 =
-    # unlimited. Each opt-in otherwise mints a new series (a client cannot be
-    # deduped reliably, and multiple devices per user are legitimate), so this is
-    # the knob for admins who want to bound that growth.
-    # Best-effort: count-then-create is not atomic, so two concurrent logins can
-    # both pass the check and overshoot the cap by the concurrency. That is an
-    # accepted trade-off - the cap bounds accumulation, it is not a security
-    # control, and serialising issuance per user is not worth the contention.
-    max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
-                          user_object=user).action_values(unique=True)
-    if max_pols:
+    Why a live remembered device of *user* is not recognised, as the audit info, or ``None``. The
+    ``remember_device_idle_timeout`` policies of the same priority can set different values, which
+    *idle_timeout_conflict* describes. Otherwise a login of the user would be refused as well: by a time limit (see
+    :func:`_time_limit_refusal`), or because none of the user's tokens can be used for it (see
+    :func:`_token_refusal`). The time limits come first, as a login checks them before its tokens.
+    """
+    if idle_timeout_conflict:
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                    f"{idle_timeout_conflict}. The device is kept and can be recognised again once the policies "
+                    f"agree.")
+        return f"device not recognised: {idle_timeout_conflict}"
+    return _time_limit_refusal(user) or _token_refusal(user)
+
+
+def _time_limit_refusal(user: User) -> str | None:
+    """
+    Why a remembered device of *user* is not recognised because ``auth_max_fail`` or ``auth_max_success`` refuses a
+    login of the user, as the audit info, or ``None`` if both allow a login. A recognition is not an authentication,
+    so it counts toward neither limit.
+
+    These are the checks of :func:`~privacyidea.lib.policies.helper.check_auth_time_limit` in the same order, one by
+    one, so that the audit info names the action that refuses.
+    """
+    user_search_dict = {"user": user.login, "realm": user.realm}
+    for action, check_time_limit in ((PolicyAction.AUTHMAXFAIL, check_max_auth_fail),
+                                     (PolicyAction.AUTHMAXSUCCESS, check_max_auth_success)):
         try:
-            max_devices = int(list(max_pols)[0])
-        except (ValueError, TypeError):
-            max_devices = 0
-        if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                  identity.realm_id) >= max_devices:
-            return None
-    # The cookie lifetime is a policy value so it can differ per realm/user/client
-    # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
-    validity_days = None
-    validity_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_VALIDITY,
-                               user_object=user).action_values(unique=True)
-    if validity_pols:
-        try:
-            validity_days = int(list(validity_pols)[0])
-        except (ValueError, TypeError):
-            validity_days = None
-    device, cookie_value = create_remembered_device(identity,
-                                                    client_id=g.client_id,
-                                                    ip_address=g.client_ip,
-                                                    user_agent=g.get("user_agent"),
-                                                    validity_days=validity_days)
-    return CookieAction("set", cookie_value, device.expires_at)
+            allowed, reply_dict = check_time_limit(user, user_search_dict)
+        except PolicyError as exc:
+            # Policies of the same priority that set different values, which refuse a login as well
+            conflict = name_conflicting_action(action, exc).get_description()
+            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                        f"{conflict}. The device is kept and can be recognised again once the policies agree.")
+            return f"device not recognised: {conflict}"
+        if not allowed:
+            message = reply_dict["message"]
+            log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {action}: "
+                     f"{message} The device is kept and can be recognised again once the time limit allows a "
+                     f"login.")
+            return f"device not recognised: {action}: {message}"
+    return None
+
+
+def _token_refusal(user: User) -> str | None:
+    """
+    Why a remembered device of *user* is not recognised because of the user's tokens, as the audit info, or ``None``
+    if a login could use one of them. A token has to pass the checks a login applies to it (see
+    :func:`~privacyidea.lib.remembered_device.token_usability`) and the token restrictions of the policies (see
+    :func:`_policies_refusing_tokens`).
+    """
+    usability = token_usability(user)
+    if not usability.usable:
+        if usability.unusable:
+            # By serial, as the database returns the tokens in no fixed order
+            refusal = "the user has no usable token: " + ", ".join(f"{serial} ({reason})" for serial, reason
+                                                                   in sorted(usability.unusable.items()))
+        else:
+            refusal = "the user has no token"
+        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {refusal}. "
+                 f"The device is kept and can be recognised again once a token of the user is usable.")
+        return f"device not recognised: {refusal}"
+    try:
+        refusing_policies = _policies_refusing_tokens(user, usability.usable)
+    except PolicyError as exc:
+        # last_auth policies of the same priority that set different values, which refuse a login as well
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                    f"{exc.get_description()}. The device is kept and can be recognised again once the policies "
+                    f"agree.")
+        return f"device not recognised: {exc.get_description()}"
+    if refusing_policies:
+        policy_names = ", ".join(refusing_policies)
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: the "
+                    f"policies {policy_names} allow none of the user's tokens for a login (disabled_token_types, "
+                    f"tokentype, serial, tokeninfo or last_auth). The device is kept and can be recognised again "
+                    f"once a policy allows a token of the user.")
+        return f"device not recognised: the policies {policy_names} allow none of the user's tokens"
+    return None
+
+
+def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]:
+    """
+    The names of the policies whose token restrictions leave none of *tokens* usable for a login of *user*, or an
+    empty list if a login could use one of them. These are the restrictions a login applies to the token it is made
+    with, matched as a login matches them: the auth policy ``disabled_token_types`` and the authz policies
+    ``tokentype``, ``serial``, ``tokeninfo`` and ``last_auth``. A recognition has no such token, so it needs one of the
+    user's tokens to pass them all. A recognition does not update the ``last_auth`` of a token, so ``last_auth`` ends
+    the recognition of a device once the last login with each of the user's tokens is too long ago.
+
+    :param user: the user the device is bound to
+    :param tokens: the usable tokens of the user, at least one
+    :raises PolicyError: if ``last_auth`` policies of the same priority set different values
+    """
+    disabled_types = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.DISABLED_TOKEN_TYPES,
+                                user_object=user).action_values(unique=False)
+    allowed_types = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENTYPE,
+                               user_object=user).action_values(unique=False)
+    allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.SERIAL).action_values(unique=False)
+    tokeninfo_policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENINFO).action_values(
+        unique=False, allow_white_space_in_action=True)
+    try:
+        last_auth = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH,
+                               user_object=user).action_values(unique=True, write_to_audit_log=False)
+    except PolicyError as exc:
+        raise name_conflicting_action(PolicyAction.LASTAUTH, exc) from exc
+    refusing = set()
+    for token in tokens:
+        if token.type in disabled_types:
+            refusing.update(disabled_types[token.type])
+        elif allowed_types and token.type not in allowed_types:
+            refusing.update(name for names in allowed_types.values() for name in names)
+        elif not serial_allowed(token.get_serial(), allowed_serials):
+            refusing.update(name for names in allowed_serials.values() for name in names)
+        elif tokeninfo_mismatch(token, tokeninfo_policy):
+            refusing.update(name for names in tokeninfo_policy.values() for name in names)
+        elif last_auth and not token.check_last_auth_newer(next(iter(last_auth))):
+            refusing.update(next(iter(last_auth.values())))
+        else:
+            return []
+    return sorted(refusing)
 
 
 @validate_blueprint.route('/capabilities', methods=['GET'])
@@ -1235,6 +1473,8 @@ def get_capabilities():
 
 
 @validate_blueprint.route('/remember_device', methods=['POST'])
+@prepolicy(set_realm, request=request)
+@prepolicy(mangle, request=request)
 def check_remember_device():
     """
     Recognition endpoint for the persistent "remember device" cookie.
@@ -1247,13 +1487,28 @@ def check_remember_device():
     beforehand is the client's responsibility.
 
     Requires an identified API client (``X-API-Key`` -> ``g.client_id``) and the
-    ``user``/``realm`` the cookie was issued for. The cookie is bound to that
+    ``user``/``realm`` the cookie was issued for. The ``setrealm`` and ``mangle``
+    policies rewrite them as on ``/validate/check``. The cookie is bound to that
     exact user and client, so it can never be replayed for another account or a
     different client. A stale counter is treated as theft: the whole series is
     invalidated and the cookie cleared. Recognition is only offered when the
     ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
     reports); otherwise the answer is always ``false`` and a presented cookie is
-    left untouched.
+    left untouched. A device that was not recognised for the
+    ``remember_device_idle_timeout`` is removed and its cookie cleared. A live
+    device is also not recognised while ``auth_max_fail`` or ``auth_max_success``
+    refuses a login of the user, which a recognition does not count toward, or
+    while none of the user's tokens could be used for a login: every token is
+    disabled, revoked, has a counter exceeded, is outside its validity period, not
+    yet enrolled or of a type that cannot verify a login, or is excluded by the
+    ``disabled_token_types``, ``tokentype``, ``serial``, ``tokeninfo`` or
+    ``last_auth`` policies. The cookie is then left untouched, so the device can
+    be recognised again once a login is possible. The same holds while
+    ``remember_device_idle_timeout`` policies of the same priority set different
+    values. A refusal is no recognition, so the device still expires and becomes
+    idle meanwhile. These checks come after the cookie is looked up, so a theft, a dead
+    cookie or an idle device is handled whatever the user's tokens are. While the
+    idle timeout policies conflict, the cookie is looked up without an idle timeout.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1309,23 +1564,44 @@ def check_remember_device():
     presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
     identity = user_identity(user)
 
-    if presented and identity and Match.user(g, scope=SCOPE.AUTH,
-                                             action=PolicyAction.REMEMBER_DEVICE,
-                                             user_object=user).any():
-        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
+    if not presented:
+        info = "device not recognised: no cookie presented"
+    elif not identity:
+        info = "device not recognised: the user does not resolve"
+    elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
+        info = "device not recognised: no remember_device policy applies to the user"
+    else:
+        idle_timeout_conflict = None
+        try:
+            idle_timeout = get_remember_device_duration(g, user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+        except PolicyError as exc:
+            # Policies of the same priority that set different idle timeouts. The cookie is still looked up, without
+            # an idle timeout, so a replayed or a dead cookie is handled as always. A live device is then refused.
+            idle_timeout = None
+            idle_timeout_conflict = exc.get_description()
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout,
+                                                check_refusal=lambda: _recognition_refusal(user, idle_timeout_conflict))
         if result.status == RememberStatus.RECOGNIZED:
             recognised = True
             cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+            info = "remembered device recognised"
+        elif result.status == RememberStatus.REFUSED:
+            # The idle timeout policies conflict, or a full login would fail as well, and the device stands in for
+            # the second factor: a time limit refuses the login, or the user has no token left to present one with.
+            # The cookie is neither consumed nor cleared, so the device can be recognised again later, like after a
+            # refusal by conditional access.
+            info = result.refusal
         elif result.status == RememberStatus.GRACE:
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
             recognised = True
+            info = "remembered device recognised again within the grace window, cookie not rotated"
         elif result.status == RememberStatus.FOREIGN:
             # The cookie is live but belongs to a different user on this same
             # client (a shared browser). Not recognised, but leave the cookie
             # alone - clearing it would wipe the rightful user's remembered device
             # off the shared browser just because someone else logged in.
-            pass
+            info = "device not recognised: the cookie belongs to another user of this client"
         elif result.status == RememberStatus.THEFT:
             # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
             # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
@@ -1334,16 +1610,23 @@ def check_remember_device():
             # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
             # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
             # replayed series, is handle_device_theft's to state.
-            log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
-                        f"series invalidated and all remembered devices of this user revoked.")
+            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                        f"{g.client_id!r} is not recognised: cookie reuse detected. The device is deleted, and all "
+                        f"other remembered devices of the user are revoked next.")
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
             log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
                                other_info={"client_id": g.get("client_id")})
-            handle_device_theft(identity)
+            revoked = handle_device_theft(identity)
             cookie_action = CookieAction("clear")
-        else:  # miss: the cookie is dead (unknown or expired) - clear it
+            info = (f"device not recognised: cookie reuse detected, the device is deleted and the other "
+                    f"remembered devices of the user are revoked ({revoked})")
+        else:  # miss: the cookie is dead - clear it
             cookie_action = CookieAction("clear")
+            miss = _MISS_INFO[result.miss]
+            log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                     f"{g.client_id!r} is not recognised: {miss}. The cookie is cleared.")
+            info = f"device not recognised: {miss}, the cookie is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
@@ -1351,7 +1634,7 @@ def check_remember_device():
     g.audit_object.log({
         "user": user.login, "resolver": user.resolver, "realm": user.realm,
         "success": recognised,
-        "info": "remembered device recognised" if recognised else "device not recognised",
+        "info": info,
     })
 
     # Default rid (1) so send_result does not stamp result.authentication
@@ -1369,12 +1652,11 @@ def check_remember_device():
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 # First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
-# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
-# with this endpoint's own kind of nothing rather than changing the field's type.
-@conditional_access_gate(_conditional_access_identity, rejection_value=0)
+@conditional_access_gate(partial(get_request_identity, request), shape=TRIGGER_CHALLENGE_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(check_base_action, request, action=PolicyAction.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(load_challenge_text, request=request)
@@ -1391,9 +1673,10 @@ def trigger_challenge():
     :ref:`policy_triggerchallenge`. The request must carry a valid
     ``PI-Authorization`` header.
 
-    If the AUTHZ-scope ``increase_failcounter_on_challenge`` policy
-    is active, the fail counter is incremented on every matching
-    token before the challenges are created.
+    Only tokens that are not revoked, of a type that the AUTH-scope ``disabled_token_types`` policy allows, active
+    and usable (failcounter, authentication counters, validity period, completed enrollment) are challenged, as at
+    ``/validate/check``. If the AUTH-scope ``increase_failcounter_on_challenge`` policy is active, the fail counter of
+    these tokens is incremented before the challenges are created.
 
     :jsonparam user: user the challenges should be created for.
     :jsonparam realm: realm of the user; defaults to the default
@@ -1505,26 +1788,21 @@ def trigger_challenge():
     options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
-    tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
-    # Only use the tokens that are allowed to do challenge
-    challenge_response_token = [token for token in tokens if "challenge" in token.mode]
-    if is_true(options.get("increase_failcounter_on_challenge")):
-        for token in challenge_response_token:
-            token.inc_failcount()
-    create_challenges_from_tokens(challenge_response_token, details, options)
-    triggered_challenges = len(details.get("multi_challenge"))
-
-    event_type = AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN
-    # Record every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as
-    # only the last challenge it created.
+    tokens = get_tokens(serial=serial, user=user, tokentype=token_type)
+    trigger = trigger_challenges(tokens, details, options)
+    triggered_challenges = len(details["multi_challenge"])
+    # Every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as only the
+    # last challenge it created.
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
     log_authentication(
-        event_type,
+        trigger.event_type,
         request,
         user=user,
-        serial=",".join(challenge_serials) or None,
+        serial=",".join(trigger.serials) or None,
         transaction_id=details.get("transaction_id"),
+        reasons=trigger.reasons or None,
+        reason_detail=build_reason_detail(reasons=trigger.token_reasons),
     )
 
     r = send_result(triggered_challenges, rid=2, details=details)
@@ -1537,7 +1815,7 @@ def trigger_challenge():
         "info": log_used_user(user, f"triggered {triggered_challenges!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
-
+    get_ca_context().answered_by_view = True
     return r
 
 

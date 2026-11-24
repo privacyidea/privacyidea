@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatMenu } from "@angular/material/menu";
 
 import { MultiSelectMenuComponent } from "./multi-select-menu.component";
+import { axe } from "@testing/axe";
 
 describe("MultiSelectMenuComponent", () => {
   let component: MultiSelectMenuComponent;
@@ -92,5 +93,11 @@ describe("MultiSelectMenuComponent", () => {
     component.addCustom.subscribe(() => (fired = true));
     component.onAddCustom();
     expect(fired).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
