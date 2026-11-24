@@ -43,7 +43,7 @@
 
 * **Email and SMS tokens are no longer resynchronized automatically.** privacyIDEA sends every value itself and moves
   the counter on for each, so the counter of these tokens can not fall behind. A value that matches only in the sync
-  window is now refused, and the challenge no longer asks the user to resync the token (*resync_via_multichallenge*).
+  window is now refused, and the challenge no longer asks the user to resync the token (`resync_via_multichallenge`).
   The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
   successful authentication.
 
