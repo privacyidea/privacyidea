@@ -88,7 +88,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       console.warn("Received enrollment data is not of type 'passkey'. Cannot proceed with Passkey enrollment.");
       return null;
     }
-     const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse, signal);
+    const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse, signal);
     if (!publicKeyCred || signal.aborted) {
       return null;
     }
