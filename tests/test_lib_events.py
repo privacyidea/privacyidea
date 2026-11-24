@@ -6176,10 +6176,11 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         # Adopting it would point the handler at an endpoint nobody chose for it. Leaving the
         # handler inline is no answer either - that shape is being removed - so it gets its own
         # webhook under the next free name.
+        # The second import updates the same handler, matched by its name, so its webhook gets the same name again.
+        # A webhook of that name that the import did not create is foreign.
         import_event(self._exported())
         taken = EventConfiguration().events[0]["options"]["webhook"]
-        self._cleanup()
-        set_webhook(taken, url="https://somewhere.else.example/hook")
+        set_webhook(taken, url="https://somewhere.else.example/hook", description="Created by an administrator")
 
         import_event(self._exported())
 
@@ -6192,8 +6193,7 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
     def test_several_foreign_webhooks_push_the_name_further_along(self):
         import_event(self._exported())
         base = EventConfiguration().events[0]["options"]["webhook"]
-        self._cleanup()
-        set_webhook(base, url="https://one.example/hook")
+        set_webhook(base, url="https://one.example/hook", description="Created by an administrator")
         set_webhook(f"{base}_2", url="https://two.example/hook")
 
         import_event(self._exported())

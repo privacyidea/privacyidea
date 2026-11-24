@@ -190,6 +190,9 @@ MIGRATION_LINT_EXCEPTIONS = {
     # Ignores every OperationalError and ProgrammingError of CREATE SEQUENCE and DROP SEQUENCE, not only the ones of a
     # database without sequences.
     "c2d3e4f5a6b7": {"swallowed-error"},
+    # Skips the snapshot of the WebHook handlers before their conversion if it can not read them. The snapshot is only
+    # a copy for a manual restore, and the conversion after it raises its own database errors.
+    "e1f2a3b4c5d6": {"swallowed-error"},
     # Encrypts the SMS gateway secrets with the encryption functions of privacyIDEA.
     "a1b2c3d4e5f6": {"app-import"},
     # Computes the SSH key checksums with the encryption functions and the key format of the SSH key token.

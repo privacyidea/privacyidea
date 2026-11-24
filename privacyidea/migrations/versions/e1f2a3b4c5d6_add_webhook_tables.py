@@ -147,14 +147,21 @@ _eventhandler = sa.table(
     sa.column('handlermodule', sa.Unicode(255)),
 )
 
-_eventhandleroption = sa.table(
+#: Name of the sequence feeding ``eventhandleroption.id`` (see privacyidea/models/event.py).
+_EVENTHANDLEROPTION_SEQUENCE = 'eventhandleropt_seq'
+
+# A Table rather than a table() construct, so that an insert without an id takes it from the sequence on the databases
+# that have sequences (MariaDB 10.3 and later, PostgreSQL, Oracle): the column has no default of its own there. MySQL
+# and SQLite ignore the sequence and fill the id themselves.
+_eventhandleroption = sa.Table(
     'eventhandleroption',
-    sa.column('id', sa.Integer),
-    sa.column('eventhandler_id', sa.Integer),
-    sa.column('Key', sa.Unicode(255)),
-    sa.column('Value', sa.Unicode(2000)),
-    sa.column('Type', sa.Unicode(2000)),
-    sa.column('Description', sa.Unicode(2000)),
+    sa.MetaData(),
+    sa.Column('id', sa.Integer, sa.Sequence(_EVENTHANDLEROPTION_SEQUENCE), primary_key=True),
+    sa.Column('eventhandler_id', sa.Integer),
+    sa.Column('Key', sa.Unicode(255)),
+    sa.Column('Value', sa.Unicode(2000)),
+    sa.Column('Type', sa.Unicode(2000)),
+    sa.Column('Description', sa.Unicode(2000)),
 )
 
 _webhook = sa.table(
@@ -169,29 +176,6 @@ _webhook = sa.table(
     sa.column('verify_tls', sa.Boolean),
     sa.column('timeout', sa.Integer),
 )
-
-#: Name of the sequence feeding ``eventhandleroption.id`` (see privacyidea/models/event.py).
-_EVENTHANDLEROPTION_SEQUENCE = 'eventhandleropt_seq'
-
-
-def _next_eventhandleroption_id(conn):
-    """
-    Return the id for a new ``eventhandleroption`` row, or None to let the column supply it.
-
-    ``eventhandleroption.id`` is declared with a ``Sequence``, and a sequence is a thing the
-    inserter draws from, not a default on the column. On a backend that has real sequences -
-    MariaDB 10.3 and later, PostgreSQL - the column therefore has no default of its own and an
-    INSERT that omits the id fails; the ORM gets away with it because it fetches the next value
-    first. The Core INSERT in :func:`_run_data_migration` has to do the same. Everywhere else
-    (MySQL, SQLite) the column is an ordinary auto-increment and omitting the id is correct.
-
-    :param conn: the connection the migration runs on
-    :return: the next sequence value, or None if the column fills itself
-    """
-    if conn.dialect.supports_sequences:
-        return conn.scalar(sa.Sequence(_EVENTHANDLEROPTION_SEQUENCE))
-    return None
-
 
 def _sanitize_name(name):
     """Turn a handler name into a safe identifier fragment (ASCII, max 40 chars)."""
@@ -584,17 +568,13 @@ def _run_data_migration(conn):
             )
 
         # 7. Add a "webhook" option to the handler pointing at the identifier.
-        option_values = {
-            'eventhandler_id': handler_id,
-            'Key': 'webhook',
-            'Value': identifier,
-            'Type': '',
-            'Description': _option_description(handler_id),
-        }
-        option_id = _next_eventhandleroption_id(conn)
-        if option_id is not None:
-            option_values['id'] = option_id
-        conn.execute(_eventhandleroption.insert().values(**option_values))
+        conn.execute(_eventhandleroption.insert().values(
+            eventhandler_id=handler_id,
+            Key='webhook',
+            Value=identifier,
+            Type='',
+            Description=_option_description(handler_id),
+        ))
 
         migrated += 1
         log.info(
@@ -697,22 +677,9 @@ def downgrade():
 
     # 2. Drop child table first (FK dependency), then parent. This is what removes the webhook
     #    rows - there is no separate delete for them.
-    try:
-        op.drop_table('webhookheader')
-    except (OperationalError, ProgrammingError) as ex:
-        msg = str(ex.orig).lower()
-        if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
-            print("Table 'webhookheader' already removed.")
+    for table in ('webhookheader', 'webhook'):
+        # A new inspector for each table, so that it does not answer from what it read before the drop
+        if sa.inspect(conn).has_table(table):
+            op.drop_table(table)
         else:
-            print("Could not remove table 'webhookheader'.")
-            raise
-
-    try:
-        op.drop_table('webhook')
-    except (OperationalError, ProgrammingError) as ex:
-        msg = str(ex.orig).lower()
-        if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
-            print("Table 'webhook' already removed.")
-        else:
-            print("Could not remove table 'webhook'.")
-            raise
+            print(f"Table '{table}' already removed.")

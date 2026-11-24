@@ -371,9 +371,19 @@ export const routes: Routes = [
       {
         path: "webhooks",
         children: [
-          { path: "", component: WebhooksComponent },
-          { path: "new", component: NewWebhookComponent, canDeactivate: [pendingChangesGuard] },
-          { path: "details/:identifier", component: NewWebhookComponent, canDeactivate: [pendingChangesGuard] }
+          { path: "", title: PAGE_NAMES.webhooks, component: WebhooksComponent },
+          {
+            path: "new",
+            title: newTitle(PAGE_NAMES.webhooks),
+            component: NewWebhookComponent,
+            canDeactivate: [pendingChangesGuard]
+          },
+          {
+            path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
+            title: detailsTitle(PAGE_NAMES.webhooks),
+            component: NewWebhookComponent,
+            canDeactivate: [pendingChangesGuard]
+          }
         ]
       },
       {

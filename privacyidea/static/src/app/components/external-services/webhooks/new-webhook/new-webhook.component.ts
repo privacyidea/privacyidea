@@ -33,6 +33,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { reservedNames } from "@utils/reserved-names.utils";
@@ -119,6 +120,7 @@ const EMPTY_WEBHOOK_FORM: WebhookFormModel = {
     MatButtonModule,
     MatIconModule,
     MatTooltip,
+    TooltipAriaLabelDirective,
     ClearableInputComponent,
     MatDivider,
     StickyHeaderDirective

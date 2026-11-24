@@ -703,24 +703,17 @@ class TestEventHandlerOptionId:
         assert EventHandlerOption.__table__.c.id.default.name == _EVENTHANDLEROPTION_SEQUENCE
 
     def test_the_id_comes_from_the_sequence_only_where_there_is_one(self):
+        from sqlalchemy.dialects import mysql, postgresql
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _next_eventhandleroption_id, _EVENTHANDLEROPTION_SEQUENCE
+            _eventhandleroption, _EVENTHANDLEROPTION_SEQUENCE
         )
 
-        class _Connection:
-            def __init__(self, supports_sequences):
-                self.dialect = type("_Dialect", (),
-                                    {"supports_sequences": supports_sequences})()
-                self.asked_for = []
+        insert = _eventhandleroption.insert().values(eventhandler_id=1, Key="webhook", Value="hook", Type="",
+                                                     Description="")
+        with_sequences = str(insert.compile(dialect=postgresql.dialect()))
+        assert f"nextval('{_EVENTHANDLEROPTION_SEQUENCE}')" in with_sequences
 
-            def scalar(self, statement):
-                self.asked_for.append(statement)
-                return 42
-
-        with_sequences = _Connection(True)
-        assert _next_eventhandleroption_id(with_sequences) == 42
-        assert [s.name for s in with_sequences.asked_for] == [_EVENTHANDLEROPTION_SEQUENCE]
-
-        without_sequences = _Connection(False)
-        assert _next_eventhandleroption_id(without_sequences) is None
-        assert without_sequences.asked_for == []
+        # MySQL fills the id itself, so the insert does not name it
+        without_sequences = str(insert.compile(dialect=mysql.dialect()))
+        assert _EVENTHANDLEROPTION_SEQUENCE not in without_sequences
+        assert "(id," not in without_sequences
