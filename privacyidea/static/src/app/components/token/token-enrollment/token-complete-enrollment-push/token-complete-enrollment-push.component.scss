@@ -1,0 +1,5 @@
+// Takes the space beside the QR code, and wraps below it only when the dialog is too narrow for both.
+.push-instructions {
+  flex: 1 1 280px;
+  min-width: 0;
+}

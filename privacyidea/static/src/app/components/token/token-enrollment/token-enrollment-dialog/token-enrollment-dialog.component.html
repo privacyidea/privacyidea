@@ -46,7 +46,7 @@
 
   @if (!finished() && enrollment()?.rollover) {
     <p
-      class="dialog-prose margin-top-16"
+      class="margin-top-16"
       i18n="@@token.rolloverUnfinishedHint">
       The token cannot be used until this step is done. If you close the dialog now, roll the token over again to finish
       it.
@@ -54,21 +54,21 @@
   } @else if (!finished() && !canDelete()) {
     @if (flow.resumable()) {
       <p
-        class="dialog-prose margin-top-16"
+        class="margin-top-16"
         i18n="@@token.enrollmentUnfinishedHint">
         The token cannot be used until this step is done. If you close the dialog now, you can open it again with the
         Reopen enrollment dialog button next to Enroll Token, as long as you stay on this page.
       </p>
     } @else if (canRollOver()) {
       <p
-        class="dialog-prose margin-top-16"
+        class="margin-top-16"
         i18n="@@token.enrollmentUnfinishedRolloverHint">
         The token cannot be used until this step is done. If you close the dialog now, roll the token over in its
         details to finish it.
       </p>
     } @else {
       <p
-        class="dialog-prose margin-top-16"
+        class="margin-top-16"
         i18n="@@token.enrollmentUnfinishedFinalHint">
         The token cannot be used until this step is done. If you close the dialog now, the token cannot be finished. Ask
         an administrator to delete it.

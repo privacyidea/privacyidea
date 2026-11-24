@@ -27,7 +27,8 @@ import { Tokens, TokenService, TokenServiceInterface } from "@services/token/tok
 // The push QR code. The step ends once the app has registered the token.
 @Component({
   selector: "app-token-complete-enrollment-push",
-  templateUrl: "./token-complete-enrollment-push.component.html"
+  templateUrl: "./token-complete-enrollment-push.component.html",
+  styleUrl: "./token-complete-enrollment-push.component.scss"
 })
 export class TokenCompleteEnrollmentPushComponent extends EnrollmentStep {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -22,8 +22,7 @@ import { Component, input } from "@angular/core";
 @Component({
   selector: "app-qr-code-text",
   imports: [],
-  templateUrl: "./qr-code-text.component.html",
-  styleUrl: "./qr-code-text.component.scss"
+  templateUrl: "./qr-code-text.component.html"
 })
 export class QrCodeTextComponent {
   tokenType = input.required<string>();
