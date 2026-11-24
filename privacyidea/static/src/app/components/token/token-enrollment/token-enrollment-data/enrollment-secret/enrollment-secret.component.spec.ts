@@ -52,6 +52,20 @@ describe("EnrollmentSecretComponent", () => {
     expect(toggle().getAttribute("aria-label")).toBe("Hide Registration Code");
   });
 
+  it("gives screen readers a word instead of the mask", () => {
+    const code = () => fixture.nativeElement.querySelector("code") as HTMLElement;
+    const hiddenText = () => fixture.nativeElement.querySelector(".visually-hidden") as HTMLElement | null;
+
+    expect(code().getAttribute("aria-hidden")).toBe("true");
+    expect(hiddenText()?.textContent).toBe("hidden");
+
+    toggle().click();
+    fixture.detectChanges();
+
+    expect(code().hasAttribute("aria-hidden")).toBe(false);
+    expect(hiddenText()).toBeNull();
+  });
+
   it("counts revealing as saved, hiding again does not", () => {
     toggle().click();
     toggle().click();
