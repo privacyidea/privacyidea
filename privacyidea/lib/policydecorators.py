@@ -65,6 +65,7 @@ from privacyidea.lib.policy import SCOPE, ACTIONVALUE
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import split_pin_pass
+from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
     from privacyidea.lib.tokenclass import TokenClass
@@ -218,11 +219,11 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
                              .action_values(unique=True, write_to_audit_log=False))
         if auth_cache_policy:
             first_offset, last_offset, max_auths = parse_auth_cache_value(list(auth_cache_policy)[0])
-            first_auth = datetime.datetime.utcnow() - first_offset
+            first_auth = utc_now() - first_offset
             # Without a second interval only the first authentication limits the entry
             last_auth = first_auth
             if last_offset is not None:
-                last_auth = datetime.datetime.utcnow() - last_offset
+                last_auth = utc_now() - last_offset
 
             result = verify_in_cache(user_object.login, user_object.realm,
                                      user_object.resolver, passw,
