@@ -17,16 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="Layout"
   class="layout"
-  [class.with-secondary-toolbar]="hasSecondaryToolbar()"
-  i18n-aria-label="@@nav.layout">
-  <main
-    aria-label="Main Router Outlet"
-    i18n-aria-label="@@nav.mainRouterOutlet">
+  [class.with-secondary-toolbar]="hasSecondaryToolbar()">
+  <div>
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />
+        <app-subscription-expired-notice />
         <div
           class="admin-content"
           [class.admin-content-flush]="contentService.onDashboard()">
@@ -40,7 +37,7 @@
         } @else {
           <app-navigation-self-service class="flex-size-1" />
         }
-        <div class="selfservice-content-container width-100">
+        <div class="selfservice-content-container width-full">
           <router-outlet></router-outlet>
         </div>
       </div>
@@ -60,9 +57,11 @@
         </div>
       }
       <mat-progress-bar
+        aria-label="Loading"
         class="progress-bar"
+        i18n-aria-label="@@common.loading"
         mode="indeterminate" />
     }
     <app-debug-notice />
-  </main>
+  </div>
 </div>

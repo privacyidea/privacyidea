@@ -128,9 +128,12 @@ const OPERATOR_FALLBACK: ConditionOperatorMeta[] = [
   { name: "NOT_IN", label: $localize`:@@conditionalAccess.notOne:is not one of` }
 ];
 
-// Operator a row starts on before anything is picked: the registry's first operator is the
-// membership one, and restricting reads as the less surprising default than exempting.
-const DEFAULT_OPERATOR: KnownConditionOperator = "IN";
+// Shown while no operator is selected, which is the state of a row that carries no condition and whose
+// values cannot be picked.
+const NO_OPERATOR_HINT = $localize`:@@conditionalAccess.noOperatorSelected:Not restricted. Select an operator to add a condition.`;
+
+// The selection of an operator toggle group that has nothing selected.
+const NO_OPERATORS: string[] = [];
 
 // Shown when the selected operator is one this WebUI has no wording for, i.e. the backend registry
 // has grown an operator the client does not know; states what the selection is for without claiming
@@ -173,8 +176,13 @@ export class ConditionalAccessConditionsComponent {
   // Operator picked for a type that currently carries no condition -- since a row with no selection
   // emits no condition, this is the only place the choice can live, so without it picking "is not
   // one of" before picking values would silently snap back; consulted only as selectedOperator's
-  // fallback.
+  // fallback. A type without an entry has no operator selected.
   private readonly pendingOperators = signal<Record<string, string>>({});
+
+  // One array per operator, handed to the toggle group: its [value] setter compares by reference and
+  // re-applies the selection on any new array, so a fresh array per call would never let change
+  // detection settle (see selectedValues).
+  private readonly operatorSelections = new Map<string, string[]>();
 
   // Values referenced by a condition that no longer exist, keyed by type so the message can be
   // placed under the control that carries them.
@@ -200,9 +208,24 @@ export class ConditionalAccessConditionsComponent {
 
   // The stored condition wins over the remembered choice; otherwise loading a policy into an instance
   // where an operator had been picked for an empty type would show an operator the policy does not
-  // actually have.
-  selectedOperator(type: string): string {
-    return this.conditionFor(type)?.operator ?? this.pendingOperators()[type] ?? DEFAULT_OPERATOR;
+  // actually have. Null while the row has neither, which the toggle group shows as nothing selected.
+  selectedOperator(type: string): string | null {
+    return this.conditionFor(type)?.operator ?? this.pendingOperators()[type] ?? null;
+  }
+
+  // The selected operator as the selection of the toggle group, which is a multi-selection so that
+  // the selected operator can be unselected again, leaving none.
+  selectedOperators(type: string): string[] {
+    const operator = this.selectedOperator(type);
+    if (operator === null) {
+      return NO_OPERATORS;
+    }
+    let selection = this.operatorSelections.get(operator);
+    if (!selection) {
+      selection = [operator];
+      this.operatorSelections.set(operator, selection);
+    }
+    return selection;
   }
 
   // Operators offered by the toggle group, backend-supplied so their labels and the set stay in step
@@ -241,28 +264,54 @@ export class ConditionalAccessConditionsComponent {
   // this WebUI has no wording for gets the neutral hint instead of rendering blank.
   hintFor(row: ConditionRowSpec): string {
     const hints: Partial<Record<string, string>> = row.hints;
-    return hints[this.selectedOperator(row.type)] ?? UNKNOWN_OPERATOR_HINT;
+    const operator = this.selectedOperator(row.type);
+    return operator === null ? NO_OPERATOR_HINT : (hints[operator] ?? UNKNOWN_OPERATOR_HINT);
   }
 
-  onOperatorChange(type: string, operator: string): void {
-    this.pendingOperators.set({ ...this.pendingOperators(), [type]: operator });
+  // A null operator is the selected one being unselected: none is selected then, and since a condition
+  // cannot exist without an operator, the type's condition is removed with it.
+  onOperatorChange(type: string, operator: string | null): void {
+    const pending = { ...this.pendingOperators() };
+    if (operator === null) {
+      delete pending[type];
+    } else {
+      pending[type] = operator;
+    }
+    this.pendingOperators.set(pending);
     const existing = this.conditionFor(type);
-    if (existing) {
+    if (operator === null) {
+      if (existing) {
+        this.conditionsChange.emit(this.conditions().filter((condition) => condition.condition_type !== type));
+      }
+    } else if (existing) {
       this.emitUpsert(type, { ...existing, operator });
     }
+  }
+
+  // The toggles of the group are a multi-selection: a pressed toggle that is not selected becomes the
+  // operator, replacing the other one, and a pressed selected toggle leaves none.
+  onOperatorToggle(type: string, operator: string, checked: boolean): void {
+    this.onOperatorChange(type, checked ? operator : null);
   }
 
   // An empty selection removes the condition rather than storing an empty value list: the backend
   // rejects an empty list, and "restrict to nothing" has no useful reading -- dead under IN,
   // equivalent to no condition under NOT_IN.
   onValuesChange(type: string, values: string[]): void {
+    // Values need an operator to apply under; the select is disabled while none is selected.
+    const operator = this.selectedOperator(type);
+    if (operator === null) {
+      return;
+    }
     if (values.length === 0) {
+      // The operator stays selected, so an emptied row does not snap to none.
+      this.pendingOperators.set({ ...this.pendingOperators(), [type]: operator });
       this.conditionsChange.emit(this.conditions().filter((condition) => condition.condition_type !== type));
       return;
     }
     this.emitUpsert(type, {
       condition_type: type,
-      operator: this.selectedOperator(type),
+      operator,
       value: values
     });
   }

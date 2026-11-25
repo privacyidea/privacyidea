@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 :host {
   display: block;
 }
@@ -7,8 +9,22 @@
   grid-template-columns: repeat(2, var(--input-width-l));
   gap: 16px;
 
-  --mat-form-field-filled-disabled-label-text-color: var(--mat-sys-on-surface-variant);
-  --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);
+  // A field grows by its error line, so a neighbour in the same grid row keeps its own height instead of stretching
+  // to the taller one.
+  > mat-form-field {
+    align-self: start;
+  }
+
+  @include mat.form-field-overrides(
+    (
+      outlined-disabled-label-text-color: var(--mat-sys-on-surface-variant)
+    )
+  );
+  @include mat.checkbox-overrides(
+    (
+      disabled-label-color: var(--mat-sys-on-surface)
+    )
+  );
 
   .mat-mdc-select-disabled,
   *:disabled {

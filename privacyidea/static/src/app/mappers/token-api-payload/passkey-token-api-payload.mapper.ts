@@ -25,6 +25,14 @@ import {
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
 
+/**
+ * Whether the authenticator enabled the PRF extension for the new credential. Only this flag goes to the server:
+ * PRF results are secrets of the client.
+ */
+export interface PasskeyPrfRegistrationOutput {
+  enabled: boolean;
+}
+
 // Interface for Passkey-specific enrollment data
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
   type: "passkey";
@@ -39,6 +47,9 @@ export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
   transaction_id: string;
   serial: string;
   credProps?: CredentialPropertiesOutput;
+  transports?: string[];
+  // The PRF output of the browser. The mapper sends only the flag "enabled" to the server.
+  prf?: AuthenticationExtensionsPRFOutputs;
 }
 
 export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
@@ -50,6 +61,8 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
   transaction_id: string;
   serial: string;
   credProps?: CredentialPropertiesOutput;
+  transports?: string[];
+  prf?: PasskeyPrfRegistrationOutput;
 }
 
 @Injectable({ providedIn: "root" })
@@ -94,6 +107,9 @@ export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<Pa
     };
 
     if (data.credProps) payload.credProps = data.credProps;
+    if (data.transports?.length) payload.transports = data.transports;
+    // Only the flag goes to the server: PRF results are secrets of the client
+    if (typeof data.prf?.enabled === "boolean") payload.prf = { enabled: data.prf.enabled };
 
     return payload;
   }

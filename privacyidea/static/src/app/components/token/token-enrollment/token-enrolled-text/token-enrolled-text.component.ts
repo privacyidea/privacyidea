@@ -17,14 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
+import { MatIconModule } from "@angular/material/icon";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 @Component({
   selector: "app-token-enrolled-text",
-  imports: [],
+  imports: [MatIconModule],
   templateUrl: "./token-enrolled-text.component.html",
   styleUrl: "./token-enrolled-text.component.scss"
 })
@@ -43,7 +44,12 @@ export class TokenEnrolledTextComponent {
    * retrieved again. Following a link would close it, so the links are inert until then.
    */
   navigationBlocked = input<boolean>(false);
+  /** Set while the enrollment still has to be verified before the token can be used. */
+  verificationPending = input<boolean>(false);
   switchRoute = output();
+
+  protected readonly showUser = computed(() => !!this.username() && !!this.userRealm() && !this.onlyAddToRealm());
+  protected readonly showRealmOnly = computed(() => !!this.userRealm() && !!this.onlyAddToRealm());
 
   tokenSelected() {
     if (this.navigationBlocked() || !this.serial()) {

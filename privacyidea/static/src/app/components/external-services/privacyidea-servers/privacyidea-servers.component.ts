@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -34,7 +35,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -54,16 +54,16 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-privacyidea-servers",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -95,6 +95,11 @@ export class PrivacyideaServersComponent {
     allowed: () => this.authService.actionAllowed("privacyideaserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("privacyideaserver_write")
+      ? $localize`:@@piServer.createPrivacyIDEAServer:Create a privacyIDEA server to forward authentication requests to another instance.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -105,13 +110,16 @@ export class PrivacyideaServersComponent {
   // description) that can run arbitrarily long, so they keep flowing into the table's remaining
   // space instead of being clipped to a fixed tier.
   columnKeysMap: { key: string; width?: string }[] = [
-    { key: "select" },
     { key: "identifier", width: "m" },
     { key: "url" },
     { key: "tls", width: "s" },
     { key: "description" }
   ];
-  displayedColumns: string[] = this.columnKeysMap.map((column) => column.key);
+  private readonly canDelete = computed(() => this.authService.actionAllowed("privacyideaserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = this.columnKeysMap.map((column) => column.key);
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   privacyideaDataSource = computed(() => {
     const servers = this.privacyideaServerService.remoteServerOptions();
@@ -126,9 +134,33 @@ export class PrivacyideaServersComponent {
     visibleRows: renderedRows(this.privacyideaDataSource)
   });
 
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createPrivacyidea:Create PrivacyIDEA Server`,
+      tone: "primary",
+      width: "l",
+      fontIcon: "mdi--pi-logo",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("privacyideaserver_write"),
+      run: () => this.openEditDialog()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
+      run: () => this.deleteSelected()
+    }
+  ]);
+
   openEditDialog(server?: PrivacyideaServer): void {
     if (server) {
-      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+      this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS, server.identifier]);
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
     }

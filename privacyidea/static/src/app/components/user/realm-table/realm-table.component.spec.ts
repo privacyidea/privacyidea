@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Observable, of, throwError } from "rxjs";
 
 import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
@@ -47,6 +47,8 @@ import { RealmTableComponent } from "./realm-table.component";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { toolbarActions } from "@testing/toolbar-actions";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -63,6 +65,7 @@ class LocalMockMatDialog {
 }
 
 describe("RealmTableComponent", () => {
+  let fixture: ComponentFixture<RealmTableComponent>;
   let component: RealmTableComponent;
   let realmService: MockRealmService;
   let notificationService: MockNotificationService;
@@ -90,7 +93,7 @@ describe("RealmTableComponent", () => {
       ]
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(RealmTableComponent);
+    fixture = TestBed.createComponent(RealmTableComponent);
     component = fixture.componentInstance;
 
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
@@ -209,6 +212,37 @@ describe("RealmTableComponent", () => {
     expect(row.resolversText).toContain("resNode sql Node 1 5");
   });
 
+  it("realmRows should list the resolvers of a node by priority, then by name", () => {
+    const realms: Realms = {
+      realmA: {
+        default: false,
+        resolver: [
+          { name: "resNoPrio", type: "ldap", node: "", priority: null },
+          { name: "resB", type: "sql", node: "", priority: 2 },
+          { name: "resA", type: "sql", node: "", priority: 2 },
+          { name: "resFirst", type: "ldap", node: "", priority: 1 }
+        ]
+      } as Realm
+    };
+
+    const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
+
+    const names = component.realmRows()[0].resolverGroups[0].resolvers.map((r) => r.name);
+    expect(names).toEqual(["resFirst", "resA", "resB", "resNoPrio"]);
+  });
+
+  it("realmRows should list a realm without resolvers with no resolver groups", () => {
+    const realms: Realms = { realmA: { default: false } as Realm };
+
+    const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
+
+    const row = component.realmRows()[0];
+    expect(row.name).toBe("realmA");
+    expect(row.resolverGroups).toEqual([]);
+  });
+
   it("realmRows should filter by selected node", () => {
     const realms: Realms = {
       realmA: {
@@ -317,6 +351,99 @@ describe("RealmTableComponent", () => {
 
     component.isCreatingRealm.set(false);
     expect(component.canSubmitNewRealm()).toBe(true);
+  });
+
+  describe("create form name", () => {
+    const nameInput = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector(".new-realm-footer-row input[matInput]") as HTMLInputElement;
+    const errorTexts = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".new-realm-footer-row mat-error")).map((e) =>
+        (e as HTMLElement).textContent!.trim()
+      );
+    const kinds = (): string[] =>
+      component
+        .newRealmForm()
+        .errors()
+        .map((e) => e.kind);
+
+    it("reports required for an empty name", () => {
+      expect(kinds()).toEqual(["required"]);
+      expect(component.newRealmForm().valid()).toBe(false);
+    });
+
+    it("reports pattern for characters outside the identifier set, including whitespace", () => {
+      component.newRealmName.set("bad name");
+      expect(kinds()).toEqual(["pattern"]);
+      component.newRealmName.set("  ");
+      expect(kinds()).toEqual(["pattern"]);
+      component.newRealmName.set("ok.Name_1-x");
+      expect(kinds()).toEqual([]);
+      expect(component.newRealmForm().valid()).toBe(true);
+    });
+
+    it("typing in the input updates the model and marks the field dirty", () => {
+      const input = nameInput();
+      input.value = "typedRealm";
+      input.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+
+      expect(component.newRealmName()).toBe("typedRealm");
+      expect(component.newRealmForm().dirty()).toBe(true);
+      expect(component.canSubmitNewRealm()).toBe(true);
+    });
+
+    it("shows the invalid-characters error once the field is touched", () => {
+      const input = nameInput();
+      input.value = "bad name";
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(component.newRealmForm().touched()).toBe(true);
+      expect(errorTexts()).toEqual(["Invalid characters."]);
+    });
+
+    it("shows the required error for a touched empty name", () => {
+      const input = nameInput();
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(errorTexts()).toEqual(["Name is required."]);
+    });
+
+    it("shows no error before the field is touched", () => {
+      component.newRealmName.set("bad name");
+      fixture.detectChanges();
+
+      expect(errorTexts()).toEqual([]);
+    });
+
+    it("the Create button is disabled while the name is invalid and enabled once it is valid", () => {
+      const createButton = (): HTMLButtonElement =>
+        fixture.nativeElement.querySelector(".new-realm-footer-row .action-button-primary") as HTMLButtonElement;
+      fixture.detectChanges();
+      expect(createButton().disabled).toBe(true);
+
+      component.newRealmName.set("realm");
+      fixture.detectChanges();
+      expect(createButton().disabled).toBe(false);
+    });
+
+    it("resetCreateForm clears touched and dirty state", () => {
+      const input = nameInput();
+      input.value = "typed";
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+      expect(component.newRealmForm().touched()).toBe(true);
+
+      component.resetCreateForm();
+      fixture.detectChanges();
+
+      expect(component.newRealmName()).toBe("");
+      expect(component.newRealmForm().touched()).toBe(false);
+      expect(component.newRealmForm().dirty()).toBe(false);
+      expect(errorTexts()).toEqual([]);
+    });
   });
 
   it("resetCreateForm should clear name and resolvers", () => {
@@ -694,19 +821,14 @@ describe("RealmTableComponent", () => {
     expect(notificationService.error).toHaveBeenCalledWith("Failed to set default realm. Realm not found.");
   });
 
-  it("linkLabel should build a link label from the given label", () => {
-    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("realmA")).toContain(
-      "realmA"
-    );
-  });
-
   it("onClickResolver should redirect to resolver details page", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const resolver = { resolvername: "res1", type: "ldapresolver" } as unknown as Resolver;
     resolverService.setResolvers([resolver]);
 
     component.onClickResolver("res1");
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, "res1"]);
   });
 
   it("onClickResolver should do nothing if resolver not found", () => {
@@ -760,4 +882,71 @@ describe("RealmTableComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
+
+  describe("toolbar actions", () => {
+    const openActionsMenu = (): void => {
+      (fixture.nativeElement.querySelector("app-table-actions-trigger button") as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+    const menuItem = (label: string): HTMLButtonElement | undefined =>
+      (Array.from(document.querySelectorAll("button[mat-menu-item]")) as HTMLButtonElement[]).find((button) =>
+        button.textContent!.includes(label)
+      );
+
+    it("offers a single Node action", () => {
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual(["node"]);
+    });
+
+    it("offers the Node action in the menu only, as the node select already fills the toolbar", () => {
+      const node = toolbarActions(component)[0];
+      expect(node.placement).toBe("menu");
+      expect(
+        fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)").length
+      ).toBe(0);
+    });
+
+    it("keeps the Node action visible and enabled for every user", () => {
+      const node = toolbarActions(component)[0];
+      expect(node.visible).toBeUndefined();
+      expect(node.disabled).toBeUndefined();
+    });
+
+    it("opens the node submenu instead of running a handler", () => {
+      const node = toolbarActions(component)[0];
+      expect(node.submenu).toBeDefined();
+      expect(node.run).toBeUndefined();
+    });
+
+    it("lists the node choices as items of the Node submenu", () => {
+      openActionsMenu();
+      menuItem("Node")!.click();
+      fixture.detectChanges();
+
+      expect(menuItem("All nodes")).toBeDefined();
+      expect(menuItem("Node 1")).toBeDefined();
+      expect(menuItem("Node 2")).toBeDefined();
+    });
+
+    it("selects the node a submenu item names", () => {
+      expect(component.selectedNode()).toBe("__all_nodes__");
+      openActionsMenu();
+      menuItem("Node")!.click();
+      fixture.detectChanges();
+
+      menuItem("Node 2")!.click();
+      fixture.detectChanges();
+
+      expect(component.selectedNode()).toBe("node-2");
+    });
+  });
+
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
+
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

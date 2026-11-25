@@ -88,9 +88,10 @@ The resulting ``Match`` object provides the result the decorator needs:
 
 By default, the matched policies are written to the audit log.
 
-All policies can depend on IP address, user and time. The ``Match`` class
+Policies can depend on IP address, user and time. The ``Match`` class
 takes the client IP address into account implicitly, and only policies that
-are valid at the current time match.
+are valid at the current time match. Not every request has a user, see
+:ref:`policy_condition_checks`.
 
 .. note:: Each decorator represents one policy and defines its own logic,
    while the filtering by IP address, user and time is done by the ``Match``

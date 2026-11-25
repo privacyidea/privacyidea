@@ -23,21 +23,32 @@
     </mat-panel-title>
     <div class="token-actions">
       <mat-checkbox
-        [checked]="userAssign()"
-        (change)="toggleUserAssign($event.checked)"
+        [formField]="userAssignField"
         (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
         i18n="@@container.assignToUser"
         >Assign to user</mat-checkbox
       >
+      <mat-checkbox
+        [formField]="changePinOnFirstUseField"
+        (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
+        i18n="@@container.changePinOnFirstUse"
+        >Change PIN on first use</mat-checkbox
+      >
       <button
         mat-icon-button
+        aria-label="Remove Token"
+        i18n-aria-label="@@container.removeToken"
         (click)="emitRemoveToken(); $event.stopPropagation()">
         <mat-icon>delete</mat-icon>
       </button>
     </div>
   </mat-expansion-panel-header>
 
-  <div class="expansion-well">
+  <div class="expansion-well margin-top-8">
     <div class="margin-bottom-16">
       {{ tokenTypeDescription() }}
     </div>

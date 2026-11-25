@@ -1,0 +1,38 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  (actionTriggered)="onDialogAction($event)"
+  [actions]="dialogActions()"
+  [showCloseButton]="false"
+  [title]="dialogTitle">
+  @if (noResolver) {
+    <p
+      class="content"
+      i18n="@@noRealmDialog.noResolver.explanation"
+      >Neither a resolver nor a realm exists yet. A resolver is the source of your users, e.g. LDAP or SQL. Create a
+      resolver first, then a realm that uses it. Realms are needed to enroll tokens for users.</p
+    >
+  } @else {
+    <p
+      class="content"
+      i18n="@@noRealmDialog.explanation"
+      >No realm exists yet. A realm is needed to enroll tokens for users. You can create one in the realm management.</p
+    >
+  }
+</app-dialog-wrapper>

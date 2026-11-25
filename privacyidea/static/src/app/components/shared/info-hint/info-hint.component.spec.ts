@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { InfoHintComponent } from "./info-hint.component";
+import { axe } from "@testing/axe";
 
 describe("InfoHintComponent", () => {
   let component: InfoHintComponent;
@@ -52,5 +53,11 @@ describe("InfoHintComponent", () => {
     fixture.detectChanges();
     button = fixture.debugElement.query(By.css("button"));
     expect(button.nativeElement.getAttribute("aria-label")).toBe("About priority");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

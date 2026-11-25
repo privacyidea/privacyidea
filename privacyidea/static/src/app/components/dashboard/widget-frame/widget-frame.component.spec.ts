@@ -46,6 +46,7 @@ import { MockAuthenticationLogService } from "@testing/mock-services/mock-authen
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockConditionalAccessStateService } from "@testing/mock-services/mock-conditional-access-state-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
+import { axe } from "@testing/axe";
 
 // No shipped widget is pinned, so the tests for the pinned behaviour stand one in. It
 // takes over an existing type id in the registry, which keeps it renderable like any
@@ -98,6 +99,7 @@ describe("WidgetFrameComponent", () => {
     await TestBed.configureTestingModule({
       imports: [WidgetFrameComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
@@ -397,5 +399,11 @@ describe("WidgetFrameComponent", () => {
       expect(frame.nativeElement.querySelector(".stub-header-action")).toBeNull();
       frame.destroy();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

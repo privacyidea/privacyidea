@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# The Python packages that only the Docker image installs, in addition to requirements.txt. pip-compile pins them
+# with hashes in requirements-image.txt. The command is in the header of that file. It reads requirements.txt as a
+# constraint, so that the packages that both files need keep the versions of requirements.txt.
+
+# The PostgreSQL driver for postgresql+psycopg2:// database URIs, as a prebuilt wheel
+psycopg2-binary
+# The WSGI server of the image
+gunicorn
+# The Oracle driver for oracle+oracledb:// database URIs. Its thin mode needs no Oracle client libraries.
+oracledb

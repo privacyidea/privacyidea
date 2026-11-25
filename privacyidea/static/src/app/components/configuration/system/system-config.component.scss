@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .system-config-container {
@@ -27,12 +27,15 @@
 }
 
 .form-group {
-  @extend .flex-center-vertical;
+  display: flex;
+  align-items: center;
   margin-bottom: 8px;
 }
 
 .flex-row-space-between {
-  @extend .flex-row;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;

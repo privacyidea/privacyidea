@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { DestroyRef, inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetSettings, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -62,13 +63,16 @@ export interface DashboardLayoutServiceInterface {
   resetLayout(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+/**
+ * Provided in the providers of the LayoutComponent route, so every login gets a fresh instance that loads the stored
+ * layout of whoever is logged in.
+ */
+@Injectable()
 export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private readonly persistence: DashboardPersistenceServiceInterface = inject(DashboardPersistenceService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
   private readonly auth: AuthServiceInterface = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   public readonly widgets: WritableSignal<WidgetInstance[]> = signal(this.reconcilePinned(this.defaultWidgets()));
   public readonly editMode = signal(false);
   public readonly insertRow: WritableSignal<number> = signal(0);
@@ -143,7 +147,11 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     const allowed = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
     if (allowed.length !== this.widgets().length) {
       this.widgets.set(allowed);
-      this.persistIfLive();
+      // Before the stored layout arrived this prunes the default one, and flagging that as a change would let it
+      // overwrite the stored layout once it is loaded.
+      if (this.loaded) {
+        this.persistIfLive();
+      }
     }
   }
 
@@ -205,16 +213,25 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private changedWhileLoading = false;
 
   private loadLayout(): void {
-    this.persistence.load().subscribe((stored) => {
-      this.loaded = true;
-      // A layout the user changed while the request was in flight wins over the
-      // stored one and is written back, so the change is not silently dropped.
-      if (this.changedWhileLoading) {
-        this.persist();
-        return;
-      }
-      this.widgets.set(stored ? this.reconcilePinned(stored) : this.allowedDefaultLayout());
-    });
+    // An answer after the injector was destroyed belongs to an ended session and must not write with the next one's token.
+    this.persistence
+      .load()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((stored) => {
+        this.loaded = true;
+        // A layout the user changed while the request was in flight wins over the
+        // stored one and is written back, so the change is not silently dropped.
+        if (this.changedWhileLoading) {
+          this.persist();
+          return;
+        }
+        // Widgets this admin may not use stay out of view; the stored layout keeps them until the admin changes it.
+        this.widgets.set(
+          stored
+            ? this.reconcilePinned(stored).filter((widget) => this.isWidgetTypeAllowed(widget.type))
+            : this.allowedDefaultLayout()
+        );
+      });
   }
 
   private allowedDefaultLayout(): WidgetInstance[] {

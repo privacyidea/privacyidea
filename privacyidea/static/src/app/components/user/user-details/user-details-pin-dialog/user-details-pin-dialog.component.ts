@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -25,19 +26,33 @@ import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-user-details-pin-dialog",
   templateUrl: "./user-details-pin-dialog.component.html",
   styleUrls: ["./user-details-pin-dialog.component.scss"],
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, MatButtonModule, MatDialogModule, MatIconModule, DialogWrapperComponent]
+  imports: [
+    FormField,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatIconModule,
+    DialogWrapperComponent
+  ]
 })
 export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void, string | null> {
-  pin = signal("");
-  pinRepeat = signal("");
+  // The PIN is optional: two empty fields are valid, a PIN needs the same repeat.
+  readonly pinModel = signal({ pin: "", pinRepeat: "" });
+  readonly pinForm = form(this.pinModel, (f) => {
+    mustEqual(f.pinRepeat, () => this.pinModel().pin);
+  });
   hidePin = signal(true);
-  pinsMatch = computed(() => this.pin() === this.pinRepeat());
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
 
   dialogActions = computed((): DialogAction<string>[] => {
     return [
@@ -45,7 +60,7 @@ export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void,
         label: $localize`:@@user.confirm:Confirm`,
         value: "confirm",
         type: "confirm",
-        disabled: !this.pinsMatch(),
+        disabled: !this.pinForm().valid(),
         primary: true
       }
     ];
@@ -56,8 +71,8 @@ export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void,
   }
 
   onAction(actionValue: string): void {
-    if (actionValue === "confirm" && this.pinsMatch()) {
-      this.dialogRef.close(this.pin());
+    if (actionValue === "confirm" && this.pinForm().valid()) {
+      this.dialogRef.close(this.pinModel().pin);
     }
   }
 }

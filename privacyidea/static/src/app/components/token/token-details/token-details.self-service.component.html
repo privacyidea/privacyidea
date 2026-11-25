@@ -18,9 +18,7 @@
 -->
 <div
   appScrollToTop
-  aria-label="Details"
-  class="details-container"
-  i18n-aria-label="@@common.details">
+  class="details-container">
   <div class="details-flex-layout flex-column">
     <app-details-header
       [serial]="tokenSerial()"
@@ -46,6 +44,10 @@
           <span i18n="@@common.delete">Delete</span>
         </button>
       </div>
+    }
+
+    @if (showVerifyEnrollment()) {
+      <app-verify-enrollment class="details-verify-card" />
     }
 
     <div class="details-grid">
@@ -80,8 +82,6 @@
 
       <app-token-details-actions
         class="details-card--actions"
-        [repeatPinValue]="repeatPinValue"
-        [setPinValue]="setPinValue"
         [tokenType]="tokenType"
         [token]="tokenDetails()"></app-token-details-actions>
 
@@ -90,12 +90,7 @@
           [element]="desc"
           [editable]="isEditableElement(desc.keyMap.key)"
           [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
-          [isEditingInfo]="isEditingInfo()"
-          [isEditingUser]="isEditingUser()"
-          [selfService]="true"
-          [cancelEdit]="cancelTokenEdit.bind(this)"
-          [saveEdit]="saveTokenEdit.bind(this)"
-          [toggleEdit]="toggleTokenEdit.bind(this)" />
+          [selfService]="true" />
       }
 
       <app-token-details-info

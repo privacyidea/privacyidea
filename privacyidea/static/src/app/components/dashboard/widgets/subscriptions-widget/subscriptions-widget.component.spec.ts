@@ -30,6 +30,7 @@ import { MockSubscriptionService } from "@testing/mock-services/mock-subscriptio
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { SubscriptionsWidgetComponent } from "./subscriptions-widget.component";
+import { axe } from "@testing/axe";
 
 function status(overrides: Partial<SubscriptionStatus> & { application: string }): SubscriptionStatus {
   return {
@@ -237,13 +238,13 @@ describe("SubscriptionsWidgetComponent", () => {
 
     // In use and expiring: the two dots differ in glyph as well as in hue.
     const [serverUsage, serverSubscription] = dotsOf("privacyIDEA Server");
-    expect(serverUsage.textContent!.trim()).toBe("\u2713");
-    expect(serverSubscription.textContent!.trim()).toBe("!");
+    expect(serverUsage.textContent!.trim()).toBe("check");
+    expect(serverSubscription.textContent!.trim()).toBe("priority_high");
 
     // Not in use and no subscription: red against grey, again told apart by the glyph.
     const [radiusUsage, radiusSubscription] = dotsOf("FreeRADIUS");
-    expect(radiusUsage.textContent!.trim()).toBe("\u2715");
-    expect(radiusSubscription.textContent!.trim()).toBe("\u2013");
+    expect(radiusUsage.textContent!.trim()).toBe("close");
+    expect(radiusSubscription.textContent!.trim()).toBe("remove");
 
     // The reason is the cell's accessible name, not only its tooltip: the dot itself is
     // hidden from assistive technology.
@@ -263,7 +264,7 @@ describe("SubscriptionsWidgetComponent", () => {
     const headers = Array.from(fixture.nativeElement.querySelectorAll("th")).map((th) =>
       (th as HTMLElement).textContent?.trim()
     );
-    expect(headers).toEqual(["Application", "Expires", "Versions", "Current version"]);
+    expect(headers).toEqual(["Application", "Expires", "Versions", "Current Version"]);
     // The dots would only repeat what the expiry column already shows.
     expect(fixture.nativeElement.querySelector(".status-dot")).toBeNull();
 
@@ -543,5 +544,11 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(component["expiryNote"](status({ application: "freeradius", subscription: "none" }))).toBe(
       "no subscription"
     );
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

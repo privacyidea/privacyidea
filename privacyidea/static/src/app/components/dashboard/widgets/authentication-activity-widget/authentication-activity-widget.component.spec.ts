@@ -39,6 +39,8 @@ import { toFilterDisplay } from "@utils/date-format.utils";
 import { of, Subject, throwError } from "rxjs";
 import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
 import { AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { axe } from "@testing/axe";
 
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
 
@@ -108,6 +110,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [AuthenticationActivityWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
         // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
@@ -1038,5 +1041,20 @@ describe("AuthenticationActivityWidgetComponent", () => {
     create();
 
     expect(component.state()).toBe("error");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    seed([
+      series("LOGIN_SUCCESS", "success", [1, 2, 0, 0]),
+      series("PIN_FAIL", "failure", [0, 1, 0, 0]),
+      series("MFA_FAIL", "failure", [0, 0, 2, 0]),
+      series("CHALLENGE_TRIGGERED", "pending", [0, 0, 0, 4])
+    ]);
+    create();
+    fixture.detectChanges();
+    // Rendered on the fixed date of the fake clock; axe itself needs real timers.
+    jest.useRealTimers();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

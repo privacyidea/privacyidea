@@ -19,6 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -36,6 +37,8 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { TokengroupsComponent } from "./tokengroups.component";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
@@ -114,11 +117,10 @@ describe("TokengroupsComponent", () => {
   });
 
   it("should navigate to edit page when editing a group", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const group = tokengroupServiceMock.tokengroups()[0];
     component.onEditTokengroup(group);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS, group.groupname]);
   });
 
   it("should delete group after confirmation", () => {
@@ -129,5 +131,148 @@ describe("TokengroupsComponent", () => {
     confirmClosed.next("discard");
     confirmClosed.complete();
     expect(tokengroupServiceMock.deleteTokengroup).toHaveBeenCalledWith("group1");
+  });
+
+  describe("toolbar actions", () => {
+    it("offers create and delete in that order", () => {
+      expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
+      expect(toolbarAction(component, "create").label).toBe("Create Token Group");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
+    });
+
+    it("shows both actions with tokengroup_add and tokengroup_delete", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
+
+      expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
+      expect(toolbarButton(fixture, "Create Token Group")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create without tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_delete"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create Token Group")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides delete without tokengroup_delete", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create Token Group")).toBeTruthy();
+    });
+
+    it("offers row selection only with tokengroup_delete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["tokengroup_list", "tokengroup_delete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+      expect(selectColumn()).toBeNull();
+    });
+
+    it("draws no toolbar while the read right is denied", () => {
+      setRights(fixture, []);
+
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
+      expect(toolbarButton(fixture, "Create Token Group")).toBeUndefined();
+    });
+
+    it("keeps create enabled and disables delete until a row is selected", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create Token Group")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
+
+      component.selector.selectRow(tokengroupServiceMock.tokengroups()[0]);
+      fixture.detectChanges();
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
+    });
+
+    it("runs create by opening the new-entry route", () => {
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarAction(component, "create").run?.();
+
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
+    });
+
+    it("runs delete by confirming and then deleting the selected row", () => {
+      component.selector.selectRow(tokengroupServiceMock.tokengroups()[0]);
+
+      toolbarAction(component, "delete").run?.();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+      expect(tokengroupServiceMock.deleteTokengroup).not.toHaveBeenCalled();
+      confirmClosed.next("discard");
+      confirmClosed.complete();
+
+      expect(tokengroupServiceMock.deleteTokengroup).toHaveBeenCalledTimes(1);
+      expect(tokengroupServiceMock.deleteTokengroup).toHaveBeenCalledWith("group1");
+    });
+
+    it("runs create from its rendered button", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarButton(fixture, "Create Token Group")?.click();
+
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
+    });
+
+    it("runs delete from its rendered button once a row is selected", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
+      component.selector.selectRow(tokengroupServiceMock.tokengroups()[0]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "Delete")?.click();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      tokengroupServiceMock.tokengroups.set([]);
+    });
+
+    it("offers the create button and hint with tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Token Group");
+      expect(state.textContent).toContain("Create a token group to group tokens for policies and machine assignments.");
+    });
+
+    it("offers neither button nor hint without tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a token group to group tokens for policies and machine assignments."
+      );
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -42,7 +42,6 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
-import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 import { tokenTypes } from "@utils/token.utils";
 import { lastValueFrom, switchMap } from "rxjs";
 import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
@@ -71,7 +70,6 @@ import { OverflowNavDirective } from "@components/shared/directives/overflow-nav
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { PolicyAction } from "@services/auth/policy-actions";
-import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -84,6 +82,7 @@ import { TokenDetailsMachineComponent } from "./token-details-machine/token-deta
 import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
+import { VerifyEnrollmentComponent } from "./verify-enrollment/verify-enrollment.component";
 import {
   SshMachineAssignDialogData,
   TokenSshMachineAssignDialogComponent
@@ -97,6 +96,7 @@ import {
     TokenDetailsUserComponent,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
+    VerifyEnrollmentComponent,
     TokenDetailsStatusComponent,
     TokenDetailsCountersComponent,
     TokenDetailsAssignmentsComponent,
@@ -127,8 +127,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly validateService: ValidateServiceInterface = inject(ValidateService);
-  private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected isLost = signal(false);
@@ -136,18 +134,17 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     tokenTypes.filter((t) => t.rollover === true).map((t) => t.key)
   );
   protected readonly tokenTypeKey = computed(() => this.tokenType() as TokenTypeKey);
+  // The server checks the right to enroll the token's type for the verification
+  protected readonly showVerifyEnrollment = computed(
+    () =>
+      this.tokenDetails().rollout_state === "verify" &&
+      this.authService.actionAllowed(`enroll${this.tokenType().toUpperCase()}` as PolicyAction)
+  );
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  setPinValue = signal("");
-  repeatPinValue = signal("");
-  passkeyTestResult = signal<{
-    kind: "success" | "warning";
-    message: string;
-    mismatch?: { serial: string; username: string; realm?: string };
-  } | null>(null);
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
@@ -284,7 +281,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     return (
       // Block editing until the token details have loaded for the first time.
       !this.tokenDetailResource.hasValue() ||
-      this.tokenDetailData().some((element) => element.isEditing()) ||
       this.editRegistry.anyEditing() ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
@@ -322,21 +318,20 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () =>
-        this.tokenDetailData().some((element) => element.isEditing()) ||
-        this.editRegistry.anyEditing() ||
-        this.isEditingUser() ||
-        this.isEditingInfo()
+      () => this.editRegistry.anyEditing() || this.isEditingUser() || this.isEditingInfo()
     );
-    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerValidChanges(() => this.canSaveInlineEdits());
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
   }
 
+  /** False while an open inline edit holds a value that must not be saved. */
+  protected canSaveInlineEdits(): boolean {
+    return !this.editRegistry.anyInvalid() && (this.infoChild?.canSave() ?? true);
+  }
+
   async saveAllInlineEdits(): Promise<boolean> {
-    for (const row of this.tokenDetailData()) {
-      if (row.isEditing()) {
-        this.saveTokenEdit(row);
-      }
+    if (!this.canSaveInlineEdits()) {
+      return false;
     }
     await this.editRegistry.saveAll();
     if (this.isEditingUser()) {
@@ -484,69 +479,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       });
   }
 
-  testPasskey(): void {
-    this.passkeyTestResult.set(null);
-    const expectedHash = (this.tokenDetails()?.info as Record<string, string> | undefined)?.["credential_id_hash"];
-    let usedCredentialId: string | null = null;
-    this.validateService
-      .authenticatePasskey({
-        isTest: true,
-        onCredentialId: (id) => (usedCredentialId = id)
-      })
-      .subscribe({
-        next: async (checkResponse) => {
-          if (!checkResponse.result?.value) {
-            this.passkeyTestResult.set({ kind: "warning", message: $localize`:@@token.noUserFound:No user found.` });
-            return;
-          }
-          const username = checkResponse.detail?.username ?? $localize`:@@token.unknownUser:Unknown User`;
-          const authenticatedSerial = checkResponse.detail?.serial;
-          const isAdmin = this.authService.role() === "admin";
-          let mismatch = false;
-          if (isAdmin && expectedHash && usedCredentialId) {
-            const actualHash = await this.sha256HexFromBase64Url(usedCredentialId);
-            mismatch = actualHash.toLowerCase() !== expectedHash.toLowerCase();
-          }
-          if (mismatch) {
-            const matchedSerial = authenticatedSerial ?? "";
-            this.passkeyTestResult.set({
-              kind: "warning",
-              message: $localize`:@@token.youAuthenticated:You authenticated with a different passkey than the one shown on this page.`,
-              mismatch: { serial: matchedSerial, username }
-            });
-            if (matchedSerial) {
-              this.tokenService.getTokenDetails(matchedSerial).subscribe({
-                next: (response) => {
-                  const realm = response?.result?.value?.tokens?.[0]?.user_realm;
-                  const current = this.passkeyTestResult();
-                  if (current?.mismatch && current.mismatch.serial === matchedSerial && realm) {
-                    this.passkeyTestResult.set({
-                      ...current,
-                      mismatch: { ...current.mismatch, realm }
-                    });
-                  }
-                }
-              });
-            }
-          } else {
-            this.passkeyTestResult.set({
-              kind: "success",
-              message: $localize`:@@token.authenticationSuccessful:Authentication successful. You would have been logged in as: ${username}:USERNAME:`
-            });
-          }
-        }
-      });
-  }
-
-  private async sha256HexFromBase64Url(base64Url: string): Promise<string> {
-    const bytes = this.base64Service.webAuthnBase64DecToArr(base64Url);
-    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-    const digest = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  }
-
   attachSshToMachineDialog(): void {
     const data: SshMachineAssignDialogData = {
       tokenSerial: this.tokenSerial(),
@@ -630,28 +562,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  cancelTokenEdit(element: EditableElement) {
-    this.resetEdit();
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenEdit(element: EditableElement) {
-    this.saveTokenDetail(element.keyMap.key, element.value);
-    element.isEditing.set(!element.isEditing());
-  }
-
-  toggleTokenEdit(element: EditableElement): void {
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenDetail(key: string, value: unknown): void {
-    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
-  }
-
   isEditableElement(key: string) {
     const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
     return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
@@ -669,9 +579,5 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected showTokenAuditLog() {
     this.auditService.setFilter(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
-  }
-
-  private resetEdit(): void {
-    this.tokenDetailResource.reload();
   }
 }

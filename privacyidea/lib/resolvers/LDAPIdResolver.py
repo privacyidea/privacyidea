@@ -26,6 +26,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import binascii
+import copy
 import datetime
 import functools
 import hashlib
@@ -36,14 +37,14 @@ import threading
 import traceback
 import uuid
 from operator import itemgetter
-from typing import Any
+from typing import Any, NamedTuple
 
 import ldap3
 import yaml
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Tls
-from ldap3.core.exceptions import LDAPOperationResult
-from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
+from ldap3.core.exceptions import LDAPException, LDAPOperationResult
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED, RESULT_SUCCESS, RESULT_NO_SUCH_OBJECT
 from ldap3.utils.conv import escape_bytes
 from passlib.hash import ldap_salted_sha1
 
@@ -54,7 +55,7 @@ from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from .UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
@@ -89,13 +90,56 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-# TODO: Switch to PROTOCOL_TLS_CLIENT since PROTOCOL_TLS is deprecated:
-#  https://docs.python.org/3.12/library/ssl.html#ssl.PROTOCOL_TLS
-TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
+# The values of the resolver setting TLS_VERSION. They are the numbers of ssl.PROTOCOL_TLSv1,
+# ssl.PROTOCOL_TLSv1_1, ssl.PROTOCOL_TLSv1_2 and ssl.PROTOCOL_TLS in Python builds with OpenSSL 3.
+TLS_VERSION_1_0 = 3
+TLS_VERSION_1_1 = 4
+TLS_VERSION_1_2 = 5
+TLS_VERSION_1_3 = 2
+DEFAULT_TLS_VERSION = TLS_VERSION_1_3
 
-DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
-TLS_OPTIONS_1_3 = (ssl.OP_NO_TLSv1_2, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1, ssl.OP_NO_SSLv3)
+class TlsVersionSettings(NamedTuple):
+    """The ldap3 protocol and SSL options for one value of the resolver setting TLS_VERSION."""
+    protocol: int
+    ssl_options: tuple[int, ...]
+
+
+# OpenSSL 4 has no fixed-version method for TLS v1.2, and Python builds with OpenSSL 4 reject the protocol
+# number 5. Thus TLS v1.2 and TLS v1.3 use the generic client protocol and switch off all other TLS versions.
+# TLS v1.0 and TLS v1.1 keep their fixed-version protocol numbers. They work only if the Python and OpenSSL
+# versions of the system still support them.
+TLS_VERSION_SETTINGS = {
+    TLS_VERSION_1_0: TlsVersionSettings(TLS_VERSION_1_0, ()),
+    TLS_VERSION_1_1: TlsVersionSettings(TLS_VERSION_1_1, ()),
+    TLS_VERSION_1_2: TlsVersionSettings(ssl.PROTOCOL_TLS_CLIENT,
+                                        (ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_3)),
+    TLS_VERSION_1_3: TlsVersionSettings(ssl.PROTOCOL_TLS_CLIENT,
+                                        (ssl.OP_NO_SSLv3, ssl.OP_NO_TLSv1, ssl.OP_NO_TLSv1_1, ssl.OP_NO_TLSv1_2)),
+}
+
+
+def get_tls_version_settings(tls_version: int | str | None) -> TlsVersionSettings:
+    """
+    Return the ldap3 protocol and SSL options for a value of the resolver setting TLS_VERSION.
+
+    :param tls_version: The value of TLS_VERSION. An empty value and 0 select DEFAULT_TLS_VERSION.
+    :return: The settings for the selected TLS version
+    :raises ParameterError: If the value is not 0 or one of the keys of TLS_VERSION_SETTINGS
+    """
+    try:
+        tls_version_number = int(tls_version) if tls_version else 0
+    except (TypeError, ValueError):
+        tls_version_number = None
+    # An empty value and 0 mean that TLS_VERSION is not set
+    if tls_version_number == 0:
+        return TLS_VERSION_SETTINGS[DEFAULT_TLS_VERSION]
+    tls_settings = TLS_VERSION_SETTINGS.get(tls_version_number)
+    if tls_settings is None:
+        raise ParameterError(f"Unsupported TLS version {tls_version!r}. Use {TLS_VERSION_1_3} (TLS v1.3), "
+                             f"{TLS_VERSION_1_0} (TLS v1.0), {TLS_VERSION_1_1} (TLS v1.1) "
+                             f"or {TLS_VERSION_1_2} (TLS v1.2).")
+    return tls_settings
 
 
 class LockingServerPool(ldap3.ServerPool):
@@ -317,6 +361,9 @@ class IdResolver(UserIdResolver):
     # If the resolver could be configured editable
     updateable = True
 
+    # A cache timeout of 0 switches the user cache off
+    zero_is_a_value = frozenset({"CACHE_TIMEOUT"})
+
     def __init__(self):
         self.i_am_bound = False
         self.uri = ""
@@ -459,7 +506,7 @@ class IdResolver(UserIdResolver):
         return new_list
 
     @staticmethod
-    def _escape_loginname(loginname):
+    def _escape_loginname(loginname: str) -> str:
         """
         This function escapes the loginname according to
         https://msdn.microsoft.com/en-us/library/aa746475(v=vs.85).aspx
@@ -471,11 +518,12 @@ class IdResolver(UserIdResolver):
            achme*
            achemd*
 
+        Besides the characters of RFC 4515 (see :meth:`_escape_filter_value`) the slash is escaped.
+
         :param loginname: The loginname
         :return: The escaped loginname
         """
-        return loginname.replace("\\", "\\5c").replace("*", "\\2a").replace(
-            "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
+        return IdResolver._escape_filter_value(loginname).replace("/", "\\2f")
 
     @staticmethod
     def _escape_filter_value(filter_value: str or bytes, allow_wildcards: bool = False) -> str:
@@ -631,12 +679,41 @@ class IdResolver(UserIdResolver):
                                     f"{result.get('description')} ({result.get('result')})")
             self.i_am_bound = True
 
-    def _search(self, search_base, search_filter, attributes):
+    def _search(self, search_base: str, search_filter: str, attributes: list[str],
+                missing_base_is_empty: bool = False) -> list[dict]:
+        """
+        Bind if necessary and search the directory with the scope of the resolver.
+
+        :param search_base: The DN the search starts at
+        :param search_filter: The LDAP search filter, with all values already escaped
+        :param attributes: The attributes to return for each entry
+        :param missing_base_is_empty: Read a search base that does not exist as an empty result instead of an error,
+            for a search based on the DN of a user, which is gone when the user is.
+        :return: The entries found, without search result references if the resolver does not follow referrals
+        :raises ResolverError: if the bind failed, or with the message USER_LOOKUP_FAILED if the LDAP server did not
+            answer the search, e.g. with an error result, a receive timeout or a dropped connection
+        """
         self._bind()
-        self.connection.search(search_base=search_base,
-                               search_scope=self.scope,
-                               search_filter=search_filter,
-                               attributes=attributes)
+        try:
+            self.connection.search(search_base=search_base,
+                                   search_scope=self.scope,
+                                   search_filter=search_filter,
+                                   attributes=attributes)
+        except LDAPException as error:
+            # ldap3 raises communication errors whatever raise_exceptions is set to
+            log.error(f"LDAP search in {search_base!r} with filter {search_filter!r} failed: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
+        # Without raise_exceptions, ldap3 reports a failed search (e.g. busy, unavailable, time limit exceeded) only in
+        # the result code and an empty response, which must not be read as "no such entry". A size limit still
+        # answers with the entries up to it, which callers check for themselves. ldap3mock sets no result.
+        search_result = self.connection.result or {}
+        result_code = search_result.get("result", RESULT_SUCCESS)
+        if missing_base_is_empty and result_code == RESULT_NO_SUCH_OBJECT:
+            return []
+        if result_code not in (RESULT_SUCCESS, RESULT_SIZE_LIMIT_EXCEEDED):
+            log.error(f"LDAP search in {search_base!r} with filter {search_filter!r} failed: "
+                      f"{search_result.get('description')} ({result_code}): {search_result.get('message')}")
+            raise ResolverError(str(USER_LOOKUP_FAILED))
         result = self.connection.response
         result = self._trim_result(result)
         log.debug(f"LDAP search operation took {self.connection.usage.elapsed_time}")
@@ -647,20 +724,23 @@ class IdResolver(UserIdResolver):
                         tls_ca_file=None, tls_options=None):
         """
         This method creates the TLS object to be used with ldap3.
+
+        :param tls_version: The value of the resolver setting TLS_VERSION. An empty value and 0 select TLS v1.3.
+        :param tls_options: SSL options that replace the options of the TLS version. No caller in privacyIDEA
+            uses it. Without the options of the TLS version, the connection can allow other TLS versions.
+        :raises ParameterError: If the URI or START_TLS needs TLS and tls_version is not a supported value
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
-            if not tls_version:
-                tls_version = int(DEFAULT_TLS_PROTOCOL)
-            # If TLS_VERSION is 2, set tls_options to use TLS v1.3
+            tls_settings = get_tls_version_settings(tls_version)
             if not tls_options:
-                tls_options = TLS_OPTIONS_1_3 if int(tls_version) == int(TLS_NEGOTIATE_PROTOCOL) else None
+                tls_options = tls_settings.ssl_options
             if tls_verify:
                 tls_ca_file = tls_ca_file or DEFAULT_CA_FILE
             else:
                 tls_verify = ssl.CERT_NONE
                 tls_ca_file = None
             tls_context = Tls(validate=tls_verify,
-                              version=int(tls_version),
+                              version=tls_settings.protocol,
                               ssl_options=tls_options,
                               ca_certs_file=tls_ca_file)
         else:
@@ -697,7 +777,8 @@ class IdResolver(UserIdResolver):
             search_base = self.basedn
 
         result = self._search(search_base=search_base, search_filter=search_filter,
-                              attributes=list(self.userinfo.values()))
+                              attributes=list(self.userinfo.values()),
+                              missing_base_is_empty=self.uidtype.lower() == "dn")
 
         if len(result) > 1:  # pragma: no cover
             raise ResolverError(f"Found more than one object for uid {user_id!r}")
@@ -709,7 +790,8 @@ class IdResolver(UserIdResolver):
         return user_info
 
     @track_resolver_op("get_user_info_batch")
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several user IDs with one LDAP search per chunk of IDs,
         instead of one search per ID.
@@ -722,10 +804,12 @@ class IdResolver(UserIdResolver):
 
         :param user_ids: The user IDs in this resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: If given, the IDs that can not be searched for, like an objectGUID that is no UUID,
+                                 are added to it. A single lookup of such an ID raises.
         :return: dictionary mapping each resolved user ID to its user information
         """
         if self.uidtype.lower() == "dn":
-            return super().get_user_info_batch(user_ids, attributes=attributes)
+            return super().get_user_info_batch(user_ids, attributes=attributes, unresolvable_ids=unresolvable_ids)
 
         user_info_map = {}
         ids_to_search = []
@@ -757,6 +841,8 @@ class IdResolver(UserIdResolver):
                     search_uid = to_unicode(self._trim_user_id(user_id))
                 except ValueError as error:
                     log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
+                    if unresolvable_ids is not None:
+                        unresolvable_ids.add(user_id)
                     continue
                 # RFC4515-escape the user id (see _getDN); objectGUID is already byte-escaped.
                 if self.uidtype != "objectGUID":
@@ -827,15 +913,17 @@ class IdResolver(UserIdResolver):
         return user_info_map
 
     @track_resolver_op("get_usernames_batch")
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users with one LDAP search per chunk of IDs.
 
         :param user_ids: The user IDs in this resolver
+        :param unresolvable_ids: If given, the IDs that can not be searched for, like an objectGUID that is no UUID,
+                                 are added to it. Their login name in the result is "".
         :return: dictionary mapping each user ID to its login name. IDs without a matching LDAP
                  object are mapped to an empty string, as getUsername does for a single user.
         """
-        return self._usernames_via_user_info_batch(user_ids)
+        return self._usernames_via_user_info_batch(user_ids, unresolvable_ids=unresolvable_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """
@@ -944,14 +1032,13 @@ class IdResolver(UserIdResolver):
 
     @track_resolver_op("get_user_id")
     @cache
-    def getUserId(self, login_name):
+    def getUserId(self, login_name: str) -> str:
         """
         resolve the loginname to the userid.
 
         :param login_name: The login name from the credentials
-        :type login_name: str
-        :return: UserId as found for the LoginName
-        :rtype: str
+        :return: UserId as found for the LoginName, an empty string if the user store has no such user
+        :raises ResolverError: if the user store could not be searched
         """
         userid = ""
         login_name = to_unicode(login_name)
@@ -990,8 +1077,13 @@ class IdResolver(UserIdResolver):
             attributes.append(str(self.uidtype))
 
         log.debug(f"Searching user {login_name!r} in LDAP.")
-        result = self._search(search_base=self.basedn, search_filter=search_filter,
-                              attributes=attributes)
+        try:
+            result = self._search(search_base=self.basedn, search_filter=search_filter,
+                                  attributes=attributes)
+        except ResolverError as error:
+            # A failed bind raises with the details of the LDAP server, which must not reach the client
+            log.error(f"Could not look up the user {login_name!r}: {error}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         if len(result) > 1:  # pragma: no cover
             raise ResolverError(f"Found more than one object for Login {login_name!r}")
 
@@ -1154,12 +1246,12 @@ class IdResolver(UserIdResolver):
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE", "").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
-        userinfo = config.get("USERINFO", "{}")
-        self.userinfo = yaml.safe_load(userinfo)
+        self.map = parse_config_yaml(config.get("USERINFO", "{}"))
+        # Only the user info gets the login name attribute, the map keeps the configured one
+        self.userinfo = copy.copy(self.map)
         self.userinfo["username"] = self.loginname_attribute[0]
         multivalueattributes = config.get("MULTIVALUEATTRIBUTES") or '["mobile"]'
-        self.multivalueattributes = yaml.safe_load(multivalueattributes)
-        self.map = yaml.safe_load(userinfo)
+        self.multivalueattributes = parse_config_yaml(multivalueattributes)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
@@ -1170,13 +1262,17 @@ class IdResolver(UserIdResolver):
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
         self.keytabfile = config.get('KEYTABFILE', None)
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
-        # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
-        self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
+        # get_tls_context checks the value. An empty value and 0 select DEFAULT_TLS_VERSION.
+        self.tls_version = config.get("TLS_VERSION")
         self.tls_ca_file = config.get("TLS_CA_FILE")
-        self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
-                                                tls_version=self.tls_version,
-                                                tls_verify=self.tls_verify,
-                                                tls_ca_file=self.tls_ca_file)
+        try:
+            self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
+                                                    tls_version=self.tls_version,
+                                                    tls_verify=self.tls_verify,
+                                                    tls_ca_file=self.tls_ca_file)
+        except ParameterError as error:
+            # A resolver that cannot load its configuration raises a ResolverError (see get_resolver_object)
+            raise ResolverError(error.message) from error
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
@@ -1323,8 +1419,11 @@ class IdResolver(UserIdResolver):
                             self.timeout,
                             get_info,
                             repr(self.tls_context),  # this is the string representation of the TLS context
+                            # The representation leaves out the SSL options, which select TLS v1.2 or TLS v1.3
+                            tuple(sorted(self.tls_context.ssl_options)) if self.tls_context else (),
                             self.serverpool_rounds,
-                            self.serverpool_skip)
+                            self.serverpool_skip,
+                            self.serverpool_strategy)
         if pool_description not in pools:
             log.debug(f"Creating a persistent server pool instance for {pool_description!r} ...")
             # Create a suitable instance of ``LockingServerPool``
@@ -1341,6 +1440,39 @@ class IdResolver(UserIdResolver):
             # As a side effect, when we change the LDAP Id resolver configuration,
             # outdated ``LockingServerPool`` instances will survive until the next server restart.
             return pools[pool_description]
+
+    @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        The LDAP resolver is documented by how it binds and secures the connection, the attribute it identifies the
+        users by, the number of servers and how they are pooled, the cache timeout and whether the groups of a user
+        are searched.
+        """
+        documented = super().get_config_for_documentation(config)
+        auth_types = {AUTHTYPE.ANONYMOUS, AUTHTYPE.SIMPLE, AUTHTYPE.SASL_DIGEST_MD5, AUTHTYPE.NTLM,
+                      AUTHTYPE.SASL_KERBEROS}
+        auth_type = config.get("AUTHTYPE") or AUTHTYPE.SIMPLE
+        documented["auth_type"] = auth_type if auth_type in auth_types else "unknown"
+        uris = [uri.strip() for uri in (config.get("LDAPURI") or "").split(",") if uri.strip()]
+        # As in loadConfig(), START_TLS is used for the servers that are no ldaps server, unless the first one is
+        start_tls = (is_true(config.get("START_TLS"))
+                     and not (config.get("LDAPURI") or "").lower().startswith("ldaps"))
+        documented["tls"] = sorted({"ldaps" if uri.lower().startswith("ldaps") else "start_tls" if start_tls else "none"
+                                    for uri in uris})
+        documented["tls_verify"] = is_true(config.get("TLS_VERIFY"))
+        documented["uid_type"] = config.get("UIDTYPE") or "DN"
+        documented["servers"] = len(uris)
+        strategy = config.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
+        documented["serverpool_strategy"] = strategy if strategy in LDAP_STRATEGY else "unknown"
+        try:
+            documented["cache_timeout"] = int(config.get("CACHE_TIMEOUT", 120))
+        except (TypeError, ValueError):
+            documented["cache_timeout"] = "unknown"
+        documented["group_search"] = (is_true(config.get("recursive_group_search"))
+                                      and all(config.get(key) for key in ("group_name_attribute",
+                                                                          "group_search_filter",
+                                                                          "group_attribute_mapping_key")))
+        return documented
 
     @classmethod
     def getResolverClassDescriptor(cls):

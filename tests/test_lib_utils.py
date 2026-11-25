@@ -36,11 +36,15 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
-                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE, reload_db,
+                                   get_version, get_version_number, validate_path_identifier,
+                                   check_stored_secret_settings)
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
 from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+from privacyidea.models import Config
+from privacyidea.models.config import PRIVACYIDEA_TIMESTAMP
 from .base import MyTestCase, OverrideConfigTestCase
 
 
@@ -1429,6 +1433,45 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("****-******01", redacted_phone_number("01"))
         self.assertEqual("****-********", redacted_phone_number(""))
 
+    def test_40_reload_db(self):
+        loaded = "1791456789.123456"
+        # Nothing loaded yet, or no timestamp in the database
+        self.assertTrue(reload_db(None, Config(PRIVACYIDEA_TIMESTAMP, loaded)))
+        self.assertTrue(reload_db(loaded, None))
+        # The database timestamp is the one read with the loaded configuration
+        self.assertFalse(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, loaded)))
+        # A later change, also within the same second
+        self.assertTrue(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, "1791456789.523456")))
+        # A change written by a node whose clock is behind
+        self.assertTrue(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, "1791456779.000001")))
+
+    def test_41_version_number_is_looked_up_once(self):
+        # The process keeps the version of its first lookup, also when the installed package changes later.
+        privacyidea_utils._get_installed_version.cache_clear()
+        try:
+            with mock.patch.object(privacyidea_utils.metadata, "version", return_value="3.14.1") as version_lookup:
+                self.assertEqual("3.14.1", get_version_number())
+                version_lookup.return_value = "3.14.2"
+                self.assertEqual("3.14.1", get_version_number())
+                self.assertEqual("privacyIDEA 3.14.1", get_version())
+            version_lookup.assert_called_once_with("privacyidea")
+        finally:
+            privacyidea_utils._get_installed_version.cache_clear()
+
+    def test_42_failed_version_lookup_is_not_kept(self):
+        # A failed lookup gives "unknown", and the next call looks up the version again.
+        privacyidea_utils._get_installed_version.cache_clear()
+        try:
+            with mock.patch.object(privacyidea_utils.metadata, "version",
+                                   side_effect=[privacyidea_utils.metadata.PackageNotFoundError("privacyidea"),
+                                                "3.14.1"]) as version_lookup:
+                self.assertEqual("unknown", get_version_number())
+                self.assertEqual("3.14.1", get_version_number())
+                self.assertEqual("3.14.1", get_version_number())
+            self.assertEqual(2, version_lookup.call_count)
+        finally:
+            privacyidea_utils._get_installed_version.cache_clear()
+
 
 class ModuleAllowlistTestCase(MyTestCase):
     """
@@ -1524,3 +1567,77 @@ class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):
         for k, v in data.items():
             res = get_computer_name_from_user_agent(k)
             self.assertEqual(v, res)
+
+
+class ValidatePathIdentifierTestCase(MyTestCase):
+
+    def test_valid_identifiers(self):
+        for identifier in ["server1", "My Mailserver", "mail.example.com", "a#b?c", "Mailserver-Köln", "..."]:
+            validate_path_identifier(identifier, "SMTP server")
+
+    def test_invalid_identifiers(self):
+        for identifier in ["team/mail", "/", "team\\mail", "tab\tname", "new\nline", "del\x7f", ".", ".."]:
+            with self.assertRaises(ParameterError, msg=repr(identifier)) as cm:
+                validate_path_identifier(identifier, "SMTP server")
+            self.assertIn("SMTP server", cm.exception.message)
+
+    def test_reserved_identifiers(self):
+        with self.assertRaises(ParameterError) as cm:
+            validate_path_identifier("send_test_email", "SMTP server", reserved=("send_test_email",))
+        self.assertIn("the API uses this name for a route of its own", cm.exception.message)
+        # Only the exact name is reserved, and only if it is passed
+        validate_path_identifier("send_test_email2", "SMTP server", reserved=("send_test_email",))
+        validate_path_identifier("Send_Test_Email", "SMTP server", reserved=("send_test_email",))
+        validate_path_identifier("send_test_email", "RADIUS server", reserved=("test_request",))
+
+
+class CheckStoredSecretSettingsTestCase(MyTestCase):
+    saved_settings = {"server": "1.2.3.4", "port": 1812}
+
+    def test_unchanged_settings(self):
+        check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                     {"server": "1.2.3.4", "port": 1812}, "secret", "save")
+        # None means that the setting is not changed
+        check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                     {"server": None, "port": None}, "secret", "save")
+
+    def test_changed_settings(self):
+        with self.assertRaises(ParameterError) as cm:
+            check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                         {"server": "5.6.7.8", "port": 1645}, "secret", "test")
+        self.assertEqual("These settings differ from the saved RADIUS server 'radius1': server, port. "
+                         "Enter the secret to test the changed settings.", cm.exception.message)
+        with self.assertRaises(ParameterError) as cm:
+            check_stored_secret_settings("SMTP server", "mail1", {"server": "mail.example.com", "port": 25},
+                                         {"server": "mail.example.com", "port": 587}, "password", "save")
+        self.assertEqual("These settings differ from the saved SMTP server 'mail1': port. "
+                         "Enter the password to save the changed settings.", cm.exception.message)
+
+
+class ImportEntriesTestCase(MyTestCase):
+
+    def test_01_all_entries_imported(self):
+        from privacyidea.lib.utils.export import import_entries
+        imported = import_entries([("a", {"id": 1}), ("b", {"id": 2})], lambda name, data: data["id"], "things")
+        self.assertEqual(["a", "b"], imported)
+
+    def test_02_failed_entry_does_not_stop_the_others(self):
+        from privacyidea.lib.error import ConfigAdminError
+        from privacyidea.lib.utils.export import import_entries
+
+        def import_entry(name, data):
+            if name == "bad":
+                raise ParameterError("not valid")
+            return 1
+
+        with mock.patch("privacyidea.lib.utils.export.db.session.rollback") as rollback:
+            with self.assertRaises(ConfigAdminError) as cm:
+                import_entries([("bad", {}), ("good", {})], import_entry, "things")
+        rollback.assert_called_once()
+        self.assertIn('Could not import the following things: "bad" (', cm.exception.message)
+        self.assertIn("not valid", cm.exception.message)
+        self.assertIn("Successfully imported: ['good'].", cm.exception.message)
+
+        # The caller can choose the exception
+        with self.assertRaises(PolicyError):
+            import_entries([("bad", {})], import_entry, "policies", error_class=PolicyError)

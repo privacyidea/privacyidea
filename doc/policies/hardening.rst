@@ -9,7 +9,10 @@ The scope *hardening* contains policies that reduce the amount of
 information privacyIDEA exposes to unauthenticated clients. They are
 system-level controls: unlike most other scopes they are evaluated
 without user, realm or resolver conditions (client IP, user agent and
-time conditions still apply).
+time conditions still apply). Additional conditions that need a user, a
+token or a container have missing data, see :ref:`policy_condition_checks`.
+On the API and on the WebUI start page, an error in an additional condition
+turns the policy off. It does not stop the request.
 
 hide_version
 ~~~~~~~~~~~~
@@ -20,6 +23,8 @@ If enabled, the version number is only shown after login. Responses to
 unauthenticated requests have the ``version`` and ``versionnumber``
 fields removed, so the running privacyIDEA version is not exposed to
 anonymous clients.
+
+.. versionadded:: 3.14
 
 hide_auth_error_status
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,3 +66,5 @@ not masked by any of these policies, see :ref:`conditional_access_error_messages
     uniform status for that case as well would change the long-standing ``200``/``value``
     contract that RADIUS, SAML and other consumers rely on, and is out of scope for this
     policy.
+
+.. versionadded:: 3.14

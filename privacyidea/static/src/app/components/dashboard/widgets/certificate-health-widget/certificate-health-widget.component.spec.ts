@@ -29,6 +29,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, Subject, throwError } from "rxjs";
 import { CertificateHealthWidgetComponent } from "./certificate-health-widget.component";
+import { axe } from "@testing/axe";
 
 function makeResponse(entries: CertificateHealthEntry[]): PiResponse<CertificateHealthEntry[]> {
   return {
@@ -332,5 +333,11 @@ describe("CertificateHealthWidgetComponent", () => {
     expect(uninitFixture.componentInstance.state()).toBe("loading");
     uninitFixture.destroy();
     initSpy.mockRestore();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

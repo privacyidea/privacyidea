@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyScopeEditComponent } from "./policy-scope-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyScopeEditComponent", () => {
   let component: PolicyScopeEditComponent;
@@ -70,11 +71,26 @@ describe("PolicyScopeEditComponent", () => {
     expect(spy).toHaveBeenCalledWith("admin");
   });
 
+  it("should hint that a scope is needed to save while no scope is chosen", () => {
+    expect(fixture.nativeElement.querySelector("mat-hint")).toBeNull();
+
+    fixture.componentRef.setInput("scope", "");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-hint").textContent.trim()).toBe("Choose a scope to save.");
+  });
+
   it("should disable the select when the scope is locked", () => {
     fixture.componentRef.setInput("disabled", true);
     fixture.detectChanges();
 
     const select = fixture.debugElement.query(By.directive(MatSelect));
     expect(select.componentInstance.disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

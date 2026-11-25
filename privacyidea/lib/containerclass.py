@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from sqlalchemy import select, delete, and_, update
 
 from privacyidea.lib import _
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, consume_challenge
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        INITIALLY_SYNCHRONIZED)
@@ -37,7 +37,7 @@ from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
                                    get_tokens_from_serial_or_user)
 from privacyidea.lib.tokenclass import TokenClass, ChallengeSession
-from privacyidea.lib.resolver import get_resolver_type
+from privacyidea.lib.resolver import get_resolver_object, get_resolver_type
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -440,6 +440,11 @@ class TokenContainerClass:
             user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
             if user.login and user.realm:
                 return False
+            if not user.login and owner.resolver and owner.user_id:
+                # An empty login name can also mean that the user store answered with an error. lookup_username raises
+                # for such an answer, and it returns the login name if the user store answers this time.
+                if get_resolver_object(owner.resolver).lookup_username(owner.user_id) and user.realm:
+                    return False
         return True
 
     def get_states(self) -> list[str]:
@@ -827,9 +832,10 @@ class TokenContainerClass:
                     # DTO auto-saves itself, but Challenge.set_otp_status
                     # is in-memory only.
                     challenge.save()
-                else:
-                    # Valid challenge: delete it
-                    challenge.delete()
+                elif not consume_challenge(challenge):
+                    # The challenge was already used by another request, which is the one that may be accepted.
+                    log.info(f"The challenge of container {self.serial} was used by another request.")
+                    verify_res["valid"] = False
                 break
             else:
                 # Delete expired challenge

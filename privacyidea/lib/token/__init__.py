@@ -36,6 +36,7 @@ from privacyidea.lib.token.query import (  # noqa: F401
     is_token_owner,
     get_tokens_in_resolver,
     get_tokenclass_info,
+    get_orphaned_serials,
 )
 from privacyidea.lib.token.otp import (  # noqa: F401
     get_otp,
@@ -91,6 +92,7 @@ from privacyidea.lib.token.auth import (  # noqa: F401
     check_user_pass,
     create_challenge,
     create_challenges_from_tokens,
+    trigger_challenges,
     weigh_token_type,
     check_token_list,
     challenge_text_replace,
@@ -141,6 +143,7 @@ __all__ = [
     "is_token_owner",
     "get_tokens_in_resolver",
     "get_tokenclass_info",
+    "get_orphaned_serials",
     "get_otp",
     "get_multi_otp",
     "get_token_by_otp",
@@ -188,6 +191,7 @@ __all__ = [
     "check_user_pass",
     "create_challenge",
     "create_challenges_from_tokens",
+    "trigger_challenges",
     "weigh_token_type",
     "check_token_list",
     "challenge_text_replace",

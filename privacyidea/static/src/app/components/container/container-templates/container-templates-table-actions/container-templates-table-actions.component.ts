@@ -17,12 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, ViewChild } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatMenu, MatMenuModule } from "@angular/material/menu";
+import { Component, computed, inject, input } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import {
@@ -31,22 +29,58 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
+import { TableActionsHost } from "@components/shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-container-templates-table-actions",
   standalone: true,
   templateUrl: "./container-templates-table-actions.component.html",
-  styleUrl: "./container-templates-table-actions.component.scss",
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, OverflowNavDirective]
+  imports: [TableActionsComponent]
 })
-export class ContainerTemplatesTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly router = inject(Router);
 
   readonly selectedTemplates = input.required<ContainerTemplate[]>();
+
+  protected readonly actions = computed<TableAction[]>(() => {
+    const noSelection = this.selectedTemplates().length < 1;
+    const canCreate = this.authService.actionAllowed("container_template_create");
+    return [
+      {
+        id: "create",
+        label: $localize`:@@common.createTemplate:Create Template`,
+        tone: "primary",
+        width: "m",
+        icon: "note_add",
+        visible: canCreate,
+        run: () => this.onClickCreateTemplate()
+      },
+      {
+        id: "copy",
+        label: $localize`:@@common.copy:Copy`,
+        tone: "secondary",
+        width: "m",
+        icon: "content_copy",
+        disabled: noSelection,
+        visible: canCreate,
+        run: () => this.openCopyTemplateDialog()
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete",
+        disabled: noSelection,
+        visible: this.authService.actionAllowed("container_template_delete"),
+        run: () => this.openDeleteTemplateDialog()
+      }
+    ];
+  });
 
   onClickCreateTemplate() {
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE);

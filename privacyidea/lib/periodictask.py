@@ -32,7 +32,7 @@ from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import fetch_one_resource
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import PeriodicTask, db, PeriodicTaskOption, PeriodicTaskLastRun
 from privacyidea.models.utils import utc_now
 
@@ -370,14 +370,17 @@ def export_periodictask(name=None):
 
 
 @register_import('periodictask')
-def import_periodictask(data, name=None):
+def import_periodictask(data: list[dict], name: str | None = None) -> None:
     """Import periodictask configuration"""
-    log.debug(f'Import periodictask config: {data!s}')
+    log.debug(f'Import periodictask config: {get_import_names(data)}')
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
+        res_data.pop('id', None)
         res_data.pop('last_update')
         res_data.pop('last_runs')
-        rid = set_periodic_task(**res_data)
+        existing_id = db.session.scalars(
+            select(PeriodicTask.id).where(PeriodicTask.name == res_data.get('name'))).one_or_none()
+        rid = set_periodic_task(id=existing_id, **res_data)
         log.info('Import of periodictask "{!s}" finished,'
                  ' id: {!s}'.format(res_data['name'], rid))

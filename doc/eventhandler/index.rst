@@ -93,6 +93,34 @@ module can require additional options.
 
    *The action* sendmail *requires the option* emailconfig.
 
+.. _event_abort_on_error:
+
+Failing handlers
+----------------
+
+.. index:: Abort on error
+
+A handler fails when it raises an error or reports that it could not do what it is configured for, e.g. a
+notification without a recipient, a script that exits with an error, a webhook that is answered with an HTTP error or
+a response mangler with a JSON pointer it does not support. A handler whose conditions can not be evaluated, e.g.
+because the user store can not be reached, fails the same way. The audit entry of the handler records
+``success=False`` and, in the ``info`` column, the reason or the class of the error.
+
+By default a failing handler does not affect the request: the remaining handlers run and the request continues. The
+option *Abort the request if the handler fails* (API parameter ``abort_on_error``) of an event definition makes a
+failure of its handler fail the request instead. Use it for a handler whose result the request depends on:
+
+* a response mangler that removes data from the response - if it fails, the data would be sent to the client,
+* a request mangler that overwrites request parameters - if it fails, the endpoint would use the values the client
+  sent,
+* a federation handler, which replaces the response with the one of the remote privacyIDEA server.
+
+New request mangler and response mangler definitions start with the option enabled. A Script handler that is
+configured to raise an error fails the request whenever the script fails, whatever the option says.
+
+A post-event handler runs after the request has done its work, so failing the request there reports an error for an
+operation that already happened, e.g. a token that was enrolled.
+
 .. _handlerconditions:
 
 Conditions
@@ -111,6 +139,15 @@ the same conditions.
    any condition based on a token or container if the according token or container object is not available.
    I.e. if a request does not contain a *serial* or if the serial can not be determined, this condition will be
    evaluated as fulfilled.
+
+   If a request names several tokens - e.g. ``POST /token/unassign`` with a user, which unassigns all tokens of that
+   user - the token conditions are checked for each token, and the :ref:`tokenhandler` only acts on the tokens that
+   fulfil them. All other handlers run once if at least one of the tokens fulfils the conditions; the serials they
+   use, e.g. in the ``{serial}`` tag, are still all serials of the request.
+
+   Post handlers of the event *token_delete* run after the tokens are deleted, so their token conditions can not be
+   checked: they count as fulfilled, ``serial`` is matched against the serials of the request and ``token_locked`` is
+   not fulfilled.
 
    Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend
    testing your definitions thoroughly to assure your expected outcome.
@@ -152,7 +189,8 @@ comparators are available:
 * ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
   Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
 * ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
-  interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
+  interval specified by the right-hand value. A date in the future is not within the past interval.
+  ``!date_within_last`` evaluates to true if this is not the case.
   The right-hand value must be a duration expressed as an integer
   immediately followed by a time unit:
 
@@ -163,6 +201,9 @@ comparators are available:
   * ``s`` for seconds
 
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+
+  .. versionchanged:: 3.14.1 ``date_within_last`` does not match a date in the future, and a negative duration is
+     an error.
 
 When two dates are compared, both must either contain a time zone offset or not. ``date_before`` and ``date_after``
 evaluate to false if only one of them has an offset; ``<`` and ``>`` make the event handler fail. ``{now}`` always
@@ -340,6 +381,11 @@ maximum failcounter is reached. In such a case the user cannot use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
 
+If the request does not name a token, the condition looks at the tokens of the
+user of the request: *True* is fulfilled if one of them is locked, *False* if
+none is. Without any token to look at - no user, a user without tokens, or a
+named token that does not exist - the condition is not fulfilled.
+
 **token_validity_period**
 
 Checks if the token is in the current validity period or not. Can be set to
@@ -479,6 +525,11 @@ disabling the token or increasing a counter in the tokeninfo (see :ref:`tokenhan
 
 This is a boolean check if the challenge has expired. Each challenge has an expiration
 date. If it is exceeded, this condition evaluates to *True*.
+
+Both challenge conditions need exactly one challenge of the token (or container) of the event, for the
+``transaction_id`` of the request if it has one. If there is no such challenge - e.g. after a successful answer,
+which removes the challenge, or in the PUSH ``push_wait`` mode - or more than one, the condition is not fulfilled. To
+act on a declined PUSH in ``push_wait`` mode use the condition *result_authentication* ``DECLINED``.
 
 **token_is_in_container**
 

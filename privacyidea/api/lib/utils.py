@@ -106,7 +106,9 @@ INTERNAL_OPTION_KEYS = frozenset({
 NO_UNQUOTE_USER_AGENTS = {
     'privacyidea-cp': None,
     'privacyidea-ldap-proxy': None,
-    'simplesamlphp': None
+    'simplesamlphp': None,
+    'pam': None,
+    'privacyidea-pam': None
 }
 
 SESSION_KEY_LENGTH = 32
@@ -360,9 +362,21 @@ def pop_auth_event_serials(details: dict | None) -> list[str]:
     return [str(serial) for serial in serials] if isinstance(serials, (list, tuple)) else [str(serials)]
 
 
+def add_autoresync_to_audit(autoresync_info: str | None) -> None:
+    """
+    Append the autoresync outcome of the checked tokens to the info of the audit entry (see
+    :data:`~privacyidea.lib.autoresync.LOG_AUTORESYNC_KEY`).
+
+    :param autoresync_info: the outcome the lib layer recorded, or None if no autoresync took place
+    """
+    if autoresync_info:
+        g.audit_object.add_to_log({"info": autoresync_info}, add_with_comma=True)
+
+
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        username: str | None = None,
+                       realm: str | None = None,
                        internal_admin: bool = False,
                        immediate: bool = False,
                        reasons: list[str] | None = None,
@@ -397,6 +411,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     whose login name should still be recorded. With *internal_admin* it is recorded as the ``admin`` table spells
     it rather than as it was typed, since that name is the whole identity conditional access counts and locks such
     an admin by - see :func:`~privacyidea.lib.auth.canonical_db_admin_login`.
+
+    ``realm`` likewise overrides the realm derived from the User object, for a login that has no User object because
+    looking it up failed.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -524,7 +541,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
-        realm=(user.realm or None) if user else None,
+        realm=realm or ((user.realm or None) if user else None),
         username=login_name,
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
@@ -674,7 +691,8 @@ def get_before_request_config():
     global flask variable.
 
     Every blueprint's before_request has to call this, so no request handler relies on request-local data that
-    another request left behind.
+    another request left behind. A before_request that creates no audit object, like the one of the WebUI login
+    blueprint, calls :func:`set_request_context` instead.
     """
     g.policy_object = PolicyClass()
     g.audit_object = getAudit(current_app.config, g.startdate)
@@ -684,7 +702,16 @@ def get_before_request_config():
     # it was determined to be.
     g.client_ip_info = get_client_ip_info(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     g.client_ip = g.client_ip_info.ip
-    # Save the HTTP header in the localproxy object
+    set_request_context()
+
+
+def set_request_context() -> None:
+    """
+    Writes the request-local data the policy checks read to the global flask variable: the HTTP headers, the
+    policies collected for the response and the cache of the token owners.
+
+    A before_request that does not call :func:`get_before_request_config` has to call this.
+    """
     g.request_headers = request.headers
     g.policies = {}
     # The owners of the tokens of this request and the errors their lookup failed with, see resolve_token_owner()

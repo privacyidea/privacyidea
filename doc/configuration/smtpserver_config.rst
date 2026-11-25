@@ -50,5 +50,26 @@ servers, create new server definitions and delete them.
 
    *Edit an existing SMTP server definition.*
 
-In the edit dialog you can enter all necessary attributes to talk to the SMTP
-server. You can also send a test email to verify that your settings are correct.
+On the edit page you can enter all necessary attributes to talk to the SMTP
+server. You can also send a test email to the address in *Recipient for Testing* to verify that your settings are
+correct.
+
+.. _smtpserver_password:
+
+Stored password
+~~~~~~~~~~~~~~~
+
+privacyIDEA never returns the stored password, neither in the WebUI nor in the
+:ref:`rest_smtpserver`. Instead, the password field contains the placeholder
+``__CENSORED__``. If you save the definition or send a test email with the
+placeholder, privacyIDEA uses the stored password.
+
+This only works as long as the *server*, the *port*, the *username* and the
+*TLS flag* stay the same. If you change one of them, you have to enter the
+password again before you can save the definition or send a test email.
+Otherwise privacyIDEA rejects the request with an error naming the changed
+settings. A definition without a password is not affected: its password
+field is empty and all settings can be changed.
+
+.. versionchanged:: 3.14.1 The stored password is only kept or used if server,
+   port, username and TLS flag are unchanged.

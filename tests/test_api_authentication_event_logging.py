@@ -25,17 +25,24 @@ request, populates client_label and never leaks the internal classification key.
 test_api_authentication_log.py.
 """
 import datetime
+import itertools
 from typing import TYPE_CHECKING
 
 from unittest import mock
 
 from flask import Response
+from sqlalchemy.exc import OperationalError
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                           AuthEventReason, AuthLogUserRole)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
+from privacyidea.lib.error import ResolverError
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.resolver import delete_resolver
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -43,6 +50,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyActio
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.models import Audit, Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
@@ -55,6 +63,22 @@ if TYPE_CHECKING:
     _ContractHost = AuthLogTestCase
 else:
     _ContractHost = object
+
+
+def _set_conflicting_policies(scope: str, action: str, values: tuple[str, str]) -> None:
+    # Two policies of the same priority setting different values: reading the action raises a PolicyError.
+    set_policy("authlog_conflict_a", scope=scope, action=f"{action}={values[0]}")
+    set_policy("authlog_conflict_b", scope=scope, action=f"{action}={values[1]}")
+
+
+def _delete_conflicting_policies() -> None:
+    delete_policy("authlog_conflict_a")
+    delete_policy("authlog_conflict_b")
+
+
+def _audit_outcome(path: str) -> tuple:
+    entry = Audit.query.filter(Audit.action.like(f"% {path}")).order_by(Audit.id.desc()).first()
+    return entry.success, entry.authentication
 
 
 class _AuthLogContractTests(_ContractHost):
@@ -120,6 +144,30 @@ class _AuthLogContractTests(_ContractHost):
         response = self._authenticate(f"{self.pin}755224")
         self._assert_succeeded(response)
         self.assertNotIn(AUTH_EVENT_TYPE_KEY, response.json.get("detail") or {})
+
+    # --- Authorization policies on the token used (NOT_AUTHORIZED) ---
+
+    def _assert_token_not_authorized(self, action: str, reason: AuthEventReason) -> None:
+        set_policy("authlog_token_authz", scope=SCOPE.AUTHZ, action=action)
+        try:
+            response = self._authenticate(f"{self.pin}755224")
+        finally:
+            delete_policy("authlog_token_authz")
+        self.assertEqual(403, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        reason=reason, policies=["authlog_token_authz"],
+                                        endpoint=self.endpoint_path)
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome(self.endpoint_path))
+
+    def test_tokentype_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENTYPE}=spass", AuthEventReason.TOKENTYPE_NOT_ALLOWED)
+
+    def test_serial_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.SERIAL}=^SPASS", AuthEventReason.SERIAL_NOT_ALLOWED)
+
+    def test_tokeninfo_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENINFO}=foo/bar/", AuthEventReason.TOKENINFO_MISMATCH)
 
     # --- No / unusable token ---
 
@@ -223,7 +271,7 @@ class _AuthLogContractTests(_ContractHost):
         # False for a type that may not do challenge-response, and then check_pin never runs.
         self._enable_challenge_response()
         set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
-        set_policy("authlog_force_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.FORCE_CHALLENGE_RESPONSE}=hotp")
+        set_policy("authlog_force_cr", scope=SCOPE.AUTH, action=PolicyAction.FORCE_CHALLENGE_RESPONSE)
         try:
             self._assert_failed(self._authenticate("wrongpassword755224"))
         finally:
@@ -586,6 +634,90 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path)
+
+    def test_a_trigger_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
+        # increase_failcounter_on_challenge raises the failcounter before the challenge is created; at maxfail - 1 the
+        # trigger itself makes the token unusable, so no challenge is created although the PIN matched.
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint=self.endpoint_path)
+
+    def test_a_token_the_trigger_fills_the_failcounter_of_stays_out_of_the_messages(self):
+        self._add_second_token(pin=self.pin)
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.second_serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        detail = self._authenticate(self.pin).json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
+
+    def test_an_undelivered_challenge_logs_challenge_trigger_fail(self):
+        remove_token(self.serial)
+        delivery_failures = {
+            "gateway raises": {"side_effect": Exception("gateway unavailable")},
+            "gateway refuses": {"return_value": (False, "")},
+        }
+        tokens = {
+            "sms": ({"type": "sms", "phone": "+491234567"}, "SmsTokenClass._send_sms"),
+            "email": ({"type": "email", "email": "cornelius@example.com"}, "EmailTokenClass._compose_email"),
+        }
+        for (token_type, (params, sender)), (failure, mock_args) in itertools.product(tokens.items(),
+                                                                                       delivery_failures.items()):
+            with self.subTest(token_type=token_type, failure=failure):
+                token = init_token({**params, "pin": self.pin}, user=self.user)
+                self._clear_log()
+                with mock.patch(f"privacyidea.lib.tokens.{token_type}token.{sender}", **mock_args):
+                    response = self._authenticate(self.pin)
+
+                self._assert_failed(response)
+                entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+                assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                                serials={token.get_serial()},
+                                                reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                                reasons={token.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                                endpoint=self.endpoint_path)
+                remove_token(token.get_serial())
+
+    def test_an_undelivered_challenge_outranks_a_wrong_pin_of_another_token(self):
+        hotp = get_one_token(serial=self.serial)
+        hotp.set_pin("other-pin")
+        hotp.save()
+        email = init_token({"type": "email", "email": "cornelius@example.com", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.emailtoken.EmailTokenClass._compose_email",
+                        side_effect=Exception("gateway unavailable")):
+            response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={email.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={email.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
                                         endpoint=self.endpoint_path)
 
     def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
@@ -954,6 +1086,82 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
 
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # A user store that fails to answer is not a user that does not exist: the request fails with an error, also
+        # with a passOnNoUser policy, and the log tells the failure apart from an unknown user.
+        set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER, realm=self.realm1)
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                # The realm in another case is logged like the realm of a user
+                res = self._post('/validate/check',
+                                 {"user": "doesnotexist", "realm": self.realm1.upper(), "pass": "whatever"})
+        finally:
+            delete_policy("passonnouser")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_unreachable_sql_user_store_logs_user_store_unavailable(self):
+        # The SQL resolver connects first when it loads its table, which fails with a database error
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        unknown_user = User("doesnotexist", "sqliterealm")
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": "sqliterealm", "pass": "x"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unknown_user,
+                                        endpoint=self.endpoint_path)
+
+    def test_user_store_failure_on_a_rewritten_user_logs_user_store_unavailable(self):
+        # The user is found in its realm, then a set_realm policy moves the request to a realm whose user store fails
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        rewritten_user = User("doesnotexist", "sqliterealm")
+        set_policy("authlog_setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=sqliterealm",
+                   realm=self.realm1)
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "x",
+                                                     "transaction_id": "8901234567"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_policy("authlog_setrealm")
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=rewritten_user,
+                                        transaction_id="8901234567", endpoint=self.endpoint_path)
+
+    def test_user_store_failure_logs_the_transaction_of_the_request(self):
+        # The answer to a challenge is logged with its transaction, also under the RADIUS name of the parameter
+        for parameter in ["transaction_id", "state"]:
+            self._clear_log()
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "123456",
+                                                     parameter: "8901234567"})
+            self.assertEqual(400, res.status_code, res.json)
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE], transaction_id="8901234567")
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), transaction_id="8901234567",
+                                            endpoint=self.endpoint_path)
+
     def test_pass_on_no_user_logs_login_success(self):
         # An unknown user accepted by a PASSONNOUSER policy is a successful login.
         set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
@@ -1132,7 +1340,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         # serial + otponly validates only the OTP (no PIN); a correct value is LOGIN_SUCCESS.
         # This classification is set by the API handler (check_otp), not the lib layer - and so is the serial, which
         # check_otp does not report back.
-        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
+        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"},
+                           headers={"Authorization": self.at})
         self.assertTrue(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -1141,12 +1350,26 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     def test_serial_otp_only_fail(self):
         # serial + otponly verifies only the token (no PIN/password), so a wrong value is TOKEN_ONLY_FAIL - against
         # the one token the request named, which the row records like every other failure.
-        body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"})
+        body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"},
+                           headers={"Authorization": self.at})
         self.assertFalse(body["result"]["value"], body)
 
         entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=self.user,
                                         serials={self.serial}, endpoint=self.endpoint_path)
+
+    def test_serial_otp_only_disabled_token(self):
+        # otponly checks the token like every other path: a disabled token is not usable
+        get_one_token(serial=self.serial).enable(False)
+        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"},
+                           headers={"Authorization": self.at})
+        self.assertFalse(body["result"]["value"], body)
+
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        serials={self.serial}, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.TOKEN_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED})
 
     def test_serial_pass_success(self):
         # serial + pin+otp (no otponly) goes through check_serial_pass -> check_token_list -> LOGIN_SUCCESS.
@@ -1270,6 +1493,103 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
                                         reason=AuthEventReason.AUTHORIZATION_DENIED, policies=["authlog_deny"],
                                         reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path)
+
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
+
+    # --- An error response after the authentication (POST_AUTHENTICATION_FAIL) ---
+
+    def test_post_policy_error_after_a_success_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_post_policy_error_after_a_failure_keeps_the_failure(self):
+        # The failed authentication already says why the request failed, so it keeps its type; the error that
+        # followed it is recorded beside it, since the client received that error rather than the plain failure.
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}000000"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
+                                        endpoint=self.endpoint_path, reason=AuthEventReason.WRONG_OTP,
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP},
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
+        # A challenge step is audited with success=False and authentication=CHALLENGE, not as a success.
+        self._enable_challenge_response()
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": self.pin})
+        finally:
+            _delete_conflicting_policies()
+            delete_policy("authlog_cr")
+        self.assertEqual(403, res.status_code, res.json)
+        transaction_id = get_challenges(serial=self.serial)[0].transaction_id
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_is_authorized_deny_marks_the_audit_entry_failed(self):
+        set_policy("authlog_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            delete_policy("authlog_deny")
+        self.assertEqual(400, res.status_code, res.json)
+        assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_radiuscheck_post_policy_error_logs_post_authentication_fail(self):
+        # The RADIUS shaping empties the body, so the error has to be read before it.
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/radiuscheck', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(400, res.status_code, res.data)
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        entry = entries[AuthEventType.POST_AUTHENTICATION_FAIL]
+        error = (entry.other_info or {}).get("error") or ""
+        self.assertTrue(error.startswith("There are policies with conflicting actions"), entry.other_info)
+        assert_authentication_log_entry(entry, user=self.user, serials={self.serial},
+                                        endpoint="/validate/radiuscheck", other_info={"error": error})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/radiuscheck'))
 
 
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
@@ -1486,6 +1806,175 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
 
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # The login fails like the one of an unknown user, but the log tells the user store failure apart from it, in
+        # both login modes.
+        for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
+            self._clear_log()
+            set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+            try:
+                with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                                side_effect=ResolverError("The user store is not available")):
+                    self._auth({"username": "doesnotexist", "realm": self.realm1.upper(), "password": "whatever"},
+                               status=401)
+            finally:
+                delete_policy("authlog_login_mode")
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_user_store_failure_is_not_accepted_by_pass_on_no_user(self):
+        # A single failed lookup leaves the login without its user. A passOnNoUser policy must not take that for a
+        # user who does not exist, even when the user store answers again for the rest of the request.
+        original_get_user_id = PasswdIdResolver.getUserId
+        flush_user_cache()
+        with mock.patch.object(PasswdIdResolver, "getUserId", return_value=""):
+            unresolved_user = User(self.username, self.realm1)
+        # Not only a resolver error: an SQL user store that can not be reached fails while its table is loaded
+        lookup_errors = [ResolverError("The user store is not available"),
+                         OperationalError("SELECT", {}, Exception("server closed the connection unexpectedly"))]
+        set_policy("authlog_passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER)
+        try:
+            for login_mode, lookup_error in itertools.product([LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+                                                              lookup_errors):
+                self._clear_log()
+                lookups = []
+
+                def get_user_id_failing_once(resolver: PasswdIdResolver, login_name: str) -> str:
+                    lookups.append(login_name)
+                    if len(lookups) == 1:
+                        raise lookup_error
+                    return original_get_user_id(resolver, login_name)
+
+                set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                # The user cache would answer for the user store
+                flush_user_cache()
+                with mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_once):
+                    res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong",
+                                      "transaction_id": "8901234567"}, status=401)
+                self.assertNotIn("value", res.json["result"], f"{login_mode}, {lookup_error!r}: {res.json}")
+                entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+                assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unresolved_user,
+                                                transaction_id="8901234567", endpoint=self.endpoint_path)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_passonnouser")
+
+    def test_user_store_failure_on_the_token_owner_logs_user_store_unavailable(self):
+        # The user is looked up, then the user store fails on the lookup of the owner of the user's token
+        self._enable_privacyidea_login()
+        flush_user_cache()
+        try:
+            with mock.patch.object(PasswdIdResolver, "getUsername",
+                                   side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": self.username, "realm": self.realm1, "password": f"{self.pin}123456"},
+                           status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+
+    def test_user_store_failure_after_the_login_succeeded_is_no_success(self):
+        # The credentials are correct, then the user store fails on the lookup of the WebUI rights. No session is
+        # issued, so the login is no success.
+        original_get_user_id = PasswdIdResolver.getUserId
+        lookups = []
+
+        def get_user_id_failing_after_the_first(resolver: PasswdIdResolver, login_name: str) -> str:
+            lookups.append(login_name)
+            if len(lookups) > 1:
+                raise ResolverError("The user store is not available")
+            return original_get_user_id(resolver, login_name)
+
+        # A cached user would be served from the user cache without asking the user store a second time
+        with (mock.patch("privacyidea.lib.cache.user._cache_client", return_value=None),
+              mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_after_the_first)):
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=400)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(0, audit_entry["success"], audit_entry)
+
+    def test_user_store_failure_with_login_mode_disable_logs_user_store_unavailable(self):
+        # The disabled login is refused before the credential check, and is still logged as a failing user store
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["authlog_login_disabled"])
+
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers.
+        # The refusal comes from the auth_timelimit pre-policy, which does not know the token, so the row names none.
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
+    def test_answer_of_an_unknown_user_refused_by_auth_max_fail(self):
+        # A user who does not exist is refused like one who does, and owns no token, so the challenge it names is
+        # someone else's and the refusal is no step of its attempt
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        unknown_user = {"username": "doesnotexist", "realm": self.realm1, "password": "wrong"}
+        try:
+            transaction_id = self._trigger_challenge()
+            self._auth(unknown_user, status=401)
+            response = self._auth({**unknown_user, "transaction_id": transaction_id}, status=401)
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        self.assertEqual(403, response.json["result"]["error"]["code"], response.json)
+        self.assertEqual("Authentication failure. The account has exceeded the authentication time limit!",
+                         response.json["result"]["error"]["message"], response.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
+                         response.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id, same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=User("doesnotexist", self.realm1),
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+        self.assertNotEqual(entries[AuthEventType.CHALLENGE_TRIGGERED].attempt_id,
+                            entries[AuthEventType.NOT_AUTHORIZED].attempt_id)
+
+
+    def test_post_policy_error_after_a_success_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.WEBUI, PolicyAction.LOGOUTTIME, ("100", "200"))
+        try:
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            _delete_conflicting_policies()
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/auth'))
+
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for the admin /validate/triggerchallenge endpoint."""
@@ -1504,6 +1993,24 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
                                         serials={self.serial}, transaction_id=transaction_id,
                                         endpoint='/validate/triggerchallenge')
 
+    def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                               data={"user": self.username},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        transaction_id = get_challenges(serial=self.serial)[0].transaction_id
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint='/validate/triggerchallenge',
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/triggerchallenge'))
+
     def test_triggerchallenge_without_token_logs_no_token(self):
         # No challenge-capable token for the user -> nothing is triggered -> NO_TOKEN
         remove_token(self.serial)
@@ -1516,6 +2023,232 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
 
         entries = assert_authentication_log([AuthEventType.NO_TOKEN])
         assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=self.user,
+                                        endpoint='/validate/triggerchallenge')
+
+    def _trigger(self) -> Response:
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": self.username},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res
+
+    def _init_hotp(self, serial: str) -> TokenClass:
+        return init_token({"serial": serial, "type": "hotp", "otpkey": self.otpkey, "pin": self.pin}, user=self.user)
+
+    def test_triggerchallenge_without_usable_token_logs_no_usable_token(self):
+        # Every token is left out for a different reason, and each one is named
+        disabled = get_one_token(serial=self.serial)
+        disabled.enable(False)
+        disabled.save()
+        revoked = self._init_hotp("AUTHLOG_REVOKED")
+        revoke_token(revoked.get_serial())
+        failcount = self._init_hotp("AUTHLOG_FAILCOUNT")
+        for _ in range(failcount.get_max_failcount()):
+            failcount.inc_failcount()
+        expired = self._init_hotp("AUTHLOG_EXPIRED")
+        expired.set_validity_period_end("2014-12-30T16:00+0200")
+        spass = init_token({"serial": "AUTHLOG_SPASS", "type": "spass", "pin": self.pin}, user=self.user)
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=[AuthEventReason.TOKEN_DISABLED, AuthEventReason.TOKEN_REVOKED,
+                                                AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
+                                                AuthEventReason.TOKEN_NO_CHALLENGE_MODE],
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 revoked.get_serial(): AuthEventReason.TOKEN_REVOKED,
+                                                 failcount.get_serial(): AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                 expired.get_serial(): AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
+                                                 spass.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_increases_the_failcounter_of_usable_tokens_only(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        expired = self._init_hotp("AUTHLOG_EXPIRED")
+        expired.set_validity_period_end("2014-12-30T16:00+0200")
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(0, get_one_token(serial=expired.get_serial()).token.failcount)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={self.serial}, transaction_id=res.json["detail"]["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_leaves_out_disabled_token_types(self):
+        # A challenge of a disabled type could not be answered at /validate/check, so it is not created, and the
+        # failcounter of the token is not increased either
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        totp = init_token({"serial": "AUTHLOG_TOTP", "type": "totp", "otpkey": self.otpkey, "pin": self.pin},
+                          user=self.user)
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        self.assertListEqual([totp.get_serial()],
+                             [challenge["serial"] for challenge in res.json["detail"]["multi_challenge"]])
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(1, get_one_token(serial=totp.get_serial()).token.failcount)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={totp.get_serial()},
+                                        transaction_id=res.json["detail"]["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_with_only_disabled_token_types_logs_no_usable_token(self):
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_TYPE_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_TYPE_DISABLED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_names_the_token_type_before_the_token_state(self):
+        remove_token(self.serial)
+        revoked = init_token({"serial": "AUTHLOG_SPASS_REVOKED", "type": "spass", "pin": self.pin}, user=self.user)
+        revoke_token(revoked.get_serial())
+        failcount = init_token({"serial": "AUTHLOG_SPASS_FAILCOUNT", "type": "spass", "pin": self.pin}, user=self.user)
+        failcount.token.failcount = failcount.get_max_failcount()
+        failcount.save()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertNotIn("message", res.json["detail"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                        reasons={revoked.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                                 failcount.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_without_usable_token_names_the_refusal(self):
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount()):
+            token.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertEqual("Failcounter exceeded", res.json["detail"]["message"], res.json)
+
+    def test_triggerchallenge_with_a_challenge_keeps_refusals_out_of_the_messages(self):
+        failcount = self._init_hotp("AUTHLOG_FAILCOUNT")
+        for _ in range(failcount.get_max_failcount()):
+            failcount.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        challenge_message = res.json["detail"]["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], res.json["detail"]["messages"])
+        self.assertEqual(challenge_message, res.json["detail"]["message"])
+
+    def test_triggerchallenge_keeps_a_token_it_fills_the_failcounter_of_out_of_the_messages(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        filled = self._init_hotp("AUTHLOG_FILLED")
+        for _ in range(filled.get_max_failcount() - 1):
+            filled.inc_failcount()
+
+        detail = self._trigger().json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
+
+    def test_triggerchallenge_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_with_an_undelivered_challenge_logs_challenge_trigger_fail(self):
+        # The row names the token that got no challenge and why; the disabled token is only in the detail
+        disabled = get_one_token(serial=self.serial)
+        disabled.enable(False)
+        disabled.save()
+        sms = init_token({"type": "sms", "phone": "+491234567", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.smstoken.SmsTokenClass._send_sms",
+                        side_effect=Exception("gateway unavailable")):
+            res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={sms.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def _init_passkey(self) -> TokenClass:
+        # Only the token state matters here, the trigger never reaches the credential
+        passkey = init_token({"type": "passkey"}, user=self.user)
+        passkey.token.rollout_state = RolloutState.ENROLLED
+        passkey.token.active = True
+        passkey.save()
+        return passkey
+
+    def test_triggerchallenge_for_passkeys_without_trigger_by_pin_logs_no_usable_token(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_names_only_the_undelivered_token_next_to_a_passkey(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+        sms = init_token({"type": "sms", "phone": "+491234567", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.smstoken.SmsTokenClass._send_sms",
+                        side_effect=Exception("gateway unavailable")):
+            res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={sms.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                                 sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
                                         endpoint='/validate/triggerchallenge')
 
 

@@ -1,0 +1,88 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
+import { of } from "rxjs";
+import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
+import { axe } from "@testing/axe";
+
+describe("VerifyEnrollmentComponent", () => {
+  let component: VerifyEnrollmentComponent;
+  let fixture: ComponentFixture<VerifyEnrollmentComponent>;
+  let tokenService: MockTokenService;
+  let notificationService: MockNotificationService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [VerifyEnrollmentComponent],
+      providers: [
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: NotificationService, useClass: MockNotificationService }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(VerifyEnrollmentComponent);
+    component = fixture.componentInstance;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    fixture.detectChanges();
+  });
+
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+
+  it("should call verifyToken and reload on verifyOTP", () => {
+    component.otpValue.set("123456");
+    component.verifyOTP();
+    expect(tokenService.verifyToken).toHaveBeenCalledWith(tokenService.tokenSerial(), "123456");
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Token verified successfully!"));
+  });
+
+  it("should not call success if rollout_state is not enrolled", () => {
+    jest.spyOn(tokenService, "verifyToken").mockReturnValue(
+      of({
+        detail: { serial: "ABC123", rollout_state: "pending" },
+        result: { status: true }
+      })
+    );
+    const snackSpy = jest.spyOn(notificationService, "success");
+    component.otpValue.set("654321");
+    component.verifyOTP();
+    expect(snackSpy).not.toHaveBeenCalled();
+  });
+
+  it("should disable button if otpControl is invalid", () => {
+    component.otpValue.set("");
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector("button");
+    expect(button.disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+});

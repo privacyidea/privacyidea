@@ -24,6 +24,7 @@ import {
   SaveAndExitDialogData,
   SaveAndExitDialogResult
 } from "./save-and-exit-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("SaveAndExitDialogComponent", () => {
   let component: SaveAndExitDialogComponent;
@@ -97,7 +98,7 @@ describe("SaveAndExitDialogComponent", () => {
       const actions = defaultsComponent.actions();
       expect(actions.find((a) => a.value === "save-exit")?.label).toBe("Save");
       expect(actions.find((a) => a.value === "discard")?.label).toBe("Discard");
-      expect(defaultsComponent.title()).toBe("Discard changes");
+      expect(defaultsComponent.title()).toBe("Discard Changes");
       expect(defaultsComponent.message()).toBe("You have unsaved changes. Do you want to save them before exiting?");
     });
   });
@@ -114,5 +115,11 @@ describe("SaveAndExitDialogComponent", () => {
       component.onAction("save-exit");
       expect(spy).toHaveBeenCalledWith("save-exit");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

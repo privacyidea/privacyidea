@@ -27,6 +27,7 @@ This module is tested in tests/test_lib_utils.py
 
 import base64
 import binascii
+import functools
 import hashlib
 import html
 import logging
@@ -41,9 +42,16 @@ from datetime import timedelta, datetime
 from enum import StrEnum
 from importlib import import_module
 from importlib import metadata
+from typing import TYPE_CHECKING, Any
 
 import segno
 import sqlalchemy
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import Grouping
+from sqlalchemy.sql.operators import OperatorType
+from sqlalchemy.sql.visitors import InternalTraversal
+from sqlalchemy.types import TypeDecorator
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -52,6 +60,9 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
+
+if TYPE_CHECKING:
+    from privacyidea.models import Config
 
 log = logging.getLogger(__name__)
 
@@ -1013,39 +1024,31 @@ def check_ip_in_policy(client_ip: str, policy: list[str]) -> tuple[bool, bool]:
     return client_found, client_excluded
 
 
-def reload_db(timestamp, db_ts):
+def reload_db(loaded_db_timestamp: str | None, db_ts: "Config | None") -> bool:
     """
-    Check if the configuration database should be reloaded. This is verified
-    by comparing the chache timestamp and the database timestamp
+    Check if the configuration has to be reloaded from the database.
 
-    :param timestamp: cache timestamp
-    :type timestamp: timestamp
-    :param db_ts: database timestamp
-    :type db_ts: Config Object with timestamp str in .Value
+    The database holds the time of the last configuration change, as written by
+    the node that made the change. The configuration is reloaded if this value
+    differs from the value that was read together with the currently loaded
+    configuration. The value is not compared with the local clock, so a change is
+    noticed whatever the clock difference between the nodes and however long the
+    last reload took.
 
-    :return: bool
+    :param loaded_db_timestamp: the database timestamp that was read with the
+        currently loaded configuration, None if no configuration is loaded yet
+    :param db_ts: the database timestamp, a Config object with the timestamp
+        string in ``.Value``, or None if the database has no timestamp
+    :return: True if the configuration has to be reloaded
     """
-    internal_timestamp = ''
-    if timestamp:
-        internal_timestamp = timestamp.strftime("%s")
-    rdb = False
-    # Reason to reload
-    if db_ts and db_ts.Value.startswith("2016-"):
-        # If there is an old timestamp in the database
-        rdb = True
-        log.debug("Old timestamp. We need to reread policies "
-                  "from DB.")
-    if not (timestamp and db_ts):
-        # If values are not initialized
-        rdb = True
-        log.debug("Values are not initialized. We need to reread "
-                  "policies from DB.")
-    if db_ts and db_ts.Value >= internal_timestamp:
-        # If the DB contents is newer
-        rdb = True
-        log.debug("timestamp in DB newer. We need to reread policies "
-                  "from DB.")
-    return rdb
+    if loaded_db_timestamp is None or db_ts is None:
+        log.debug("Configuration or database timestamp not initialized. We need to reread the configuration "
+                  "from the database.")
+        return True
+    if db_ts.Value != loaded_db_timestamp:
+        log.debug("The configuration in the database has changed. We need to reread it.")
+        return True
+    return False
 
 
 def reduce_realms(all_realms, policies):
@@ -1082,6 +1085,67 @@ def is_true(value):
     :return: Boolean
     """
     return value in [1, "1", True, "True", "true", "TRUE"]
+
+
+def validate_path_identifier(identifier: str, kind: str, reserved: tuple[str, ...] = ()) -> None:
+    """
+    Reject an identifier that could be stored but never addressed by the API again.
+
+    The REST API addresses most resources by their identifier in a single path segment
+    (e.g. ``/smtpserver/<identifier>``). A WSGI server percent-decodes ``PATH_INFO`` before
+    routing, so a ``/`` in the name can not be escaped on the way in and the route no longer
+    matches. The same goes for ``.`` and ``..``, which path normalisation removes, and for
+    control characters, which have no business in a URL at all.
+
+    A name that equals a fixed route of the same resource (e.g. ``/smtpserver/send_test_email``)
+    can not be addressed either, because the router prefers the fixed route over
+    ``/smtpserver/<identifier>``. Pass these names as ``reserved``.
+
+    The restriction is deliberately narrow: spaces, dots, ``#``, ``?`` and non-ASCII letters
+    all survive the round trip once the client encodes them.
+
+    :param identifier: the identifier to check
+    :param kind: the kind of resource, used in the error message (e.g. "SMTP server")
+    :param reserved: the names of fixed routes next to ``/<identifier>`` of this resource
+    :raises ParameterError: if the identifier could not be addressed by the API
+    """
+    for character in ("/", "\\"):
+        if character in identifier:
+            raise ParameterError(f"The {kind} identifier must not contain {character!r}: the API addresses "
+                                 f"it by its name in the URL path, where such a name can not be reached.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in identifier):
+        raise ParameterError(f"The {kind} identifier must not contain control characters: the API "
+                             f"addresses it by its name in the URL path.")
+    if identifier in (".", ".."):
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API addresses it by "
+                             f"its name in the URL path, where it would be removed as a path segment.")
+    if identifier in reserved:
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API uses this name "
+                             f"for a route of its own.")
+
+
+def check_stored_secret_settings(kind: str, identifier: str, saved_settings: dict, requested_settings: dict,
+                                 secret_name: str, action: str) -> None:
+    """
+    Make sure that a stored secret is used only with the connection settings it was saved with.
+
+    A client that never received the secret sends the ``__CENSORED__`` placeholder instead, which means "use the
+    stored secret". The stored secret is used only if the request keeps the settings that define where and as whom
+    the secret is used. A requested value of ``None`` means that the setting is not changed.
+
+    :param kind: the kind of definition, used in the error message (e.g. "RADIUS server")
+    :param identifier: the identifier of the saved definition
+    :param saved_settings: the saved values of the connection settings
+    :param requested_settings: the requested values of the same settings
+    :param secret_name: the name of the secret, used in the error message (e.g. "secret")
+    :param action: what the secret is needed for, used in the error message (e.g. "save")
+    :raises ParameterError: if a requested setting differs from the saved one
+    """
+    changed = [key for key, value in requested_settings.items()
+               if value is not None and value != saved_settings.get(key)]
+    if changed:
+        raise ParameterError(f"These settings differ from the saved {kind} '{identifier}': {', '.join(changed)}. "
+                             f"Enter the {secret_name} to {action} the changed settings.")
 
 
 def int_to_hex(serial):
@@ -1290,6 +1354,80 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     # the user wildcard first means it can never collide with the escaping, so any
     # wildcard character (including '%' or '_') is handled correctly.
     return "%".join(escape_sql_like(part) for part in value.split(wildcard))
+
+
+class _OracleLikePattern(TypeDecorator):
+    """
+    The type of the value :func:`text_column_equals` compares a column with. On Oracle, where the comparison is a
+    ``LIKE``, the metacharacters of the value are escaped. Every other database gets the value as it is.
+    """
+    impl = sqlalchemy.UnicodeText
+    cache_ok = True
+
+    def __init__(self, column_type: sqlalchemy.types.TypeEngine):
+        super().__init__()
+        self.column_type = column_type
+        self.impl = column_type
+
+    def process_bind_param(self, value: str | None, dialect: sqlalchemy.engine.Dialect) -> str | None:
+        if dialect.name == "oracle" and value is not None:
+            return escape_sql_like(value)
+        return value
+
+
+class _TextColumnEquals(sqlalchemy.ColumnElement):
+    """The condition :func:`text_column_equals` returns, compiled for the database it runs on."""
+    inherit_cache = True
+    type = sqlalchemy.Boolean()
+    # A condition already: without this, a database with no boolean type, such as Oracle, gets an appended "= 1"
+    _is_implicitly_boolean = True
+    _traverse_internals = [("column", InternalTraversal.dp_clauseelement),
+                           ("value", InternalTraversal.dp_clauseelement)]
+
+    def __init__(self, column: sqlalchemy.ColumnElement, value: str):
+        self.column = column
+        self.value = sqlalchemy.bindparam(None, value, type_=_OracleLikePattern(column.type), unique=True)
+
+    @property
+    def _from_objects(self) -> list[sqlalchemy.FromClause]:
+        # The table of the column joins the FROM list, also when no other part of the statement names it
+        return self.column._from_objects
+
+    def self_group(self, against: OperatorType | None = None) -> sqlalchemy.ColumnElement:
+        # Both forms are a comparison, like "a = b": inside an operator of the same or a higher precedence, for
+        # example "== false()", the condition needs parentheses
+        if operators.is_precedent(operators.eq, against):
+            return Grouping(self)
+        return self
+
+
+@compiles(_TextColumnEquals)
+def _compile_text_column_equals(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                **kw: Any) -> str:
+    return f"{compiler.process(element.column, **kw)} = {compiler.process(element.value, **kw)}"
+
+
+@compiles(_TextColumnEquals, "oracle")
+def _compile_text_column_equals_on_oracle(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                          **kw: Any) -> str:
+    return (f"{compiler.process(element.column, **kw)} LIKE {compiler.process(element.value, **kw)} "
+            f"ESCAPE '{SQL_LIKE_ESCAPE}'")
+
+
+def text_column_equals(column: sqlalchemy.ColumnElement, value: str) -> sqlalchemy.ColumnElement[bool]:
+    """
+    Compare a text column with *value*, also where the column is a CLOB.
+
+    Every database compares with ``=``, except Oracle. Oracle stores long text, such as the token info value, as a
+    CLOB, which it can neither compare with ``=`` (ORA-00932) nor convert to a string beyond 4000 bytes (ORA-22835).
+    There the comparison is a ``LIKE`` with the metacharacters of *value* escaped, which matches the value exactly
+    and with case, like ``=`` does on Oracle. SQLAlchemy chooses the form when it compiles the statement.
+
+    :param column: the text column
+    :param value: the value the column has to hold
+    :return: the condition
+    """
+    return _TextColumnEquals(column, value)
 
 
 def convert_timestamp_to_utc(timestamp):
@@ -1537,13 +1675,22 @@ def get_module_class(package_name, class_name, check_method=None):
     return klass
 
 
+@functools.cache
+def _get_installed_version() -> str:
+    return metadata.version("privacyidea")
+
+
 def get_version_number():
     """
     returns the privacyidea version
+
+    The lookup parses the package metadata, and every API response contains the version. The version of the running
+    code does not change until the process restarts, so the lookup runs once per process. A failed lookup runs again on
+    the next call.
     """
     version = "unknown"
     try:
-        version = metadata.version("privacyidea")
+        version = _get_installed_version()
     except metadata.PackageNotFoundError as e:
         log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
@@ -1832,7 +1979,10 @@ def parse_string_to_dict(s, split_char=":"):
     return d
 
 
-ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+# The name of the client application at the start of a user agent string. The policy check on save uses the same
+# pattern, so that a user agent in a policy can match the name that is read from a request.
+USER_AGENT_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
+ua_re = re.compile(rf'^(?P<agent>{USER_AGENT_NAME_PATTERN})(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
 
 
 def get_plugin_info_from_useragent(useragent):

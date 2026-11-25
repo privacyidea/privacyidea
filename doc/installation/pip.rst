@@ -89,7 +89,8 @@ the matching OS packages must be present:
     The official Docker image already includes the ``kerberos`` extra and the
     Kerberos runtime libraries, so a containerized deployment only needs a
     mounted ``krb5.conf``. It also ships ``psycopg2-binary``, so the
-    ``postgres`` extra is not needed there either.
+    ``postgres`` extra is not needed there either. For Oracle databases, the
+    image ships ``oracledb``.
 
 .. _pip_configuration:
 

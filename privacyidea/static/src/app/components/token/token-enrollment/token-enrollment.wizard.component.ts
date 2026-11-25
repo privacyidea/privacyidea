@@ -45,10 +45,12 @@ import { tokenTypes } from "@utils/token.utils";
 import { map } from "rxjs";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-enrollment-wizard",
   imports: [
+    TooltipAriaLabelDirective,
     FormField,
     MatNativeDateModule,
     MatDatepickerModule,
@@ -112,6 +114,10 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   constructor() {
     super();
   }
+
+  // The wizard keeps the inputs of the enrolled token. Its template does not create the type-specific
+  // inputs anew.
+  protected override readonly resetsInputsAfterEnrollment = false;
 
   override descriptionRequired = computed(() => {
     return this.authService.requireDescription().includes(this.tokenType().key);

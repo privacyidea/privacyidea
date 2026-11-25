@@ -40,6 +40,10 @@ export interface ApiClient {
 
 export interface RememberedDevice {
   device_id: string;
+  client_id: string;
+  /** Only in the listing of a user's devices, which spans several clients */
+  client_name?: string | null;
+  client_type?: string | null;
   resolver: string;
   user_id: string;
   realm: string;
@@ -86,9 +90,17 @@ export interface ApiClientServiceInterface {
     options?: { page?: number; pageSize?: number; realm?: string }
   ): Promise<RememberedDevicesPage>;
 
+  getUserRememberedDevices(
+    user: string,
+    realm: string,
+    options?: { page?: number; pageSize?: number }
+  ): Promise<RememberedDevicesPage>;
+
   revokeDevice(clientId: string, deviceId: string): Promise<void>;
 
   revokeAllForClient(clientId: string, options?: { realm?: string; user?: string }): Promise<number>;
+
+  revokeAllForUser(user: string, realm: string): Promise<number>;
 }
 
 @Injectable()
@@ -235,10 +247,30 @@ export class ApiClientService implements ApiClientServiceInterface {
   ): Promise<RememberedDevicesPage> {
     let params = new HttpParams().set("page", options?.page ?? 1).set("pagesize", options?.pageSize ?? 50);
     if (options?.realm) params = params.set("realm", options.realm);
-    const request = this.http.get<PiResponse<RememberedDevicesPage>>(
+    return this.loadRememberedDevices(
       `${this.clientsBaseUrl}${encodeURIComponent(clientId)}/remembered_devices`,
-      { headers: this.authService.getHeaders(), params }
+      params
     );
+  }
+
+  async getUserRememberedDevices(
+    user: string,
+    realm: string,
+    options?: { page?: number; pageSize?: number }
+  ): Promise<RememberedDevicesPage> {
+    const params = new HttpParams()
+      .set("user", user)
+      .set("realm", realm)
+      .set("page", options?.page ?? 1)
+      .set("pagesize", options?.pageSize ?? 50);
+    return this.loadRememberedDevices(`${this.clientsBaseUrl}remembered_devices`, params);
+  }
+
+  private async loadRememberedDevices(url: string, params: HttpParams): Promise<RememberedDevicesPage> {
+    const request = this.http.get<PiResponse<RememberedDevicesPage>>(url, {
+      headers: this.authService.getHeaders(),
+      params
+    });
     return lastValueFrom(request)
       .then((response) => response.result?.value ?? { devices: [], count: 0, prev: null, next: null })
       .catch((error) => {
@@ -274,10 +306,19 @@ export class ApiClientService implements ApiClientServiceInterface {
     let params = new HttpParams();
     if (options?.realm) params = params.set("realm", options.realm);
     if (options?.user) params = params.set("user", options.user);
-    const request = this.http.delete<PiResponse<number>>(
+    return this.revokeRememberedDevices(
       `${this.clientsBaseUrl}${encodeURIComponent(clientId)}/remembered_devices`,
-      { headers: this.authService.getHeaders(), params }
+      params
     );
+  }
+
+  async revokeAllForUser(user: string, realm: string): Promise<number> {
+    const params = new HttpParams().set("user", user).set("realm", realm);
+    return this.revokeRememberedDevices(`${this.clientsBaseUrl}remembered_devices`, params);
+  }
+
+  private async revokeRememberedDevices(url: string, params: HttpParams): Promise<number> {
+    const request = this.http.delete<PiResponse<number>>(url, { headers: this.authService.getHeaders(), params });
     return lastValueFrom(request)
       .then((response) => {
         const count = response.result?.value ?? 0;

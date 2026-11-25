@@ -17,6 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, forwardRef, inject, input } from "@angular/core";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -35,7 +38,7 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-tiqr",
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: "./enroll-tiqr.component.html",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTiqrComponent) }
@@ -45,6 +48,8 @@ export class EnrollTiqrComponent extends EnrollTokenBase<TiqrEnrollmentData> {
   protected readonly enrollmentMapper: TiqrApiPayloadMapper = inject(TiqrApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   wizard = input<boolean>(false);
 

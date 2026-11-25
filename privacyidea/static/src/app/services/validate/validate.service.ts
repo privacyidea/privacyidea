@@ -19,7 +19,13 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+  MultiChallenge,
+  WebAuthnSignRequest
+} from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { from, map, Observable, switchMap, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
@@ -50,22 +56,55 @@ export interface ValidateCheckDetail {
   transaction_ids?: string[];
   type?: "push" | "poll";
   preferred_client_mode?: "poll" | "push";
+  /** The authentication succeeded, and an enroll_via_multichallenge policy started the enrollment of a new token. */
+  enroll_via_multichallenge?: boolean;
 }
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
-export interface WebAuthnSignRequestCredential {
-  id: string;
-  type?: PublicKeyCredentialType;
-  transports?: AuthenticatorTransport[];
+/** The value is the number of challenges that the server created. */
+export type TriggerChallengeResponse = PiResponse<number, ValidateCheckDetail>;
+
+/**
+ * The state of the challenges of a transaction. "accept": the user confirmed a challenge. "declined": the user declined a
+ * challenge that they did not start. "cancelled": the user stopped a challenge that they started. "pending": no
+ * challenge is answered, or no valid challenge exists.
+ */
+export type ChallengeStatus = "accept" | "declined" | "cancelled" | "pending";
+
+export interface PollTransactionDetail {
+  challenge_status?: ChallengeStatus;
 }
 
-export interface WebAuthnSignRequest {
-  challenge: string;
-  allowCredentials: WebAuthnSignRequestCredential[];
-  rpId: string;
-  userVerification: UserVerificationRequirement;
-  timeout?: number;
+export type PollTransactionResponse = PiResponse<boolean, PollTransactionDetail>;
+
+/**
+ * Each WebAuthn token of the user gets its own entry in multi_challenge. The browser can only be asked once, so the
+ * allowed credentials of the entries are combined into one sign request; otherwise only the first token could be used.
+ * Only entries with the same rpId and challenge can be combined. Each token keeps the rpId it was enrolled with, and
+ * the browser rejects the whole request if its rpId does not fit the host of the page, so the first entry whose rpId
+ * fits the host decides. If none fits, the first entry decides.
+ */
+export function mergeWebAuthnSignRequests(
+  challenges: MultiChallenge[],
+  hostname: string = window.location.hostname
+): WebAuthnSignRequest | null {
+  const signRequests = challenges
+    .filter((challenge) => challenge.type === "webauthn")
+    .map((challenge) => challenge.attributes?.webAuthnSignRequest)
+    .filter((signRequest) => signRequest !== undefined);
+  if (!signRequests.length) {
+    return null;
+  }
+  const fitsHostname = (rpId: string) => hostname === rpId || hostname.endsWith(`.${rpId}`);
+  const selectedSignRequest = signRequests.find((signRequest) => fitsHostname(signRequest.rpId)) ?? signRequests[0];
+  const allowCredentials = signRequests
+    .filter(
+      (signRequest) =>
+        signRequest.rpId === selectedSignRequest.rpId && signRequest.challenge === selectedSignRequest.challenge
+    )
+    .flatMap((signRequest) => signRequest.allowCredentials);
+  return { ...selectedSignRequest, allowCredentials };
 }
 
 export interface PasskeyInitDetail {
@@ -89,7 +128,14 @@ export interface PasskeyCheckParams {
 }
 
 export interface ValidateServiceInterface {
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+    transactionId?: string
+  ): Observable<ValidateCheckResponse>;
+
+  triggerChallenge(tokenSerial: string): Observable<TriggerChallengeResponse>;
 
   authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse>;
 
@@ -101,6 +147,8 @@ export interface ValidateServiceInterface {
   }): Observable<AuthResponse>;
 
   pollTransaction(transactionId: string): Observable<boolean>;
+
+  pollTransactionStatus(transactionId: string): Observable<ChallengeStatus>;
 }
 
 @Injectable({
@@ -115,7 +163,16 @@ export class ValidateService implements ValidateServiceInterface {
 
   private baseUrl = environment.proxyUrl + "/validate/";
 
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse> {
+  /**
+   * Checks the value against the token. With a transaction ID, the value is the response to an open challenge of the
+   * token, and the server does not check the PIN.
+   */
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+    transactionId?: string
+  ): Observable<ValidateCheckResponse> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
@@ -123,7 +180,8 @@ export class ValidateService implements ValidateServiceInterface {
         {
           serial: tokenSerial,
           pass: otpOrPinToTest,
-          otponly: otponly
+          otponly: otponly,
+          transaction_id: transactionId
         },
         { headers }
       )
@@ -133,6 +191,26 @@ export class ValidateService implements ValidateServiceInterface {
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
             $localize`:@@validate.failedToTestToken:Failed to test token. ${message}:MESSAGE:`
+          );
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Asks the server to create a challenge for the token, without the PIN of the token. The admin needs the
+   * triggerchallenge right. The server only creates a challenge if the token is active and supports
+   * challenge-response.
+   */
+  triggerChallenge(tokenSerial: string): Observable<TriggerChallengeResponse> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<TriggerChallengeResponse>(`${this.baseUrl}triggerchallenge`, { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error(
+            $localize`:@@validate.failedToTriggerChallenge:Failed to trigger a challenge. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })
@@ -261,18 +339,28 @@ export class ValidateService implements ValidateServiceInterface {
   }
 
   pollTransaction(transactionId: string): Observable<boolean> {
+    return this.requestPollTransaction(transactionId).pipe(
+      map((response) => response.result?.authentication === "ACCEPT" && response.result?.value === true)
+    );
+  }
+
+  /** Reports if the user confirmed, declined or cancelled the challenge of the transaction on the device. */
+  pollTransactionStatus(transactionId: string): Observable<ChallengeStatus> {
+    return this.requestPollTransaction(transactionId).pipe(
+      map((response) => response.detail?.challenge_status ?? "pending")
+    );
+  }
+
+  private requestPollTransaction(transactionId: string): Observable<PollTransactionResponse> {
     const headers = this.authService.getHeaders();
     return this.http
-      .get<PiResponse<boolean>>(`${this.baseUrl}polltransaction`, {
+      .get<PollTransactionResponse>(`${this.baseUrl}polltransaction`, {
         params: {
           transaction_id: transactionId
         },
         headers
       })
       .pipe(
-        map((response) => {
-          return response.result?.authentication === "ACCEPT" && response.result?.value === true;
-        }),
         catchError((error: HttpErrorResponse) => {
           console.error("Failed to poll transaction.", error);
           const message = error.error?.result?.error?.message || "Polling for transaction failed.";

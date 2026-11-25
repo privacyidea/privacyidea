@@ -29,11 +29,13 @@ import {
   CertificateIntention
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";
@@ -55,7 +57,7 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
     MatError,
     MatHint,
     ClearButtonComponent,
-    SelectorButtonsComponent,
+    ToggleGroupComponent,
     MatSuffix,
     FormField
   ],
@@ -87,6 +89,16 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   });
   pem = signal<string>("");
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  caConnectorForm = form(this.caConnector, (f) => {
+    required(f, { when: () => this.intention() !== "uploadCert" });
+    disabled(f, () => this.disabled());
+  });
+  certTemplateForm = form(this.certTemplate, (f) => {
+    disabled(f, () => this.disabled());
+  });
   pemForm = form(this.pem, (f) => {
     required(f);
     disabled(f, () => this.disabled() || this.intention() === "generate");
@@ -125,8 +137,6 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
       .join(", ");
   });
 
-  caConnectorTouched = signal<boolean>(false);
-
   ngOnInit(): void {
     if (this.enrollmentData()) {
       this.caConnector.set(this.enrollmentData()?.caConnector ?? "");
@@ -144,8 +154,8 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
     }
 
     const needsCaConnector = intention !== "uploadCert";
-    if (needsCaConnector && !this.caConnector()) {
-      this.caConnectorTouched.set(true);
+    if (needsCaConnector && !this.caConnectorForm().valid()) {
+      this.caConnectorForm().markAsTouched();
       return null;
     }
 
@@ -174,6 +184,6 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   }
 
   clearTemplateSelection(): void {
-    this.certTemplate.set("");
+    clearField(this.certTemplateForm, "");
   }
 }

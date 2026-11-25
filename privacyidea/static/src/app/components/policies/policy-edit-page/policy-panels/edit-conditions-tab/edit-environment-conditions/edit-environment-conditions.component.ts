@@ -38,6 +38,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -49,11 +50,34 @@ import {
   UserAgentOption
 } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { hasError } from "@utils/form-state.utils";
 
 interface ClientSuggestion {
   ip: string;
   hostname?: string;
   applications: string[];
+}
+
+const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+function toMinutes(time: string): number | null {
+  const [hours, minutes = 0] = time.split(":").map(Number);
+  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
+}
+
+// Mirrors check_time_in_range on the server: whitespace is ignored and day names are case-insensitive.
+// A day range can wrap around the end of the week (Sat-Mon) and a time range can cross midnight (22-6).
+function isValidTimeRange(value: string): boolean {
+  return value
+    .replace(/\s+/g, "")
+    .split(",")
+    .every((range) => {
+      const match = /^([a-z]{3})(?:-([a-z]{3}))?:(\d{1,2}(?::\d{1,2})?)-(\d{1,2}(?::\d{1,2})?)$/i.exec(range);
+      if (!match) return false;
+      const [, dayStart, dayEnd = dayStart, timeStart, timeEnd] = match;
+      if (!WEEKDAYS.includes(dayStart.toLowerCase()) || !WEEKDAYS.includes(dayEnd.toLowerCase())) return false;
+      return toMinutes(timeStart) !== null && toMinutes(timeEnd) !== null;
+    });
 }
 
 @Component({
@@ -69,7 +93,8 @@ interface ClientSuggestion {
     MatExpansionModule,
     MultiSelectOnlyComponent,
     ClearButtonComponent,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    ChipListInputComponent
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"
@@ -85,22 +110,14 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  readonly addUserAgentSignal = signal("");
-  readonly addUserAgentField = form(this.addUserAgentSignal, (f) => {
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      return value && value.includes(",") ? [{ kind: "includesComma" }] : [];
-    });
-  });
+  protected readonly hasError = hasError;
 
   readonly validTimeSignal = signal("");
   readonly validTimeField = form(this.validTimeSignal, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (!value) return [];
-      const regex =
-        /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
-      return regex.test(value) ? [] : [{ kind: "invalidValidTime" }];
+      return isValidTimeRange(value) ? [] : [{ kind: "invalidValidTime" }];
     });
   });
 
@@ -168,7 +185,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
       label: integration.label
     }))
   );
-  getUserAgentLabel = (identifier: string): string => this.integrationsService.labelForPolicyValue(identifier);
+  getUserAgentDisplay = (userAgent: string): string => this.integrationsService.displayForPolicyValue(userAgent);
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   readonly selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
@@ -237,20 +254,6 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     if (!oldUserAgents.includes(userAgent)) {
       this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
     }
-  }
-
-  addUserAgent() {
-    const userAgent = this.addUserAgentSignal()?.trim();
-    if (this.addUserAgentField().errors().length > 0 || !userAgent) return;
-    const oldUserAgents = this.selectedUserAgents();
-    if (!oldUserAgents.includes(userAgent)) {
-      this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
-    }
-    this.addUserAgentSignal.set("");
-  }
-
-  removeUserAgent(userAgent: string) {
-    this.emitEdits({ user_agents: this.selectedUserAgents().filter((ua) => ua !== userAgent) });
   }
 
   clearUserAgents() {

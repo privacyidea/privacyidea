@@ -41,6 +41,8 @@ users by defining higher policy priorities.
     see the request as successful before it would be changed by this policy and
     match the event handler condition ``result value == True``.
 
+.. versionadded:: 3.4
+
 .. _tokentype_policy:
 
 tokentype
@@ -64,6 +66,8 @@ used up, even if the user was not authorized with this request.
    while allowing access to less sensitive areas
    with other token types.
 
+.. versionadded:: 2.0
+
 .. _application_tokentype_policy:
 
 application_tokentype
@@ -81,6 +85,9 @@ should be checked.
 E.g. when using this in *triggerchallenge*, an application could assure that only SMS tokens
 are used for authentication.
 
+.. versionadded:: 3.4
+
+.. _policy_serial:
 
 serial
 ~~~~~~
@@ -94,12 +101,17 @@ number.
 This is checked after the authentication request, so a valid OTP value will be
 used up, even if the user was not authorized with this request.
 
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
+
 .. note:: Combining this with the client IP
    you can use this to allow remote access to
    sensitive areas only with hardware tokens
    like the YubiKey, while allowing access
    to less secure areas also with a Google
    Authenticator.
+
+.. versionadded:: 2.0
 
 .. _policy_tokeninfo:
 
@@ -124,6 +136,11 @@ Example::
 
 This would mean the tokeninfo field needs to start with "2018".
 
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
+
+.. versionadded:: 2.22
+
 .. _policy_setrealm:
 
 setrealm
@@ -135,7 +152,8 @@ This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
 the realm in this action.
 
-This policy is only applied to :http:post:`/validate/check` and :http:post:`/validate/radiuscheck`.
+This policy is only applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck` and
+:http:post:`/validate/remember_device`.
 
 Priorities are not evaluated for ``setrealm``: if the matching policies name more than one realm, the request fails
 with "Conflicting policies exist". If an authentication :ref:`policy_set_realm` policy matched, ``setrealm`` is not
@@ -157,10 +175,14 @@ reasons. For this policy, the user has to be available in both realms!
 
 For in depth information about user and realm mapping read :ref:`realms`.
 
+.. versionadded:: 2.0
+
 .. _policy_no_detail_on_success:
 
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
+.. versionadded:: 2.0
+
 .. deprecated:: 3.12
    Please use the :ref:`responsemanglerhandler` to delete the ``detail`` section.
 
@@ -173,10 +195,15 @@ the authentication request failed.
 If this action is set and the user authenticated successfully
 this additional information will not be returned.
 
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
+
 .. _policy_no_detail_on_fail:
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
+.. versionadded:: 2.0
+
 .. deprecated:: 3.12
    This policy breaks :term:`challenge-response <Challenge>` authentication.
 
@@ -188,6 +215,9 @@ the authentication request failed.
 
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
+
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
 
 .. note:: This policy does **not** mask an error message configured for
    :ref:`conditional_access`. Such a message exists only because an
@@ -204,6 +234,8 @@ api_key_required
 
 type: ``bool``
 
+.. versionadded:: 2.4
+
 .. deprecated:: 3.14
    This policy and its ``Authorization`` JWT (minted by ``pi-manage api
    createtoken``) are deprecated and will be removed in a future release. The
@@ -211,7 +243,9 @@ type: ``bool``
    clients are stored, individually revocable and rotatable — but it does not
    yet cover this ``/validate`` gating use case.
 
-This policy is checked *before* the user is validated.
+This policy is checked *before* the user is validated. A request to
+``/validate/check`` that names only the serial of a token or a FIDO2 credential
+is matched for the owner of the token.
 
 You can create an API key that needs to be passed to use the validate API.
 If an API key is required, but no key is passed, the authentication request
@@ -250,7 +284,11 @@ performed the authentication request is refused, and the OTP value stays valid.
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
+
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
+A recognition of a remembered device does not count as a successful authentication.
 
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
@@ -261,6 +299,8 @@ the authentication if no realm is passed. The policy is first checked for local 
 time limit of successful authentications, the user will not be able to authenticate anymore. This can be avoided by
 explicitly passing the user's realm. Anyway, local admins are not affected by the number of successful user
 authentications.
+
+.. versionadded:: 2.8
 
 .. _policy_auth_max_fail:
 
@@ -281,7 +321,10 @@ failed authentications were performed the authentication request is refused, and
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
+
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
@@ -289,6 +332,10 @@ evaluated before checking the password or OTP value.
 In case a local admin and a user in the default realm exist with the same username, we can not distinguish their failed
 authentications. Hence, if the admin reaches the time limit of failed authentications, the user will not be able to
 authenticate anymore, and vice versa.
+
+.. versionadded:: 2.8
+
+.. _policy_last_auth:
 
 last_auth
 ~~~~~~~~~
@@ -307,6 +354,20 @@ The date of the last successful authentication is stored in the ``tokeninfo``
 field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
 passkey authentications).
 
+The policy is matched for the user who authenticates. A request that names only
+the serial of the token, or a FIDO2 credential, is matched for the owner of the
+token.
+
+A login through a remembered device (see :ref:`policy_remember_device`) skips
+the second factor, so it does not use a token and does not update ``last_auth``.
+A user who logs in that way for longer than this time frame is refused at the
+next login with the token. For such users, keep
+:ref:`policy_remember_device_validity` shorter than the time frame of this
+policy: when the validity ends, the user logs in with the token again, which
+updates ``last_auth``.
+
+.. versionadded:: 2.8
+
 .. _policy_add_user_in_response:
 
 add_user_in_response
@@ -324,6 +385,8 @@ to the response. A dictionary containing user information is added in
    need user data after a failed authentication must look the user up
    themselves.
 
+.. versionadded:: 2.15
+
 .. _policy_add_resolver_in_response:
 
 add_resolver_in_response
@@ -334,6 +397,8 @@ type: ``bool``
 In case of a successful authentication the resolver and realm of the user are added
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
+
+.. versionadded:: 2.22
 
 .. _policy_webauthn_authz_authenticator_selection_list:
 
@@ -357,6 +422,8 @@ unless limited through some other action.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_authenticator_selection_list`
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authz_req:
 
@@ -382,6 +449,8 @@ several policies), every one of them must match.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_req`
 
+.. versionadded:: 3.3
+
 .. _policy_require_auth_for_resolver_details:
 
 require_auth_for_resolver_details
@@ -398,3 +467,5 @@ individual resolver details.  The total status will be included either way.
 
 .. note:: In order to limit the amount of information exposed to third parties,
     it is recommended to activate this policy.
+
+.. versionadded:: 3.13

@@ -24,6 +24,8 @@ import { EnrollEmailComponent } from "./enroll-email.component";
 import { SystemService } from "@services/system/system.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollEmailComponent", () => {
   let component: EnrollEmailComponent;
@@ -71,5 +73,21 @@ describe("EnrollEmailComponent", () => {
       expect(component.emailAddress()).toBe("");
       expect(component.readEmailDynamically()).toBe(false);
     });
+  });
+
+  it("writes a click on the checkbox to the model, marks it dirty and drops the address field", async () => {
+    expect(fixture.nativeElement.querySelector("input[matInput]")).not.toBeNull();
+
+    await clickCheckbox(fixture);
+
+    expect(component.readEmailDynamically()).toBe(true);
+    expect(component.readEmailDynamicallyForm().dirty()).toBe(true);
+    expect(fixture.nativeElement.querySelector("input[matInput]")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

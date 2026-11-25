@@ -22,6 +22,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dial
 import { Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import {
+  ContainerDetails,
   ContainerRegisterData,
   ContainerService,
   ContainerUnregisterData
@@ -40,6 +41,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
 import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsActionsComponent", () => {
   let component: ContainerDetailsActionsComponent;
@@ -94,6 +96,37 @@ describe("ContainerDetailsActionsComponent", () => {
     expect(compiled.textContent).toContain("Container Actions");
   });
 
+  describe("layout", () => {
+    const registeredSmartphone = () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
+      mockContainerService.containerDetails.set({
+        containers: [{ info: { registration_state: "registered" } }],
+        count: 1
+      } as unknown as ContainerDetails);
+    };
+
+    it("defaults to the column layout with heading and divider", () => {
+      registeredSmartphone();
+      fixture.detectChanges();
+      const root = (fixture.nativeElement as HTMLElement).querySelector(".actions-otp-container")!;
+      expect(component.layout()).toBe("column");
+      expect(root.classList).not.toContain("actions-otp-container--row");
+      expect(root.querySelector("h4")?.textContent).toContain("Container Actions");
+      expect(root.querySelector("mat-divider")).not.toBeNull();
+    });
+
+    it("renders one row without heading and divider for layout row", () => {
+      registeredSmartphone();
+      fixture.componentRef.setInput("layout", "row");
+      fixture.detectChanges();
+      const root = (fixture.nativeElement as HTMLElement).querySelector(".actions-otp-container")!;
+      expect(root.classList).toContain("actions-otp-container--row");
+      expect(root.querySelector("h4")).toBeNull();
+      expect(root.querySelector("mat-divider")).toBeNull();
+      expect(root.querySelectorAll("button").length).toBeGreaterThan(1);
+    });
+  });
+
   it("should not render actions if no action is allowed", () => {
     authServiceMock.actionAllowed.mockReturnValue(false);
     const compiled = fixture.nativeElement as HTMLElement;
@@ -142,5 +175,11 @@ describe("ContainerDetailsActionsComponent", () => {
     jest.spyOn(mockNotificationService, "error");
     component.unregisterContainer();
     expect(mockNotificationService.error).toHaveBeenCalledWith("Failed to unregister container.");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

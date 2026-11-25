@@ -30,6 +30,8 @@ import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { checkboxInput, clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
@@ -142,5 +144,27 @@ describe("EnrollAspComponent", () => {
       expect(component.generateOnServer()).toBe(true);
       expect(component.otpKey()).toBe("");
     });
+  });
+
+  it("writes a click on the checkbox to the model and enables the password field", async () => {
+    await clickCheckbox(fixture);
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.generateOnServerForm().dirty()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
+  });
+
+  it("renders the checkbox disabled while the policy forces server-side generation", () => {
+    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
+    fixture = TestBed.createComponent(EnrollApplspecComponent);
+    fixture.detectChanges();
+
+    expect(checkboxInput(fixture).disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
