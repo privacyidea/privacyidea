@@ -26,6 +26,7 @@ import { MockContentService, MockSystemService, MockTokenService } from "@testin
 import { TokenService } from "@services/token/token.service";
 import { ContentService } from "@services/content/content.service";
 import { axe } from "@testing/axe";
+import { flushFixture, typeInto } from "@testing/enroll-form-dom";
 
 describe("EnrollYubicoComponent", () => {
   let component: EnrollYubicoComponent;
@@ -50,6 +51,38 @@ describe("EnrollYubicoComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("identifier errors", () => {
+    const identifierInput = () => fixture.nativeElement.querySelector("input[matInput]") as HTMLInputElement;
+    const blurIdentifier = async () => {
+      identifierInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+    };
+
+    it("renders only the required error for an empty identifier once the field was touched", async () => {
+      await blurIdentifier();
+
+      expect(fixture.nativeElement.textContent).toContain("Yubikey identifier is required");
+      expect(fixture.nativeElement.textContent).not.toContain("exactly 12 characters");
+    });
+
+    it.each([
+      ["shorter", "cccccccccc"],
+      ["longer", "ccccccccccccc"]
+    ])("renders only the length error for an identifier %s than 12 characters", async (_, value) => {
+      await typeInto(fixture, identifierInput(), value);
+      await blurIdentifier();
+
+      expect(fixture.nativeElement.textContent).toContain("Yubikey identifier must be exactly 12 characters long.");
+      expect(fixture.nativeElement.textContent).not.toContain("Yubikey identifier is required");
+    });
+
+    it("accepts an identifier of exactly 12 characters", async () => {
+      await typeInto(fixture, identifierInput(), "cccccccccccc");
+
+      expect(component.yubicoIdentifierForm().valid()).toBe(true);
+    });
   });
 
   it("passes the axe accessibility checks", async () => {
