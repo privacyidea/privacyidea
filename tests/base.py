@@ -329,7 +329,7 @@ def _empty_g() -> None:
     Remove everything from ``g`` except the finalizers that were registered outside a request.
 
     They belong to the app context of the test class, which outlives the requests of a test, and they run at the end
-    of the test (see the fixture ``_no_unclosed_resource_left_by_the_test``). Without them, an object that a test
+    of the test (see the fixture ``_finalizers_called_at_the_end_of_the_test``). Without them, an object that a test
     creates outside a request, for example an SQL audit module, keeps its database connection open.
     """
     app_context_finalizers = get_request_local_store().get(APP_CONTEXT_FINALIZERS_KEY)

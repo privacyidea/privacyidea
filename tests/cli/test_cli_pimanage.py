@@ -3134,6 +3134,27 @@ class PIManageConfigCRUDTestCase(CliTestCase):
             sa.Table("users_cliinternal", sa.MetaData()).drop(db.engine, checkfirst=True)
             db.session.commit()
 
+    def test_28_resolver_create_internal_closes_its_database_connections_after_an_error(self):
+        # The command also closes the connections of its engine when the creation of the user table fails.
+        runner = self.app.test_cli_runner()
+
+        def failing_create_all(metadata: sa.MetaData, bind: sa.engine.Engine, **kwargs: Any) -> None:
+            # A database error during the creation of the table comes after the engine opened a connection.
+            with bind.connect():
+                raise sa.exc.OperationalError("CREATE TABLE", {}, Exception("permission denied"))
+
+        try:
+            with (connections_of_new_engines("sqlalchemy.create_engine") as (opened, closed),
+                  mock.patch.object(sa.MetaData, "create_all", failing_create_all)):
+                result = runner.invoke(pi_manage, ["config", "resolver", "create_internal", "cliinternal"])
+
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIsInstance(result.exception, sa.exc.OperationalError)
+            self.assertTrue(opened, "The command opened no connection, so the test proves nothing.")
+            self.assertEqual({id(connection) for connection in opened}, {id(connection) for connection in closed})
+        finally:
+            delete_resolver("cliinternal")
+
 
 class PIManageAuthLogTestCase(CliTestCase):
     """
