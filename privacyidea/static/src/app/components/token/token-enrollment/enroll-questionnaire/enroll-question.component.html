@@ -41,7 +41,8 @@
   }
 } @else {
   <span
-    id="questionnaire-requirement"
+    class="questionnaire-requirement"
+    [id]="requirementId"
     aria-live="polite"
     [class.enroll-text-error]="tooFewAnswers()">
     @if (tooFewAnswers()) {
@@ -61,7 +62,7 @@
     <mat-label>{{ row().value().question }}</mat-label>
     <input
       [formField]="row.answer"
-      aria-describedby="questionnaire-requirement"
+      [aria-describedby]="requirementId"
       matInput
       type="text" />
   </mat-form-field>

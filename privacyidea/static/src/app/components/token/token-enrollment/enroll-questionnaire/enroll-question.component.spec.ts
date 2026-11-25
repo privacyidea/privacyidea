@@ -109,7 +109,7 @@ describe("EnrollQuestionnaireComponent", () => {
     });
 
     it("refuses the build, touches the form and turns the requirement text into the error", async () => {
-      const requirement = () => fixture.nativeElement.querySelector("#questionnaire-requirement") as HTMLElement;
+      const requirement = () => fixture.nativeElement.querySelector(".questionnaire-requirement") as HTMLElement;
       await typeInto(fixture, inputs()[0], "Rex");
       expect(requirement().classList).not.toContain("enroll-text-error");
       expect(requirement().textContent).not.toContain("missing");
@@ -129,14 +129,28 @@ describe("EnrollQuestionnaireComponent", () => {
       inputs()[0].dispatchEvent(new Event("blur"));
       await flushFixture(fixture);
 
-      const requirement = fixture.nativeElement.querySelector("#questionnaire-requirement") as HTMLElement;
+      const requirement = fixture.nativeElement.querySelector(".questionnaire-requirement") as HTMLElement;
       expect(requirement.classList).not.toContain("enroll-text-error");
       expect(requirement.textContent).not.toContain("missing");
     });
 
     it("refers each answer to the requirement text", () => {
+      const requirementId = fixture.nativeElement.querySelector(".questionnaire-requirement").id;
+      expect(requirementId).toMatch(/^questionnaire-requirement-\d+$/);
       for (const input of inputs()) {
-        expect(input.getAttribute("aria-describedby")).toContain("questionnaire-requirement");
+        expect(input.getAttribute("aria-describedby")?.split(" ")).toContain(requirementId);
+      }
+    });
+
+    it("refers the answers of a second questionnaire to its own requirement text", async () => {
+      const secondFixture = TestBed.createComponent(EnrollQuestionComponent);
+      await flushFixture(secondFixture);
+      const firstId = fixture.nativeElement.querySelector(".questionnaire-requirement").id;
+      const secondId = secondFixture.nativeElement.querySelector(".questionnaire-requirement").id;
+
+      expect(secondId).not.toBe(firstId);
+      for (const input of Array.from<HTMLInputElement>(secondFixture.nativeElement.querySelectorAll("input"))) {
+        expect(input.getAttribute("aria-describedby")?.split(" ")).toContain(secondId);
       }
     });
 

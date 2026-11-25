@@ -52,6 +52,9 @@ export interface QuestionAnswer {
   answer: string;
 }
 
+// Unique per instance, so the answers of each questionnaire point at its own requirement text.
+let nextId = 0;
+
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
   answers: Record<string, string>;
@@ -73,6 +76,7 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly requirementId = `questionnaire-requirement-${nextId++}`;
 
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const defaultQuestions = 5;
