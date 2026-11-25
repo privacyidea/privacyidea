@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { Provider } from "@angular/core";
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from "@angular/material/form-field";
 import { MatTooltipDefaultOptions } from "@angular/material/tooltip";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
@@ -25,6 +27,15 @@ export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   hideDelay: 0,
   touchendHideDelay: 0,
   disableTooltipInteractivity: true
+};
+
+/**
+ * Form fields of the enrollment forms take the height of their messages; the `enroll-form` class reserves one line
+ * for them. A longer hint or error moves the content below instead of covering it.
+ */
+export const ENROLL_FORM_FIELD_OPTIONS: Provider = {
+  provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+  useValue: { appearance: "outline", subscriptSizing: "dynamic" }
 };
 
 /**

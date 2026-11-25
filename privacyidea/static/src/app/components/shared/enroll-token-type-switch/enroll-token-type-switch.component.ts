@@ -49,6 +49,8 @@ import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enrol
 @Component({
   selector: "app-enroll-token-type-switch",
   standalone: true,
+  // The fields of the token type take part in the layout of the parent form.
+  host: { class: "enroll-contents" },
   imports: [
     EnrollHotpComponent,
     EnrollTotpComponent,

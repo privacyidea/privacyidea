@@ -29,6 +29,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ERR, mustEqual, requiredNonBlank } from "@utils/form-rules.utils";
 import { hasError, touchAll } from "@utils/form-state.utils";
+import { ENROLL_FORM_FIELD_OPTIONS } from "@components/token/token-enrollment/token-enrollment.constants";
 
 @Component({
   selector: "app-attach-token-self-service",
@@ -45,7 +46,9 @@ import { hasError, touchAll } from "@utils/form-state.utils";
     StickyHeaderDirective
   ],
   templateUrl: "./assign-token-self-service.component.html",
-  styleUrl: "./assign-token-self-service.component.scss"
+  styleUrl: "./assign-token-self-service.component.scss",
+  providers: [ENROLL_FORM_FIELD_OPTIONS],
+  host: { class: "enroll-form" }
 })
 export class AssignTokenSelfServiceComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
