@@ -1198,10 +1198,18 @@ def multichallenge_enroll_via_validate(request, response):
     It also modifies the response accordingly, so that the client/plugin can
     display necessary data for the enrollment to the user.
 
+    A request that cancels an enrollment (``cancel_enrollment``) never starts a new one.
+
     :param request:
     :param response:
     :return:
     """
+    # The user skipped the enrollment: the successful authentication of the cancellation ends the login. The request
+    # can also name the user, who has no token of the enrolled type anymore. Without this check, the enrollment
+    # would start again in the same response, and the user could never skip it.
+    if is_true(request.all_data.get("cancel_enrollment")):
+        return response
+
     content = response.json
     result = content.get("result")
     # Check if the authentication was successful, only then attempt to enroll a new token
