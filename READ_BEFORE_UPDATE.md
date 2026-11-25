@@ -45,9 +45,10 @@
   now applies on Saturday, Sunday and Monday. A time range such as `Fri: 22-6` now applies from Friday 22:00 to
   Saturday 06:00: the hours after midnight belong to the day on which the range starts. Before, a day range over the
   end of the week never matched, and a policy whose time contained a range over midnight applied at no time at all.
-  Check your policies for such times before the update, especially in the `admin` and `authz` scopes, as they take
-  effect after it. A reversed time range is no longer rejected when you save a policy: `Mon-Fri: 18-8` is the night
-  from 18:00 to 08:00, not the day from 08:00 to 18:00.
+  These policies take effect right after the update. To find them before the update, read the `time` values in the
+  output of `pi-manage config export -t policy`. Start with the `admin` and `authz` scopes. A reversed time range is
+  no longer rejected when you save a policy: `Mon-Fri: 18-8` is the night from 18:00 to 08:00, not the day from 08:00
+  to 18:00.
 
 ## Update from 3.14 to 3.14.1
 
