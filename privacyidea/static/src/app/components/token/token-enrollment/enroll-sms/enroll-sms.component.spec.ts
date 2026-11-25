@@ -35,6 +35,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollSmsComponent } from "./enroll-sms.component";
 import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
+import { ERR } from "@utils/form-rules.utils";
 
 type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
@@ -192,7 +193,7 @@ describe("EnrollSmsComponent", () => {
         component
           .phoneNumberForm()
           .errors()
-          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
+          .some((e: ValidationError) => e.kind === ERR.pattern)
       ).toBe(true);
     });
 
@@ -202,7 +203,7 @@ describe("EnrollSmsComponent", () => {
         component
           .phoneNumberForm()
           .errors()
-          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
+          .some((e: ValidationError) => e.kind === ERR.pattern)
       ).toBe(false);
     });
   });
@@ -255,6 +256,25 @@ describe("EnrollSmsComponent", () => {
       await flushFixture(fixture);
 
       expect(fixture.nativeElement.textContent).toContain("SMS Gateway is required");
+    });
+
+    it("renders the format error, not the required error, for a malformed phone number", async () => {
+      component.smsGateway.set("gw1");
+      component.phoneNumber.set("0170 1234567");
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("international format");
+      expect(fixture.nativeElement.textContent).not.toContain("Phone number is required");
+    });
+
+    it("renders the required error, not the format error, for an empty phone number", async () => {
+      component.smsGateway.set("gw1");
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("Phone number is required");
+      expect(fixture.nativeElement.textContent).not.toContain("international format");
     });
   });
 

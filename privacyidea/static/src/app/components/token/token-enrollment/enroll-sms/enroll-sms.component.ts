@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -93,12 +93,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
 
   phoneNumberForm = form(this.phoneNumber, (f) => {
     required(f);
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" }];
-      return [];
-    });
+    pattern(f, /^\+?[1-9]\d{1,14}$/);
     disabled(f, () => this.disabled() || this.readNumberDynamically());
   });
 

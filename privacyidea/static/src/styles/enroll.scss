@@ -6,6 +6,14 @@
   margin-bottom: 16px;
 }
 
+// A checkbox in a row of form fields: centred on the input box of the fields, not on the box plus its message line.
+.checkbox-beside-field {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: var(--mat-form-field-container-height, 56px);
+}
+
 .inline-hint {
   margin-bottom: 16px;
   background: var(--inline-hint-bg);
