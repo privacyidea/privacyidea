@@ -21,7 +21,7 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   EmailApiPayloadMapper,
@@ -32,6 +32,8 @@ import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollm
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: "email";
@@ -52,6 +54,8 @@ export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> i
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
   private router = inject(Router);
 
   enrollmentData = input<EmailEnrollmentData>();
@@ -63,11 +67,7 @@ export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> i
   readEmailDynamicallyForm = form(this.readEmailDynamically);
   emailAddressForm = form(this.emailAddress, (f) => {
     required(f);
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return [{ kind: "invalidEmail" }];
-      return [];
-    });
+    pattern(f, /^[^\s@]+@[^\s@]+\.[^\s@]+$/);
     disabled(f, () => this.disabled() || this.readEmailDynamically());
   });
 
