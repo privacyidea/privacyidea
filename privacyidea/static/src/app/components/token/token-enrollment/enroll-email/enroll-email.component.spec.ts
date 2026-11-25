@@ -24,8 +24,9 @@ import { EnrollEmailComponent } from "./enroll-email.component";
 import { SystemService } from "@services/system/system.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
-import { clickCheckbox } from "@testing/enroll-form-dom";
+import { clickCheckbox, flushFixture, typeInto } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 describe("EnrollEmailComponent", () => {
   let component: EnrollEmailComponent;
@@ -75,14 +76,37 @@ describe("EnrollEmailComponent", () => {
     });
   });
 
-  it("writes a click on the checkbox to the model, marks it dirty and drops the address field", async () => {
-    expect(fixture.nativeElement.querySelector("input[matInput]")).not.toBeNull();
+  it("writes a click on the checkbox to the model, marks it dirty and disables the address field", async () => {
+    expect(fixture.nativeElement.querySelector("input[matInput]").disabled).toBe(false);
 
     await clickCheckbox(fixture);
 
     expect(component.readEmailDynamically()).toBe(true);
     expect(component.readEmailDynamicallyForm().dirty()).toBe(true);
-    expect(fixture.nativeElement.querySelector("input[matInput]")).toBeNull();
+    expect(fixture.nativeElement.querySelector("input[matInput]").disabled).toBe(true);
+  });
+
+  it("renders only the required error for an empty address on enrollment", async () => {
+    expect(component.buildEnrollmentArgs({ type: "email" } as TokenEnrollmentData)).toBeNull();
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("Email Address is required");
+    expect(fixture.nativeElement.textContent).not.toContain("name@example.com");
+  });
+
+  it("renders only the format error for a malformed address on enrollment", async () => {
+    await typeInto(fixture, fixture.nativeElement.querySelector("input[matInput]"), "name@example");
+    expect(component.buildEnrollmentArgs({ type: "email" } as TokenEnrollmentData)).toBeNull();
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("Enter an email address like name@example.com.");
+    expect(fixture.nativeElement.textContent).not.toContain("Email Address is required");
+  });
+
+  it("accepts an address with a dot in the domain", async () => {
+    await typeInto(fixture, fixture.nativeElement.querySelector("input[matInput]"), "name@example.com");
+
+    expect(component.buildEnrollmentArgs({ type: "email" } as TokenEnrollmentData)).not.toBeNull();
   });
 
   it("passes the axe accessibility checks", async () => {

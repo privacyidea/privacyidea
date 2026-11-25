@@ -40,17 +40,24 @@
     >
   }
 }
-<mat-checkbox
-  [formField]="readEmailDynamicallyForm"
-  i18n="@@token.readEmailDynamically"
-  >Read email dynamically from user source on each request</mat-checkbox
->
-@if (!readEmailDynamically()) {
+<div class="enroll-group">
   <mat-form-field class="input-width-l">
     <mat-label i18n="@@token.emailAddress">Email Address</mat-label>
     <input
       [formField]="emailAddressForm"
       matInput />
-    <mat-error i18n="@@token.emailAddressRequired">Email Address is <strong>required</strong>.</mat-error>
+    @if (hasError(emailAddressForm, ERR.required)) {
+      <mat-error i18n="@@token.emailAddressRequired">Email Address is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(emailAddressForm, ERR.pattern)) {
+      <mat-error i18n="@@token.emailAddressFormat">Enter an email address like name&#64;example.com.</mat-error>
+    }
   </mat-form-field>
-}
+  <div class="checkbox-beside-field">
+    <mat-checkbox
+      [formField]="readEmailDynamicallyForm"
+      i18n="@@token.readEmailDynamically"
+      >Read email dynamically from user source on each request</mat-checkbox
+    >
+  </div>
+</div>
