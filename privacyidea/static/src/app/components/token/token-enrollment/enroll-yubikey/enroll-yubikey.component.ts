@@ -19,7 +19,7 @@
 import { Component, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { form, FormField, required, validate } from "@angular/forms/signals";
+import { form, FormField, maxLength, minLength, required, validate } from "@angular/forms/signals";
 
 import { MatOptionModule } from "@angular/material/core";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -32,6 +32,8 @@ import {
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-enroll-yubikey",
@@ -48,6 +50,9 @@ export class EnrollYubikeyComponent extends EnrollTokenBase<YubikeyEnrollmentDat
 
   enrollmentData = input<YubikeyEnrollmentData>();
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
   testYubiKey = signal<string>("");
   otpKey = signal<string>("");
   otpLength = signal<number>(44);
@@ -55,7 +60,8 @@ export class EnrollYubikeyComponent extends EnrollTokenBase<YubikeyEnrollmentDat
   testYubiKeyForm = form(this.testYubiKey);
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length !== 32 ? [{ kind: "invalidLength" }] : []));
+    minLength(f, 32);
+    maxLength(f, 32);
   });
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
