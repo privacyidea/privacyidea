@@ -119,8 +119,8 @@ describe("EnrollQuestionnaireComponent", () => {
 
       expect(component.answersForm().touched()).toBe(true);
       expect(requirement().classList).toContain("enroll-text-error");
-      expect(requirement().textContent).toContain("Please answer at least 2 of the following questions (missing: 1):");
-      expect(requirement().querySelector("strong")?.textContent).toBe("1");
+      expect(requirement().textContent).toContain("Please answer at least 2 of the following questions - 1 missing:");
+      expect(requirement().querySelector("strong")?.textContent).toBe("1 missing");
       expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
 
