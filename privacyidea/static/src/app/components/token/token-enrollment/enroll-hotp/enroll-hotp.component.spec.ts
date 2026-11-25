@@ -381,7 +381,7 @@ describe("EnrollHotpComponent", () => {
       createAndInit();
       expect(component.generateOnServerForm().dirty()).toBe(false);
 
-      await clickCheckbox(fixture, "mat-checkbox.server-checkbox");
+      await clickCheckbox(fixture, "mat-checkbox:last-of-type");
 
       expect(component.generateOnServer()).toBe(false);
       expect(component.generateOnServerForm().dirty()).toBe(true);
@@ -391,7 +391,7 @@ describe("EnrollHotpComponent", () => {
       (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
       createAndInit();
 
-      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+      await clickCheckbox(fixture, "mat-checkbox:not(:last-of-type)");
 
       expect(component.twoStepEnabled()).toBe(true);
       expect(component.twoStepEnabledForm().dirty()).toBe(true);
@@ -403,8 +403,8 @@ describe("EnrollHotpComponent", () => {
       auth.checkForceServerGenerateOTPKey.mockReturnValue(true);
       createAndInit();
 
-      expect(checkboxInput(fixture, "mat-checkbox.server-checkbox").disabled).toBe(true);
-      expect(checkboxInput(fixture, "mat-checkbox:not(.server-checkbox)").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:last-of-type").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:not(:last-of-type)").disabled).toBe(true);
     });
 
     it("writes the picked OTP length and hash algorithm to the model", async () => {

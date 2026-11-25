@@ -171,7 +171,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
     { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
     ENROLL_FORM_FIELD_OPTIONS
   ],
-  host: { class: "enroll-form" },
   templateUrl: "./token-enrollment.component.html",
   styleUrls: ["./token-enrollment.component.scss"],
   standalone: true
