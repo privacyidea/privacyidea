@@ -97,7 +97,7 @@ describe("EnrollRadiusComponent", () => {
       setRights([]);
 
       expect(hint().querySelector("a")).toBeNull();
-      expect(hint().textContent).toContain("Select a predefined RADIUS server configuration.");
+      expect(hint().textContent).toContain("The RADIUS request is forwarded to this RADIUS server.");
     });
   });
 

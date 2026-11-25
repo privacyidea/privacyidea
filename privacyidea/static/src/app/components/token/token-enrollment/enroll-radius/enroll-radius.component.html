@@ -38,15 +38,13 @@
     <mat-form-field class="input-width-xl">
       <mat-label i18n="@@token.radiusServerConfiguration">RADIUS Server Configuration</mat-label>
       @if (authService.actionAllowed("radiusserver_read")) {
-        <mat-hint i18n="@@token.selectPredefined"
-          >Select a predefined
-          <a [routerLink]="ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS"><strong>RADIUS server configuration.</strong></a> The
-          RADIUS request will be forwarded to this RADIUS server.</mat-hint
+        <mat-hint i18n="@@token.radiusRequestForwardedLink"
+          >The RADIUS request is forwarded to this
+          <a [routerLink]="ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS">RADIUS server</a>.</mat-hint
         >
       } @else {
-        <mat-hint i18n="@@token.selectPredefinedServer"
-          >Select a predefined <strong>RADIUS server configuration.</strong> The RADIUS request will be forwarded to
-          this RADIUS server.</mat-hint
+        <mat-hint i18n="@@token.radiusRequestForwarded"
+          >The RADIUS request is forwarded to this RADIUS server.</mat-hint
         >
       }
       <mat-select [formField]="radiusServerConfigurationForm">
