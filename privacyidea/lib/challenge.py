@@ -416,7 +416,7 @@ def cleanup_expired_challenges(chunk_size: int = None, age: int = None) -> int:
 def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
     """
     Cancel the enrollment via multichallenge for a given transaction_id by removing the challenge and the token or
-    container. If the challenge does not exist or does not contain the required data
+    container. If the challenge does not exist, is expired or does not contain the required data
     (enroll_via_multichallenge_optional=true), it returns False.
     """
     challenges = get_challenges(transaction_id=transaction_id)
@@ -432,6 +432,13 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         return False
 
     challenge = challenges[0]
+    # A successful cancellation ends the login with a success. After the challenge expired, the login is over: the
+    # enrollment stays, as it does after the cleanup removed the challenge.
+    if not challenge.is_valid():
+        log.warning("The challenge for transaction_id %s is expired, the enrollment is not cancelled.",
+                    transaction_id)
+        return False
+
     data = challenge.get_data()
 
     if not data or not isinstance(data, dict):

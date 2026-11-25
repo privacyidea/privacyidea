@@ -1204,9 +1204,9 @@ def multichallenge_enroll_via_validate(request, response):
     :param response:
     :return:
     """
-    # The user skipped the enrollment: the successful authentication of the cancellation ends the login. The request
-    # can also name the user, who has no token of the enrolled type anymore. Without this check, the enrollment
-    # would start again in the same response, and the user could never skip it.
+    # A cancel request never starts a new enrollment, whether the cancellation succeeded or not. The request can also
+    # name the user, who has no token of the enrolled type after a successful cancellation. The check is the same as
+    # in the view, which answers such a request with the cancellation only and never checks a password.
     if is_true(request.all_data.get("cancel_enrollment")):
         return response
 

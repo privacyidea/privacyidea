@@ -60,7 +60,7 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -1274,3 +1274,82 @@ class MultiChallengeEnrollTest(MyApiTestCase):
     @ldap3mock.activate
     def test_13_cancel_enroll_smartphone_with_user(self):
         self._cancel_enroll_with_user("smartphone")
+
+    @ldap3mock.activate
+    def test_14_false_cancel_enrollment_starts_enrollment(self):
+        """
+        Only a true value of cancel_enrollment makes a request a cancellation. A login with a false value starts the
+        enrollment that the policy requires, like a login without the parameter.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+        alice = User("alice", "ldaprealm")
+        self.addCleanup(self._remove_enrollments, alice)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.PASSTHRU: True, PolicyAction.ENROLL_VIA_MULTICHALLENGE: "hotp"})
+        self.addCleanup(delete_policy, "pol_multienroll")
+
+        for value in ["0", "false"]:
+            with self.subTest(cancel_enrollment=value):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "alice", "pass": "alicepw",
+                                                         "cancel_enrollment": value}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res)
+                    result = res.json["result"]
+                    self.assertFalse(result["value"], res.json)
+                    self.assertEqual(AUTH_RESPONSE.CHALLENGE, result["authentication"], res.json)
+                    detail = res.json["detail"]
+                    self.assertEqual("hotp", detail["type"], detail)
+                self.reset_flask_g()
+                tokens = get_tokens(user=alice)
+                self.assertEqual(1, len(tokens))
+                self.assertEqual(detail["serial"], tokens[0].get_serial())
+                self._remove_enrollments(alice)
+
+    @ldap3mock.activate
+    def test_15_cancel_expired_enrollment(self):
+        """
+        The cancellation of an enrollment whose challenge expired fails: the login is over, and the token stays, as
+        after the cleanup of the challenge.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+        alice = User("alice", "ldaprealm")
+        self.addCleanup(self._remove_enrollments, alice)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.PASSTHRU: True,
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE: "hotp",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: True})
+        self.addCleanup(delete_policy, "pol_multienroll")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            serial = detail["serial"]
+        self.reset_flask_g()
+        force_expire_challenges(transaction_id)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": 1}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json["result"]
+            self.assertFalse(result["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"], res.json)
+            self.assertIn("Failed to cancel enrollment via multichallenge", res.json["detail"]["message"])
+        self.reset_flask_g()
+
+        tokens = get_tokens(user=alice)
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(serial, tokens[0].get_serial())
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED,
+                                                      AuthEventType.ENROLLMENT_CANCELED_FAIL],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_CANCELED_FAIL], user=alice,
+                                        transaction_id=transaction_id, endpoint='/validate/check')
