@@ -64,7 +64,7 @@ from uuid import uuid4
 import redis as redis_lib
 
 from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature, redis_feature_configured
-from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword, verify_pass_hash
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword, verify_with_pepper
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models.utils import utc_now
 
@@ -307,13 +307,13 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
         if last_auth and record["last_auth"] <= last_auth:
             continue
         try:
-            if not verify_pass_hash(password, record["authentication"]):
+            if not verify_with_pepper(record["authentication"], password):
                 continue
         except ValueError:
             # Not a hash any configured algorithm can read, either unrecognised or
             # malformed - the same case the database path treats as an old entry and
             # discards. An over-long password does not arrive here, because
-            # verify_pass_hash() answers that with False.
+            # verify_with_pepper() answers that with False.
             log.debug(f"Discarding an unreadable authentication cache entry for {username!s}@{realm!s}.")
             _forget(client, key, [entry_id])
             continue
@@ -392,7 +392,7 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             doomed.append(entry_id)
         else:
             try:
-                if verify_pass_hash(password, record["authentication"]):
+                if verify_with_pepper(record["authentication"], password):
                     doomed.append(entry_id)
             except ValueError:
                 # The stored value can not be read, so it can never verify again

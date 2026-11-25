@@ -3,6 +3,8 @@ This test file tests the lib.auth_cache.py
 
 The lib.auth_cache.py only depends on the database model.
 """
+from unittest import mock
+
 from .base import MyTestCase
 
 from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
@@ -11,7 +13,7 @@ from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        cleanup, get_idle_limit, parse_auth_cache_value)
 from passlib.hash import argon2, pbkdf2_sha512
 from privacyidea.lib.crypto import (DEFAULT_HASH_ALGO_LIST, DEFAULT_HASH_ALGO_PARAMS,
-                                    verify_pass_hash)
+                                    pass_hash, verify_pass_hash, verify_with_pepper)
 from privacyidea.models import AuthCache
 import datetime
 
@@ -50,7 +52,7 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertTrue(verify_pass_hash(self.password, auth.authentication))
+        self.assertTrue(verify_with_pepper(auth.authentication, self.password))
 
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
@@ -139,6 +141,34 @@ class AuthCacheTestCase(MyTestCase):
         # should be deleted. Not the 2 minutes old.
         r = cleanup(10)
         self.assertEqual(1, r)
+
+    def test_01a_the_stored_entry_is_hashed_with_the_pepper(self):
+        self.addCleanup(cleanup, 0)
+        with mock.patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            entry_id = add_to_cache(self.username, self.realm, self.resolver, self.password)
+            stored = AuthCache.query.filter(AuthCache.id == entry_id).one().authentication
+            self.assertTrue(verify_with_pepper(stored, self.password))
+            self.assertFalse(verify_pass_hash(self.password, stored))
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver, self.password))
+
+    def test_01b_an_entry_hashed_without_the_pepper_is_not_accepted(self):
+        self.addCleanup(cleanup, 0)
+        with mock.patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            self._store_entry(pass_hash(self.password))
+            self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+            # a real authentication caches a peppered entry, which then verifies
+            add_to_cache("grandpa", self.realm, self.resolver, self.password)
+            self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+
+    def test_01d_a_peppered_entry_is_deleted_by_its_password(self):
+        self.addCleanup(cleanup, 0)
+        with mock.patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            self._clear_cache()
+            add_to_cache(self.username, self.realm, self.resolver, self.password)
+            self.assertEqual(1, AuthCache.query.filter(AuthCache.username == self.username).count())
+            # No limit and no time window, so only the matching password can delete the entry
+            self.assertEqual(1, delete_from_cache(self.username, self.realm, self.resolver, self.password))
+            self.assertEqual(0, AuthCache.query.filter(AuthCache.username == self.username).count())
 
     def test_05_old_hashes(self):
         from privacyidea.lib.crypto import hash

@@ -13,7 +13,7 @@ from testfixtures import Replace, test_datetime
 
 from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.crypto import verify_pass_hash
+from privacyidea.lib.crypto import verify_with_pepper
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.config import (set_privacyidea_config,
@@ -2690,7 +2690,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Check that there is an entry with this OTP value in the auth_cache
         cached_auths = AuthCache.query.filter(AuthCache.username == "cornelius", AuthCache.realm == self.realm1).all()
-        self.assertTrue(any(verify_pass_hash(OTPs[1], cached_auth.authentication)
+        self.assertTrue(any(verify_with_pepper(cached_auth.authentication, OTPs[1])
                             for cached_auth in cached_auths))
 
         # Authenticate again with the same OTP
@@ -2738,7 +2738,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # Check that there is no entry with this OTP value in the auth_cache. A hash carries a
         # random salt, so a stored entry never equals a freshly computed hash and has to be
         # verified against instead.
-        self.assertFalse(any(verify_pass_hash(OTPs[2], entry.authentication)
+        self.assertFalse(any(verify_with_pepper(entry.authentication, OTPs[2])
                              for entry in AuthCache.query.all()))
 
         # Authenticate again with the same OTP value will fail

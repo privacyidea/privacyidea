@@ -29,7 +29,7 @@ from sqlalchemy import update, select, delete
 from ..models import AuthCache, db
 from ..models.utils import utc_now
 from .cache import auth as redis_auth_cache
-from .crypto import pass_hash, verify_pass_hash
+from .crypto import hash_with_pepper, verify_with_pepper
 from .utils import parse_timedelta
 
 log = logging.getLogger(__name__)
@@ -78,8 +78,9 @@ def get_idle_limit(value: str) -> datetime.timedelta:
 
 def _hash_password(password):
     # The same hash algorithm and parameters the rest of privacyIDEA uses for passwords
-    # and PINs, so PI_HASH_ALGO_LIST and PI_HASH_ALGO_PARAMS apply here as well.
-    return pass_hash(password)
+    # and PINs, so PI_HASH_ALGO_LIST and PI_HASH_ALGO_PARAMS apply here as well. The
+    # password is peppered with PI_PEPPER, so a stolen table can not be attacked without it.
+    return hash_with_pepper(password)
 
 
 def add_to_cache(username: str, realm: str, resolver: str, password: str,
@@ -161,7 +162,7 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
                 delete_entry = True
             elif last_valid_cache_time and cached_auth.first_auth < last_valid_cache_time:
                 delete_entry = True
-            elif verify_pass_hash(password, cached_auth.authentication):
+            elif verify_with_pepper(cached_auth.authentication, password):
                 delete_entry = True
 
         except ValueError:
@@ -169,7 +170,7 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             # it, or one does but the value is malformed. passlib raises UnknownHashError
             # for the first and a plain ValueError for the second, and both mean the entry
             # can never verify again. An over-long password does not arrive here, because
-            # verify_pass_hash() answers that with False.
+            # verify_with_pepper() answers that with False.
             log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             delete_entry = True
         if delete_entry:
@@ -235,7 +236,7 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
 
     for cached_auth in cached_auths:
         try:
-            result = verify_pass_hash(password, cached_auth.authentication)
+            result = verify_with_pepper(cached_auth.authentication, password)
         except ValueError:
             # Both an unrecognised and a malformed stored value land here, see
             # delete_from_cache()

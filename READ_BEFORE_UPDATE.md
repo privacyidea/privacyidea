@@ -41,6 +41,15 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **The authentication cache is now peppered.** The `auth_cache` policy hashes the cached credential with `PI_PEPPER`
+  from your `pi.cfg`, like the passwords of local administrators, in the database and in the Redis storage. With a
+  secret `PI_PEPPER`, a database dump alone no longer allows an offline attack on the cached password hash. Unless
+  `PI_PEPPER` is set to an empty string, the existing cache entries do not match anymore. Each user needs one more
+  authentication against the user store or with the token, then a new entry is cached. The old entries stay until the
+  policy window ends or `pi-manage config authcache cleanup` removes them. There is no schema change. Only an
+  installation that sets `PI_PEPPER = ''` explicitly is unaffected. Changing `PI_PEPPER` later invalidates all cache
+  entries.
+
 ## Update from 3.14 to 3.14.1
 
 If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)
