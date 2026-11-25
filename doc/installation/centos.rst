@@ -108,7 +108,8 @@ In order to setup privacyIDEA a configuration file must be added in
     # Signs the JWTs issued by /auth (changing it invalidates all issued JWTs)
     #SECRET_KEY = 't0p s3cr3t'
     # Pepper for the hashes of the local admin passwords, the password reset
-    # codes and the API key secrets (changing it invalidates all of them)
+    # codes, the API key secrets and the authentication cache entries
+    # (changing it invalidates all of them)
     #PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
     PI_ENCFILE = '/etc/privacyidea/enckey'

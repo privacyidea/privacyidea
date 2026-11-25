@@ -1,3 +1,13 @@
+Version 3.15
+
+  Hardening:
+  * The `auth_cache` policy hashes the cached credential with the `PI_PEPPER` of the `pi.cfg`, in the database and in
+    the Redis storage, like the passwords of local administrators. With a secret `PI_PEPPER`, write access to the
+    database does not allow to create a valid hash for a chosen password, and a database dump alone does not allow
+    an offline attack on the cached password hash. Unless `PI_PEPPER` is set to an empty string, existing cache
+    entries do not match anymore and are created again with the next authentication against the user store or the
+    token (#5925)
+
 Version 3.14.1
 
   Features:

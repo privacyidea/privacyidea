@@ -61,6 +61,30 @@ This way a database administrator is not able to inject rogue password hashes.
 
 The admin password hashing is performed in *lib.crypto:hash_with_pepper*.
 
+Authentication Cache
+~~~~~~~~~~~~~~~~~~~~
+
+If the policy ``auth_cache`` is set (see :ref:`policy_auth_cache`), privacyIDEA
+caches the credential of a successful authentication as a hash.
+The hash is created like the administrator password hash, with the pepper from
+the pi.cfg file. This holds for the database and for the Redis storage of the
+authentication cache.
+
+This way a database administrator is not able to create a valid hash for a
+password of their choice without the pi.cfg file.
+A database dump alone does not allow an offline attack on the hash of the
+cached user store password.
+This holds only if ``PI_PEPPER`` is set to a secret value.
+If ``PI_PEPPER`` is not set, privacyIDEA uses the fixed string ``missing``.
+If it is empty, the cache hash contains no pepper.
+Both cases give no protection.
+The hash is not bound to the user.
+Entries that were created without a pepper do not match anymore after the
+pepper is set or changed.
+
+The authentication cache hashing is performed in *lib.crypto:hash_with_pepper*
+and checked in *lib.crypto:verify_with_pepper*.
+
 .. _faq_crypto_audit:
 
 Audit Signing

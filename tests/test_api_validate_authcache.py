@@ -15,10 +15,13 @@ to nothing else.
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from passlib.hash import argon2
+import datetime
+from unittest import mock
+
 
 from privacyidea.lib.authcache import add_to_cache
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.crypto import pass_hash, verify_with_pepper
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
@@ -28,7 +31,7 @@ from privacyidea.lib.tokens.pushtoken import (POLL_ONLY, PRIVATE_KEY_SERVER, PUB
                                              strip_pem_headers)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import b32encode_and_unicode, to_unicode
-from privacyidea.models import AuthCache
+from privacyidea.models import AuthCache, db
 from .base import MyApiTestCase
 
 
@@ -62,7 +65,7 @@ class AuthCacheCredentialTestCase(MyApiTestCase):
     def _cache_holds(self, username: str, credential: str) -> bool:
         """Whether any entry of that user verifies the given credential. A hash only
         answers "does this string verify", so the credential has to be presented."""
-        return any(argon2.verify(credential, row.authentication)
+        return any(verify_with_pepper(row.authentication, credential)
                    for row in AuthCache.query.filter(AuthCache.username == username).all())
 
     def _drop_tokens(self, username: str) -> None:
@@ -312,6 +315,25 @@ class AuthCacheCredentialTestCase(MyApiTestCase):
         self.assertTrue(second["result"]["value"], second)
         self.assertEqual("Authenticated by AuthCache.", second["detail"]["message"])
 
+        delete_policy("passthru")
+
+    def test_07a_an_entry_hashed_without_the_pepper_does_not_authenticate(self):
+        """An entry that was cached before the pepper was applied must not be served: the
+        request goes on to the real check, which rejects the chosen password."""
+        self._drop_tokens("cornelius")
+        set_policy("passthru", scope=SCOPE.AUTH, action=f"{PolicyAction.PASSTHRU}=userstore")
+        set_policy("authcache", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4m")
+        chosen = "live-check-chosen-pw"
+        user = User("cornelius", self.realm1)
+        now = datetime.datetime.utcnow()
+        with mock.patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            row_id = AuthCache(user.login, user.realm, user.resolver, pass_hash(chosen),
+                               first_auth=now - datetime.timedelta(minutes=1),
+                               last_auth=now - datetime.timedelta(minutes=1)).save()
+            self.addCleanup(lambda: (AuthCache.query.filter(AuthCache.id == row_id).delete(),
+                                     db.session.commit()))
+            res = self._validate({"user": "cornelius", "realm": self.realm1, "pass": chosen})
+        self.assertFalse(res["result"]["value"], res)
         delete_policy("passthru")
 
     def test_08_otppin_userstore_caches_password_and_otp(self):

@@ -42,6 +42,7 @@ import redis as redis_lib
 from passlib.hash import pbkdf2_sha512
 
 from privacyidea.lib.authcache import add_to_cache, delete_from_cache, verify_in_cache
+from privacyidea.lib.crypto import pass_hash, verify_pass_hash, verify_with_pepper
 from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled, add_to_cache as redis_add_to_cache
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
@@ -267,6 +268,43 @@ class RedisAuthCacheTestCase(MyTestCase):
         # Neither the argon2 hash nor its recognisable prefix may be readable
         self.assertNotIn("argon2", records[0])
         self.assertNotIn("first_auth", records[0])
+
+    def _stored_hashes(self):
+        """The hashes of the entries Redis holds for the test user, decrypted."""
+        import json
+        from privacyidea.lib.crypto import decryptPassword
+        return [json.loads(decryptPassword(value))["authentication"]
+                for field, value in self._real_client.hgetall(self._key()).items()
+                if field.startswith("entry:")]
+
+    def test_11aa_the_stored_entry_is_hashed_with_the_pepper(self):
+        with auth_cache_in_store(self._real_client), \
+                patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            add_to_cache(self.username, self.realm, self.resolver, self.password)
+            stored = self._stored_hashes()
+            self.assertEqual(1, len(stored))
+            self.assertTrue(verify_with_pepper(stored[0], self.password))
+            self.assertFalse(verify_pass_hash(self.password, stored[0]))
+            first_auth, last_auth = self._windows()
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver, self.password,
+                                            first_auth=first_auth, last_auth=last_auth))
+
+    def test_11ab_an_entry_hashed_without_the_pepper_is_not_accepted(self):
+        with auth_cache_in_store(self._real_client), \
+                patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            redis_add_to_cache(self.username, self.realm, self.resolver, pass_hash(self.password))
+            first_auth, last_auth = self._windows()
+            self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver, self.password,
+                                             first_auth=first_auth, last_auth=last_auth))
+
+    def test_11ac_a_peppered_entry_is_deleted_by_its_password(self):
+        with auth_cache_in_store(self._real_client), \
+                patch.dict(self.app.config, {"PI_PEPPER": "live-check-pepper"}):
+            add_to_cache(self.username, self.realm, self.resolver, self.password)
+            self.assertEqual(1, len(self._stored_hashes()))
+            # No limit and no time window, so only the matching password can delete the entry
+            self.assertEqual(1, delete_from_cache(self.username, self.realm, self.resolver, self.password))
+            self.assertEqual([], self._stored_hashes())
 
     def test_11a_an_entry_of_another_configured_algorithm_verifies(self):
         # The entries are read with every algorithm of PI_HASH_ALGO_LIST, exactly as on the

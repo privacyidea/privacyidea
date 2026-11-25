@@ -36,8 +36,9 @@ The file should contain the following contents::
    # Signs the JWT that /auth issues. Use the same value on all processes and nodes.
    # Generate a random value, see below
    # SECRET_KEY = ...
-   # Added to local admin passwords, password reset codes and API key secrets
-   # before they are hashed. Changing it invalidates all of them.
+   # Added to local admin passwords, password reset codes, API key secrets and
+   # authentication cache entries before they are hashed. Changing it
+   # invalidates all of them.
    # Generate a random value, see below
    # PI_PEPPER = ...
    # This is used to encrypt the token data and token passwords
