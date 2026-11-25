@@ -24,6 +24,7 @@ import { EnrollIndexedsecretComponent } from "./enroll-indexedsecret.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { axe } from "@testing/axe";
+import { flushFixture, typeInto } from "@testing/enroll-form-dom";
 
 describe("EnrollIndexedsecretComponent", () => {
   let component: EnrollIndexedsecretComponent;
@@ -46,6 +47,24 @@ describe("EnrollIndexedsecretComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("renders only the required error for an empty secret once the field was touched", async () => {
+    fixture.nativeElement.querySelector("textarea").dispatchEvent(new Event("blur"));
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("Secret is required");
+    expect(fixture.nativeElement.textContent).not.toContain("at least 16 characters");
+  });
+
+  it("renders only the length error for a secret shorter than 16 characters", async () => {
+    const textarea = fixture.nativeElement.querySelector("textarea");
+    await typeInto(fixture, textarea, "short");
+    textarea.dispatchEvent(new Event("blur"));
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("Secret must be at least 16 characters long.");
+    expect(fixture.nativeElement.textContent).not.toContain("Secret is required");
   });
 
   it("passes the axe accessibility checks", async () => {

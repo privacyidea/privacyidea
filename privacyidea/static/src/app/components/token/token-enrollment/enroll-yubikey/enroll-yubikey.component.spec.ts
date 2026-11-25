@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
-import { typeInto } from "@testing/enroll-form-dom";
+import { flushFixture, typeInto } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
 
 describe("EnrollYubikeyComponent", () => {
@@ -53,6 +53,36 @@ describe("EnrollYubikeyComponent", () => {
     expect(component.testYubiKey()).toBe("x".repeat(40));
     expect(component.testYubiKeyForm().dirty()).toBe(true);
     expect(component.otpLength()).toBe(40);
+  });
+
+  describe("OTP key errors", () => {
+    const otpKeyInput = () => fixture.nativeElement.querySelectorAll("input[matInput]")[2] as HTMLInputElement;
+
+    it("renders only the required error for an empty OTP key once the field was touched", async () => {
+      otpKeyInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).not.toContain("exactly 32 characters");
+    });
+
+    it.each([
+      ["shorter", "a".repeat(31)],
+      ["longer", "a".repeat(33)]
+    ])("renders only the length error for an OTP key %s than 32 characters", async (_, value) => {
+      await typeInto(fixture, otpKeyInput(), value);
+      otpKeyInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be exactly 32 characters long.");
+      expect(fixture.nativeElement.textContent).not.toContain("OTP key is required");
+    });
+
+    it("accepts an OTP key of exactly 32 characters", async () => {
+      await typeInto(fixture, otpKeyInput(), "a".repeat(32));
+
+      expect(component.otpKeyForm().valid()).toBe(true);
+    });
   });
 
   it("passes the axe accessibility checks", async () => {

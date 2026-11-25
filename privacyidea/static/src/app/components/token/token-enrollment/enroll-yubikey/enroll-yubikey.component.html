@@ -40,8 +40,11 @@
       i18n-placeholder="@@token.enterOtpKey"
       matInput
       placeholder="Enter OTP key" />
-    <mat-error i18n="@@token.otpKeyRequiredMust"
-      >OTP key is <strong>required</strong> and must be 32 characters long.</mat-error
-    >
+    @if (hasError(otpKeyForm, ERR.required)) {
+      <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(otpKeyForm, ERR.minLength) || hasError(otpKeyForm, ERR.maxLength)) {
+      <mat-error i18n="@@token.otpKeyMust32">OTP key must be exactly 32 characters long.</mat-error>
+    }
   </mat-form-field>
 </div>
