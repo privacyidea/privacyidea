@@ -146,6 +146,17 @@ describe("EnrollAspComponent", () => {
     });
   });
 
+  it("should show the required error for an empty password on enrollment", async () => {
+    serviceIdService.serviceIds.set([{ servicename: "mail", description: "" }]);
+    component.serviceId.set("mail");
+    await clickCheckbox(fixture);
+
+    expect(component.buildEnrollmentArgs({ type: "applspec" } as TokenEnrollmentData)).toBeNull();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Password is required");
+  });
+
   it("writes a click on the checkbox to the model and enables the password field", async () => {
     await clickCheckbox(fixture);
 
