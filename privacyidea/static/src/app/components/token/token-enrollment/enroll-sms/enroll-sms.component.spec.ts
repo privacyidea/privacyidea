@@ -21,7 +21,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HttpResourceRef, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
-import { ValidationError } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
 import { AuthData, AuthService } from "@services/auth/auth.service";
@@ -36,6 +35,7 @@ import { EnrollSmsComponent } from "./enroll-sms.component";
 import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
 import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
@@ -187,25 +187,28 @@ describe("EnrollSmsComponent", () => {
   });
 
   describe("phoneNumberForm validation", () => {
-    it("should reject malformed numbers", () => {
-      component.phoneNumber.set("abc");
-      expect(
-        component
-          .phoneNumberForm()
-          .errors()
-          .some((e: ValidationError) => e.kind === ERR.pattern)
-      ).toBe(true);
+    const hasPatternError = () => hasError(component.phoneNumberForm, ERR.pattern);
+
+    it.each([
+      "+4915112345678",
+      "004915112345678",
+      "0170 1234567",
+      "0170/1234567",
+      "+49 170-123 45 67",
+      "0170 - 1234567",
+      "00491701234567890123"
+    ])("accepts %s", (phone) => {
+      component.phoneNumber.set(phone);
+      expect(hasPatternError()).toBe(false);
     });
 
-    it("should accept E.164-style numbers", () => {
-      component.phoneNumber.set("+4915112345678");
-      expect(
-        component
-          .phoneNumberForm()
-          .errors()
-          .some((e: ValidationError) => e.kind === ERR.pattern)
-      ).toBe(false);
-    });
+    it.each(["abc", "0170.1234567", "+49 (0) 170 1234567", "49+1701234567", " 01701234567", "0170 1234567 ", "+"])(
+      "rejects %s",
+      (phone) => {
+        component.phoneNumber.set(phone);
+        expect(hasPatternError()).toBe(true);
+      }
+    );
   });
 
   describe("onSmsConfigKeydown", () => {
@@ -260,11 +263,11 @@ describe("EnrollSmsComponent", () => {
 
     it("renders the format error, not the required error, for a malformed phone number", async () => {
       component.smsGateway.set("gw1");
-      component.phoneNumber.set("0170 1234567");
+      component.phoneNumber.set("0170.1234567");
       expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
       await flushFixture(fixture);
 
-      expect(fixture.nativeElement.textContent).toContain("international format");
+      expect(fixture.nativeElement.textContent).toContain("a leading +");
       expect(fixture.nativeElement.textContent).not.toContain("Phone number is required");
     });
 
@@ -274,7 +277,7 @@ describe("EnrollSmsComponent", () => {
       await flushFixture(fixture);
 
       expect(fixture.nativeElement.textContent).toContain("Phone number is required");
-      expect(fixture.nativeElement.textContent).not.toContain("international format");
+      expect(fixture.nativeElement.textContent).not.toContain("a leading +");
     });
   });
 

@@ -39,6 +39,12 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 
+/**
+ * Digits with an optional leading + and spaces, dashes or slashes between digits. Loose on purpose: the API stores the
+ * number as given and an SMS gateway can rewrite it for its provider with its REGEXP option.
+ */
+const PHONE_NUMBER_PATTERN = /^\+?\d([\d /-]*\d)?$/;
+
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
   smsGateway: string;
@@ -93,7 +99,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
 
   phoneNumberForm = form(this.phoneNumber, (f) => {
     required(f);
-    pattern(f, /^\+?[1-9]\d{1,14}$/);
+    pattern(f, PHONE_NUMBER_PATTERN);
     disabled(f, () => this.disabled() || this.readNumberDynamically());
   });
 
