@@ -47,7 +47,10 @@
     i18n-placeholder="@@token.enter12DigitIdentifier"
     matInput
     placeholder="Enter the 12 digit identifier" />
-  <mat-error i18n="@@token.yubikeyIdentifier12"
-    >Yubikey identifier with 12 digits is <strong>required</strong>.</mat-error
-  >
+  @if (hasError(yubicoIdentifierForm, ERR.required)) {
+    <mat-error i18n="@@token.yubikeyIdentifierRequired">Yubikey identifier is <strong>required</strong>.</mat-error>
+  }
+  @if (hasError(yubicoIdentifierForm, ERR.minLength) || hasError(yubicoIdentifierForm, ERR.maxLength)) {
+    <mat-error i18n="@@token.yubikeyIdentifierMust12">Yubikey identifier must be exactly 12 characters long.</mat-error>
+  }
 </mat-form-field>
