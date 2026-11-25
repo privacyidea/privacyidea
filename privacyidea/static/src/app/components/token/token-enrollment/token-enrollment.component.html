@@ -71,44 +71,42 @@
         }
       </div>
 
-      <div class="flex-row gap-16">
-        @if (authService.actionAllowed("enrollpin") && showPinFields()) {
-          <app-enrollment-pin
-            [setPinControl]="setPinForm"
-            [repeatPinControl]="repeatPinForm" />
-        }
+      @if (authService.actionAllowed("enrollpin") && showPinFields()) {
+        <app-enrollment-pin
+          [setPinControl]="setPinForm"
+          [repeatPinControl]="repeatPinForm" />
+      }
 
-        @if (authService.actionAllowed("container_list")) {
-          <div class="flex-column">
-            <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
-            <mat-form-field class="input-width-l">
-              <app-clearable-input
-                (clearButtonClick)="clearContainer()"
-                [showClearButton]="selectedContainer() !== ''">
-                <input
-                  [formField]="selectedContainerForm"
-                  [matAutocomplete]="containerAuto"
-                  matInput />
-              </app-clearable-input>
-              <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
-              <mat-autocomplete #containerAuto="matAutocomplete">
-                @if (authService.actionAllowed("container_create")) {
-                  <mat-option
-                    class="create-container-option"
-                    [value]="selectedContainer()"
-                    (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
-                    <mat-icon>add</mat-icon>
-                    <span i18n="@@container.createNewContainerOption">Create new container</span>
-                  </mat-option>
-                }
-                @for (option of containerService.containersForTokenType(); track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
-          </div>
-        }
-      </div>
+      @if (authService.actionAllowed("container_list")) {
+        <div class="flex-column">
+          <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
+          <mat-form-field class="input-width-l">
+            <app-clearable-input
+              (clearButtonClick)="clearContainer()"
+              [showClearButton]="selectedContainer() !== ''">
+              <input
+                [formField]="selectedContainerForm"
+                [matAutocomplete]="containerAuto"
+                matInput />
+            </app-clearable-input>
+            <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
+            <mat-autocomplete #containerAuto="matAutocomplete">
+              @if (authService.actionAllowed("container_create")) {
+                <mat-option
+                  class="create-container-option"
+                  [value]="selectedContainer()"
+                  (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
+                  <mat-icon>add</mat-icon>
+                  <span i18n="@@container.createNewContainerOption">Create new container</span>
+                </mat-option>
+              }
+              @for (option of containerService.containersForTokenType(); track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+      }
 
       <div>
         <mat-accordion>
