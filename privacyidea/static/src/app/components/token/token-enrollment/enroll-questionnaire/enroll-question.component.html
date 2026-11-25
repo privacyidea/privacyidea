@@ -40,21 +40,29 @@
     >
   }
 } @else {
-  <span i18n="@@token.pleaseAnswerLeast"
-    >Please answer at least {{ configMinNumberOfAnswers() }} of the following questions:</span
-  >
+  <span
+    id="questionnaire-requirement"
+    aria-live="polite"
+    [class.enroll-text-error]="tooFewAnswers()">
+    @if (tooFewAnswers()) {
+      <span i18n="@@token.pleaseAnswerLeastMissing"
+        >Please answer at least {{ configMinNumberOfAnswers() }} of the following questions -
+        <strong>{{ missingCount() }} missing</strong>:</span
+      >
+    } @else {
+      <span i18n="@@token.pleaseAnswerLeast"
+        >Please answer at least {{ configMinNumberOfAnswers() }} of the following questions:</span
+      >
+    }
+  </span>
 }
 @for (row of answersForm; track row) {
   <mat-form-field class="input-width-xl">
     <mat-label>{{ row().value().question }}</mat-label>
     <input
       [formField]="row.answer"
+      aria-describedby="questionnaire-requirement"
       matInput
       type="text" />
   </mat-form-field>
-}
-@if (hasError(answersForm, ERR.required) && answersForm().touched()) {
-  <mat-error i18n="@@token.leastAnswersRequired"
-    >At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error
-  >
 }
