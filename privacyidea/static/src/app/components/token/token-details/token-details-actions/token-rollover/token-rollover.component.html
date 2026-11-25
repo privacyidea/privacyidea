@@ -21,7 +21,7 @@
   (actionTriggered)="rolloverToken()"
   [title]="title()"
   [actions]="dialogActions()">
-  <div>
+  <div class="enroll-sections">
     <app-enroll-token-type-switch
       [tokenTypeKey]="token()?.type ?? ''"
       [enrollmentData]="token()" />
