@@ -108,14 +108,36 @@ describe("EnrollQuestionnaireComponent", () => {
       expect(component.answersForm[1].answer().dirty()).toBe(true);
     });
 
-    it("refuses the build, touches the form and renders the error", async () => {
-      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+    it("refuses the build, touches the form and turns the requirement text into the error", async () => {
+      const requirement = () => fixture.nativeElement.querySelector("#questionnaire-requirement") as HTMLElement;
+      await typeInto(fixture, inputs()[0], "Rex");
+      expect(requirement().classList).not.toContain("enroll-text-error");
+      expect(requirement().textContent).not.toContain("missing");
 
       expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
       await flushFixture(fixture);
 
       expect(component.answersForm().touched()).toBe(true);
-      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("At least 2 answers");
+      expect(requirement().classList).toContain("enroll-text-error");
+      expect(requirement().textContent).toContain("Please answer at least 2 of the following questions (missing: 1):");
+      expect(requirement().querySelector("strong")?.textContent).toBe("1");
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+    });
+
+    it("keeps the requirement text an instruction while the answers are filled in", async () => {
+      await typeInto(fixture, inputs()[0], "Rex");
+      inputs()[0].dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      const requirement = fixture.nativeElement.querySelector("#questionnaire-requirement") as HTMLElement;
+      expect(requirement.classList).not.toContain("enroll-text-error");
+      expect(requirement.textContent).not.toContain("missing");
+    });
+
+    it("refers each answer to the requirement text", () => {
+      for (const input of inputs()) {
+        expect(input.getAttribute("aria-describedby")).toContain("questionnaire-requirement");
+      }
     });
 
     it("builds the answers of the filled rows only", async () => {

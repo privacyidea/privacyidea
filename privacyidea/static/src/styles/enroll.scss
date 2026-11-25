@@ -59,6 +59,11 @@
   display: contents;
 }
 
+// Running text in the colour of a form field error, e.g. a requirement the form does not meet yet.
+.enroll-text-error {
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
 // A checkbox in a row of form fields: centred on the input box of the fields, not on the box plus its message line.
 .checkbox-beside-field {
   display: flex;
