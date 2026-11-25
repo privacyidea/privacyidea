@@ -23,6 +23,7 @@ import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { flushFixture, typeInto } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
@@ -53,6 +54,52 @@ describe("EnrollYubikeyComponent", () => {
     expect(component.testYubiKey()).toBe("x".repeat(40));
     expect(component.testYubiKeyForm().dirty()).toBe(true);
     expect(component.otpLength()).toBe(40);
+  });
+
+  describe("OTP length", () => {
+    const otpLengthInput = () => fixture.nativeElement.querySelectorAll("input[matInput]")[1] as HTMLInputElement;
+    const testInput = () => fixture.nativeElement.querySelectorAll("input[matInput]")[0] as HTMLInputElement;
+
+    it("keeps the default of 44 without a pushed Yubikey OTP", async () => {
+      await flushFixture(fixture);
+
+      expect(component.otpLength()).toBe(44);
+      expect(otpLengthInput().value).toBe("44");
+    });
+
+    it("keeps a typed length", async () => {
+      await typeInto(fixture, otpLengthInput(), "50");
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(50);
+    });
+
+    it("leaves the length as it is for test input shorter than 32 characters", async () => {
+      await typeInto(fixture, otpLengthInput(), "50");
+      await typeInto(fixture, testInput(), "x".repeat(31));
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(50);
+    });
+
+    it("renders only the required error for an empty OTP length", async () => {
+      await typeInto(fixture, otpLengthInput(), "");
+      otpLengthInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP length is required");
+      expect(fixture.nativeElement.textContent).not.toContain("must be at least 32");
+    });
+
+    it("renders only the minimum error for an OTP length below 32", async () => {
+      await typeInto(fixture, otpLengthInput(), "31");
+      otpLengthInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP length must be at least 32.");
+      expect(fixture.nativeElement.textContent).not.toContain("OTP length is required");
+      expect(component.buildEnrollmentArgs({ type: "yubikey" } as TokenEnrollmentData)).toBeNull();
+    });
   });
 
   describe("OTP key errors", () => {
