@@ -16,17 +16,15 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  @if (authService.actionAllowed("configread") && !defaultTiQRIsSet()) {
-    <span
-      i18n="@@token.tiqrTokensWork"
-      class="inline-warning"
-      >For TiQR tokens to work properly you need to set the
-      <a
-        [routerLink]="ROUTE_PATHS.CONFIGURATION_TOKENTYPES"
-        fragment="tiqr"
-        >TiQR Token Config</a
-      >!</span
-    >
-  }
-</div>
+@if (authService.actionAllowed("configread") && !defaultTiQRIsSet()) {
+  <span
+    i18n="@@token.tiqrTokensWork"
+    class="inline-warning"
+    >For TiQR tokens to work properly you need to set the
+    <a
+      [routerLink]="ROUTE_PATHS.CONFIGURATION_TOKENTYPES"
+      fragment="tiqr"
+      >TiQR Token Config</a
+    >!</span
+  >
+}

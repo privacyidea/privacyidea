@@ -16,57 +16,51 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  <div class="flex-row gap-16">
-    <mat-form-field class="input-width-s">
-      <mat-label i18n="@@token.separator">Separator</mat-label>
-      <input
-        [formField]="separatorForm"
-        class="separator-input"
-        matInput
-        placeholder="|" />
-      <mat-error i18n="@@token.separatorRequired">Separator is <strong>required</strong>.</mat-error>
-    </mat-form-field>
-    <span
-      class="margin-top-16"
-      i18n="@@token.separatorUsed"
-      >The separator that is used to separate the passwords of the different tokens.</span
-    >
-  </div>
-  <h4 i18n="@@token.requiredRealms">Required Realms</h4>
+<div class="enroll-group">
+  <mat-form-field class="input-width-s">
+    <mat-label i18n="@@token.separator">Separator</mat-label>
+    <input
+      [formField]="separatorForm"
+      class="separator-input"
+      matInput
+      placeholder="|" />
+    <mat-error i18n="@@token.separatorRequired">Separator is <strong>required</strong>.</mat-error>
+  </mat-form-field>
   <span
-    class="required-realms-hint"
-    i18n="@@token.hereYouSelect"
-    >Here you can select how many tokens of which realm are required to perform a successful authentication.</span
+    class="margin-top-16"
+    i18n="@@token.separatorUsed"
+    >The separator that is used to separate the passwords of the different tokens.</span
   >
-  <div class="flex-row gap-16">
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@common.selectRealms">Select Realms</mat-label>
-      <mat-select
-        [formField]="requiredTokensOfRealmsForm"
-        multiple>
-        @for (realm of realmOptions(); track realm) {
-          <div class="required-realms-div">
-            <mat-option
-              [value]="realm"
-              class="required-realms-option">
-              <span>{{ realm }}</span>
-            </mat-option>
-            <input
-              [value]="getTokenCount(realm)"
-              (change)="setTokenCount(realm, +$event.target['value'])"
-              class="required-realms-input"
-              i18n-placeholder="@@common.tokens"
-              max="9"
-              min="1"
-              placeholder="Tokens"
-              type="number" />
-          </div>
-        }
-      </mat-select>
-      @if (hasError(requiredTokensOfRealmsForm, ERR.required)) {
-        <mat-error i18n="@@token.leastOneRealm">At least one realm is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
-  </div>
 </div>
+<h4 i18n="@@token.requiredRealms">Required Realms</h4>
+<span i18n="@@token.hereYouSelect"
+  >Here you can select how many tokens of which realm are required to perform a successful authentication.</span
+>
+<mat-form-field class="input-width-l">
+  <mat-label i18n="@@common.selectRealms">Select Realms</mat-label>
+  <mat-select
+    [formField]="requiredTokensOfRealmsForm"
+    multiple>
+    @for (realm of realmOptions(); track realm) {
+      <div class="required-realms-div">
+        <mat-option
+          [value]="realm"
+          class="required-realms-option">
+          <span>{{ realm }}</span>
+        </mat-option>
+        <input
+          [value]="getTokenCount(realm)"
+          (change)="setTokenCount(realm, +$event.target['value'])"
+          class="required-realms-input"
+          i18n-placeholder="@@common.tokens"
+          max="9"
+          min="1"
+          placeholder="Tokens"
+          type="number" />
+      </div>
+    }
+  </mat-select>
+  @if (hasError(requiredTokensOfRealmsForm, ERR.required)) {
+    <mat-error i18n="@@token.leastOneRealm">At least one realm is <strong>required</strong>.</mat-error>
+  }
+</mat-form-field>

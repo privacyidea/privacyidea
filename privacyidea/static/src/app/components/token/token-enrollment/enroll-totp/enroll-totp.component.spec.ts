@@ -395,7 +395,7 @@ describe("EnrollTotpComponent", () => {
     it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
       expect(component.generateOnServerForm().dirty()).toBe(false);
 
-      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+      await clickCheckbox(fixture, "mat-checkbox:last-of-type");
 
       expect(component.generateOnServer()).toBe(false);
       expect(component.generateOnServerForm().dirty()).toBe(true);

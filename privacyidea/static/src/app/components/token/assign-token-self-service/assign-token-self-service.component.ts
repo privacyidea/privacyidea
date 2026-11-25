@@ -47,8 +47,7 @@ import { ENROLL_FORM_FIELD_OPTIONS } from "@components/token/token-enrollment/to
   ],
   templateUrl: "./assign-token-self-service.component.html",
   styleUrl: "./assign-token-self-service.component.scss",
-  providers: [ENROLL_FORM_FIELD_OPTIONS],
-  host: { class: "enroll-form" }
+  providers: [ENROLL_FORM_FIELD_OPTIONS]
 })
 export class AssignTokenSelfServiceComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);

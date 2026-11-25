@@ -76,8 +76,7 @@ import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-se
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
     { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
     ENROLL_FORM_FIELD_OPTIONS
-  ],
-  host: { class: "enroll-form" }
+  ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
   protected override containerService: ContainerServiceInterface = inject(ContainerService);

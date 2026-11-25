@@ -16,39 +16,36 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  @if (!wizard()) {
-    <mat-checkbox
-      [formField]="generateOnServerForm"
-      class="server-checkbox"
-      i18n="@@token.generateStatic"
-      >Generate the static password on the Server</mat-checkbox
-    >
+@if (!wizard()) {
+  <mat-checkbox
+    [formField]="generateOnServerForm"
+    i18n="@@token.generateStatic"
+    >Generate the static password on the Server</mat-checkbox
+  >
+}
+
+<div class="enroll-group">
+  @if (!authService.checkForceServerGenerateOTPKey("applspec")) {
+    <mat-form-field class="input-width-l">
+      <mat-label i18n="@@token.applicationSpecific">Application Specific Password</mat-label>
+      <input
+        [formField]="otpKeyForm"
+        i18n-placeholder="@@token.enterStaticPassword"
+        matInput
+        placeholder="Enter static password" />
+    </mat-form-field>
   }
 
-  <div class="flex-row gap-16">
-    @if (!authService.checkForceServerGenerateOTPKey("applspec")) {
-      <mat-form-field class="input-width-l">
-        <mat-label i18n="@@token.applicationSpecific">Application Specific Password</mat-label>
-        <input
-          [formField]="otpKeyForm"
-          i18n-placeholder="@@token.enterStaticPassword"
-          matInput
-          placeholder="Enter static password" />
-      </mat-form-field>
-    }
-
-    <mat-form-field
-      class="input-width-l"
-      [matTooltip]="enrollmentBlockedReason() ?? ''"
-      [matTooltipDisabled]="!enrollmentBlockedReason()">
-      <mat-label i18n="@@common.serviceId">Service ID</mat-label>
-      <mat-select [formField]="serviceIdForm">
-        @for (option of serviceIdOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-select>
-      <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong>.</mat-error>
-    </mat-form-field>
-  </div>
+  <mat-form-field
+    class="input-width-l"
+    [matTooltip]="enrollmentBlockedReason() ?? ''"
+    [matTooltipDisabled]="!enrollmentBlockedReason()">
+    <mat-label i18n="@@common.serviceId">Service ID</mat-label>
+    <mat-select [formField]="serviceIdForm">
+      @for (option of serviceIdOptions(); track option) {
+        <mat-option [value]="option">{{ option }}</mat-option>
+      }
+    </mat-select>
+    <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong>.</mat-error>
+  </mat-form-field>
 </div>

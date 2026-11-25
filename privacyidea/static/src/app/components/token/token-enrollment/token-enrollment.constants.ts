@@ -30,7 +30,7 @@ export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
 };
 
 /**
- * Form fields of the enrollment forms take the height of their messages; the `enroll-form` class reserves one line
+ * Form fields of the enrollment forms take the height of their messages; within `enroll-sections` they reserve one line
  * for them. A longer hint or error moves the content below instead of covering it.
  */
 export const ENROLL_FORM_FIELD_OPTIONS: Provider = {

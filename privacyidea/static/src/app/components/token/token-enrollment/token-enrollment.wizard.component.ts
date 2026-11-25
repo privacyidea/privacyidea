@@ -70,8 +70,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss",
-  providers: [ENROLL_FORM_FIELD_OPTIONS],
-  host: { class: "enroll-form" }
+  providers: [ENROLL_FORM_FIELD_OPTIONS]
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected readonly http = inject(HttpClient);

@@ -9,7 +9,7 @@
 // The form fields of an enrollment form have dynamic message sizing (ENROLL_FORM_FIELD_OPTIONS). Each one holds one
 // message line from the start, so the spacing is the same without messages and a one-line message moves nothing.
 // A field keeps its own height in a row with a taller neighbour instead of stretching its box.
-.enroll-form .mat-mdc-form-field {
+.enroll-sections .mat-mdc-form-field {
   align-self: flex-start;
 
   .mat-mdc-form-field-subscript-wrapper {
@@ -17,15 +17,18 @@
   }
 }
 
-// Spacing of the token enrollment forms: 16px between all fields, groups and headings. Each field keeps its reserved
-// message area and the gap comes on top of it.
+// Spacing of the token enrollment forms: 16px between all fields, groups, headings and callouts. Each field keeps its
+// reserved message area and the gap comes on top of it.
 .enroll-sections {
   display: flex;
   flex-direction: column;
   gap: 16px;
 
-  > h4,
-  > .enroll-contents > h4 {
+  h4,
+  .inline-hint,
+  .inline-warning,
+  .inline-success,
+  .inline-callout {
     margin: 0;
   }
 }
@@ -47,6 +50,12 @@
 
 // Lets the children of a wrapper element take part in the layout of its parent, e.g. a component host.
 .enroll-contents {
+  display: contents;
+}
+
+// The host of the token type component in the switch, so that the fields of the type take part in the layout of the
+// form, and a type without fields adds nothing to it.
+.enroll-type-switch > * {
   display: contents;
 }
 

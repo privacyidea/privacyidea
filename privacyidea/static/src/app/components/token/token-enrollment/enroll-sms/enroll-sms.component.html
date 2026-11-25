@@ -16,61 +16,59 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column margin-bottom-16">
-  @if (!defaultSMSGatewayIsSet() && authService.role() === "admin") {
-    <span
-      i18n="@@token.easeEnrollment"
-      class="inline-hint"
-      >To ease the enrollment you can set default values in the
-      <a
-        role="button"
-        tabindex="0"
-        aria-label="Go to SMS token configuration"
-        i18n-aria-label="@@token.goSmsTokenConfiguration"
-        (click)="goToSmsConfig()"
-        (keydown)="onSmsConfigKeydown($event)">
-        SMS Token Configuration </a
-      >!</span
+@if (!defaultSMSGatewayIsSet() && authService.role() === "admin") {
+  <span
+    i18n="@@token.easeEnrollment"
+    class="inline-hint"
+    >To ease the enrollment you can set default values in the
+    <a
+      role="button"
+      tabindex="0"
+      aria-label="Go to SMS token configuration"
+      i18n-aria-label="@@token.goSmsTokenConfiguration"
+      (click)="goToSmsConfig()"
+      (keydown)="onSmsConfigKeydown($event)">
+      SMS Token Configuration </a
+    >!</span
+  >
+}
+<div class="enroll-group">
+  <mat-form-field class="input-width-l">
+    <mat-label i18n="@@token.phoneNumber">Phone Number</mat-label>
+    <input
+      [formField]="phoneNumberForm"
+      matInput />
+    @if (hasError(phoneNumberForm, ERR.required)) {
+      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(phoneNumberForm, ERR.pattern)) {
+      <mat-error i18n="@@token.phoneNumberFormat"
+        >Use only digits, a leading + and spaces, dashes or slashes between digits.</mat-error
+      >
+    }
+  </mat-form-field>
+  <div class="checkbox-beside-field">
+    <mat-checkbox
+      [formField]="readNumberDynamicallyForm"
+      i18n="@@token.readNumberDynamically"
+      >Read number dynamically from user source on each request.</mat-checkbox
     >
-  }
-  <div class="flex-row gap-16 margin-bottom-16">
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@token.phoneNumber">Phone Number</mat-label>
-      <input
-        [formField]="phoneNumberForm"
-        matInput />
-      @if (hasError(phoneNumberForm, ERR.required)) {
-        <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong>.</mat-error>
-      }
-      @if (hasError(phoneNumberForm, ERR.pattern)) {
-        <mat-error i18n="@@token.phoneNumberFormat"
-          >Use only digits, a leading + and spaces, dashes or slashes between digits.</mat-error
-        >
-      }
-    </mat-form-field>
-    <div class="checkbox-beside-field">
-      <mat-checkbox
-        [formField]="readNumberDynamicallyForm"
-        i18n="@@token.readNumberDynamically"
-        >Read number dynamically from user source on each request.</mat-checkbox
-      >
-    </div>
   </div>
-  @if (!wizard() || !defaultSMSGatewayIsSet()) {
-    <mat-form-field class="input-width-xl">
-      <mat-label i18n="@@token.tokenSpecific">A Token Specific SMS Gateway</mat-label>
-      <mat-hint i18n="@@token.ifTokenShould"
-        >If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
-        gateway here.</mat-hint
-      >
-      <mat-select [formField]="smsGatewayForm">
-        @for (option of smsGatewayOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-select>
-      @if (hasError(smsGatewayForm, ERR.required)) {
-        <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
-  }
 </div>
+@if (!wizard() || !defaultSMSGatewayIsSet()) {
+  <mat-form-field class="input-width-xl">
+    <mat-label i18n="@@token.tokenSpecific">A Token Specific SMS Gateway</mat-label>
+    <mat-hint i18n="@@token.ifTokenShould"
+      >If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
+      gateway here.</mat-hint
+    >
+    <mat-select [formField]="smsGatewayForm">
+      @for (option of smsGatewayOptions(); track option) {
+        <mat-option [value]="option">{{ option }}</mat-option>
+      }
+    </mat-select>
+    @if (hasError(smsGatewayForm, ERR.required)) {
+      <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong>.</mat-error>
+    }
+  </mat-form-field>
+}
