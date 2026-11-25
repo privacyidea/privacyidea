@@ -19,7 +19,7 @@
 import { Component, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { form, FormField, maxLength, minLength, required, validate } from "@angular/forms/signals";
+import { form, FormField, maxLength, min, minLength, required } from "@angular/forms/signals";
 
 import { MatOptionModule } from "@angular/material/core";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -65,15 +65,16 @@ export class EnrollYubikeyComponent extends EnrollTokenBase<YubikeyEnrollmentDat
   });
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value() < 32 ? [{ kind: "min" }] : []));
+    min(f, 32);
   });
 
   constructor() {
     super();
 
+    // A pushed Yubikey OTP sets the length; shorter test input is not an OTP and leaves the length as it is.
     effect(() => {
-      const len = Math.max(32, this.testYubiKey().length);
-      if (this.otpLength() !== len) this.otpLength.set(len);
+      const testLength = this.testYubiKey().trim().length;
+      if (testLength >= 32) this.otpLength.set(testLength);
     });
   }
 
