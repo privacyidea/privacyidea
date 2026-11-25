@@ -116,19 +116,22 @@ def test_text_column_equals_escapes_the_value_on_oracle_only():
 def test_text_column_equals_matches_exactly_and_with_case_on_sqlite():
     # The statement is built again for every value, so this also checks that a cached statement gets the new value
     engine = sa.create_engine("sqlite://")
-    table = sa.Table("text_probe", sa.MetaData(), sa.Column("value", sa.UnicodeText()))
-    table.metadata.create_all(engine)
-    with engine.begin() as connection:
-        connection.execute(table.insert(), [{"value": "ABC"}, {"value": "a_c"}])
+    try:
+        table = sa.Table("text_probe", sa.MetaData(), sa.Column("value", sa.UnicodeText()))
+        table.metadata.create_all(engine)
+        with engine.begin() as connection:
+            connection.execute(table.insert(), [{"value": "ABC"}, {"value": "a_c"}])
 
-        def matches(value: str) -> list[str]:
-            statement = sa.select(table.c.value).where(text_column_equals(table.c.value, value))
-            return connection.execute(statement).scalars().all()
+            def matches(value: str) -> list[str]:
+                statement = sa.select(table.c.value).where(text_column_equals(table.c.value, value))
+                return connection.execute(statement).scalars().all()
 
-        assert ["ABC"] == matches("ABC")
-        assert [] == matches("abc")
-        assert ["a_c"] == matches("a_c")
-        assert [] == matches("a%")
-        # The condition is the only part of the statement that names the table
-        count = sa.select(sa.func.count()).where(text_column_equals(table.c.value, "ABC"))
-        assert 1 == connection.execute(count).scalar()
+            assert ["ABC"] == matches("ABC")
+            assert [] == matches("abc")
+            assert ["a_c"] == matches("a_c")
+            assert [] == matches("a%")
+            # The condition is the only part of the statement that names the table
+            count = sa.select(sa.func.count()).where(text_column_equals(table.c.value, "ABC"))
+            assert 1 == connection.execute(count).scalar()
+    finally:
+        engine.dispose()

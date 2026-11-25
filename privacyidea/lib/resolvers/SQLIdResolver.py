@@ -43,8 +43,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 import traceback
 import hashlib
 from privacyidea.lib.pooling import get_engine, engines_are_shared
-from privacyidea.lib.framework import is_request_context
-from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.lifecycle import register_session_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode, escape_sql_like,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
@@ -633,6 +632,10 @@ class IdResolver (UserIdResolver):
                   'Database': self.database}
         self.connect_string = self._create_connect_string(params)
 
+        if self.session is not None:
+            # The resolver loads a configuration again and replaces its session and engine. The
+            # finalizer only reaches the new ones, so the old ones are closed here.
+            self._finalize_session()
         # get an engine from the engine registry, using self.getResolverId() as the key,
         # which involves the connect-string and the pool settings.
         self.engine = get_engine(self.getResolverId(), self._create_engine)
@@ -641,12 +644,10 @@ class IdResolver (UserIdResolver):
         self._owns_engine = not engines_are_shared()
         # We use ``scoped_session``.
         self.session = scoped_session(sessionmaker(bind=self.engine))()
-        # Session should be closed on teardown. Outside a request (pi-manage, a cron job, a
-        # background thread) nothing tears the application context down, so a finalizer
-        # registered there would never run and would only keep this resolver - and with it an
-        # open connection to the user store - alive for the lifetime of the process.
-        if is_request_context():
-            register_finalizer(self._finalize_session)
+        # Session should be closed on teardown. Outside a request, for example in pi-manage, the
+        # finalizer runs when the application context ends. Without it, the process would exit
+        # with the connection to the user store still open.
+        register_session_finalizer(self.session, self._finalize_session)
         self.session._model_changes = {}
 
         table_parts = self.table.split(".")

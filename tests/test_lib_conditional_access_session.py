@@ -73,15 +73,16 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         self.assertIsNot(session, get_ca_session())
 
     def test_request_finalizer_closes_the_session(self):
-        session = get_ca_session()
-        entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="bob")
-        session.add(entry)
-        self.assertIn(entry, session)
+        with self.app.test_request_context("/"):
+            session = get_ca_session()
+            entry = AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="bob")
+            session.add(entry)
+            self.assertIn(entry, session)
 
-        call_finalizers()
-        # close() expunges the identity map, and the session is dropped so the next call opens a new one.
-        self.assertNotIn(entry, session)
-        self.assertIsNot(session, get_ca_session())
+            call_finalizers()
+            # close() expunges the identity map, and the session is dropped so the next call opens a new one.
+            self.assertNotIn(entry, session)
+            self.assertIsNot(session, get_ca_session())
 
     def test_release_returns_the_connection_and_keeps_the_session(self):
         session = get_ca_session()
