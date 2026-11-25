@@ -44,6 +44,7 @@ import { tokenTypes } from "@utils/token.utils";
 import { map } from "rxjs";
 import { TokenEnrollmentSuccessWizardComponent } from "./token-enrollment-success/token-enrollment-success.wizard.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
+import { ENROLL_FORM_FIELD_OPTIONS } from "./token-enrollment.constants";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
@@ -68,7 +69,9 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     EnrollTokenTypeSwitchComponent
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
-  styleUrl: "./token-enrollment.component.scss"
+  styleUrl: "./token-enrollment.component.scss",
+  providers: [ENROLL_FORM_FIELD_OPTIONS],
+  host: { class: "enroll-form" }
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected readonly http = inject(HttpClient);
