@@ -74,29 +74,11 @@
       >
     }
     @if (pkcs12Password()) {
-      <div class="inline-warning certificate-password">
-        <p i18n="@@token.pkcs12PasswordOnce"
-          >Save the passphrase of the PKCS#12 container now. It is shown here only once and cannot be retrieved
-          again.</p
-        >
-        <!-- Masked until asked for, so it is not exposed to anyone glancing at the screen or
-             to a screen recording of the enrollment. -->
-        <div class="certificate-password-value">
-          <code>{{ passwordVisible() ? pkcs12Password() : maskedPassword() }}</code>
-          <button
-            (click)="togglePasswordVisible()"
-            [attr.aria-label]="passwordToggleLabel()"
-            class="password-toggle"
-            type="button">
-            <mat-icon class="password-toggle-icon">{{
-              passwordVisible() ? "visibility_off" : "visibility"
-            }}</mat-icon>
-          </button>
-          <app-copy-button
-            (copyClicked)="acknowledgePassword()"
-            [copyText]="pkcs12Password()" />
-        </div>
-      </div>
+      <app-enrollment-secret
+        (saved)="acknowledgePassword()"
+        [hint]="saveHint() ? passphraseHint : ''"
+        [label]="passphraseLabel"
+        [value]="pkcs12Password()" />
     } @else if (fromEnrollment()) {
       <p
         class="inline-hint"
@@ -108,7 +90,7 @@
 
   @if (certificate()) {
     <mat-accordion class="certificate-expansion">
-      <mat-expansion-panel>
+      <mat-expansion-panel (opened)="onCertificateShown()">
         <mat-expansion-panel-header>
           <mat-panel-title i18n="@@token.certificatePem">Certificate (PEM)</mat-panel-title>
         </mat-expansion-panel-header>

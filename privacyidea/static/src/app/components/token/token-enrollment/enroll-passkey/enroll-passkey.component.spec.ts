@@ -334,24 +334,27 @@ describe("EnrollPasskeyComponent", () => {
     };
 
     const dialogData = () => dialogService.openDialog.mock.calls[0][0].data;
+    const dialogConfig = () => dialogService.openDialog.mock.calls[0][0].configOverride;
 
-    it("replaces the close button with cancel when deletion is allowed", async () => {
+    it("offers cancel when deletion is allowed", async () => {
       authService.actionAllowed.mockImplementation((action: string) => action === "delete");
 
       const { pending } = await startPendingRegistration();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, showCloseButton: false }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: true, wizard: false }));
+      expect(dialogConfig()).toEqual({ disableClose: true });
 
       component.currentStepOneRef?.close();
       await pending;
     });
 
-    it("keeps the close button without the delete right", async () => {
+    it("offers no cancel without the delete right", async () => {
       authService.actionAllowed.mockReturnValue(false);
 
       const { pending } = await startPendingRegistration();
 
-      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false, showCloseButton: true }));
+      expect(dialogData()).toEqual(expect.objectContaining({ showCancelButton: false }));
+      expect(dialogConfig()).toEqual({ disableClose: false });
 
       component.currentStepOneRef?.close();
       await pending;

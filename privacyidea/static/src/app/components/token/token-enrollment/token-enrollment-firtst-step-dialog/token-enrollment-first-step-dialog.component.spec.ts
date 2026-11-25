@@ -17,18 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogRef, MatDialogState } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrolledTextLink } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { of, throwError } from "rxjs";
+import { lastValueFrom, NEVER, of, Subject, throwError } from "rxjs";
 import {
   TokenEnrollmentFirstStepDialogComponent,
   TokenEnrollmentFirstStepDialogData
@@ -59,15 +64,17 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     TestBed.resetTestingModule();
     dialogRefMock = {
       close: jest.fn(),
-      getState: jest.fn().mockReturnValue(MatDialogState.OPEN)
+      afterClosed: jest.fn().mockReturnValue(NEVER)
     } as unknown as jest.Mocked<MatDialogRef<TokenEnrollmentFirstStepDialogComponent>>;
 
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: { enrollmentResponse, ...data } },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService }
       ],
@@ -104,19 +111,14 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
       expect(buttonLabels()).toEqual(["Close"]);
     });
 
-    it("shows the cancel button when the caller allows cancelling", async () => {
+    it("replaces the close button with cancel when the caller allows cancelling", async () => {
       await setup({ showCancelButton: true });
-      expect(buttonLabels()).toEqual(["Close", "Cancel"]);
-    });
-
-    it("hides the close button when the caller replaces it with cancel", async () => {
-      await setup({ showCancelButton: true, showCloseButton: false });
       expect(buttonLabels()).toEqual(["Cancel"]);
     });
 
     it("offers retry only once an attempt has failed", async () => {
       const registrationFailed = signal(false);
-      await setup({ showCancelButton: true, showCloseButton: false, registrationFailed, onRetry: jest.fn() });
+      await setup({ showCancelButton: true, registrationFailed, onRetry: jest.fn() });
       expect(buttonLabels()).toEqual(["Cancel"]);
 
       registrationFailed.set(true);
@@ -127,6 +129,107 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
     it("does not offer retry without a retry handler", async () => {
       await setup({ showCancelButton: true, registrationFailed: signal(true) });
       expect(buttonLabels()).not.toContain("Retry");
+    });
+  });
+
+  describe("header and leaving through a link", () => {
+    const answer = (result: string | undefined) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(result));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
+    const confirmLeave = (link: EnrolledTextLink = "token") => lastValueFrom(component["confirmLeave"](link));
+
+    it("shows the incomplete summary with the user of the enrollment", async () => {
+      await setup({ enrollmentData: { type: "push", user: "alice", realm: "realm1" } });
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("The token was created, but its enrollment is not complete yet.");
+      expect(text).toContain("alice");
+      expect(text).not.toContain("is not completely enrolled, yet");
+    });
+
+    it("leaves like Close while only Close is offered", async () => {
+      await setup();
+
+      expect(await confirmLeave()).toBe(true);
+      expect(dialogRefMock.close).toHaveBeenCalledWith(undefined);
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("deletes the token and stays on the enrollment page when its own link was followed", async () => {
+      await setup({ showCancelButton: true });
+      answer("discard");
+
+      expect(await confirmLeave("token")).toBe(false);
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
+      expect(dialogRefMock.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("drops the question and keeps the token once the rollout closes the step", async () => {
+      await setup({ showCancelButton: true });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
+      const followed = confirmLeave("container");
+      const questionRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
+
+      stepClosed.next();
+
+      expect(questionRef.close).toHaveBeenCalled();
+      expect(await followed).toBe(false);
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    });
+
+    it("deletes the token and follows a link to another page", async () => {
+      await setup({ showCancelButton: true });
+      answer("discard");
+
+      expect(await confirmLeave("user")).toBe(true);
+
+      expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
+      expect(dialogRefMock.close).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    });
+
+    it("keeps the token when the user chooses to while only Cancel is offered", async () => {
+      await setup({ showCancelButton: true });
+      answer("save-exit");
+
+      expect(await confirmLeave()).toBe(true);
+
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalledWith(undefined);
+    });
+
+    it("stays when the user cancels while only Cancel is offered", async () => {
+      await setup({ showCancelButton: true });
+      answer(undefined);
+
+      expect(await confirmLeave()).toBe(false);
+    });
+  });
+
+  describe("wizard", () => {
+    const customizationUrl = (position: string) =>
+      environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
+
+    it("frames the step with the post customization", async () => {
+      await setup({ wizard: true });
+      const httpMock = TestBed.inject(HttpTestingController);
+      httpMock.expectOne(customizationUrl("top")).flush("<p>Top {{ serial }}</p>");
+      httpMock.expectOne(customizationUrl("bottom")).flush("<p>Bottom</p>");
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain("Top PIPU0001");
+      expect(text).toContain("Bottom");
+      expect(buttonLabels()).toEqual(["Close"]);
+      httpMock.verify();
+    });
+
+    it("loads no customization outside the wizard", async () => {
+      await setup();
+      TestBed.inject(HttpTestingController).verify();
     });
   });
 
@@ -178,14 +281,29 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
       expect(dialogRefMock.close).not.toHaveBeenCalled();
     });
 
-    it("deletes the token even when the rollout finished while the confirmation was open", async () => {
+    it("closes the unanswered confirmation once the rollout closes the step", async () => {
       await setup({ showCancelButton: true, cancelConfirmationMessage: "Scanned codes stop working." });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
+
+      clickButton("Cancel");
+      const confirmationRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown>;
+      stepClosed.next();
+
+      expect(confirmationRef.close).toHaveBeenCalled();
+      expect(tokenService.cancelEnrollment).not.toHaveBeenCalled();
+    });
+
+    it("completes a confirmed deletion even when the rollout closes the step meanwhile", async () => {
+      await setup({ showCancelButton: true, cancelConfirmationMessage: "Scanned codes stop working." });
+      const stepClosed = new Subject<void>();
+      dialogRefMock.afterClosed.mockReturnValue(stepClosed);
       const confirmationRef = new MockMatDialogRef();
       confirmationRef.afterClosed.mockReturnValue(of(true));
       dialogService.openDialog.mockReturnValue(confirmationRef);
-      dialogRefMock.getState.mockReturnValue(MatDialogState.CLOSED);
 
       clickButton("Cancel");
+      stepClosed.next();
 
       expect(tokenService.cancelEnrollment).toHaveBeenCalledWith("PIPU0001");
     });

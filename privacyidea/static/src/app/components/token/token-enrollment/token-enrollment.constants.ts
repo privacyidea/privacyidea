@@ -87,14 +87,6 @@ export const USER_REQUIRED_TOKEN_TYPES = ["tiqr", "webauthn", "passkey", "certif
 export const NO_REALM_ONLY_TOKEN_TYPES = [...USER_REQUIRED_TOKEN_TYPES, "push"];
 
 /**
- * A list of token types whose last enrollment step shows data that exists nowhere else, so
- * that dialog must not be dismissible by a backdrop click or the escape key. For a
- * certificate it is the PKCS#12 passphrase, which the server never stores: losing it makes
- * the enrolled private key unusable.
- */
-export const NO_DISMISS_LAST_STEP_TOKEN_TYPES = ["certificate"];
-
-/**
  * Result value of an enrollment dialog whose enrollment was cancelled by the user.
  * The incomplete token has been deleted in that case.
  */

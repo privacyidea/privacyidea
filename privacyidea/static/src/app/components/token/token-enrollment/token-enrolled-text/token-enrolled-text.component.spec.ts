@@ -25,6 +25,7 @@ import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { of } from "rxjs";
 import { TokenEnrolledTextComponent } from "./token-enrolled-text.component";
 
 describe("TokenEnrolledTextComponent", () => {
@@ -64,13 +65,13 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
-  it("should not navigate while navigation is blocked", () => {
+  it("follows no link while leaving is not confirmed", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("serial", "SERIAL123");
     fixture.componentRef.setInput("containerSerial", "CONT123");
     fixture.componentRef.setInput("username", "alice");
     fixture.componentRef.setInput("userRealm", "realm1");
-    fixture.componentRef.setInput("navigationBlocked", true);
+    fixture.componentRef.setInput("confirmLeave", () => of(false));
     fixture.detectChanges();
     component.switchRoute.subscribe(switchRouteSpy);
 
@@ -84,6 +85,21 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
     expect(mockContentService.userSelected).not.toHaveBeenCalled();
     expect(mockContentService.router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("follows the link once leaving is confirmed", () => {
+    const switchRouteSpy = jest.fn();
+    const confirmLeave = jest.fn(() => of(true));
+    fixture.componentRef.setInput("serial", "SERIAL123");
+    fixture.componentRef.setInput("confirmLeave", confirmLeave);
+    fixture.detectChanges();
+    component.switchRoute.subscribe(switchRouteSpy);
+
+    component.tokenSelected();
+
+    expect(confirmLeave).toHaveBeenCalledWith("token");
+    expect(switchRouteSpy).toHaveBeenCalled();
+    expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
   it("should do nothing if serial is not set", () => {
@@ -212,29 +228,69 @@ describe("TokenEnrolledTextComponent", () => {
       expect(text()).not.toContain("assigned to the user");
     });
 
-    it("shows a neutral pending summary while the enrollment still has to be verified", () => {
+    it("shows a neutral pending summary while the user still has to act", () => {
       const summary = () => fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement;
       const icon = () => fixture.nativeElement.querySelector(".enrolled__status-icon")?.textContent?.trim();
       fixture.detectChanges();
       expect(icon()).toBe("check_circle");
       expect(summary().classList).not.toContain("enrolled__summary--pending");
 
-      fixture.componentRef.setInput("verificationPending", true);
+      fixture.componentRef.setInput("state", "verify");
       fixture.detectChanges();
       expect(icon()).toBe("pending");
       expect(summary().classList).toContain("enrolled__summary--pending");
     });
 
-    it("does not report a successful enrollment while the enrollment still has to be verified", () => {
+    it("does not report a successful enrollment while the user still has to act", () => {
       fixture.componentRef.setInput("username", "alice");
       fixture.componentRef.setInput("userRealm", "realm1");
       fixture.componentRef.setInput("rollover", true);
-      fixture.componentRef.setInput("verificationPending", true);
+      fixture.componentRef.setInput("state", "verify");
       fixture.detectChanges();
       const summary = (fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement).textContent;
-      expect(summary?.trim()).toContain("The token was enrolled.");
+      expect(summary?.trim()).toContain(
+        "The token was enrolled, but it still has to be verified before it can be used."
+      );
       expect(summary).not.toContain("successfully");
       expect(labels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("shows a pending summary while the enrollment is not complete", () => {
+      fixture.componentRef.setInput("state", "incomplete");
+      fixture.detectChanges();
+      const summary = fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement;
+      expect(summary.textContent).toContain("The token was created, but its enrollment is not complete yet.");
+      expect(summary.classList).toContain("enrolled__summary--pending");
+    });
+
+    it("shows only the summary in summary-only mode", () => {
+      fixture.componentRef.setInput("serial", "HOTP1");
+      fixture.componentRef.setInput("containerSerial", "CONT1");
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.componentRef.setInput("summaryOnly", true);
+      fixture.detectChanges();
+      expect(text()).toContain("enrolled and assigned to the user");
+      expect(fixture.nativeElement.querySelector(".enrolled__cards")).toBeNull();
+    });
+
+    it("leaves out the user and the realm for a self-service user", () => {
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
+      fixture.componentRef.setInput("serial", "HOTP1");
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.detectChanges();
+      expect(text()).toContain("The token has been successfully enrolled.");
+      expect(labels()).toEqual(["Token"]);
+    });
+
+    it("leaves out the realm for a self-service user in realm-only mode", () => {
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.componentRef.setInput("onlyAddToRealm", true);
+      fixture.detectChanges();
+      expect(text()).toContain("The token has been successfully enrolled.");
+      expect(labels()).toEqual(["Token"]);
     });
   });
 
@@ -268,31 +324,12 @@ describe("TokenEnrolledTextComponent", () => {
       expect(spans.some((s) => s.textContent?.trim() === "alice")).toBe(true);
     });
 
-    it("renders realm as plain text when user has role user", () => {
-      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
-      fixture.detectChanges();
-      const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
-      expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(false);
-      const spans: HTMLSpanElement[] = Array.from(fixture.nativeElement.querySelectorAll("span"));
-      expect(spans.some((s) => s.textContent?.trim() === "realm1")).toBe(true);
-    });
-
     it("renders realm as a link in onlyAddToRealm mode when user is admin", () => {
       fixture.componentRef.setInput("onlyAddToRealm", true);
       mockAuthService.authData.set({ ...mockAuthService.authData(), role: "admin" } as AuthData);
       fixture.detectChanges();
       const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(true);
-    });
-
-    it("renders realm as plain text in onlyAddToRealm mode when user has only user role", () => {
-      fixture.componentRef.setInput("onlyAddToRealm", true);
-      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
-      fixture.detectChanges();
-      const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
-      expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(false);
-      const spans: HTMLSpanElement[] = Array.from(fixture.nativeElement.querySelectorAll("span"));
-      expect(spans.some((s) => s.textContent?.trim() === "realm1")).toBe(true);
     });
   });
 });

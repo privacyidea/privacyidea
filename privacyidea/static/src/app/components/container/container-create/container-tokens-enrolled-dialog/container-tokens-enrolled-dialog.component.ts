@@ -25,9 +25,11 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { TokensNotCreatedCalloutComponent } from "@components/container/container-create/tokens-not-created-callout/tokens-not-created-callout.component";
+import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
 import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { ContainerTokenNotCreated } from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
 
 export type EnrolledTokenInfo = EnrollmentResponseDetail & {
@@ -44,17 +46,26 @@ export interface ContainerTokensEnrolledDialogData {
 
 @Component({
   selector: "app-container-tokens-enrolled-dialog",
-  imports: [MatProgressBar, TokenEnrollmentDataComponent, TitleCasePipe, DialogWrapperComponent, TokensNotCreatedCalloutComponent],
+  imports: [
+    MatProgressBar,
+    TokenEnrollmentDataComponent,
+    TitleCasePipe,
+    DialogWrapperComponent,
+    TokensNotCreatedCalloutComponent
+  ],
   templateUrl: "./container-tokens-enrolled-dialog.component.html",
   styleUrl: "./container-tokens-enrolled-dialog.component.scss"
 })
 export class ContainerTokensEnrolledDialogComponent extends AbstractDialogComponent<ContainerTokensEnrolledDialogData> {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly currentIndex = signal(0);
   readonly enrolledTokens = signal<EnrolledTokenInfo[]>(this.data.enrolledTokens);
 
   readonly tokensNotCreated = this.data.tokensNotCreated ?? [];
+  // What leaving would lose for good, per token serial.
+  private readonly closeConfirmations = signal<Record<string, string>>({});
 
   readonly currentToken = computed(() => this.enrolledTokens()[this.currentIndex()]);
   readonly total = computed(() => this.enrolledTokens().length);
@@ -100,6 +111,11 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
     );
   }
 
+  onCloseConfirmationChange(message: string) {
+    const serial = this.currentToken().serial;
+    this.closeConfirmations.update((confirmations) => ({ ...confirmations, [serial]: message }));
+  }
+
   onDialogAction(value: string) {
     if (value === "previous") this.previous();
     else if (value === "next") this.next();
@@ -115,6 +131,35 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
   }
 
   finish() {
+    const unsaved = Object.entries(this.closeConfirmations()).filter(([, message]) => message);
+    if (unsaved.length === 0) {
+      this.leave();
+      return;
+    }
+    const message =
+      unsaved.length === 1 ? unsaved[0][1] : unsaved.map(([serial, text]) => `${serial}: ${text}`).join(" ");
+    this.dialogService
+      .openDialog({
+        component: MessageConfirmationDialogComponent,
+        data: {
+          title: $localize`:@@token.enrollmentDataNotSaved:Enrollment Data Not Saved`,
+          message,
+          confirmAction: {
+            label: $localize`:@@container.goContainer:Go to Container`,
+            value: true,
+            type: "destruct"
+          }
+        }
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.leave();
+        }
+      });
+  }
+
+  private leave() {
     this.dialogRef.close();
     this.contentService.navigateContainerDetails(this.data.containerSerial);
   }

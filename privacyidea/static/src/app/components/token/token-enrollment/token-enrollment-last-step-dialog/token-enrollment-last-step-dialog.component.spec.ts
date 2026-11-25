@@ -16,10 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponse,
@@ -28,8 +32,10 @@ import {
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog.self-service.component";
 import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
@@ -78,9 +84,13 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: dialogData },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: TokenService, useClass: MockTokenService }
       ]
     }).compileComponents();
@@ -109,12 +119,12 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component["dialogRef"].close).toHaveBeenCalled();
   });
 
-  it("should keep the dialog open on a route switch while closing is blocked", () => {
-    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
+  it("shows the container the token was added to", async () => {
+    const dialogData = createDialogData();
+    dialogData.response!.detail = { ...dialogData.response!.detail, container_serial: "SMPH0001" };
+    await setup(dialogData);
 
-    component.onSwitchRoute();
-
-    expect(component["dialogRef"].close).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain("SMPH0001");
   });
 
   it("should render the enrollment data when showEnrollData is not set", () => {
@@ -167,32 +177,103 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component.title()).toBe("Token Successfully Rolled Over");
   });
 
-  describe("self service", () => {
-    let selfServiceFixture: ComponentFixture<TokenEnrollmentLastStepDialogSelfServiceComponent>;
-    let dialogData: TokenEnrollmentDialogData;
+  const footerButtons = (): HTMLButtonElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
+  const footerButton = (label: string) =>
+    footerButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement | undefined;
 
-    beforeEach(async () => {
-      dialogData = createDialogData();
-      TestBed.resetTestingModule();
-      await TestBed.configureTestingModule({
-        imports: [TokenEnrollmentLastStepDialogSelfServiceComponent],
-        providers: [
-          { provide: MatDialogRef, useClass: MockMatDialogRef },
-          { provide: MAT_DIALOG_DATA, useValue: dialogData },
-          { provide: ContentService, useClass: MockContentService },
-          { provide: TokenService, useClass: MockTokenService }
-        ]
-      }).compileComponents();
+  it("keeps the close button enabled while the passphrase is not saved", () => {
+    component.onCloseConfirmationChange("The passphrase is shown only once.");
+    fixture.detectChanges();
 
-      selfServiceFixture = TestBed.createComponent(TokenEnrollmentLastStepDialogSelfServiceComponent);
-      selfServiceFixture.detectChanges();
+    expect(footerButton("Close")?.disabled).toBe(false);
+  });
+
+  it("offers only the close button", () => {
+    expect(footerButtons().map((button) => button.textContent?.trim())).toEqual(["Close"]);
+  });
+
+  describe("closing", () => {
+    const passphraseWarning = "The passphrase is shown only once.";
+    let dialogRef: MockMatDialogRef<unknown>;
+    let dialogService: MockDialogService;
+
+    beforeEach(() => {
+      dialogRef = component["dialogRef"] as unknown as MockMatDialogRef<unknown>;
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     });
 
-    it("should report a regenerated QR code to the opener of the dialog", () => {
-      const enrollmentData = selfServiceFixture.debugElement.query(By.css("app-token-enrollment-data"));
-      enrollmentData.triggerEventHandler("enrollmentResponseChange", regeneratedResponse);
+    const answerConfirmation = (confirmed: boolean) => {
+      const confirmationRef = new MockMatDialogRef();
+      confirmationRef.afterClosed.mockReturnValue(of(confirmed));
+      dialogService.openDialog.mockReturnValue(confirmationRef);
+    };
 
-      expect(dialogData.onEnrollmentResponseChange).toHaveBeenCalledWith(regeneratedResponse);
+    it("closes right away when nothing would be lost", () => {
+      footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("stays open when closing without the passphrase is not confirmed", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+
+      footerButton("Close")?.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ message: passphraseWarning }) })
+      );
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it("closes once closing without the passphrase is confirmed", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(true);
+
+      footerButton("Close")?.click();
+
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("lets a link in the header ask the same way before it leaves", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+      const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+
+      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+
+      expect(dialogService.openDialog).toHaveBeenCalled();
+      expect(contentService.tokenSelected).not.toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+
+      answerConfirmation(true);
+      fixture.nativeElement.querySelector(".enrolled__card-value").click();
+
+      expect(contentService.tokenSelected).toHaveBeenCalledWith("1234567890");
+      expect(dialogRef.close).toHaveBeenCalled();
+    });
+
+    it("ignores keys other than Escape", () => {
+      component.onCloseConfirmationChange(passphraseWarning);
+
+      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    });
+
+    it("lets Escape and a backdrop click ask the same way", () => {
+      expect(dialogRef.disableClose).toBe(true);
+      component.onCloseConfirmationChange(passphraseWarning);
+      answerConfirmation(false);
+
+      dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      dialogRef.fireBackdropClick();
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(dialogRef.close).not.toHaveBeenCalled();
     });
   });
 

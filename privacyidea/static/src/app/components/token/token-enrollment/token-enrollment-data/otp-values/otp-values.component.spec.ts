@@ -42,6 +42,19 @@ describe("OtpValuesComponent", () => {
     expect(printButton.getAttribute("aria-label")).toBe("Print OTP Values");
   });
 
+  it("does not count as printed when the print window is blocked", () => {
+    fixture.componentRef.setInput("otpValues", ["123456"]);
+    fixture.detectChanges();
+    jest.spyOn(window, "open").mockReturnValue(null);
+    const printed = jest.fn();
+    component.printed.subscribe(printed);
+
+    component.printOtps();
+
+    expect(window.open).toHaveBeenCalled();
+    expect(printed).not.toHaveBeenCalled();
+  });
+
   it("printOtps should open window", async () => {
     const mockPrintWindow = {
       document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
@@ -50,7 +63,10 @@ describe("OtpValuesComponent", () => {
       close: jest.fn()
     };
     jest.spyOn(window, "open").mockReturnValue(mockPrintWindow as unknown as Window);
+    const printed = jest.fn();
+    component.printed.subscribe(printed);
     component.printOtps();
+    expect(printed).toHaveBeenCalled();
     expect(window.open).toHaveBeenCalledWith("", "_blank", "width=800,height=600");
     expect(mockPrintWindow.document.open).toHaveBeenCalled();
     expect(mockPrintWindow.document.write).toHaveBeenCalled();
