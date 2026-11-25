@@ -190,6 +190,41 @@ describe("EditEnvironmentConditionsComponent", () => {
     });
   });
 
+  describe("hint for time ranges over midnight", () => {
+    const hintText = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll("mat-hint.overnight-time-ranges div")).map(
+        (line) => line.textContent!.trim()
+      );
+
+    it("lists each range that ends before it starts", () => {
+      component.validTimeSignal.set("Mon-Fri: 18-8, sat: 22:30-6:5, Sun: 9-17");
+      expect(component.overnightTimeRanges()).toEqual([
+        { days: "Mon-Fri", start: "18:00", end: "08:00" },
+        { days: "Sat", start: "22:30", end: "06:05" }
+      ]);
+    });
+
+    it.each(["", "Mon-Fri: 8-18", "Wed: 12-12", "Sat-Mon: 8-18", "Mon-Fri: 18-8,", "Mon-Fri: 24-8"])(
+      "lists no range for %p",
+      (value) => {
+        component.validTimeSignal.set(value);
+        expect(component.overnightTimeRanges()).toEqual([]);
+      }
+    );
+
+    it("shows one line per range under the time field", () => {
+      component.validTimeSignal.set("Mon-Fri: 18-8, Sat: 23-1");
+      fixture.detectChanges();
+      expect(hintText()).toEqual(["Mon-Fri: 18:00 to 08:00 of the next day", "Sat: 23:00 to 01:00 of the next day"]);
+    });
+
+    it("shows no hint for a range that ends after it starts", () => {
+      component.validTimeSignal.set("Mon-Fri: 8-18");
+      fixture.detectChanges();
+      expect(hintText()).toEqual([]);
+    });
+  });
+
   describe("knownClients", () => {
     it("aggregates clients across applications, dedupes apps, and sorts by IP", () => {
       clientsMock.setClients({
