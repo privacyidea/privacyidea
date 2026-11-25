@@ -484,7 +484,7 @@ def get_enrollment_policies_api():
     default_settings = token_class.get_default_settings(g, params)
     defaults = {key: value for key, value in default_settings.items() if key in ENROLLMENT_DEFAULT_KEYS}
     result = {"defaults": defaults,
-              "2step": get_twostep_setting(params),
+              "2step": get_twostep_setting(params, request.User),
               "force_server_generate": get_force_server_generate(token_type, request.User),
               "sms_gateways": get_sms_gateways(request.User),
               "require_description": is_description_required(params, request.User)}

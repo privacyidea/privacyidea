@@ -1004,17 +1004,17 @@ def init_subject_components(request=None, action=None):
             request.all_data["subject_components"] = list(subject_pols)
 
 
-def get_twostep_setting(params: dict) -> str | None:
+def get_twostep_setting(params: dict, user_object: User) -> str | None:
     """
     Returns the value of the ``<type>_2step`` policy that matches the enrollment described by the request
-    parameters. The user is taken from the parameters, the token type from the token if ``serial`` names an
-    existing token, otherwise from ``type`` (default ``hotp``).
+    parameters. The policies are matched for the given user, the token type is taken from the token if ``serial``
+    names an existing token, otherwise from ``type`` (default ``hotp``).
 
     :param params: The request parameters
+    :param user_object: The user the policies are matched for
     :return: "allow", "force" or None if no policy matches
     :raises PolicyError: if the policy value is unknown
     """
-    user_object = get_user_from_param(params)
     token_type = get_optional(params, "type", default="hotp")
     token = _get_single_token(get_optional(params, "serial"))
     if token:
@@ -1058,7 +1058,7 @@ def twostep_enrollment_activation(request=None, action=None):
     token = _get_single_token(get_optional(request.all_data, "serial"))
     # The policy's user attribute is matched against the user the token is enrolled for.
     # Tokentypes have separate twostep actions
-    enabled_setting = get_twostep_setting(request.all_data)
+    enabled_setting = get_twostep_setting(request.all_data, request.User)
     if enabled_setting == "allow":
         # The user is allowed to pass 2stepinit=1
         pass
