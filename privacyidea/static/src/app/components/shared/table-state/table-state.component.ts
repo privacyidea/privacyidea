@@ -65,7 +65,10 @@ export class TableStateComponent {
   /** The panel says nothing while the request is still out; the global progress bar reports that. */
   readonly isLoading = computed(() => this.currentStatus() === "loading");
   readonly resolvedIcon = computed(() => TableStateComponent.STATUS_ICONS[this.currentStatus()] ?? this.icon());
-  /** The projected call to action stays available where the list is empty for good, not where it failed or was filtered away. */
+  /**
+   * The projected call to action stays available where the list is empty for good, not where it failed or was
+   * filtered away.
+   */
   readonly showsProjectedAction = computed(
     () => this.currentStatus() === "empty" || this.currentStatus() === "denied" || this.currentStatus() === "cancelled"
   );

@@ -45,7 +45,10 @@ export class PolicyActionDrafts {
     this.drafts.update((drafts) => (name in drafts && drafts[name] === value ? drafts : { ...drafts, [name]: value }));
   }
 
-  /** Drops the drafts of every action that is not in `names`, such as those of actions a template or a scope change replaced. */
+  /**
+   * Drops the drafts of every action that is not in `names`, such as those of actions a template or a scope change
+   * replaced.
+   */
   retain(names: readonly string[]): void {
     this.drafts.update((drafts) => {
       const stale = Object.keys(drafts).filter((name) => !names.includes(name));

@@ -53,7 +53,9 @@ describe("KeywordFilterGenericComponent", () => {
       imports: [KeywordFilterGenericComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(KeywordFilterGenericComponent) as ComponentFixture<KeywordFilterGenericComponent<PolicyDetail>>;
+    fixture = TestBed.createComponent(KeywordFilterGenericComponent) as ComponentFixture<
+      KeywordFilterGenericComponent<PolicyDetail>
+    >;
     component = fixture.componentInstance;
 
     /**

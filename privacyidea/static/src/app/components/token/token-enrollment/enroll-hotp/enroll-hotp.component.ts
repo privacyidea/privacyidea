@@ -88,7 +88,8 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
       this.systemService.systemConfig()[HOTP_HASHLIB] ||
       "sha1"
   );
-  // A value set by the user or the enrollment data is kept when the preset changes later, even one that equals the preset.
+  // A value set by the user or the enrollment data is kept when the preset changes later, even one that equals the
+  // preset.
   private otpLengthChosen = signal(false);
   private hashAlgorithmChosen = signal(false);
   otpLength = linkedSignal<number, number>({

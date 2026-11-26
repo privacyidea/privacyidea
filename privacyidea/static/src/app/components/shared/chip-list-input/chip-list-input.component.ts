@@ -56,8 +56,8 @@ export class ChipListInputComponent {
   readonly draft = signal("");
   protected readonly draftField = form(this.draft);
 
-  // The list as last emitted, until the parent hands the updated `values` back. Entries added within one tick build on it
-  // instead of on the stale input.
+  // The list as last emitted, until the parent hands the updated `values` back. Entries added within one tick build on
+  // it instead of on the stale input.
   private pending: string[] | null = null;
 
   constructor() {

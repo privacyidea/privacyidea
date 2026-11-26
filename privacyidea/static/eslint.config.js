@@ -39,6 +39,17 @@ module.exports = defineConfig([
           caughtErrorsIgnorePattern: "^_+$",
           destructuredArrayIgnorePattern: "^_+$"
         }
+      ],
+      "max-len": [
+        "error",
+        {
+          code: 120,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+          ignorePattern: "^import\\s.+\\sfrom\\s.+;$"
+        }
       ]
     }
   },

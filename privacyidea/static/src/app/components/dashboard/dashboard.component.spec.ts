@@ -67,7 +67,17 @@ describe("DashboardComponent", () => {
   const stubFieldRect = (): void => {
     const field = component['field']().nativeElement as HTMLElement;
     field.getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width: FIELD_WIDTH, height: 1000, right: FIELD_WIDTH, bottom: 1000, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({
+        left: 0,
+        top: 0,
+        width: FIELD_WIDTH,
+        height: 1000,
+        right: FIELD_WIDTH,
+        bottom: 1000,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      }) as DOMRect;
   };
 
   const stubScroll = (scrollTop: number, clientHeight: number, scrollHeight: number): HTMLElement => {
@@ -423,7 +433,17 @@ describe("DashboardComponent", () => {
       const widget = firstWidget();
       const element = document.createElement("div");
       element.getBoundingClientRect = () =>
-        ({ left: 800, top: 0, width: 0, height: 0, right: 800, bottom: 0, x: 800, y: 0, toJSON: () => ({}) }) as DOMRect;
+        ({
+          left: 800,
+          top: 0,
+          width: 0,
+          height: 0,
+          right: 800,
+          bottom: 0,
+          x: 800,
+          y: 0,
+          toJSON: () => ({})
+        }) as DOMRect;
 
       component['onDragEnded'](widget, dragEvent(element) as unknown as CdkDragEnd);
 

@@ -66,8 +66,8 @@ export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 export type TriggerChallengeResponse = PiResponse<number, ValidateCheckDetail>;
 
 /**
- * The state of the challenges of a transaction. "accept": the user confirmed a challenge. "declined": the user declined a
- * challenge that they did not start. "cancelled": the user stopped a challenge that they started. "pending": no
+ * The state of the challenges of a transaction. "accept": the user confirmed a challenge. "declined": the user declined
+ * a challenge that they did not start. "cancelled": the user stopped a challenge that they started. "pending": no
  * challenge is answered, or no valid challenge exists.
  */
 export type ChallengeStatus = "accept" | "declined" | "cancelled" | "pending";

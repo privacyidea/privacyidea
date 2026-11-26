@@ -124,14 +124,23 @@ export class NewSmsGatewayComponent implements OnDestroy {
     applyEach(f.parameters, (parameter) => required(parameter, { when: ({ key }) => this.isParameterRequired(key()) }));
   });
 
-  /** Bumped by every form (re)initialization, so the provider effect re-applies the provider for freshly loaded gateway data. */
+  /**
+   * Bumped by every form (re)initialization, so the provider effect re-applies the provider for freshly loaded gateway
+   * data.
+   */
   private readonly formGeneration = signal(0);
-  /** Module of the selected provider and form generation. The provider effect tracks it instead of the whole model, so typing a parameter does not re-run it. */
+  /**
+   * Module of the selected provider and form generation. The provider effect tracks it instead of the whole model, so
+   * typing a parameter does not re-run it.
+   */
   private readonly providerSelection = computed(
     () => ({ module: this.smsModel().providermodule, generation: this.formGeneration() }),
     { equal: (a, b) => a.module === b.module && a.generation === b.generation }
   );
-  /** The module and form generation the provider was last applied for. A re-run for the same pair keeps the typed values. */
+  /**
+   * The module and form generation the provider was last applied for. A re-run for the same pair keeps the typed
+   * values.
+   */
   private appliedProvider: { module: string; generation: number } | null = null;
 
   protected readonly ERR = ERR;
@@ -236,7 +245,10 @@ export class NewSmsGatewayComponent implements OnDestroy {
     this.headerDraftForm().reset();
   }
 
-  /** The parameter values of a provider: the given current values, else the stored options in edit mode, else empty strings. */
+  /**
+   * The parameter values of a provider: the given current values, else the stored options in edit mode, else empty
+   * strings.
+   */
   private parameterValues(module: string, current: Record<string, string> = {}): Record<string, string> {
     const values: Record<string, string> = {};
     for (const name of Object.keys(this.providers()[module]?.parameters ?? {})) {

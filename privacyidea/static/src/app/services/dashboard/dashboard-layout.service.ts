@@ -213,7 +213,8 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private changedWhileLoading = false;
 
   private loadLayout(): void {
-    // An answer after the injector was destroyed belongs to an ended session and must not write with the next one's token.
+    // An answer after the injector was destroyed belongs to an ended session and must not write with the next one's
+    // token.
     this.persistence
       .load()
       .pipe(takeUntilDestroyed(this.destroyRef))

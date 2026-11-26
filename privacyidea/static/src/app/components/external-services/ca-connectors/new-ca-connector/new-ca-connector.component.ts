@@ -144,7 +144,10 @@ export class NewCaConnectorComponent implements OnDestroy {
     disabled(f.type, () => this.isEditMode());
   });
 
-  /** True for a Microsoft connector whose hostname and port are valid, which is what the "Get Available CAs" request needs. */
+  /**
+   * True for a Microsoft connector whose hostname and port are valid, which is what the "Get Available CAs" request
+   * needs.
+   */
   readonly canLoadAvailableCas = computed(
     () =>
       this.caConnectorModel().type === "microsoft" &&

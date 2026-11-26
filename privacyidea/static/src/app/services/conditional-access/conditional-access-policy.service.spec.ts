@@ -321,7 +321,8 @@ describe("ConditionalAccessPolicyService", () => {
     });
 
     describe("unavailableActionTypes / actionConflict", () => {
-      const action = (actionType: string) => ({ action_type: actionType, action_value: null }) as ConditionalAccessStageAction;
+      const action = (actionType: string) =>
+        ({ action_type: actionType, action_value: null }) as ConditionalAccessStageAction;
 
       it("should report nothing while no rules have been served", () => {
         const actions = [action("LOCK_USER"), action("LOCK_USER")];
