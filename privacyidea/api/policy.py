@@ -182,7 +182,10 @@ def set_policy_api(name=None):
     :jsonparam user: user(s) the policy applies to — string with
         wildcards or list of strings.
     :jsonparam time: time-of-day window during which the policy is
-        active (see the policy reference for the format).
+        active (see the policy reference for the format). A day range
+        can wrap around the end of the week (``Sat-Mon``) and a time
+        range can cross midnight (``Fri: 22-6`` is Friday 22:00 to
+        Saturday 06:00).
     :jsonparam pinode: privacyIDEA node or list of nodes the policy
         applies to. Validated against the configured nodes. The node
         names are compared exactly: wildcards (``*``) and negations
