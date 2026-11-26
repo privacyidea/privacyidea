@@ -58,6 +58,18 @@ interface ClientSuggestion {
   applications: string[];
 }
 
+interface TimeRange {
+  days: string;
+  startMinutes: number;
+  endMinutes: number;
+}
+
+export interface OvernightTimeRange {
+  days: string;
+  start: string;
+  end: string;
+}
+
 const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 function toMinutes(time: string): number | null {
@@ -65,20 +77,32 @@ function toMinutes(time: string): number | null {
   return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
 }
 
+function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+function formatDayName(day: string): string {
+  return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+}
+
 // Mirrors check_time_in_range on the server: whitespace is ignored and day names are case-insensitive.
-function isValidTimeRange(value: string): boolean {
-  return value
-    .replace(/\s+/g, "")
-    .split(",")
-    .every((range) => {
-      const match = /^([a-z]{3})(?:-([a-z]{3}))?:(\d{1,2}(?::\d{1,2})?)-(\d{1,2}(?::\d{1,2})?)$/i.exec(range);
-      if (!match) return false;
-      const [, dayStart, dayEnd = dayStart, timeStart, timeEnd] = match;
-      if (!WEEKDAYS.includes(dayStart.toLowerCase()) || !WEEKDAYS.includes(dayEnd.toLowerCase())) return false;
-      const start = toMinutes(timeStart);
-      const end = toMinutes(timeEnd);
-      return start !== null && end !== null && start <= end;
-    });
+// A day range can wrap around the end of the week (Sat-Mon) and a time range can cross midnight (22-6).
+// Returns null if one of the ranges is not valid.
+function parseTimeRanges(value: string): TimeRange[] | null {
+  const timeRanges: TimeRange[] = [];
+  for (const range of value.replace(/\s+/g, "").split(",")) {
+    const match = /^([a-z]{3})(?:-([a-z]{3}))?:(\d{1,2}(?::\d{1,2})?)-(\d{1,2}(?::\d{1,2})?)$/i.exec(range);
+    if (!match) return null;
+    const [, dayStart, dayEnd, timeStart, timeEnd] = match;
+    const dayNames = dayEnd === undefined ? [dayStart] : [dayStart, dayEnd];
+    if (!dayNames.every((day) => WEEKDAYS.includes(day.toLowerCase()))) return null;
+    const startMinutes = toMinutes(timeStart);
+    const endMinutes = toMinutes(timeEnd);
+    if (startMinutes === null || endMinutes === null) return null;
+    timeRanges.push({ days: dayNames.map(formatDayName).join("-"), startMinutes, endMinutes });
+  }
+  return timeRanges;
 }
 
 @Component({
@@ -118,9 +142,21 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (!value) return [];
-      return isValidTimeRange(value) ? [] : [{ kind: "invalidValidTime" }];
+      return parseTimeRanges(value) !== null ? [] : [{ kind: "invalidValidTime" }];
     });
   });
+
+  // A range that ends before it starts is valid and crosses midnight. The hint shows these ranges, so that an admin
+  // sees that a swapped range like "Mon-Fri: 18-8" applies at night and not from 08:00 to 18:00.
+  readonly overnightTimeRanges = computed<OvernightTimeRange[]>(() =>
+    (parseTimeRanges(this.validTimeSignal()) ?? [])
+      .filter((timeRange) => timeRange.startMinutes > timeRange.endMinutes)
+      .map((timeRange) => ({
+        days: timeRange.days,
+        start: formatMinutes(timeRange.startMinutes),
+        end: formatMinutes(timeRange.endMinutes)
+      }))
+  );
 
   readonly regexIpV4 =
     /^!?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
