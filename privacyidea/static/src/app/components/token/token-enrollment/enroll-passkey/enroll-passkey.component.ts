@@ -235,6 +235,9 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     if (extResults?.credProps) {
       passkeyFinalizeData.credProps = extResults.credProps;
     }
+    // The finalize mapper filters these values
+    passkeyFinalizeData.transports = attestationResponse.getTransports?.();
+    passkeyFinalizeData.prf = extResults?.prf;
     return lastValueFrom(
       this.tokenService.enrollToken({
         data: passkeyFinalizeData,

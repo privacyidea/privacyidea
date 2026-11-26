@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { CopyButtonComponent } from "./copy-button.component";
+import { axe } from "@testing/axe";
 
 describe("CopyButtonComponent", () => {
   let fixture: ComponentFixture<CopyButtonComponent>;
@@ -59,6 +60,10 @@ describe("CopyButtonComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("does not submit a surrounding form", () => {
+    expect(fixture.nativeElement.querySelector("button").getAttribute("type")).toBe("button");
+  });
+
   it("onCopy toggles copied to true, then back to false after 1600ms", () => {
     jest.useFakeTimers();
 
@@ -72,5 +77,9 @@ describe("CopyButtonComponent", () => {
 
     jest.advanceTimersByTime(1);
     expect(component.copied()).toBe(false);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

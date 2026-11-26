@@ -19,6 +19,7 @@
 import { Component, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailsCardComponent } from "./details-card.component";
+import { axe } from "@testing/axe";
 
 @Component({
   standalone: true,
@@ -61,5 +62,11 @@ describe("DetailsCardComponent", () => {
     hostFixture.detectChanges();
     expect(hostFixture.nativeElement.querySelector(".details-card-title")?.textContent?.trim()).toBe("User");
     expect(hostFixture.nativeElement.querySelector(".projected-content")?.textContent).toBe("content");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

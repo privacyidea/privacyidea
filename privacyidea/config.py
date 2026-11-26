@@ -22,6 +22,7 @@ import secrets
 import string
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 log = logging.getLogger(__name__)
 
@@ -58,6 +59,8 @@ class ConfigKey:
     SECRET_KEY = "SECRET_KEY"
     PEPPER = "PI_PEPPER"
     ENCFILE = "PI_ENCFILE"
+    # The folder with the public keys that verify the signature of an uploaded subscription
+    SUBSCRIPTION_KEY_DIRECTORY = "PI_SUBSCRIPTION_KEY_DIRECTORY"
     HASH_ALGO_LIST = "PI_HASH_ALGO_LIST"
     HASH_ALGO_PARAMS = "PI_HASH_ALGO_PARAMS"
 
@@ -318,10 +321,12 @@ class DockerConfig:
         PI_DB_PASSWORD = db_password
 
         if all(x in os.environ for x in [ConfigKey.DB_USER, ConfigKey.DB_HOST]) and PI_DB_PASSWORD:
+            # User and password are percent-encoded, so that characters like "@", ":" or "/" in them do not end
+            # them early; SQLAlchemy decodes them again.
             SQLALCHEMY_DATABASE_URI = "{}://{}:{}@{}{}/{}{}".format(
                 os.getenv(ConfigKey.DB_DRIVER, 'mysql+pymysql'),
-                os.getenv(ConfigKey.DB_USER),
-                PI_DB_PASSWORD,
+                quote(os.getenv(ConfigKey.DB_USER), safe=""),
+                quote(PI_DB_PASSWORD, safe=""),
                 os.getenv(ConfigKey.DB_HOST),
                 f":{os.getenv(ConfigKey.DB_PORT)}" if ConfigKey.DB_PORT in os.environ else "",
                 os.getenv(ConfigKey.DB_NAME, ""),
@@ -342,6 +347,9 @@ class DockerConfig:
 
     if enc_key := _get_secrets_paths_from_environment("enckey", ConfigKey.ENCFILE):
         PI_ENCFILE = enc_key
+    # The image ships the public keys for the subscriptions in /etc/privacyidea. The enckey is a mounted secret
+    # in another folder, so the key folder cannot be derived from PI_ENCFILE as in a normal installation.
+    PI_SUBSCRIPTION_KEY_DIRECTORY = "/etc/privacyidea"
     if audit_key_public := _get_secrets_paths_from_environment("audit_key_public",
                                                                ConfigKey.AUDIT_KEY_PUBLIC):
         PI_AUDIT_KEY_PUBLIC = audit_key_public
@@ -355,6 +363,9 @@ class DockerConfig:
         PI_REDIS_URL = redis_url
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
+    # One database engine with a connection pool per process for the audit log and each SQL resolver, instead of
+    # a new engine and connection per request
+    PI_ENGINE_REGISTRY_CLASS = "shared"
 
 
 config = {

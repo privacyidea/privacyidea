@@ -89,7 +89,7 @@ describe("IntegrationsService", () => {
     expect(httpMock.match(() => true).length).toBe(0);
   });
 
-  it("should request and populate integrations on the dashboard, policies and api-clients routes", async () => {
+  it("should request and populate integrations on the dashboard, policies, api-clients and authentication log routes", async () => {
     async function testLoadResource(routeUrl: string) {
       contentService.routeUrl.set(routeUrl);
       TestBed.tick();
@@ -109,6 +109,14 @@ describe("IntegrationsService", () => {
 
     await testLoadResource(ROUTE_PATHS.POLICIES);
     await testLoadResource(ROUTE_PATHS.POLICIES_API_CLIENTS);
+    await testLoadResource(ROUTE_PATHS.AUTHENTICATION_LOG);
+  });
+
+  it("should request integrations for a self-service user on the authentication log", () => {
+    (TestBed.inject(AuthService) as unknown as MockAuthService).role.set("user");
+    contentService.routeUrl.set(ROUTE_PATHS.AUTHENTICATION_LOG);
+    TestBed.tick();
+    httpMock.expectOne(`${environment.proxyUrl}/info/integrations`).flush(MockPiResponse.fromValue([CP]));
   });
 
   it("should filter to API-client integrations", () => {
@@ -127,9 +135,20 @@ describe("IntegrationsService", () => {
     expect(service.labelFor("unknown")).toBe("unknown");
   });
 
-  it("should look up a label by policy_value case-insensitively, falling back to the raw value", () => {
+  it("should show the label together with the stored policy_value, matched case-insensitively", () => {
     service.integrations.set([CP]);
-    expect(service.labelForPolicyValue("Privacyidea-CP")).toBe("Windows Credential Provider");
-    expect(service.labelForPolicyValue("unknown-agent")).toBe("unknown-agent");
+    expect(service.displayForPolicyValue("privacyidea-cp")).toBe("Windows Credential Provider (privacyidea-cp)");
+    expect(service.displayForPolicyValue("Privacyidea-CP")).toBe("Windows Credential Provider (Privacyidea-CP)");
+  });
+
+  it("should show an unknown policy_value as it is, even if it reads like a label", () => {
+    service.integrations.set([CP]);
+    expect(service.displayForPolicyValue("unknown-agent")).toBe("unknown-agent");
+    expect(service.displayForPolicyValue("Windows Credential Provider")).toBe("Windows Credential Provider");
+  });
+
+  it("should show the policy_value once if the label is the same", () => {
+    service.integrations.set([{ ...CP, label: "privacyidea-cp" }]);
+    expect(service.displayForPolicyValue("privacyidea-cp")).toBe("privacyidea-cp");
   });
 });

@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ApiClientService } from "@services/api-client/api-client.service";
 import { MockApiClientService } from "@testing/mock-services";
 import { ApiClientIssuedKeyBannerComponent } from "./api-client-issued-key-banner.component";
+import { axe } from "@testing/axe";
 
 describe("ApiClientIssuedKeyBannerComponent", () => {
   let component: ApiClientIssuedKeyBannerComponent;
@@ -58,5 +59,11 @@ describe("ApiClientIssuedKeyBannerComponent", () => {
     dismissButton.click();
 
     expect(apiClientServiceMock.dismissIssuedKey).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

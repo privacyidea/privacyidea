@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -48,16 +48,16 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-tokengroups",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -90,12 +90,21 @@ export class TokengroupsComponent {
     allowed: () => this.authService.actionAllowed("tokengroup_list"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("tokengroup_add")
+      ? $localize`:@@tokenGroup.createTokenGroupHint:Create a token group to group tokens for policies and machine assignments.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["select", "id", "groupname", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("tokengroup_delete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["id", "groupname", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
@@ -119,12 +128,36 @@ export class TokengroupsComponent {
     visibleRows: renderedRows(this.tokengroupDataSource)
   });
 
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@tokenGroup.createTokenGroup:Create Token Group`,
+      tone: "primary",
+      width: "l",
+      icon: "local_police",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("tokengroup_add"),
+      run: () => this.onCreateNewTokengroup()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
+      run: () => this.deleteSelected()
+    }
+  ]);
+
   onCreateNewTokengroup(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
   }
 
   onEditTokengroup(group: Tokengroup): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS, group.groupname]);
   }
 
   deleteSelected(): void {

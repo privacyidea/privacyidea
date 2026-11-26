@@ -18,6 +18,8 @@
 import logging
 from enum import StrEnum
 
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
+
 log = logging.getLogger(__name__)
 
 # Key under which the classified AuthEventType is carried from lib to api layer.
@@ -85,7 +87,7 @@ LOG_TRANSACTION_ID_KEY = "log_transaction_id"
 # state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
 #: The classification keys stripped at the lib/api boundary, so none of them can reach a client.
 INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
-                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY})
+                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY})
 
 
 def strip_internal_classification(details):
@@ -120,10 +122,18 @@ class AuthEventType(StrEnum):
     # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
     TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
     # Correct first factor (pin / password), but the second factor failed, e.g. wrong OTP.
-    # Also used for a failed passkey authentication, since the exact cause of failure cannot be determined there.
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # The credential identified its user, but the login name and realm that a session carries do not lead back to
+    # them: another user of the realm has the same login name and the realm's resolver order finds them first, so
+    # the session would act as that other user. Unlike USER_UNKNOWN the login name resolves - just to somebody
+    # else.
+    LOGIN_NAME_NOT_UNIQUE = "LOGIN_NAME_NOT_UNIQUE"
+    # The user store failed to answer the lookup of the login name (e.g. the LDAP server is busy, the SQL query
+    # failed, the HTTP user store answered with a server error). Unlike USER_UNKNOWN it says nothing about the login
+    # name, so the request is refused without anything being decided about the user.
+    USER_STORE_UNAVAILABLE = "USER_STORE_UNAVAILABLE"
     # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
     # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
@@ -144,7 +154,8 @@ class AuthEventType(StrEnum):
     CHALLENGE_TRIGGER_FAIL = "CHALLENGE_TRIGGER_FAIL"
     # Push challenge approved on the smartphone (out-of-band, signature verified).
     CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
-    # Challenge response is wrong, expired, or the transaction_id is unknown.
+    # Challenge response is wrong, expired, or the transaction_id is unknown. A FIDO2 answer (passkey, WebAuthn) that
+    # does not verify is one too.
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
     # Push challenge rejected on the smartphone without saying why: a legacy app that does not send a decline
     # reason at all, or one that sent a reason this server version does not know. The unspecified bucket, so an
@@ -168,6 +179,10 @@ class AuthEventType(StrEnum):
     ENROLLMENT_FAIL = "ENROLLMENT_FAIL"
     # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
+    # The request was classified as a success or a pending challenge, but still ended in an error response, e.g.
+    # raised by a post-policy. An error after a failed authentication keeps the failure's own type. The error message
+    # is recorded in the other info.
+    POST_AUTHENTICATION_FAIL = "POST_AUTHENTICATION_FAIL"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
     # These three classify a request the conditional-access pre-check turned away, which is why none of them is ever
@@ -195,6 +210,15 @@ class AuthEventType(StrEnum):
     # A request carried a valid API key (correct secret) whose client is suspended. The request was not identified
     # by it (g.client_id stays None), so whatever the request does otherwise proceeds unauthenticated by that key.
     SUSPENDED_API_KEY_USED = "SUSPENDED_API_KEY_USED"
+
+    # --- written by /validate/offlinerefill ------------------------------------------------------------------------
+    # Kept apart from LOGIN_SUCCESS and the token-flow failures: a refill is an offline client renewing its material,
+    # not a login, so a policy counting logins must not count refills by accident.
+    #
+    # The refilltoken was accepted and the client received fresh offline material and a new refilltoken.
+    OFFLINE_REFILL_SUCCESS = "OFFLINE_REFILL_SUCCESS"
+    # The refill was refused; the reasons say why (token state, WRONG_OTP or one of the offline refill reasons).
+    OFFLINE_REFILL_FAIL = "OFFLINE_REFILL_FAIL"
 
 
 class AuthEventReason(StrEnum):
@@ -237,13 +261,23 @@ class AuthEventReason(StrEnum):
     # A policy disabled this token's whole type for the request (PolicyAction.DISABLED_TOKEN_TYPES).
     TOKEN_TYPE_DISABLED = "TOKEN_TYPE_DISABLED"
     # The token type excluded itself from *this* request (TokenClass.use_for_authentication) - e.g. an
-    # application-specific password whose service_id does not match the one the request names.
+    # application-specific password whose service_id does not match the one the request names - or can not be
+    # triggered at /validate/triggerchallenge (TokenClass.can_trigger_challenge), e.g. a passkey without
+    # passkey_trigger_by_pin.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
+    # The token type has no challenge mode, so no challenge can be triggered for it (e.g. spass, sshkey).
+    TOKEN_NO_CHALLENGE_MODE = "TOKEN_NO_CHALLENGE_MODE"
 
     # --- authorization, i.e. a policy or the server configuration refusing the request ---------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
-    # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The others below are
+    # authorization decisions too, each naming the specific policy or limit that refused it; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
+    # The type of the token used is not one the tokentype policy allows (PolicyAction.TOKENTYPE).
+    TOKENTYPE_NOT_ALLOWED = "TOKENTYPE_NOT_ALLOWED"
+    # The serial of the token used does not match the serial policy (PolicyAction.SERIAL).
+    SERIAL_NOT_ALLOWED = "SERIAL_NOT_ALLOWED"
+    # A tokeninfo field of the token used does not match the tokeninfo policy (PolicyAction.TOKENINFO).
+    TOKENINFO_MISMATCH = "TOKENINFO_MISMATCH"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
     AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
     # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).
@@ -263,6 +297,9 @@ class AuthEventReason(StrEnum):
     WRONG_OTP = "WRONG_OTP"
 
     # --- challenge-response --------------------------------------------------------------------------------------
+    # The challenge could not be sent to the user: the SMS or email gateway failed, or a push token has no push
+    # gateway or its push gateway failed while polling is not allowed.
+    CHALLENGE_NOT_DELIVERED = "CHALLENGE_NOT_DELIVERED"
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
@@ -283,6 +320,14 @@ class AuthEventReason(StrEnum):
     # CHALLENGE_CANCELLED, or the unspecified CHALLENGE_DECLINED), so a reason per variant would repeat it - the same
     # reasoning that leaves a wrong first factor without a reason of its own.
     CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
+
+    # --- offline refill (/validate/offlinerefill) ----------------------------------------------------------------
+    # The refilltoken the client sent does not match the stored one: stale after a missed rotation, or replayed.
+    REFILLTOKEN_MISMATCH = "REFILLTOKEN_MISMATCH"
+    # The token is not attached to any machine with the offline application.
+    NOT_AN_OFFLINE_TOKEN = "NOT_AN_OFFLINE_TOKEN"
+    # A WebAuthn/Passkey refill whose user agent names no machine, so no machine-specific refilltoken can be looked up.
+    MACHINE_NOT_IDENTIFIED = "MACHINE_NOT_IDENTIFIED"
 
 
 def order_request_reasons(reasons) -> list[AuthEventReason]:
@@ -369,6 +414,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_STORE_UNAVAILABLE: AuthEventOutcome.FAILURE,
     AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
@@ -380,11 +427,14 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+    AuthEventType.POST_AUTHENTICATION_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
     AuthEventType.DEVICE_TOKEN_REUSED: AuthEventOutcome.FAILURE,
     AuthEventType.SUSPENDED_API_KEY_USED: AuthEventOutcome.FAILURE,
+    AuthEventType.OFFLINE_REFILL_SUCCESS: AuthEventOutcome.SUCCESS,
+    AuthEventType.OFFLINE_REFILL_FAIL: AuthEventOutcome.FAILURE,
 }
 
 
@@ -429,17 +479,26 @@ CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.SUSPENDED_API_KEY_USED,
 })
 
+#: Event types that record the server failing to process an authentication rather than anything the request did. They
+#: are the outcome of their attempt, but a policy cannot count them: the user did nothing wrong, and while a user store
+#: is down every login fails, so counting them would lock users and block the source IPs of every client in front of
+#: privacyIDEA for the outage.
+SERVER_FAILURE_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.USER_STORE_UNAVAILABLE,
+})
+
 #: Every event type that must never be an attempt's representative - the row whose type classifies the whole
 #: attempt: the rejections conditional access wrote itself, and the signals about the request's client. What they
 #: have in common is that neither is an outcome the attempt reached.
 NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
-#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
-#: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
-#: why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`, the same membership seen from the
-#: other side. The two sets are equal today and are kept apart because they answer different questions: one what a
+#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, the
+#: signals about the request's client, and the server failures. The first two are no outcome an authentication attempt
+#: reached, which is also why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`. A server failure
+#: is the outcome of its attempt and represents it, which is why the two sets answer different questions: one what a
 #: policy may count, the other what may stand for an attempt.
-UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = (CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+                                                     | SERVER_FAILURE_EVENT_TYPES)
 
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
@@ -505,9 +564,10 @@ class RestrictionCause(StrEnum):
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
-# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
-# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, which reduces the per-token outcomes of
-# one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
+# handful - INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
+# DEVICE_TOKEN_REUSED, SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
+# reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
+# CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
 # classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
 # either, and are excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
@@ -526,6 +586,8 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_DECLINED,
     # Lowest of the three declines: the user abandoning their own attempt says least about the request.
     AuthEventType.CHALLENGE_CANCELLED,
+    # A token whose challenge could not be created still matched the first factor, so the request was meant for it.
+    AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.ENROLLMENT_FAIL,
     AuthEventType.MFA_FAIL,
@@ -535,13 +597,21 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
-    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
+    # Next to USER_UNKNOWN, which it is the counterpart of: the login name resolves, just not to the user the
+    # credential identified. Like it, it classifies a request the endpoint refused before any token flow ran, so
+    # it never actually reaches reduce_request_events and is ranked here to satisfy the invariant.
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE,
+    # Refused before any token flow ran as well, and is the only event of its request.
+    AuthEventType.USER_STORE_UNAVAILABLE,
+    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: it describes the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
-    # is the better classification. In practice neither reduces against anything - the endpoints that emit them
-    # classify a request with a single event - and they are listed here because every non-enforcement type must be.
-    AuthEventType.CHALLENGE_TRIGGER_FAIL,
+    # is the better classification. In practice it reduces against nothing - the endpoint that emits it classifies a
+    # request with a single event - and it is listed here because every non-enforcement type must be.
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
+    # Never reduced against anything either: it is assigned on the way out of the request, by reclassifying the event
+    # the request already staged (see record_post_authentication_failure in api/before_after.py).
+    AuthEventType.POST_AUTHENTICATION_FAIL,
     # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
     # layers respectively - so, like the three above, they are listed only to satisfy the invariant that every
     # trackable type has a rank, and reduce_request_events never sees one. SUSPENDED_API_KEY_USED is not even
@@ -550,6 +620,9 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     # attempt nor stands in for a request's own outcome.
     AuthEventType.DEVICE_TOKEN_REUSED,
     AuthEventType.SUSPENDED_API_KEY_USED,
+    # Classify a refill, which is a single event on a request of its own; listed for the same invariant.
+    AuthEventType.OFFLINE_REFILL_SUCCESS,
+    AuthEventType.OFFLINE_REFILL_FAIL,
 ]
 
 # Precedence rank of each event.

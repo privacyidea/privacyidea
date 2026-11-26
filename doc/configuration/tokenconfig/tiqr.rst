@@ -5,11 +5,6 @@ TiQR Token Configuration
 
 .. index:: TiQR Token
 
-.. figure:: images/tiqr.png
-   :width: 500
-
-   *TiQR Token configuration*
-
 Configuration Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

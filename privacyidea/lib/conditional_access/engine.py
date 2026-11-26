@@ -44,6 +44,7 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
+from privacyidea.lib.utils import canonical_client_ip
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
                                 ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
                                 ConditionalAccessStageAction, UserLockState)
@@ -642,7 +643,8 @@ def count_subject_events(subject: LockSubject, event_types: list[str],
 
 def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_seconds: float,
                                 window_end: datetime | None = None,
-                                extra_filters: "Sequence | None" = None) -> int:
+                                extra_filters: "Sequence | None" = None,
+                                exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count the number of **distinct accounts** a single *source_ip* targeted with any of *event_types* within the
     sliding window ``[window_end - window_seconds, window_end]``. This is the password-spraying / enumeration signal:
@@ -681,17 +683,23 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
         rows count to the ones a policy's conditions describe (see
         :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
         empty counts every row of the subject.
+    :param exclude_row_ids: leave these row ids out, so the result is the set of accounts the *other* rows of the
+        window name - the count before a request's own rows joined it. An account that request retried is still
+        counted through its earlier rows, so the count does not drop for it.
     :return: the number of distinct targeted accounts
     """
     window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     type_values = [str(t) for t in event_types]
+    conditions = [AuthenticationLog.source_ip == source_ip,
+                  AuthenticationLog.event_type.in_(type_values),
+                  AuthenticationLog.timestamp >= window_start,
+                  AuthenticationLog.timestamp <= window_end,
+                  *(extra_filters or ())]
+    if exclude_row_ids:
+        conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     distinct_accounts = (select(AuthenticationLog.username, AuthenticationLog.realm, AuthenticationLog.resolver)
-                         .where(AuthenticationLog.source_ip == source_ip,
-                                AuthenticationLog.event_type.in_(type_values),
-                                AuthenticationLog.timestamp >= window_start,
-                                AuthenticationLog.timestamp <= window_end,
-                                *(extra_filters or ()))
+                         .where(*conditions)
                          .distinct()
                          .subquery())
     return get_ca_session().scalar(select(func.count()).select_from(distinct_accounts)) or 0
@@ -748,6 +756,8 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     :param rows: the authentication-log rows of the attempts to reduce
     :param tracked_types: the event types a representative must be in to count the attempt
     :param since_last_success: only count attempts whose latest row is newer than the last ``LOGIN_SUCCESS`` row
+        that *row_filter* admits - a condition scopes what the policy tracks, including what counts as its own reset
+        event, as for the ``PER_REQUEST`` counters (see :func:`count_subject_events`)
     :param row_filter: an optional ``(row) -> bool`` applied to each attempt's representative row; an attempt whose
         representative it rejects does not count. ``None`` counts every reduced attempt. This is where a policy's
         conditions scope a ``PER_ATTEMPT`` count (see
@@ -759,7 +769,7 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     success: dict[str, AuthenticationLog] = {}
     last_success_order = _OLDEST_ROW_ORDER
     # First pass: for each row, track its attempt's latest row, its latest success row, and the newest LOGIN_SUCCESS
-    # position (the since_last_success reset point).
+    # position the policy's conditions cover (the since_last_success reset point).
     for row in rows:
         if row.event_type in NON_REPRESENTATIVE_EVENT_TYPES:
             # A row conditional access wrote for its own rejection, or one describing the client a request arrived
@@ -769,7 +779,8 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
             continue
         order = _row_order(row)
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
-            last_success_order = max(last_success_order, order)
+            if row_filter is None or row_filter(row):
+                last_success_order = max(last_success_order, order)
             won = success.get(row.attempt_id)
             if won is None or order > _row_order(won):
                 success[row.attempt_id] = row
@@ -1054,21 +1065,17 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
     :param source_ip: the client IP to count for
     :param window_end: the instant the window ends (reference time)
     :param exclude_row_ids: leave out these row ids (see :func:`_policy_count` for how ``PER_REQUEST`` and
-        ``PER_ATTEMPT`` apply this differently) - has no effect on ``DISTINCT_USERS`` (see below)
+        ``PER_ATTEMPT`` apply this differently); ``DISTINCT_USERS`` then counts the accounts the remaining rows name
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.DISTINCT_USERS:
-        # Excluding this request's own rows is meaningless here: the signal is the *distinct* accounts seen,
-        # so an account that already appears via an earlier, unrelated row is already one of them regardless
-        # of this one - unlike a monotonic per-row/per-attempt count, "before this request's own contribution"
-        # is not simply "one row/attempt fewer". Callers that need count_before for crossing-detection
-        # (see _evaluate_policy) fall back to count - 1 for this mode instead of calling this with ids to
-        # exclude.
+        # Without this request's own rows, the count is the accounts the other rows name: a request that retries an
+        # account already counted leaves it unchanged, one for a new account lowers it by one.
         return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
                                            _effective_window_seconds(policy, window_end), window_end=window_end,
-                                           extra_filters=sql_filters)
+                                           extra_filters=sql_filters, exclude_row_ids=exclude_row_ids)
     window_seconds = _effective_window_seconds(policy, window_end)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
@@ -1283,18 +1290,17 @@ def canonical_block_identifier(identifier: str) -> str | None:
     configured - while an administrator types the address by hand. Every path that names a row by its
     identifier goes through here, so only one spelling is ever stored or looked up.
 
-    :func:`~privacyidea.lib.utils.get_client_ip_info` is the reference: the address it selects through a proxy
-    override is rendered by ``netaddr``, so that is the rendering the key takes. It also keeps the blocklist
-    and the authentication log naming one client the same way, and matches what the operating system puts in
-    ``REMOTE_ADDR``: ``netaddr`` keeps the ``::ffff:192.0.2.1`` notation of an IPv4-mapped address, where
-    ``ipaddress`` would render the same address ``::ffff:c000:201``.
+    :func:`~privacyidea.lib.utils.get_client_ip_info` is the reference: both use
+    :func:`~privacyidea.lib.utils.canonical_client_ip`, so the blocklist and the authentication log name one
+    client the same way. An IPv4-mapped address (``::ffff:192.0.2.1``) is stored as the IPv4 address it stands
+    for (``192.0.2.1``), as that is the client IP of such a client.
 
     ``None`` rather than the value unchanged, so a caller taking an address from an administrator can refuse
     it (:func:`~privacyidea.lib.conditional_access.state.block_ip`) while one reading the table can fall back
     to the raw value and stay able to find - and delete - a row some other path filed under it.
     """
     try:
-        return str(IPAddress(identifier))
+        return canonical_client_ip(IPAddress(identifier))
     except (AddrFormatError, ValueError):
         return None
 
@@ -1851,12 +1857,10 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     # _action_fires. context.own_row_ids names exactly this request's own rows (however many one request stages) -
     # deliberately not context's attempt_id, since that id can be shared with an *earlier* request of the same
     # multi-request attempt whose rows an earlier evaluation already counted (see CAContext.own_row_ids). Falls
-    # back to count - 1, i.e. the plain count == threshold this replaces, when either nothing was written (a
-    # caller outside a request context) or the mode is DISTINCT_USERS, where "this request's own contribution" is
-    # not well-defined (see _policy_count_ip) - both fall back rather than regress, at the cost of not detecting a
-    # step that skipped the threshold value in those two cases.
+    # back to count - 1, i.e. the plain count == threshold this replaces, when nothing was written (a caller
+    # outside a request context), at the cost of not detecting a step that skipped the threshold value there.
     own_row_ids = context.own_row_ids
-    if own_row_ids and policy.count_mode != CountMode.DISTINCT_USERS:
+    if own_row_ids:
         if policy.target == ConditionalAccessTarget.SOURCE_IP:
             count_before = _policy_count_ip(policy, source_ip, now, exclude_row_ids=own_row_ids)
         else:

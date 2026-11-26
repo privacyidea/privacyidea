@@ -14,6 +14,10 @@ to the REST API :ref:`rest_validate` and are checked
 using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
+The policies are matched for the user who authenticates. A request to
+``/validate/check`` that names only the serial of a token is matched for the
+owner of the token.
+
 The following actions are available in the scope
 *authentication*:
 
@@ -52,6 +56,10 @@ how the authentication should be processed:
 
    The user must not send a fixed password, only the OTP value.
    A request with PIN and OTP fails.
+   A simple pass token (SPASS) has no OTP value, its PIN is the whole password,
+   so its PIN is still checked.
+
+.. versionadded:: 2.0
 
 .. _passthru_policy:
 
@@ -89,6 +97,8 @@ a token are accepted without their password being checked.
    portal, the user could delete all their tokens and then authenticate with
    their static password again.
 
+.. versionadded:: 2.0
+
 .. _policy_passthru_ignore_rollout_state:
 
 passthru_ignore_rollout_state
@@ -103,6 +113,8 @@ When privacyIDEA checks whether the user has a token, tokens in one of the given
 rollout states are not counted. A user whose only tokens are in such a state is
 then authenticated as described in :ref:`passthru_policy`. Several rollout states
 can be given as a space-separated list.
+
+.. versionadded:: 3.14
 
 passthru_assign
 ~~~~~~~~~~~~~~~
@@ -135,6 +147,7 @@ Examples are
 
 .. warning:: This can be very time consuming if the number of OTP values to check is set too high!
 
+.. versionadded:: 3.1
 
 .. _passonnotoken:
 
@@ -151,6 +164,8 @@ for this user will always be true.
 .. warning:: Only use this if you know exactly what
    you are doing.
 
+.. versionadded:: 2.0
+
 .. _policy_passonnotoken_ignore_rollout_state:
 
 passonnotoken_ignore_rollout_state
@@ -166,6 +181,8 @@ rollout states are not counted. A user whose only tokens are in such a state is
 then authenticated as described in :ref:`passonnotoken`. Several rollout states
 can be given as a space-separated list.
 
+.. versionadded:: 3.14
+
 .. _passonnouser:
 
 passOnNoUser
@@ -177,8 +194,12 @@ type: ``bool``
 
 If the user does not exist, the authentication request is successful.
 
+A user store that fails to answer the lookup of the user, e.g. an LDAP server that is busy or an SQL query that fails,
+does not count as a user that does not exist: the authentication request fails with an error.
+
 .. warning:: Only use this if you know exactly what you are doing.
 
+.. versionadded:: 2.0
 
 .. _smstext:
 
@@ -236,6 +257,7 @@ Default: *<otp>*
      Your OTP is {otp}
      @privacyidea.mydomain.com #{otp}
 
+.. versionadded:: 2.1
 
 smsautosend
 ~~~~~~~~~~~
@@ -247,6 +269,9 @@ type: ``bool``
 A new OTP value will be sent via SMS if the user authenticated
 successfully with their SMS token. Thus the user does not
 have to trigger a new SMS when they want to log in again.
+The value sent this way is not limited by the OTP validity time.
+
+.. versionadded:: 2.1
 
 .. _emailtext:
 
@@ -297,6 +322,8 @@ an HTML file.
    with the deprecated ``email.mailserver`` settings the template is sent as plain
    text.
 
+.. versionadded:: 2.3
+
 emailsubject
 ~~~~~~~~~~~~
 
@@ -312,6 +339,8 @@ brace prevents the email from being sent; the authentication request fails with
 
 Default: Your OTP
 
+.. versionadded:: 2.3
+
 emailautosend
 ~~~~~~~~~~~~~
 
@@ -320,8 +349,9 @@ emailautosend
 type: ``bool``
 
 If set, a new OTP Email will be sent, when successfully authenticated with an
-Email Token.
+Email Token. The value sent this way is not limited by the OTP validity time.
 
+.. versionadded:: 2.3
 
 .. _policy_set_realm:
 
@@ -339,6 +369,10 @@ and ``/recover``. It is applied before the first user resolving to avoid unneces
 requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
 Please note, due to this, it is not possible to use user-related conditions for this policy!
+privacyIDEA compares the login name and the realm of the request. It does not check the
+resolver of the policy, and a ``userinfo`` condition has no user. A request with only a
+serial has neither a user nor a realm. For such a request, privacyIDEA does not check the
+realm of the policy either.
 
 Also, the given parameters can actually point to a non-existing user object.
 
@@ -351,7 +385,7 @@ client, but this username would not be found in the default realm.
 
 For in depth information about user and realm mapping read :ref:`realms`.
 
-.. versionadded:: 3.12
+.. versionadded:: 3.12.2
 
 .. _policy_mangle:
 
@@ -367,8 +401,9 @@ are processed. Meaning the parameters ``user``, ``pass`` and ``realm`` can be
 modified prior to authentication. If ``user`` or ``realm`` is modified, the user object of the request is
 created again from the modified parameters.
 
-.. note:: This policy is applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck` and
-    :http:get:`/machine/authitem`, not to ``/validate/triggerchallenge`` or ``/auth``.
+.. note:: This policy is applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck`,
+    :http:post:`/validate/remember_device` and :http:get:`/machine/authitem`, not to
+    ``/validate/triggerchallenge`` or ``/auth``.
 
     If the policy :ref:`policy_set_realm` is set, this policy is only applied for ``user`` and ``pass``
     parameters. Policies with the ``realm`` parameter are ignored.
@@ -428,6 +463,8 @@ this::
 
    action: mangle=user/admin_(.*)/\1/
 
+.. versionadded:: 2.5
+
 .. _policy_challenge_response:
 
 challenge_response
@@ -446,6 +483,8 @@ response (SMS, email, push, WebAuthn, passkey, indexed secret, questionnaire) do
 not need it. ``/validate/triggerchallenge`` triggers challenges for all
 challenge-capable tokens regardless of this policy.
 
+.. versionadded:: 2.6
+
 .. _policy_disabled_token_types:
 
 disabled_token_types
@@ -456,10 +495,12 @@ type: ``string``
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
 
-``/validate/triggerchallenge`` still creates challenges for these token types, but
-an answer to them is rejected.
+``/validate/triggerchallenge`` does not create challenges for these token types. For a trigger by serial only,
+it applies only the policies that do not name a user, realm or resolver.
 
 .. versionadded:: 3.12
+
+.. versionchanged:: 3.14.1 ``/validate/triggerchallenge`` applies the policy.
 
 .. _policy_force_challenge_response:
 
@@ -476,6 +517,8 @@ PIN concatenated with OTP can not be used anymore! It only works when authentica
 Token types that can also authenticate with PIN and OTP in one value (like HOTP and TOTP) must be listed in
 :ref:`policy_challenge_response` as well; otherwise users can not authenticate with them at all.
 
+.. versionadded:: 3.10
+
 .. _policy_change_pin_via_validate:
 
 change_pin_via_validate
@@ -489,9 +532,22 @@ will start a challenge response mechanism in which the user is supposed to enter
 PIN two times.
 
 Only if the user successfully changes the PIN the authentication process is finished
-successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+successfully. For example, if the user enters two different new PINs, the authentication process fails.
+This counts as a failed authentication of the token, and the PIN change starts again with the next login.
+
+Each of the two challenges can be answered once, and only within its validity time. As for any other
+authentication, the token has to be usable and the authorization policies have to allow it.
+
+The authentication that starts the PIN change does not count for the authentication counters of the token
+(``count_auth`` and ``count_auth_success``). The confirmation of the new PIN completes the authentication and counts
+it. A PIN change that the user does not finish does not count.
+
+A registration token does not start a PIN change, because the token deletes itself after the successful
+authentication.
 
 .. note:: The application must support several consecutive challenge response requests.
+
+.. versionadded:: 3.4
 
 .. _policy_resync_via_multichallenge:
 
@@ -509,6 +565,8 @@ a challenge will be presented to the user saying "To resync your token, please e
 In contrast to the generic AutoResync a user has to enter the token PIN only once.
 
 .. note:: The application must support several consecutive challenge response requests.
+
+.. versionadded:: 3.7
 
 .. _policy_enroll_via_multichallenge:
 
@@ -579,6 +637,7 @@ When using the :ref:`policy_enroll_via_multichallenge_template` policy, the cont
 template. This allows the container to be enrolled with multiple tokens at once. Note that for these tokens, all
 enrollment policies are checked.
 
+.. versionadded:: 3.8
 
 .. _policy_enroll_via_multichallenge_text:
 
@@ -590,6 +649,7 @@ type: ``string``
 There is a default text that is shown to the user, when a token or container is enrolled via multichallenge. The
 administrator can change this text using this policy.
 
+.. versionadded:: 3.10
 
 .. _policy_enroll_via_multichallenge_template:
 
@@ -624,6 +684,8 @@ and the authentication succeeds.
 
 If this policy is not set, the user has to enroll the token or container. This is the default.
 
+.. versionadded:: 3.12
+
 .. _policy_enroll_via_multichallenge_passkey_offline:
 
 enroll_via_multichallenge_passkey_offline
@@ -646,6 +708,8 @@ type: ``bool``
 If a user authenticates successfully the failcounters of all of their tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
+.. versionadded:: 2.15
+
 increase_failcounter_on_challenge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -663,6 +727,8 @@ no further challenges for these tokens can be triggered.
 .. note:: It should be noted that for all tokens for which a challenge has been generated,
    the failcounter will be incremented. In the case of validate/triggerchallenge, the failcounters are increased for all tokens.
    In some cases it makes sense to use this policy together with :ref:`reset_all_user_tokens`.
+
+.. versionadded:: 3.8
 
 .. _policy_auth_cache:
 
@@ -747,6 +813,8 @@ in this timeframe.
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
+.. versionadded:: 2.20
+
 .. _policy_push_text_on_mobile:
 
 push_text_on_mobile
@@ -801,6 +869,8 @@ The text can contain the following tags, that will be filled:
    text; for them the text is rendered when the smartphone polls, and the four tags are
    empty. The tags of the token owner are filled in all cases.
 
+.. versionadded:: 3.0
+
 .. _policy_push_title_on_mobile:
 
 push_title_on_mobile
@@ -816,6 +886,8 @@ a :ref:`push_token`.
 
 .. note:: In contrast to :ref:`policy_push_text_on_mobile`, tags are not replaced in
    the title.
+
+.. versionadded:: 3.0
 
 .. _policy_push_wait:
 
@@ -833,6 +905,9 @@ seconds and check, if the push challenge was confirmed by the user.
 
 This way push tokens can be used with any non-push-capable applications.
 
+If the push token does not create a challenge, the request does not wait and fails at once. This happens if the
+token has no push gateway, or if the push gateway fails and :ref:`policy_auth_push_allow_poll` does not allow polling.
+
 Sensible numbers might be 10 or 20 seconds.
 
 .. note:: This behavior can interfere with other tokentypes. A request that
@@ -845,6 +920,10 @@ Sensible numbers might be 10 or 20 seconds.
    can block all available worker threads, which will cause privacyIDEA
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
+
+.. versionadded:: 3.1
+
+.. versionchanged:: 3.14.1 A request without a challenge does not wait.
 
 .. _policy_push_code_to_phone:
 
@@ -886,6 +965,8 @@ type: ``string``
 The message that the smartphone shows above the display code when
 :ref:`policy_push_code_to_phone` is active. The default is *Enter the code to log in*.
 
+.. versionadded:: 3.13
+
 .. _policy_push_challenge_text:
 
 push_challenge_text
@@ -904,7 +985,7 @@ or in combination with :ref:`policy_push_code_to_phone` to tell the user in more
 If this policy is not set, the PUSH token falls back to the generic :ref:`policy_challenge_text` policy and finally
 to the built-in default text.
 
-.. versionadded:: 3.13
+.. versionadded:: 3.13.1
 
 .. _policy_push_require_presence:
 
@@ -1038,6 +1119,19 @@ The following options are available:
 
 The default is to ``allow`` polling
 
+privacyIDEA reads this policy at two points:
+
+* When privacyIDEA creates a push challenge, it checks the policy for the user who
+  authenticates. With ``deny``, privacyIDEA creates the challenge only if the push
+  gateway accepts the message.
+* When the smartphone polls, it sends no user. privacyIDEA then does not check the
+  realm, resolver and user of the policy.
+
+Thus a policy ``push_allow_polling=deny`` for the realm *sales* blocks the poll requests
+of all users. See :ref:`policy_condition_checks`.
+
+.. versionadded:: 3.4
+
 .. _policy_push_ssl_verify_auth:
 
 push_ssl_verify
@@ -1050,6 +1144,8 @@ allowed values: ``0``, ``1``
 The smartphone needs to verify the SSL certificate of the privacyIDEA server during
 the authentication with push tokens. By default, the verification is enabled. To disable
 verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
+
+.. versionadded:: 3.0
 
 .. _policy_challenge_text:
 .. _challenge-text:
@@ -1106,6 +1202,10 @@ tag.
     ``sms_challenge_text`` and ``email_challenge_text``, which accept the same tags
     as ``challenge_text``.
 
+.. versionadded:: 2.23 ``challenge_text``
+
+.. versionadded:: 3.0 ``challenge_text_header`` and ``challenge_text_footer``
+
 .. _policy_indexedsecret:
 
 indexedsecret_challenge_text
@@ -1125,6 +1225,7 @@ be replaced with the list of the requested positions.
 
 For more details of this token type see :ref:`indexedsecret_token`.
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_challenge_text_auth:
 
@@ -1138,6 +1239,7 @@ their WebAuthn token during authentication. This might be different from the
 challenge text received during enrollment
 (see :ref:`policy_webauthn_challenge_text_enrollment`).
 
+.. versionadded:: 3.3
 
 .. _policy_passkey_challenge_text:
 
@@ -1151,6 +1253,7 @@ their passkey. The default text is *Please authenticate with your passkey!*. The
 used for the challenge of ``/validate/initialize`` and for a challenge that is triggered
 for a passkey token with :ref:`policy_passkey_trigger_by_pin`.
 
+.. versionadded:: 3.11
 
 .. _email-challenge-text:
 .. _sms-challenge-text:
@@ -1163,6 +1266,7 @@ type: ``string``
 With these actions the administrator may set alternative challenge texts for email
 and SMS tokens.
 
+.. versionadded:: 2.23
 
 .. _policy_indexedsecret_count:
 
@@ -1176,6 +1280,7 @@ a shared secret. The default number to ask is 2.
 
 The number of requested positions can be changed using this policy.
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_allowed_transports:
 
@@ -1193,6 +1298,8 @@ space-separated list.
 
 The default is to allow all transports (equivalent to a value of ``usb ble nfc
 internal``).
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_timeout:
 
@@ -1218,6 +1325,8 @@ The default timeout is 60 seconds.
 
 .. note:: If you set this policy you may also want to set
     :ref:`policy_webauthn_enroll_timeout`.
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_user_verification_requirement:
 
@@ -1264,6 +1373,7 @@ The policy also sets the user verification for passkey authentication through
     ``user.name`` / ``user.displayName`` fields after user verification.
     See :ref:`passkey` for more detail.
 
+.. versionadded:: 3.3
 
 question_number
 ~~~~~~~~~~~~~~~
@@ -1279,6 +1389,8 @@ The default amount to ask is 1.
 .. note:: A question will be asked only once, unless the policy requires more questions to be asked,
    than the token has available answers.
 
+.. versionadded:: 3.5
+
 preferred_client_mode
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -1291,6 +1403,8 @@ will show you the correct login for your preferred client mode. For example, wit
 WebAuthn login. With the default list it shows the input field for the HOTP token.
 
 The default list is "interactive webauthn poll".
+
+.. versionadded:: 3.8
 
 client_mode_per_user
 ~~~~~~~~~~~~~~~~~~~~
@@ -1320,6 +1434,8 @@ It is advised to use a condition with this policy, for example on the user-agent
 .. note:: Make sure the user only has a WebAuthn **or** Passkey token assigned when using this policy.
     Triggering both types at the same time will probably result in a failed authentication: each type gets its own
     random challenge in the same transaction, so a client that signs one challenge can not answer the other.
+
+.. versionadded:: 3.11.1
 
 .. _policy_passkey_authn_allowed_authenticator_device_types:
 
@@ -1392,6 +1508,8 @@ Other information is also removed from the ``detail`` object of the response.
     of the ``detail`` object is still collapsed. See
     :ref:`conditional_access_error_messages_masking`.
 
+.. versionadded:: 3.13
+
 .. _policy_remember_device:
 
 remember_device
@@ -1400,8 +1518,10 @@ remember_device
 type: ``bool``
 
 Allow an API client to obtain a persistent "remember this device" cookie on a
-successful authentication at :http:post:`/validate/check` (the client must send
-``request_persistent_cookie=1``). The feature is off by default and requires the
+successful authentication with a token at :http:post:`/validate/check` (the
+client must send ``request_persistent_cookie=1``). A login that a policy accepts
+without a token, like :ref:`passonnotoken` or :ref:`passthru_policy`,
+gets no cookie. The feature is off by default and requires the
 request to be made by an identified API client (the ``X-API-Key`` header, see
 the :ref:`policy_api_client_list` admin action): without a client, no cookie is
 issued and the recognition endpoint returns ``401``.
@@ -1409,14 +1529,29 @@ issued and the recognition endpoint returns ``401``.
 The cookie holds only a rotating ``series_id:counter`` token (never the API key)
 and is later checked at :http:post:`/validate/remember_device`, which reports
 whether the device is recognized so the calling client can decide to skip the
-second factor. Recognition is **not** an authentication and does not by itself
-grant access.
+second factor. A device is only recognized while the user has a token that can
+be used for a login, see :ref:`api_clients_recognizing_device`. Recognition is
+**not** an authentication and does not by itself grant access.
 
 .. note:: :http:get:`/validate/capabilities` reports whether this policy makes
     the feature available to a client. That is a *client-level* answer; whether
     it applies to a specific user is decided at issuance and recognition, so a
     policy scoped to specific users/realms may still report ``true`` to the
     client.
+
+Removing or deactivating the policy does not end the devices that are already
+remembered. While no ``remember_device`` policy applies to a user, their devices
+are not recognized and the presented cookie is not read. Once a policy applies
+again, the devices are recognized again until they expire. To end them, revoke
+them, see :ref:`api_clients_revoking_devices`.
+
+A recognized device is not a use of a token: a login in which the client skips
+the second factor does not update the ``last_auth`` of the user's tokens. A
+device is only recognized while a :ref:`policy_last_auth` policy allows at least
+one token of the user. With such a policy, keep
+:ref:`policy_remember_device_validity` shorter than its time frame. Otherwise,
+after a period of remembered logins, the policy refuses the next login with the
+token and the recognition of the device.
 
 .. versionadded:: 3.14
 
@@ -1425,15 +1560,67 @@ grant access.
 remember_device_validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``integer``
+type: ``string``
 
-How many days a "remember this device" cookie stays valid. If unset, the default
-is 30 days. Because it is a policy value, it can be scoped per realm or user with
-the usual conditions - for example a shorter lifetime for administrators than for
-regular users. The lifetime is fixed when the cookie is issued; recognition
-rotates the token but does not extend the expiry.
+How long a "remember this device" cookie stays valid after it is issued, like
+``30d``, ``8h`` or ``90m`` (``s``, ``m``, ``h``, ``d`` and ``y`` are allowed). A
+number without a unit counts as days. A policy with another value is not saved.
+If unset, the default is 30 days. Because
+it is a policy value, it can be scoped per realm or user with the usual
+conditions, for example a shorter lifetime for administrators than for regular
+users. The lifetime is fixed when the cookie is issued. Recognition rotates the
+token but does not extend the expiry, so after this time the user logs in with
+the second factor again. Changing the policy applies to the devices issued
+afterwards. To also forget a device that is not recognized for a while, set
+:ref:`policy_remember_device_idle_timeout`.
 
 .. versionadded:: 3.14
+
+.. versionchanged:: 3.14.1 The value takes a unit.
+
+.. _policy_remember_device_idle_timeout:
+
+remember_device_idle_timeout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+A remembered device that is not recognized for this long, like ``7d`` or
+``4h``, is no longer recognized. The user logs in with the second factor again
+and can have the device remembered anew. The units are those of
+:ref:`policy_remember_device_validity`, and a number without a unit counts as
+days. If unset, a device stays recognized until its validity ends.
+
+The idle timeout counts from the last recognition at
+:http:post:`/validate/remember_device`, or from the issuance for a device that
+was never recognized. A login with the second factor at
+:http:post:`/validate/check` does not reset it, and a refused recognition does
+not reset it either. If the client opts in again there, it gets a new device
+with its own validity.
+
+Together with :ref:`policy_remember_device_validity`, a remembered device ends at
+whichever limit it reaches first. The validity is fixed at issuance and no
+recognition moves it, while the idle timeout starts again with every
+recognition. For example, with a validity of ``30d`` and an idle timeout of
+``7d``, a device that is recognized every day stays remembered for 30 days after
+its issuance, and a device that is not recognized for 7 days is forgotten after
+these 7 days. An idle timeout that is not shorter than the validity has no
+effect.
+
+The two policies are read at different times. The validity is read when a
+device is issued, so a change applies to the devices issued afterwards. The
+idle timeout is read at each recognition, so a change applies to the devices
+already remembered as well.
+
+The cookie keeps the expiry of the validity, so a client still presents the
+cookie of an idle device. privacyIDEA then answers that the device is not
+recognized, removes the device and clears the cookie. When the user has a device
+remembered again, privacyIDEA also removes the user's other idle devices on that
+client, so they do not count towards :ref:`policy_remember_device_max_devices`.
+A cookie presented with an outdated counter is still a replay, also when the
+device is idle.
+
+.. versionadded:: 3.14.1
 
 .. _policy_remember_device_max_devices:
 

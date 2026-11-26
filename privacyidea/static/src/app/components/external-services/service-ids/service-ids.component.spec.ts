@@ -20,6 +20,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
@@ -36,6 +37,8 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
@@ -109,11 +112,13 @@ describe("ServiceIdsComponent", () => {
   });
 
   it("should navigate to edit page when editing a service ID", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const serviceId = serviceIdServiceMock.serviceIds()[0];
     component.onEditServiceId(serviceId);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename
-    );
+    expect(router.navigate).toHaveBeenCalledWith([
+      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS,
+      serviceId.servicename
+    ]);
   });
 
   it("should navigate to create page", () => {
@@ -129,5 +134,146 @@ describe("ServiceIdsComponent", () => {
     confirmClosed.next(true);
     confirmClosed.complete();
     expect(serviceIdServiceMock.deleteServiceId).toHaveBeenCalledWith("service1");
+  });
+
+  describe("toolbar actions", () => {
+    it("offers create and delete in that order", () => {
+      expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
+      expect(toolbarAction(component, "create").label).toBe("Create Service ID");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
+    });
+
+    it("shows both actions with serviceid_add and serviceid_delete", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
+
+      expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
+      expect(toolbarButton(fixture, "Create Service ID")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create without serviceid_add", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_delete"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create Service ID")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides delete without serviceid_delete", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create Service ID")).toBeTruthy();
+    });
+
+    it("offers row selection only with serviceid_delete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["serviceid_list", "serviceid_delete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+      expect(selectColumn()).toBeNull();
+    });
+
+    it("draws no toolbar while the read right is denied", () => {
+      setRights(fixture, []);
+
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
+      expect(toolbarButton(fixture, "Create Service ID")).toBeUndefined();
+    });
+
+    it("keeps create enabled and disables delete until a row is selected", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create Service ID")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
+
+      component.selector.selectRow(serviceIdServiceMock.serviceIds()[0]);
+      fixture.detectChanges();
+
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
+    });
+
+    it("runs create by opening the new-entry route", () => {
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarAction(component, "create").run?.();
+
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);
+    });
+
+    it("runs delete by confirming and then deleting the selected row", () => {
+      component.selector.selectRow(serviceIdServiceMock.serviceIds()[0]);
+
+      toolbarAction(component, "delete").run?.();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+      expect(serviceIdServiceMock.deleteServiceId).not.toHaveBeenCalled();
+      confirmClosed.next(true);
+      confirmClosed.complete();
+
+      expect(serviceIdServiceMock.deleteServiceId).toHaveBeenCalledTimes(1);
+      expect(serviceIdServiceMock.deleteServiceId).toHaveBeenCalledWith("service1");
+    });
+
+    it("runs create from its rendered button", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
+      const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      navigate.mockClear();
+
+      toolbarButton(fixture, "Create Service ID")?.click();
+
+      expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);
+    });
+
+    it("runs delete from its rendered button once a row is selected", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add", "serviceid_delete"]);
+      component.selector.selectRow(serviceIdServiceMock.serviceIds()[0]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "Delete")?.click();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      serviceIdServiceMock.serviceIds.set([]);
+    });
+
+    it("offers the create button and hint with serviceid_add", () => {
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Service ID");
+      expect(state.textContent).toContain("Create a service ID to attach SSH tokens to it.");
+    });
+
+    it("offers neither button nor hint without serviceid_add", () => {
+      setRights(fixture, ["serviceid_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create a service ID to attach SSH tokens to it.");
+    });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

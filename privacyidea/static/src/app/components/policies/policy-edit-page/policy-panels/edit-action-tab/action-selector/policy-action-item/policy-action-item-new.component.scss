@@ -26,14 +26,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 1.1rem;
   font-weight: bold;
 }
 
 .detail-description {
   font-weight: normal;
   font-size: 0.75rem;
+  line-height: normal;
   color: var(--mat-sys-on-surface-variant);
+}
+
+.detail-error {
+  font-weight: normal;
+  font-size: 0.75rem;
+  color: var(--mat-sys-error);
 }
 
 .detail-input {
@@ -57,21 +63,4 @@
     flex: 1;
     min-width: 0;
   }
-}
-
-.action-value-input,
-.action-value-textarea {
-  background-color: var(--mat-sys-surface);
-  border: 1px solid var(--mat-sys-outline);
-  border-radius: var(--border-radius);
-
-  box-sizing: border-box;
-  color: var(--mat-sys-on-surface);
-  font-family: inherit;
-  width: 100%;
-}
-
-.action-value-textarea {
-  min-height: 40px;
-  resize: vertical;
 }

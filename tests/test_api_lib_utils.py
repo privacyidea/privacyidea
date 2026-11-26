@@ -448,6 +448,16 @@ class UtilsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
 
+        # And check the PAM module, old and new user-agent
+        for user_agent in ['PAM/1.1.0', 'privacyidea-pam/1.0.0']:
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={'username': 'pwpercent',
+                                                     'password': 'pw%45#test'},
+                                               headers={'User-Agent': user_agent}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, (user_agent, res))
+
         # now check the /validate/check endpoint
         set_policy(name="otppin",
                    scope=SCOPE.AUTH,
@@ -500,6 +510,19 @@ class UtilsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("value"), res.json)
+
+        # the PAM module does not need quoting either
+        for user_agent in ['PAM/1.1.0', 'privacyidea-pam/1.0.0']:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "pwpercent",
+                                                     "realm": self.realm1,
+                                                     "pass": "pw%45#test"},
+                                               headers={'User-Agent': user_agent}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("value"), (user_agent, res.json))
 
         # cleanup
         remove_token(serial='spass1d')
@@ -616,3 +639,22 @@ class UtilsTestCase(MyApiTestCase):
         # A non-integer value is a parameter error
         self.assertRaises(ParameterError, get_pagination_params, {"page": "abc"})
         self.assertRaises(ParameterError, get_pagination_params, {"pagesize": "abc"})
+
+    def test_18_get_realm_presence_filter(self):
+        from privacyidea.lib.params import get_realm_presence_filter
+        key = "tokenrealm"
+        # Key missing: no filter at all
+        self.assertEqual((None, None), get_realm_presence_filter({}, key))
+        # Empty or separator-only values carry no realm: tokens without realm
+        self.assertEqual((None, False), get_realm_presence_filter({key: ""}, key))
+        self.assertEqual((None, False), get_realm_presence_filter({key: " "}, key))
+        self.assertEqual((None, False), get_realm_presence_filter({key: ","}, key))
+        # Wildcard-only values: tokens with any realm
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "**"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*,*"}, key))
+        self.assertEqual((None, True), get_realm_presence_filter({key: "*,realm1"}, key))
+        # Concrete realm names or patterns are passed through
+        self.assertEqual(("realm1", None), get_realm_presence_filter({key: "realm1"}, key))
+        self.assertEqual(("realm*", None), get_realm_presence_filter({key: "realm*"}, key))
+        self.assertEqual(("realm1,realm2", None), get_realm_presence_filter({key: "realm1,realm2"}, key))

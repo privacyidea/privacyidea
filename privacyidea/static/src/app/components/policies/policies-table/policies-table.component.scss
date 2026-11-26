@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .policy-name-input {
@@ -82,6 +82,11 @@
       vertical-align: top;
     }
 
+    // The header checkbox sits over the checkboxes of the rows, which are centered in their cells.
+    th.table-checkbox {
+      text-align: center;
+    }
+
     td.table-checkbox,
     td.col-priority,
     td.col-scope,
@@ -123,12 +128,14 @@
     }
 
     // A width of their own rather than their content's, so the two columns, the table and the page keep
-    // their size whichever rows a filter leaves.
+    // their size whichever rows a filter leaves. min-width holds it when the region is narrower than the
+    // table, which then scrolls inside its region instead of squeezing these columns to their content.
     th.col-actions,
     th.col-conditions,
     td.col-actions,
     td.col-conditions {
       width: $list-column-width;
+      min-width: $list-column-width;
     }
 
     td.col-actions {

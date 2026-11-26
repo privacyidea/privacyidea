@@ -60,15 +60,30 @@ class PIUsercacheCleanupTestCase(CliTestCase):
 
     def test_02_expired_entries_are_deleted(self):
         # Only the entry older than UserCacheExpiration is removed, the one within the lifetime stays.
-        expired_id = self.add_expired_and_fresh_entry()
+        self.add_expired_and_fresh_entry()
 
         runner = self.app.test_cli_runner()
         result = runner.invoke(privacyidea_usercache_cleanup, [])
         self.assertEqual(0, result.exit_code, result.output)
         self.assertIn("expireduser", result.output, result)
         self.assertNotIn("freshuser", result.output, result)
-        self.assertIn(f"Deleting entry with id={expired_id} ...", result.output, result)
         self.assertIn("Deleted 1 expired entries.", result.output, result)
+        self.assertEqual(["freshuser"], cached_usernames())
+
+    def test_02b_many_expired_entries_are_deleted(self):
+        # All expired entries are listed and deleted, the entries within the lifetime stay.
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        for number in range(25):
+            add_cache_entry(f"expired{number:02d}", datetime.timedelta(hours=1, minutes=number))
+        add_cache_entry("freshuser", datetime.timedelta(minutes=1))
+
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(privacyidea_usercache_cleanup, [])
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("25 entries", result.output, result)
+        self.assertIn("expired00", result.output, result)
+        self.assertIn("expired24", result.output, result)
+        self.assertIn("Deleted 25 expired entries.", result.output, result)
         self.assertEqual(["freshuser"], cached_usernames())
 
     def test_03_noaction_lists_expired_entries_and_deletes_nothing(self):

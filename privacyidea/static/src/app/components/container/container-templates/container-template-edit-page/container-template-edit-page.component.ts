@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  linkedSignal,
+  signal,
+  untracked,
+  viewChild
+} from "@angular/core";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
@@ -27,13 +37,11 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
-import { DialogAction } from "@models/dialog";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
@@ -58,7 +66,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatCardModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule,
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,
@@ -81,44 +88,52 @@ export class ContainerTemplateEditPageComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   initTemplate = signal<ContainerTemplate | null>(null);
+  // The template name of the route, resolved against the loaded templates.
+  private readonly templateName = signal<string | null>(null);
 
   private readonly editComponent = viewChild(ContainerTemplateEditComponent);
 
   // --- State Signals ---
-  readonly template = linkedSignal<{ initialData: ContainerTemplate; defaultType: string }, ContainerTemplate>({
-    source: () => ({
-      initialData: this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate,
-      defaultType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
-    }),
-    computation: (source) => {
-      const type = source.initialData.container_type || source.defaultType;
-      return deepCopy({ ...source.initialData, container_type: type });
-    }
+  // The template as loaded, with the first available container type for a template that has none.
+  private readonly baseTemplate = computed<ContainerTemplate>(() => {
+    const initialData = this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate;
+    const defaultType = this.containerTemplateService.availableContainerTypes()[0] ?? "";
+    return { ...initialData, container_type: initialData.container_type || defaultType };
   });
+  readonly template = linkedSignal<ContainerTemplate>(() => deepCopy(this.baseTemplate()));
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const name = params.get("name");
-      if (!name) {
-        this.initTemplate.set(null);
-        return;
-      }
-      const template = this.containerTemplateService.templates().find((p) => p.name === name);
-      if (!template) {
-        console.warn("ContainerTemplateEditPageComponent: No template found with name ", name);
-        this.initTemplate.set(null);
-        return;
-      }
-      this.initTemplate.set(template);
+      const name = params.get(ROUTE_PARAMS.NAME);
+      if (!name) this.initTemplate.set(null);
+      this.templateName.set(name);
     });
+    effect(() => {
+      const name = this.templateName();
+      const templates = this.containerTemplateService.templates();
+      const loading = this.containerTemplateService.templatesResource.isLoading();
+      if (!name) return;
+      untracked(() => {
+        const template = templates.find((p) => p.name === name);
+        if (template) {
+          if (this.initTemplate()?.name !== name) this.initTemplate.set(template);
+          return;
+        }
+        this.initTemplate.set(null);
+        if (!loading) console.warn("ContainerTemplateEditPageComponent: No template found with name ", name);
+      });
+    });
+    this.pendingChangesService.registerHasChanges(this.isDirty);
+    this.pendingChangesService.registerValidChanges(this.canSave);
+    this.pendingChangesService.registerSave(() => this.persistTemplate());
   }
 
   // --- Pending Changes Implementations ---
-  readonly canSave = computed(() => this.canSaveTemplate());
+  // The edit component holds the rules of the template, so the page can save only once it is mounted.
+  readonly canSave = computed(() => this.editComponent()?.canSave() ?? false);
   readonly isDirty = computed(() => {
-    const current = JSON.stringify(this.template());
-    const base = JSON.stringify(this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate);
-    return current !== base;
+    const templateChanged = JSON.stringify(this.template()) !== JSON.stringify(this.baseTemplate());
+    return templateChanged || (this.editComponent()?.hasRowChanges() ?? false);
   });
 
   async onSave(): Promise<boolean> {
@@ -132,47 +147,32 @@ export class ContainerTemplateEditPageComponent {
 
   // --- Computed - General State ---
   readonly isNewTemplate = computed(() => !this.initTemplate());
-
-  // --- Computed - Validation & Conflict ---
-  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
-  readonly nameConflict = computed(() =>
-    this.containerTemplateService
-      .templates()
-      .some((t) => t.name === this.template().name && t.name !== this.initTemplate()?.name)
+  // The edit form is shown once the template of the route is known, so it never starts from an empty template.
+  readonly templateReady = computed(
+    () => !this.templateName() || !!this.initTemplate() || !this.containerTemplateService.templatesResource.isLoading()
   );
-  readonly canSaveTemplate = computed<boolean>(() => {
-    return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
-  });
-  readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict() || (this.template().name.length > 0 && this.nameInvalidPattern())
-  };
-
-  // --- Computed - Dialog Actions ---
-  readonly actions = computed<DialogAction<string>[]>(() => [
-    {
-      label: $localize`:@@common.save:Save`,
-      value: "save",
-      icon: "save",
-      type: "confirm",
-      disabled: !this.canSaveTemplate()
-    }
-  ]);
 
   // --- Action Handling ---
   async onAction(action: string): Promise<void> {
     if (action === "save") {
       const result = await this._saveTemplate();
       if (!result) return;
-      if (this.initTemplate() && this.initTemplate()?.name !== this.template().name) {
-        await this.containerTemplateService.deleteTemplate(this.initTemplate()!.name);
-      }
       this._navigateBack();
+    }
+  }
+
+  // Saves without leaving the page, for the pending-changes guard that navigates on its own.
+  async persistTemplate(): Promise<boolean> {
+    try {
+      return await this._saveTemplate();
+    } catch {
+      return false;
     }
   }
 
   // --- Private Helper Methods ---
   private async _saveTemplate(): Promise<boolean> {
-    if (!this.canSaveTemplate()) return false;
+    if (!this.canSave()) return false;
     // Pull the latest token payloads from each enrollment row before posting.
     const editComponent = this.editComponent();
     const tokens = editComponent?.collectTokens();
@@ -187,7 +187,11 @@ export class ContainerTemplateEditPageComponent {
       ...t,
       template_options: { ...t.template_options, tokens }
     }));
-    return this.containerTemplateService.postTemplateEdits(this.template());
+    // An existing template is saved under its own name, so a changed name can not create a second template
+    const initTemplate = this.initTemplate();
+    return this.containerTemplateService.postTemplateEdits(
+      initTemplate ? { ...this.template(), name: initTemplate.name } : this.template()
+    );
   }
 
   onCancel(): void {
@@ -199,7 +203,7 @@ export class ContainerTemplateEditPageComponent {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`:@@common.discardChanges:Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard Changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

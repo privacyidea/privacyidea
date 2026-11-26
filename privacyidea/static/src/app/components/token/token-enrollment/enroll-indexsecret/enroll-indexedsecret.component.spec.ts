@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollIndexedsecretComponent } from "./enroll-indexedsecret.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("EnrollIndexedsecretComponent", () => {
   let component: EnrollIndexedsecretComponent;
@@ -45,5 +46,11 @@ describe("EnrollIndexedsecretComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

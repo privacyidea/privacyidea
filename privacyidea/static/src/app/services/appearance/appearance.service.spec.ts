@@ -138,6 +138,49 @@ describe("AppearanceService", () => {
     expect(userSettingsService.settings()?.corner_radius).toBe("square");
   });
 
+  it("should apply a picked status color level", () => {
+    expect(service.statusColors()).toBe("aa");
+
+    service.setStatusColors("aaa");
+
+    expect(service.statusColors()).toBe("aaa");
+    expect(html().classList.contains("status-colors-aaa")).toBe(true);
+    expect(html().classList.contains("status-colors-aa")).toBe(false);
+    expect(userSettingsService.settings()?.status_colors).toBe("aaa");
+  });
+
+  it("should apply a stored status color level without writing it back, and fall back on an unknown one", () => {
+    service.applyStoredStatusColors("a");
+
+    expect(service.statusColors()).toBe("a");
+    expect(html().classList.contains("status-colors-a")).toBe(true);
+    expect(userSettingsService.settings()?.status_colors).toBeUndefined();
+
+    service.applyStoredStatusColors("neon");
+
+    expect(service.statusColors()).toBe("aa");
+  });
+
+  it("should put the status colors back on AA with the other groups", () => {
+    service.setStatusColors("a");
+
+    service.resetToDefaults();
+
+    expect(service.statusColors()).toBe("aa");
+    expect(userSettingsService.settings()?.status_colors).toBe("aa");
+  });
+
+  it("should reset only the look and leave the status colors as picked", () => {
+    service.setDepth("strong");
+    service.setStatusColors("aaa");
+
+    service.resetLook();
+
+    expect(service.depth()).toBe("default");
+    expect(service.statusColors()).toBe("aaa");
+    expect(userSettingsService.settings()?.status_colors).toBe("aaa");
+  });
+
   it("should replace the previous level of the same group only", () => {
     service.setDepth("flat");
     service.setCorners("round");
@@ -228,13 +271,16 @@ describe("AppearanceService", () => {
   it("should initialize from the cached appearance", () => {
     writeCookie(
       APP_APPEARANCE_COOKIE_NAME,
-      JSON.stringify({ depth: "flat", light_source: "8", corner_radius: "round" })
+      JSON.stringify({ depth: "flat", light_source: "8", corner_radius: "round", status_colors: "aa" })
     );
     create();
 
     service.initializeAppearance();
 
     expect(service.depth()).toBe("flat");
+    expect(service.statusColors()).toBe("aa");
+    expect(html().classList.contains("status-colors-aa")).toBe(true);
+    expect(cachedAppearance()["status_colors"]).toBe("aa");
     expect(service.lightSource()).toBe("8");
     expect(service.corners()).toBe("round");
     expect(html().classList.contains("corner-round")).toBe(true);

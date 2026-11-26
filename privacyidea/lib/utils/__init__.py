@@ -27,6 +27,7 @@ This module is tested in tests/test_lib_utils.py
 
 import base64
 import binascii
+import functools
 import hashlib
 import html
 import logging
@@ -41,9 +42,16 @@ from datetime import timedelta, datetime
 from enum import StrEnum
 from importlib import import_module
 from importlib import metadata
+from typing import TYPE_CHECKING, Any
 
 import segno
 import sqlalchemy
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import Grouping
+from sqlalchemy.sql.operators import OperatorType
+from sqlalchemy.sql.visitors import InternalTraversal
+from sqlalchemy.types import TypeDecorator
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -52,6 +60,9 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
+
+if TYPE_CHECKING:
+    from privacyidea.models import Config
 
 log = logging.getLogger(__name__)
 
@@ -89,6 +100,10 @@ def check_time_in_range(time_range, check_time=None):
     DOW being the day of the week: Mon, Tue, Wed, Thu, Fri, Sat, Sun
     hh: 00-23
     mm: 00-59
+
+    A day range can wrap around the end of the week: "Sat-Mon" means Saturday, Sunday and Monday.
+    A time range can cross midnight: "Fri: 22-6" means Friday 22:00 to Saturday 06:00. The hours after
+    midnight belong to the day on which the range starts.
 
     If time is omitted the current time is used: time.localtime()
 
@@ -140,15 +155,25 @@ def check_time_in_range(time_range, check_time=None):
         else:
             time_end = dt_time(te[0])
 
-        if time_start > time_end:
-            log.error(f"Invalid time range. Start time is greater than end time: {t}")
-            raise ParameterError("Invalid time format!")
+        start_day = dow_index[dow_start]
+        end_day = dow_index[dow_end]
 
-        # check the day and the time
-        if (dow_index.get(dow_start) <= check_day <= dow_index.get(dow_end)
-                and
-                time_start <= check_hour <= time_end):
-            time_match = True
+        def day_in_range(day: int) -> bool:
+            # A day range like Sat-Mon wraps around the end of the week
+            if start_day <= end_day:
+                return start_day <= day <= end_day
+            return day >= start_day or day <= end_day
+
+        if time_start <= time_end:
+            if day_in_range(check_day) and time_start <= check_hour <= time_end:
+                time_match = True
+        else:
+            # A time range like 22-6 crosses midnight. The hours after midnight belong to the day on which the
+            # range starts, so "Fri: 22-6" is the night from Friday 22:00 to Saturday 06:00.
+            previous_day = 7 if check_day == 1 else check_day - 1
+            if ((day_in_range(check_day) and check_hour >= time_start)
+                    or (day_in_range(previous_day) and check_hour <= time_end)):
+                time_match = True
 
     return time_match
 
@@ -541,7 +566,109 @@ def parse_date(date_string):
     return d
 
 
-def parse_proxy(proxy_settings):
+def _is_port(port: str) -> bool:
+    """
+    Whether *port* is a TCP port number as a proxy writes it after a hop's address.
+
+    :param port: the text after the address's port colon
+    :return: True for up to five ASCII digits up to 65535
+    """
+    return port.isascii() and port.isdigit() and len(port) <= 5 and int(port) <= 65535
+
+
+def _parse_hop_address(hop_ip: str) -> IPAddress | None:
+    """
+    Parse one claimed client-IP hop into an :class:`IPAddress`, tolerating the spellings
+    that reverse proxies actually write into ``X-Forwarded-For`` and that a bare
+    :class:`netaddr.IPAddress` call rejects:
+
+    * ``a.b.c.d:port`` -- some proxies append the client's source port to an IPv4 hop.
+      Only this unambiguous form is stripped, and only for a valid port: a suffix such
+      as ``:junk`` leaves the hop unparsed, so a malformed hop cuts the chain. A bare
+      IPv6 address (which contains colons itself) is never mistaken for this form.
+    * ``[2001:db8::1]`` and ``[2001:db8::1]:4711`` -- bracketed IPv6 addresses, with
+      or without a port. A bracketed IPv4 address is not a spelling any proxy writes
+      and is rejected.
+    * ``fe80::1%eth0`` -- a scoped IPv6 address, as the operating system reports a
+      link-local peer. The zone names an interface of this host, not a part of the
+      address, so it is dropped.
+
+    An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) keeps its spelling here:
+    :func:`_ip_in_network` matches it against IPv4 networks as well, and
+    :func:`canonical_client_ip` converts it once it is the client IP.
+
+    Anything that still does not parse is reported as ``None`` rather than raising:
+    the caller decides how far the chain is still trustworthy.
+
+    :param hop_ip: one hop as claimed by the request, verbatim
+    :return: the parsed address, or None if it is not a recognizable IP address
+    """
+    if not hop_ip:
+        return None
+    candidate = hop_ip.strip()
+    bracketed = candidate.startswith("[") and "]" in candidate
+    if bracketed:
+        # "[...]" or "[...]:port"; a malformed suffix is left for IPAddress to reject.
+        address, _, suffix = candidate[1:].partition("]")
+        if not suffix or (suffix.startswith(":") and _is_port(suffix[1:])):
+            candidate = address
+    elif candidate.count(":") == 1 and not candidate.startswith(":"):
+        # "a.b.c.d:port": a bare IPv6 address has no colon or more than one.
+        host, _, port = candidate.rpartition(":")
+        if _is_port(port):
+            candidate = host
+    address_part, _, zone = candidate.partition("%")
+    if zone and ":" in address_part:
+        candidate = address_part
+    try:
+        address = IPAddress(candidate)
+    except AddrFormatError:
+        return None
+    if bracketed and address.version == 4:
+        return None
+    return address
+
+
+IPV4_MAPPED_NETWORK = IPNetwork("::ffff:0:0/96")
+
+
+def _ip_in_network(address: IPAddress, network: IPNetwork) -> bool:
+    """
+    Whether *network* contains *address* in either of its spellings: an IPv4 address and
+    its IPv4-mapped IPv6 form (``10.0.0.1`` and ``::ffff:10.0.0.1``) are the same host, as
+    a dual-stack listener reports an IPv4 peer in the mapped form.
+
+    The spellings are only translated within the IPv4 address space, i.e. for an IPv4
+    network or a network in the mapped form. Any other IPv6 network is matched literally:
+    ``::/0`` contains ``::ffff:10.0.0.1`` but not ``10.0.0.1``, so it does not admit IPv4
+    peers or clients that were not reported in the mapped form.
+
+    :param address: a hop of the path to client or a client IP
+    :param network: a network of a proxy path or a policy
+    :return: True if the network contains the address in either spelling
+    """
+    if address in network:
+        return True
+    if address.is_ipv4_mapped():
+        return address.ipv4() in network
+    if address.version == 4 and network in IPV4_MAPPED_NETWORK:
+        return address.ipv6(ipv4_compatible=False) in network
+    return False
+
+
+def canonical_client_ip(address: IPAddress) -> str:
+    """
+    The spelling of *address* as a client IP. An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) is the IPv4
+    address it stands for (``10.0.0.1``): a dual-stack listener reports an IPv4 peer in the mapped form, but
+    the connection is IPv4. Every other address is rendered by ``netaddr``.
+
+    :param address: the address of a client
+    :return: the client IP as a string
+    """
+    return str(address.ipv4() if address.is_ipv4_mapped() else address)
+
+
+def parse_proxy(proxy_settings: str) -> set[tuple[IPNetwork, ...]]:
     """
     This parses the string of the system settings OverrideAuthorizationClient into a set of "proxy paths",
     which are tuples of IPNetwork objects.
@@ -563,13 +690,16 @@ def parse_proxy(proxy_settings):
         This is parsed to a proxy path ``(IPNetwork("10.0.0.12/32"), IPNetwork("192.168.0.0/24"))``.
     172.16.0.0/16
         Hosts in 172.16.x.x may rewrite to any client IP
-        This is parsed to a proxy path ``(IPNetwork("172.16.0.0/16"), IPNetwork("0.0.0.0/0"))``.
+        This is parsed to one proxy path per address family:
+        ``(IPNetwork("172.16.0.0/16"), IPNetwork("0.0.0.0/0"))`` and
+        ``(IPNetwork("172.16.0.0/16"), IPNetwork("::/0"))`` - whatever the entry's own
+        family, a bare entry may mask as any client IP of either family.
 
     Multiple such settings may be separated by comma.
 
     :param proxy_settings: The OverrideAuthorizationClient config string
-    :type proxy_settings: basestring
     :return: A set of tuples of IPNetwork objects. Each tuple has at least two elements.
+    :raises AddrFormatError: if an entry is not a valid address or network
     """
     proxy_set = set()
     if proxy_settings.strip():
@@ -578,10 +708,16 @@ def parse_proxy(proxy_settings):
             p_list = proxy.split(">")
             if len(p_list) > 1:
                 proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
+                proxy_set.add(proxypath)
             else:
-                # No mapping client, so we take the whole network
-                proxypath = (IPNetwork(p_list[0]), IPNetwork("0.0.0.0/0"))
-            proxy_set.add(proxypath)
+                # No mapping client, so we take the whole network. A bare entry is
+                # documented as "may mask as any arbitrary client IP", which covers
+                # IPv6 clients as well: an IPv6 address is not contained in an IPv4
+                # network, so the entry expands to one proxy path per address family,
+                # whatever the entry's own family.
+                proxynet = IPNetwork(p_list[0])
+                proxy_set.add((proxynet, IPNetwork("0.0.0.0/0")))
+                proxy_set.add((proxynet, IPNetwork("::/0")))
 
     return proxy_set
 
@@ -641,7 +777,7 @@ def check_proxy_index(path_to_client: "list[IPAddress]", proxy_settings: str) ->
         # Hence, we ignore any additional proxy hops that the client may send, which is what we want.
         for idx, (proxy_path_ip, client_path_ip) in enumerate(zip(proxy_path, path_to_client)):
             # We check if the network in the proxy path contains the IP from path_to_client.
-            if client_path_ip not in proxy_path_ip:
+            if not _ip_in_network(client_path_ip, proxy_path_ip):
                 # If not, the current proxy path does not match and we do not have to keep checking it.
                 log.debug(f"... ignored because {client_path_ip!r} is not in subnet {proxy_path_ip!r}")
                 break
@@ -736,9 +872,33 @@ def _path_to_client(request) -> "list[ClientIpHop]":
     if (not hasattr(request, "blueprint")
             or request.blueprint in ["validate_blueprint", "ttype_blueprint", "jwtauth"]):
         client_param = (request.all_data or {}).get("client")
-        if client_param:
+        # Only a non-empty string is recorded as a hop. The parameter is untyped request data: a
+        # non-string value (e.g. a JSON number or boolean) is not an address spelling that any proxy
+        # writes, so it cannot be parsed - but it also must not reach _cap_chain, whose hop-length cap
+        # would raise on a value without len(). A request must not 500 over a client-supplied parameter
+        # just because it arrived as the wrong JSON type.
+        if isinstance(client_param, str) and client_param:
             hops.append(ClientIpHop(client_param, str(ClientIpSource.CLIENT_PARAM)))
     return hops
+
+
+def _undetermined_client_ip(peer: str | None, hops: "list[ClientIpHop]") -> "ClientIpInfo":
+    """
+    The :class:`ClientIpInfo` of a request whose client IP cannot be determined although an
+    ``OverrideAuthorizationClient`` is configured: the path to the client does not start with an address.
+
+    Logged as a warning, as it is a matter of the setup rather than of a single client: the first hop is the
+    peer, or, without a peer (e.g. a Unix socket), the entry the nearest proxy added to ``X-Forwarded-For``.
+
+    :param peer: the TCP peer of the request
+    :param hops: the path to the client, peer first
+    :return: a :class:`ClientIpInfo` without a client IP
+    """
+    first_hop = hops[0].ip[:MAX_IP_CHAIN_HOP_LENGTH] if hops else None
+    log.warning(f"Could not determine the client IP although OverrideAuthorizationClient is set: the "
+                f"connection address is {peer!r} and the first address of the path is {first_hop!r}. Check "
+                "that the proxy in front of privacyIDEA adds the client address to X-Forwarded-For.")
+    return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
 
 
 def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
@@ -757,40 +917,49 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     peer = request.remote_addr
     hops = _path_to_client(request)
     if not proxy_settings:
-        # No mapping is configured, so the peer is the client. The chain is still recorded.
-        info = ClientIpInfo(ip=peer, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
+        # No mapping is configured, so the peer is the client. The chain is still recorded. The peer is read like a
+        # hop, so it gets the same client IP as through an override: a scoped link-local peer ("fe80::1%eth0")
+        # loses its zone, which netaddr cannot parse, and an IPv4-mapped peer is its IPv4 address. A peer that
+        # is not an address at all is kept as it is.
+        peer_address = _parse_hop_address(peer)
+        ip = canonical_client_ip(peer_address) if peer_address is not None else peer
+        info = ClientIpInfo(ip=ip, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
                             chain=hops, effective_index=0 if hops else None)
         return _cap_chain(info)
     if not request.access_route:
         # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
-        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
-    # A falsy or unparseable hop is dropped rather than handed to check_proxy_index() - a malformed
-    # X-Forwarded-For entry or client parameter is attacker-controlled and must not turn the request into a
-    # 500. Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
+        return _undetermined_client_ip(peer, hops)
+    # Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
     # (ip, source) can legitimately appear more than once in the chain, and a value-based lookup back into
     # ``hops`` would then return the first match rather than the hop actually chosen.
     addressable = []
     addresses = []
     for i, hop in enumerate(hops):
-        if not hop.ip:
-            continue
-        try:
-            addresses.append(IPAddress(hop.ip))
-        except AddrFormatError:
-            continue
+        # An unparseable hop cuts the chain instead of being skipped: skipping would shift the later hops
+        # one position up, onto the networks configured for the skipped one. The hops after the cut stay
+        # recorded in ``chain``, they are just not mapped.
+        address = _parse_hop_address(hop.ip)
+        if address is None:
+            log.debug(
+                f"Cutting the client IP chain at the unparseable hop "
+                f"{hop.ip[:MAX_IP_CHAIN_HOP_LENGTH]!r}: the "
+                "hops after it are recorded but no longer mapped."
+            )
+            break
+        addresses.append(address)
         addressable.append((i, hop))
     if not addressable:
-        # Every hop was empty or unparseable (e.g. a garbled X-Forwarded-For): there is nothing left to map,
-        # so this is the same as having no route at all. check_proxy_index() would itself raise on an empty
-        # list.
-        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+        # The first hop is unparseable, or there is no hop at all (an empty REMOTE_ADDR, e.g. a Unix socket,
+        # gives an access_route of [""] but no peer hop): nothing to map from, and check_proxy_index() would
+        # raise on an empty list.
+        return _undetermined_client_ip(peer, hops)
     index = check_proxy_index(addresses, proxy_settings)
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
     source = str(ClientIpSource.REMOTE_ADDR_UNMAPPED) if index == 0 else chosen.source
-    # str(IPAddress(...)) rather than the raw hop, so a non-canonical spelling normalizes exactly as before.
-    return _cap_chain(ClientIpInfo(ip=str(addresses[index]), peer_ip=peer, source=source, chain=hops,
-                                   effective_index=effective_index))
+    # The parsed address rather than the raw hop, so a non-canonical spelling is normalized.
+    return _cap_chain(ClientIpInfo(ip=canonical_client_ip(addresses[index]), peer_ip=peer, source=source,
+                                   chain=hops, effective_index=effective_index))
 
 
 def _cap_chain(info: "ClientIpInfo") -> "ClientIpInfo":
@@ -908,64 +1077,62 @@ def resolve_remote_user_from_header(request, header_name, proxy_settings):
     return None
 
 
-def check_ip_in_policy(client_ip, policy):
+def check_ip_in_policy(client_ip: str, policy: list[str]) -> tuple[bool, bool]:
     """
     This checks, if the given client IP is contained in a list like
 
        ["10.0.0.2", "192.168.2.1/24", "!192.168.2.12", "-172.16.200.1"]
 
+    An IPv4 address and its IPv4-mapped IPv6 form match the same entries, see :func:`_ip_in_network`.
+
     :param client_ip: The IP address in question
-    :param policy: A string of single IP addresses, negated IP address and subnets.
+    :param policy: A list of single IP addresses, negated IP addresses and subnets.
     :return: tuple of (found, excluded)
+    :raises AddrFormatError: if the client IP or an entry is not a valid address or network
     """
     client_found = False
     client_excluded = False
     # Remove empty strings from the list
     policy = list(filter(None, policy))
+    if not policy:
+        return client_found, client_excluded
+    address = IPAddress(client_ip)
     for ipdef in policy:
         if ipdef[0] in ['-', '!']:
             # exclude the client?
-            if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
+            if _ip_in_network(address, IPNetwork(ipdef[1:])):
                 log.debug(f"the client {client_ip!s} is excluded by {ipdef!s}")
                 client_excluded = True
-        elif IPAddress(client_ip) in IPNetwork(ipdef):
+        elif _ip_in_network(address, IPNetwork(ipdef)):
             client_found = True
     return client_found, client_excluded
 
 
-def reload_db(timestamp, db_ts):
+def reload_db(loaded_db_timestamp: str | None, db_ts: "Config | None") -> bool:
     """
-    Check if the configuration database should be reloaded. This is verified
-    by comparing the chache timestamp and the database timestamp
+    Check if the configuration has to be reloaded from the database.
 
-    :param timestamp: cache timestamp
-    :type timestamp: timestamp
-    :param db_ts: database timestamp
-    :type db_ts: Config Object with timestamp str in .Value
+    The database holds the time of the last configuration change, as written by
+    the node that made the change. The configuration is reloaded if this value
+    differs from the value that was read together with the currently loaded
+    configuration. The value is not compared with the local clock, so a change is
+    noticed whatever the clock difference between the nodes and however long the
+    last reload took.
 
-    :return: bool
+    :param loaded_db_timestamp: the database timestamp that was read with the
+        currently loaded configuration, None if no configuration is loaded yet
+    :param db_ts: the database timestamp, a Config object with the timestamp
+        string in ``.Value``, or None if the database has no timestamp
+    :return: True if the configuration has to be reloaded
     """
-    internal_timestamp = ''
-    if timestamp:
-        internal_timestamp = timestamp.strftime("%s")
-    rdb = False
-    # Reason to reload
-    if db_ts and db_ts.Value.startswith("2016-"):
-        # If there is an old timestamp in the database
-        rdb = True
-        log.debug("Old timestamp. We need to reread policies "
-                  "from DB.")
-    if not (timestamp and db_ts):
-        # If values are not initialized
-        rdb = True
-        log.debug("Values are not initialized. We need to reread "
-                  "policies from DB.")
-    if db_ts and db_ts.Value >= internal_timestamp:
-        # If the DB contents is newer
-        rdb = True
-        log.debug("timestamp in DB newer. We need to reread policies "
-                  "from DB.")
-    return rdb
+    if loaded_db_timestamp is None or db_ts is None:
+        log.debug("Configuration or database timestamp not initialized. We need to reread the configuration "
+                  "from the database.")
+        return True
+    if db_ts.Value != loaded_db_timestamp:
+        log.debug("The configuration in the database has changed. We need to reread it.")
+        return True
+    return False
 
 
 def reduce_realms(all_realms, policies):
@@ -1002,6 +1169,67 @@ def is_true(value):
     :return: Boolean
     """
     return value in [1, "1", True, "True", "true", "TRUE"]
+
+
+def validate_path_identifier(identifier: str, kind: str, reserved: tuple[str, ...] = ()) -> None:
+    """
+    Reject an identifier that could be stored but never addressed by the API again.
+
+    The REST API addresses most resources by their identifier in a single path segment
+    (e.g. ``/smtpserver/<identifier>``). A WSGI server percent-decodes ``PATH_INFO`` before
+    routing, so a ``/`` in the name can not be escaped on the way in and the route no longer
+    matches. The same goes for ``.`` and ``..``, which path normalisation removes, and for
+    control characters, which have no business in a URL at all.
+
+    A name that equals a fixed route of the same resource (e.g. ``/smtpserver/send_test_email``)
+    can not be addressed either, because the router prefers the fixed route over
+    ``/smtpserver/<identifier>``. Pass these names as ``reserved``.
+
+    The restriction is deliberately narrow: spaces, dots, ``#``, ``?`` and non-ASCII letters
+    all survive the round trip once the client encodes them.
+
+    :param identifier: the identifier to check
+    :param kind: the kind of resource, used in the error message (e.g. "SMTP server")
+    :param reserved: the names of fixed routes next to ``/<identifier>`` of this resource
+    :raises ParameterError: if the identifier could not be addressed by the API
+    """
+    for character in ("/", "\\"):
+        if character in identifier:
+            raise ParameterError(f"The {kind} identifier must not contain {character!r}: the API addresses "
+                                 f"it by its name in the URL path, where such a name can not be reached.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in identifier):
+        raise ParameterError(f"The {kind} identifier must not contain control characters: the API "
+                             f"addresses it by its name in the URL path.")
+    if identifier in (".", ".."):
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API addresses it by "
+                             f"its name in the URL path, where it would be removed as a path segment.")
+    if identifier in reserved:
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API uses this name "
+                             f"for a route of its own.")
+
+
+def check_stored_secret_settings(kind: str, identifier: str, saved_settings: dict, requested_settings: dict,
+                                 secret_name: str, action: str) -> None:
+    """
+    Make sure that a stored secret is used only with the connection settings it was saved with.
+
+    A client that never received the secret sends the ``__CENSORED__`` placeholder instead, which means "use the
+    stored secret". The stored secret is used only if the request keeps the settings that define where and as whom
+    the secret is used. A requested value of ``None`` means that the setting is not changed.
+
+    :param kind: the kind of definition, used in the error message (e.g. "RADIUS server")
+    :param identifier: the identifier of the saved definition
+    :param saved_settings: the saved values of the connection settings
+    :param requested_settings: the requested values of the same settings
+    :param secret_name: the name of the secret, used in the error message (e.g. "secret")
+    :param action: what the secret is needed for, used in the error message (e.g. "save")
+    :raises ParameterError: if a requested setting differs from the saved one
+    """
+    changed = [key for key, value in requested_settings.items()
+               if value is not None and value != saved_settings.get(key)]
+    if changed:
+        raise ParameterError(f"These settings differ from the saved {kind} '{identifier}': {', '.join(changed)}. "
+                             f"Enter the {secret_name} to {action} the changed settings.")
 
 
 def int_to_hex(serial):
@@ -1210,6 +1438,80 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     # the user wildcard first means it can never collide with the escaping, so any
     # wildcard character (including '%' or '_') is handled correctly.
     return "%".join(escape_sql_like(part) for part in value.split(wildcard))
+
+
+class _OracleLikePattern(TypeDecorator):
+    """
+    The type of the value :func:`text_column_equals` compares a column with. On Oracle, where the comparison is a
+    ``LIKE``, the metacharacters of the value are escaped. Every other database gets the value as it is.
+    """
+    impl = sqlalchemy.UnicodeText
+    cache_ok = True
+
+    def __init__(self, column_type: sqlalchemy.types.TypeEngine):
+        super().__init__()
+        self.column_type = column_type
+        self.impl = column_type
+
+    def process_bind_param(self, value: str | None, dialect: sqlalchemy.engine.Dialect) -> str | None:
+        if dialect.name == "oracle" and value is not None:
+            return escape_sql_like(value)
+        return value
+
+
+class _TextColumnEquals(sqlalchemy.ColumnElement):
+    """The condition :func:`text_column_equals` returns, compiled for the database it runs on."""
+    inherit_cache = True
+    type = sqlalchemy.Boolean()
+    # A condition already: without this, a database with no boolean type, such as Oracle, gets an appended "= 1"
+    _is_implicitly_boolean = True
+    _traverse_internals = [("column", InternalTraversal.dp_clauseelement),
+                           ("value", InternalTraversal.dp_clauseelement)]
+
+    def __init__(self, column: sqlalchemy.ColumnElement, value: str):
+        self.column = column
+        self.value = sqlalchemy.bindparam(None, value, type_=_OracleLikePattern(column.type), unique=True)
+
+    @property
+    def _from_objects(self) -> list[sqlalchemy.FromClause]:
+        # The table of the column joins the FROM list, also when no other part of the statement names it
+        return self.column._from_objects
+
+    def self_group(self, against: OperatorType | None = None) -> sqlalchemy.ColumnElement:
+        # Both forms are a comparison, like "a = b": inside an operator of the same or a higher precedence, for
+        # example "== false()", the condition needs parentheses
+        if operators.is_precedent(operators.eq, against):
+            return Grouping(self)
+        return self
+
+
+@compiles(_TextColumnEquals)
+def _compile_text_column_equals(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                **kw: Any) -> str:
+    return f"{compiler.process(element.column, **kw)} = {compiler.process(element.value, **kw)}"
+
+
+@compiles(_TextColumnEquals, "oracle")
+def _compile_text_column_equals_on_oracle(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                          **kw: Any) -> str:
+    return (f"{compiler.process(element.column, **kw)} LIKE {compiler.process(element.value, **kw)} "
+            f"ESCAPE '{SQL_LIKE_ESCAPE}'")
+
+
+def text_column_equals(column: sqlalchemy.ColumnElement, value: str) -> sqlalchemy.ColumnElement[bool]:
+    """
+    Compare a text column with *value*, also where the column is a CLOB.
+
+    Every database compares with ``=``, except Oracle. Oracle stores long text, such as the token info value, as a
+    CLOB, which it can neither compare with ``=`` (ORA-00932) nor convert to a string beyond 4000 bytes (ORA-22835).
+    There the comparison is a ``LIKE`` with the metacharacters of *value* escaped, which matches the value exactly
+    and with case, like ``=`` does on Oracle. SQLAlchemy chooses the form when it compiles the statement.
+
+    :param column: the text column
+    :param value: the value the column has to hold
+    :return: the condition
+    """
+    return _TextColumnEquals(column, value)
 
 
 def convert_timestamp_to_utc(timestamp):
@@ -1457,13 +1759,22 @@ def get_module_class(package_name, class_name, check_method=None):
     return klass
 
 
+@functools.cache
+def _get_installed_version() -> str:
+    return metadata.version("privacyidea")
+
+
 def get_version_number():
     """
     returns the privacyidea version
+
+    The lookup parses the package metadata, and every API response contains the version. The version of the running
+    code does not change until the process restarts, so the lookup runs once per process. A failed lookup runs again on
+    the next call.
     """
     version = "unknown"
     try:
-        version = metadata.version("privacyidea")
+        version = _get_installed_version()
     except metadata.PackageNotFoundError as e:
         log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
@@ -1752,7 +2063,10 @@ def parse_string_to_dict(s, split_char=":"):
     return d
 
 
-ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
+# The name of the client application at the start of a user agent string. The policy check on save uses the same
+# pattern, so that a user agent in a policy can match the name that is read from a request.
+USER_AGENT_NAME_PATTERN = r"[a-zA-Z0-9_-]+"
+ua_re = re.compile(rf'^(?P<agent>{USER_AGENT_NAME_PATTERN})(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')
 
 
 def get_plugin_info_from_useragent(useragent):

@@ -146,7 +146,8 @@ def patch_policy_name_api(old_name):
 def set_policy_api(name=None):
     """
     Create or update a policy. If a policy with the given ``name``
-    already exists, it is updated; otherwise it is created.
+    already exists, it is updated; otherwise it is created. On an
+    update, every parameter that is not sent keeps its stored value.
 
     Policies in privacyIDEA gate what an admin or user is allowed to do,
     define defaults, and shape authentication and enrollment behavior.
@@ -181,13 +182,23 @@ def set_policy_api(name=None):
     :jsonparam user: user(s) the policy applies to — string with
         wildcards or list of strings.
     :jsonparam time: time-of-day window during which the policy is
-        active (see the policy reference for the format).
+        active (see the policy reference for the format). A day range
+        can wrap around the end of the week (``Sat-Mon``) and a time
+        range can cross midnight (``Fri: 22-6`` is Friday 22:00 to
+        Saturday 06:00).
     :jsonparam pinode: privacyIDEA node or list of nodes the policy
-        applies to. Validated against the configured nodes.
+        applies to. Validated against the configured nodes. The node
+        names are compared exactly: wildcards (``*``) and negations
+        (``!node``, ``-node``) are rejected. Leave it empty to apply the
+        policy on every node.
     :jsonparam client: client IP, optionally with a subnet
         (e.g. ``172.16.0.0/16``).
-    :jsonparam user_agents: list of user-agent identifiers the policy
-        applies to.
+    :jsonparam user_agents: list of user-agent names the policy
+        applies to, e.g. ``privacyidea-cp``. Each name may only contain
+        letters, digits, ``_`` and ``-``; a version
+        (``privacyidea-cp/1.0``), spaces, ``*`` and ``!`` are
+        rejected. Compared case-insensitively with the name from the
+        user agent of the request.
     :jsonparam active: boolean, whether the policy starts out active.
         Default ``True``.
     :jsonparam check_all_resolvers: if ``True``, the policy is checked
@@ -199,8 +210,10 @@ def set_policy_api(name=None):
         The order of conditions is not guaranteed to be preserved.
     :status 200: ``{"setPolicy <name>": <db-id>}`` in ``result.value``.
     :status 400: invalid scope, invalid policy name, priority below
-        1, invalid time format, or unknown realm / resolver / pinode /
-        admin realm.
+        1, invalid time format, unknown realm / resolver / pinode /
+        admin realm, a pinode with a wildcard or negation, an invalid
+        user agent, or a pinode or user_agents list with values that
+        are not strings.
 
     **Example request**:
 
@@ -251,11 +264,15 @@ def set_policy_api(name=None):
     user = param.get("user")
     time = param.get("time")
     client = param.get("client")
-    active = is_true(param.get("active", True))
+    active = param.get("active")
+    if active is not None:
+        active = is_true(active)
     check_all_resolvers = param.get("check_all_resolvers")
     admin_realm = param.get("adminrealm")
     admin_user = param.get("adminuser")
-    priority = int(param.get("priority", 1))
+    priority = param.get("priority")
+    if priority is not None:
+        priority = int(priority)
     conditions = param.get("conditions")
     description = param.get("description")
     user_agents = param.get("user_agents", None)
@@ -272,7 +289,7 @@ def set_policy_api(name=None):
                      resolver=resolver, user=user, client=client, time=time,
                      active=active, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
-                     check_all_resolvers=check_all_resolvers or False,
+                     check_all_resolvers=check_all_resolvers,
                      priority=priority, conditions=conditions,
                      description=description, user_agents=user_agents,
                      user_case_insensitive=user_case_insensitive)
@@ -435,7 +452,9 @@ def import_policy_api(filename=None):
     :formparam file: the file contents (required).
     :status 200: number of imported policies in ``result.value``.
     :status 400: the file is empty or its contents are not valid
-        text.
+        text, or a policy in the file can not be imported. The other
+        policies are still imported, and the error message names the
+        failed and the imported policies.
 
     **Example request**:
 
@@ -515,8 +534,9 @@ def check_policy_api():
     res = {}
     param = getLowerParams(request.all_data)
 
-    user = get_required(param, "user")
-    realm = get_required(param, "realm")
+    # An empty user or realm checks the policies that apply without one
+    user = get_required(param, "user", allow_empty=True)
+    realm = get_required(param, "realm", allow_empty=True)
     scope = get_required(param, "scope")
     action = get_required(param, "action")
     client = get_optional(param, "client")

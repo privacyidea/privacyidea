@@ -36,6 +36,7 @@ import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-s
 import { ROUTE_PATHS } from "@app/route_paths";
 import { of, throwError } from "rxjs";
 import { UserResolversComponent } from "./user-resolver.component";
+import { axe } from "@testing/axe";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -150,10 +151,11 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onEditResolver should open dialog", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, "res1"]);
   });
 
   it("onDeleteResolver should delete after confirmation", () => {
@@ -215,5 +217,11 @@ describe("UserSourcesComponent", () => {
     component.onDeleteResolver(resolver);
 
     expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Server error message"));
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

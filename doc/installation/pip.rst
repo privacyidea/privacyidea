@@ -10,7 +10,7 @@ virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
 .. note::
-    privacyIDEA runs with Python 3.11 to 3.14. Other
+    privacyIDEA runs with Python 3.11 to 3.15. Other
     versions either do not work or are not tested.
 
 Setting up a virtual environment
@@ -89,7 +89,8 @@ the matching OS packages must be present:
     The official Docker image already includes the ``kerberos`` extra and the
     Kerberos runtime libraries, so a containerized deployment only needs a
     mounted ``krb5.conf``. It also ships ``psycopg2-binary``, so the
-    ``postgres`` extra is not needed there either.
+    ``postgres`` extra is not needed there either. For Oracle databases, the
+    image ships ``oracledb``.
 
 .. _pip_configuration:
 

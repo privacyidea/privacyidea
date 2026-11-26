@@ -3,6 +3,8 @@ This test file tests the lib.tokens.radiustoken
 This depends on lib.tokenclass
 """
 import logging
+from unittest import mock
+
 from testfixtures import log_capture
 from .base import MyTestCase
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
@@ -12,8 +14,9 @@ from privacyidea.models import Token
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.config import set_privacyidea_config
 from . import radiusmock
-from privacyidea.lib.token import init_token, import_tokens
-from privacyidea.lib.radiusserver import add_radius
+from privacyidea.lib.token import init_token, import_tokens, remove_token
+from privacyidea.lib.radiusserver import add_radius, RADIUSServer
+from privacyidea.lib.user import User
 
 DICT_FILE = "tests/testdata/dictionary"
 
@@ -295,6 +298,29 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertGreaterEqual(r, 0)
 
     @radiusmock.activate
+    def test_14a_a_follow_up_challenge_is_issued_once(self):
+        """The RADIUS server answers with another challenge, but another request already used the answered
+        one: that request continues the conversation, this one does not get a second follow-up challenge."""
+        add_radius(identifier="myserver", server="1.2.3.4", secret="testing123", dictionary=DICT_FILE)
+        token = init_token({"type": "radius", "radius.identifier": "myserver",
+                            "radius.local_checkpin": False, "radius.user": "nönäscii"})
+        self.addCleanup(remove_token, token.token.serial)
+
+        radiusmock.setdata(timeout=False, response=radiusmock.AccessChallenge,
+                           response_data={"State": [b"123456"], "Reply_Message": ["More information."]})
+        options = {}
+        token.is_challenge_request("some_remote_value", options=options)
+        _, _, transaction_id, _ = token.create_challenge(options=options)
+
+        with mock.patch("privacyidea.lib.tokens.radiustoken.consume_challenge", return_value=False):
+            result = token.check_challenge_response(passw="some_response",
+                                                    options={"transaction_id": transaction_id})
+
+        self.assertEqual(-1, result)
+        # No follow-up challenge was created for the request that lost the answered one
+        self.assertEqual([transaction_id], [c.transaction_id for c in get_challenges(token.token.serial)])
+
+    @radiusmock.activate
     def test_15_multi_challenge_response_in_radius_server(self):
         # The RADIUS server issues a AccessChallenge on the first and on the
         # second request
@@ -404,3 +430,32 @@ class RadiusTokenTestCase(MyTestCase):
         result = import_tokens(token_data)
         # Import for RADIUS token currently not implemented
         self.assertIn("123456", result.failed_tokens, result)
+
+    @radiusmock.activate
+    def test_19_radius_user_is_required_and_always_sent(self):
+        # The enrollment refuses a RADIUS token without a RADIUS user. The request to the RADIUS server is always sent
+        # for the RADIUS user of the token, never for the user who is authenticating or for the owner.
+        set_privacyidea_config("radius.dictfile", DICT_FILE)
+        radiusmock.setdata(response=radiusmock.AccessAccept)
+        add_radius(identifier="myserver", server="1.2.3.4", secret="testing123", dictionary=DICT_FILE)
+        self.setUp_user_realms()
+        owner = User("cornelius", self.realm1)
+        with self.assertRaises(ParameterError):
+            init_token({"type": "radius", "serial": "RADEMPTY", "radius.identifier": "myserver",
+                        "radius.user": ""}, owner)
+        with self.assertRaises(ParameterError):
+            init_token({"type": "radius", "serial": "RADMISSING", "radius.identifier": "myserver"}, owner)
+
+        token = init_token({"type": "radius", "radius.identifier": "myserver", "radius.user": "olduser"}, owner)
+        with mock.patch.object(RADIUSServer, "request", autospec=True, side_effect=RADIUSServer.request) as request:
+            self.assertTrue(token.authenticate("radiuspassword", options={"user": owner})[0])
+            self.assertEqual("olduser", request.call_args.kwargs["user"])
+
+            # A token that has no RADIUS user sends the request with an empty user name
+            token.write_tokeninfo("radius.user", "")
+            token.authenticate("radiuspassword", options={"user": User("hans", self.realm1)})
+            self.assert_empty_string(request.call_args.kwargs["user"])
+            token.authenticate("radiuspassword", options={})
+            self.assert_empty_string(request.call_args.kwargs["user"])
+
+        remove_token(token.get_serial())

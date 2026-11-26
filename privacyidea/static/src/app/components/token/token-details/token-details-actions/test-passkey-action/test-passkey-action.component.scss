@@ -1,0 +1,25 @@
+@use "styles-api" as styles;
+
+:host {
+  @include styles.card-raised(3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
+}
+
+.passkey-test-result {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.passkey-test-result--success {
+  color: var(--mat-sys-primary);
+}
+
+.passkey-test-result--warning {
+  color: var(--mat-sys-error);
+}

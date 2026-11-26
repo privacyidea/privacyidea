@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 // The reasons and the button that explains them: the button sits beside the list rather than under it, and shares its
 // centre line, so the glyph reads as belonging to the reasons rather than hanging below them. A cell of several
 // reasons therefore offers the button at the middle of the stack, which is the whole cell's centre too.
@@ -15,7 +17,7 @@
   gap: 2px;
 }
 
-// Groups the placeholder link with the icon button that can follow it, so the tooltip bound here covers both as one
+// Groups the placeholder with the icon button that can follow it, so the tooltip bound here covers both as one
 // area instead of each control raising its own.
 .reason-detail-trigger {
   display: flex;
@@ -23,19 +25,28 @@
 }
 
 // Stands in for the reason an entry has none of, so the cell is not an empty column beside a lone button. It opens
-// the same dialog the icon button beside it does, so it reads as a link rather than inert text.
+// the same dialog the icon button beside it does: a button, since it opens a dialog rather than a page, styled as
+// link text rather than inert text.
 .reason-placeholder {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
   color: var(--mat-sys-primary);
   white-space: nowrap;
+  cursor: pointer;
 }
 
 // Sized down to the line it sits beside, through Material's own size tokens: the button's box is what carries the
-// glyph, and at its default 40px it would stretch the cell past the row's other columns. The 48px touch target inside
-// the button's own view is pinned to match in styles/buttons.scss, which is the only part of this a component
-// stylesheet cannot reach.
+// glyph, and at its default 40px it would stretch the cell past the row's other columns. The 48px touch target is
+// pinned to match together with the other compact table buttons in styles/buttons.scss.
 .reason-detail-button {
-  --mat-icon-button-state-layer-size: 24px;
-  --mat-icon-button-icon-size: 20px;
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px,
+      icon-size: 20px
+    )
+  );
 }
 
 .reason-detail-icon {

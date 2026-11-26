@@ -9,7 +9,8 @@ from datetime import timedelta
 from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
-                                       cancel_enrollment_via_multichallenge, get_challenges_paginate)
+                                       cancel_enrollment_via_multichallenge, get_challenges_paginate,
+                                       consume_challenge)
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -98,6 +99,27 @@ class ChallengeTestCase(MyTestCase):
         for serial in serials:
             delete_challenges(serial=serial)
 
+    def test_01c_the_challenge_id_orders_equal_sort_values(self):
+        # The transaction ids are not in alphabetical order, so that only the id gives this order
+        now = utc_now()
+        transaction_ids = ["txn_tie_c", "txn_tie_a", "txn_tie_b"]
+        for transaction_id in transaction_ids:
+            challenge = Challenge(serial="TIE_01", transaction_id=transaction_id)
+            challenge.timestamp = now
+            challenge.save()
+        self.addCleanup(delete_challenges, serial="TIE_01")
+
+        # All challenges have the same serial and timestamp, so only the id gives the pages a fixed order
+        for sortby in ["serial", "timestamp"]:
+            for sortdir, expected_ids in [("asc", transaction_ids), ("desc", transaction_ids[::-1])]:
+                with self.subTest(sortby=sortby, sortdir=sortdir):
+                    pages = [[challenge["transaction_id"]
+                              for challenge in get_challenges_paginate(serial="TIE_*", sortby=sortby,
+                                                                       sortdir=sortdir, psize=2,
+                                                                       page=page)["challenges"]]
+                             for page in [1, 2]]
+                    self.assertListEqual([expected_ids[:2], expected_ids[2:]], pages)
+
     def test_02_extract_answered_challenges(self):
         token = init_token({"genkey": 1, "serial": "CHAL2", "pin": "pin"})
         # no challenges yet
@@ -154,6 +176,28 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
         delete_challenges(transaction_id=transaction_id)
         self.assertEqual(0, len(get_challenges(transaction_id=transaction_id)))
+
+    def test_03a_consume_challenge_picks_one_user(self):
+        token = init_token({"type": "hotp", "genkey": 1, "pin": "pin"})
+        self.assertFalse(check_serial_pass(token.get_serial(), "pin")[0])
+        challenge = get_challenges(serial=token.get_serial())[0]
+
+        # Only the call that removes the challenge may let its request succeed
+        self.assertTrue(consume_challenge(challenge))
+        self.assertEqual([], get_challenges(serial=token.get_serial()))
+        self.assertFalse(consume_challenge(challenge))
+        remove_token(token.get_serial())
+
+    def test_03b_consume_challenge_without_a_serial(self):
+        # A FIDO2 challenge is not bound to a token: it carries serial="", which Oracle stores as NULL, so it is
+        # consumed by its id and not by its serial.
+        challenge = Challenge("", challenge="nonce", validitytime=120)
+        challenge.save()
+        # Read it before the consume: that commit expires the object, and a reload of a deleted row raises.
+        transaction_id = challenge.transaction_id
+
+        self.assertTrue(consume_challenge(challenge))
+        self.assertEqual([], get_challenges(transaction_id=transaction_id))
 
     def test_04_cancel_enrollment_failures(self):
         transaction_id = get_rand_digit_str()
@@ -289,7 +333,7 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       data=None, validitytime=120)
         c.save()
 
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up
@@ -302,7 +346,7 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       data="", validitytime=120)
         c.save()
 
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up
@@ -352,13 +396,13 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         # Assign empty dict via setter - stored as empty, not encrypted
         c.data = {}
         db.session.commit()
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Assign None via setter
         c.data = None
         db.session.commit()
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up

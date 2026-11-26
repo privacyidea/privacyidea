@@ -16,13 +16,16 @@ to privacyIDEA. To do so, please check the :ref:`plugin_guide`.
 Some plugins need a subscription file for larger installations. privacyIDEA
 recognizes the plugin by the User-Agent of its requests. Without a
 subscription file, privacyIDEA serves the ownCloud and Nextcloud apps, the
-LDAP Proxy, the Credential Provider, the AD FS provider and the FreeRADIUS
+LDAP Proxy, the Credential Provider and the AD FS provider
 plugin as long as no more than 50 users have active tokens, and the PAM
 module and the SimpleSAMLphp, Keycloak and Shibboleth plugins as long as no
 more than 10000 users have active tokens. Above that number, a growing share
 of the requests of the plugin is rejected with the error "No subscription for
-your client.". For FreeRADIUS, the subscription file of the privacyIDEA
-server applies.
+your client.". The pam-passkey module counts towards the PAM module and its
+subscription file, the EntraID protocol mapper towards the Keycloak plugin.
+For FreeRADIUS, the subscription file of the privacyIDEA server applies.
+Without it, FreeRADIUS requests are never rejected; the WebUI only shows a
+warning once more than 50 active tokens are assigned to users.
 
 .. _pam_plugin:
 

@@ -10,25 +10,30 @@ from testfixtures import log_capture, LogCapture
 from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
-from privacyidea.lib.error import ResourceNotFoundError, Error
+from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
+from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, REMOTE_USER, delete_policy, delete_policies
 from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
-from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, AUTH_DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Audit, Realm, NodeName, db
-from . import ldap3mock
-from .base import MyApiTestCase, OverrideConfigTestCase
+from . import ldap3mock, smtpmock
+from .base import MyApiTestCase, OverrideConfigTestCase, PWFILE as PASSWORDS_FILE, PWFILE2 as PASSWD_FILE
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
 
@@ -539,7 +544,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual("", aentry['policies'], aentry)
+        self.assert_empty_string(aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
@@ -764,15 +769,18 @@ class AuthApiTestCase(MyApiTestCase):
         set_default_realm("ldap1")
 
         # Try to log in as user with a failing LDAP resolver
-        with mock.patch("logging.Logger.warning") as mock_log:
+        with (mock.patch("logging.Logger.warning") as mock_log,
+              mock.patch("logging.Logger.error") as mock_error_log):
             with self.app.test_request_context('/auth',
                                                method='POST',
                                                data={"username": "hans",
                                                      "password": "test"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(401, res.status_code, res)
-                mock_log.assert_called_once_with("Problem resolving user hans in realm ldap1: ERR907: Error performing "
-                                                 "bind operation: LDAP request failed.")
+                mock_log.assert_called_once_with(f"Problem resolving user hans in realm ldap1: ERR907: "
+                                                 f"{USER_LOOKUP_FAILED}.")
+                # The resolver logs what went wrong with the user store
+                mock_error_log.assert_any_call("Error performing bind operation: LDAP request failed!")
 
         delete_realm("ldap1")
         delete_resolver("ldap1")
@@ -1884,6 +1892,121 @@ class AuthApiTestCase(MyApiTestCase):
         Audit.query.delete()
         db.session.commit()
 
+    @smtpmock.activate
+    def test_20_the_policies_of_the_users_realm_apply_to_the_challenge(self):
+        # The WebUI login hands the user to the token, so the email subject comes from the policy of the user's realm,
+        # not from the policy of another realm
+        smtpmock.setdata(response={"hans@dampf.com": (200, "OK")})
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "AUTHMAIL"
+        init_token({"type": "email", "serial": serial, "otpkey": self.otpkey, "email": "hans@dampf.com",
+                    "pin": "mailpin"}, user=User("cornelius", self.realm1))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("subject_realm2", scope=SCOPE.AUTH, realm=self.realm2,
+                   action=f"{EMAILACTION.EMAILSUBJECT}=Subject of realm2")
+        try:
+            for subject_realm1, expected_subject in ((None, "Your OTP"), ("Subject of realm1", "Subject of realm1")):
+                with self.subTest(subject_realm1=subject_realm1):
+                    if subject_realm1:
+                        set_policy("subject_realm1", scope=SCOPE.AUTH, realm=self.realm1,
+                                   action=f"{EMAILACTION.EMAILSUBJECT}={subject_realm1}")
+                    with self.app.test_request_context('/auth', method='POST',
+                                                       data={"username": "cornelius", "realm": self.realm1,
+                                                             "password": "mailpin"}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([serial], [challenge["serial"]
+                                                    for challenge in res.json["detail"]["multi_challenge"]])
+                    subjects = [line for line in smtpmock.get_sent_message().splitlines()
+                                if line.startswith("Subject:")]
+                    self.assertListEqual([f"Subject: {expected_subject}"], subjects)
+        finally:
+            for name in ("piLogin", "subject_realm1", "subject_realm2"):
+                try:
+                    delete_policy(name)
+                except ResourceNotFoundError:
+                    pass
+            remove_token(serial)
+
+    def test_21_autoresync_in_audit_log(self):
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.addCleanup(delete_policy, "pi-login")
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"serial": "AUTORESYNC1", "otpkey": self.otpkey, "pin": "pin"},
+                           User("cornelius", self.realm1))
+        self.addCleanup(remove_token, "AUTORESYNC1")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual("loginmode=privacyIDEA,Authentication failed.|wrong otp value,autoresync started",
+                         audit_entry.get("info"))
+
+        # counter = 9, will be autosynced
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual("loginmode=privacyIDEA,autoresync successful", audit_entry.get("info"))
+
+    def test_21_autoresync_before_refused_login(self):
+        # The token is resynced, but the last_auth policy refuses the login afterwards
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.addCleanup(delete_policy, "pi-login")
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
+        self.addCleanup(delete_policy, "lastauth")
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"serial": "AUTORESYNC2", "otpkey": self.otpkey, "pin": "pin"},
+                           User("cornelius", self.realm1))
+        self.addCleanup(remove_token, "AUTORESYNC2")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        last_auth = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=30)).strftime(
+            AUTH_DATE_FORMAT)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth)
+
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        # counter = 9, the token is resynced, but the last authentication is too long ago
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        self.assertEqual(10, get_one_token(serial="AUTORESYNC2").token.count)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(f"loginmode=privacyIDEA,Authentication failed.|The last successful authentication was "
+                         f"{last_auth}. It is too long ago.,autoresync successful", audit_entry.get("info"))
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):
@@ -2255,6 +2378,33 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("otp_pin")
         delete_policy("disabled_token_types")
 
+    def test_05a_challenge_text(self):
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("challenge_response", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp,{PolicyAction.OTPPIN}=userstore")
+        set_policy("challenge_text", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGETEXT}=Realm one text",
+                   realm=self.realm1)
+        _, failed = set_realm(self.realm2, [{"name": self.resolvername1}])
+        self.assertListEqual([], failed)
+        self.addCleanup(delete_realm, self.realm2)
+        set_policy("challenge_text_realm2", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGETEXT}=Realm two text",
+                   realm=self.realm2)
+        for name in ["pi_login", "challenge_response", "challenge_text", "challenge_text_realm2"]:
+            self.addCleanup(delete_policy, name)
+        hotp = init_token({"type": "hotp"}, user=User(self.testadmin, self.realm1))
+        self.addCleanup(remove_token, hotp.get_serial())
+        self.addCleanup(delete_challenges, serial=hotp.get_serial())
+
+        # The user with the name of the local admin gets the challenge text of the user's realm
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            self.assertEqual("Realm one text", res.json["detail"]["message"], res.json)
+
     def test_06_jwt_validity(self):
         # generic policy applies to both
         set_policy("jwt_validity", scope=SCOPE.WEBUI, action=f"{PolicyAction.JWTVALIDITY}=1800")
@@ -2436,3 +2586,131 @@ class EventHandlerTest(MyApiTestCase):
         )
 
         delete_event(eid)
+
+
+class RemoteUserAccountTestCase(MyApiTestCase):
+    """
+    The remote_user policy decides about the account that REMOTE_USER names: the realm parameter of the request cannot
+    move the login to another realm, and the resolver of the policy is evaluated.
+
+    ``mixedrealm`` (the default realm) = resolver1 (``tests/testdata/passwords``, priority 1) + reso3
+    (``tests/testdata/passwd``, priority 2). ``adminrealm`` = resolver1 and is the ``SUPERUSER_REALM`` of the
+    testing configuration. ``systemrealm`` = reso3. ``cornelius`` exists in both files as different entries,
+    ``selfservice`` only in resolver1 and ``daemon`` only in reso3. Only the password logins of test_07 send a
+    password.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": PASSWORDS_FILE})
+        save_resolver({"resolver": self.resolvername3, "type": "passwdresolver", "fileName": PASSWD_FILE})
+        set_realm("mixedrealm", [{"name": self.resolvername1, "priority": 1},
+                                 {"name": self.resolvername3, "priority": 2}])
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        set_realm("systemrealm", [{"name": self.resolvername3}])
+        set_default_realm("mixedrealm")
+
+    def tearDown(self) -> None:
+        for policy_name in ["remote_mixed", "remote_any", "set_realm_policy"]:
+            try:
+                delete_policy(policy_name)
+            except Exception:  # nosec B110 # the policy was not created by this test
+                pass
+        for realm in ["mixedrealm", "adminrealm", "systemrealm"]:
+            delete_realm(realm)
+        super().tearDown()
+
+    def _remote_user_auth(self, remote_user: str, data: dict) -> tuple[int, dict]:
+        with self.app.test_request_context("/auth", method="POST", data=data,
+                                           environ_base={"REMOTE_USER": remote_user}):
+            res = self.app.full_dispatch_request()
+        return res.status_code, res.json.get("result", {}).get("value") or {}
+
+    def _config_remote_user(self, remote_user: str) -> str:
+        with self.app.test_request_context("/config", method="GET", environ_base={"REMOTE_USER": remote_user}):
+            res = self.app.full_dispatch_request()
+        return res.json["result"]["value"].get("remote_user")
+
+    def test_01_realm_parameter_does_not_move_the_login(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        cases = [
+            # The intended login: name and realm from REMOTE_USER (default realm), with or without that realm given
+            ("cornelius", {"username": "cornelius"}, 200),
+            ("cornelius", {"username": "cornelius", "realm": "mixedrealm"}, 200),
+            # REMOTE_USER names a realm the policy does not cover
+            ("cornelius@adminrealm", {"username": "cornelius@adminrealm"}, 401),
+            # A realm parameter that names another realm than REMOTE_USER does not log the name in there
+            ("cornelius", {"username": "cornelius", "realm": "adminrealm"}, 401),
+            ("cornelius@mixedrealm", {"username": "cornelius@mixedrealm", "realm": "adminrealm"}, 401),
+            ("cornelius", {"username": "cornelius", "realm": "systemrealm"}, 401)]
+        for remote_user, data, expected in cases:
+            with self.subTest(remote_user=remote_user, data=data):
+                status, value = self._remote_user_auth(remote_user, data)
+                self.assertEqual(expected, status)
+                if expected == 200:
+                    self.assertEqual(("user", "mixedrealm"), (value["role"], value["realm"]))
+
+    def test_02_resolver_of_the_policy_is_evaluated(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm", resolver=self.resolvername1,
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        selfservice_status, selfservice_value = self._remote_user_auth("selfservice", {"username": "selfservice"})
+        self.assertEqual(200, selfservice_status)
+        self.assertEqual(("user", "mixedrealm"), (selfservice_value["role"], selfservice_value["realm"]))
+        self.assertEqual("selfservice", self._config_remote_user("selfservice"))
+        # daemon resolves to reso3 in mixedrealm, which the policy does not name
+        daemon_status, _ = self._remote_user_auth("daemon", {"username": "daemon"})
+        self.assertEqual(401, daemon_status)
+        self.assertEqual("", self._config_remote_user("daemon"))
+
+    def test_03_set_realm_rewrite_keeps_working(self):
+        # The AUTH set_realm rewrite is server configuration and stays; the policy is matched for the account that
+        # REMOTE_USER names, before the rewrite.
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        set_policy("set_realm_policy", scope=SCOPE.AUTH, realm="mixedrealm",
+                   action=f"{PolicyAction.SET_REALM}=systemrealm")
+        status, value = self._remote_user_auth("cornelius", {"username": "cornelius"})
+        self.assertEqual(200, status)
+        self.assertEqual(("user", "systemrealm"), (value["role"], value["realm"]))
+
+    def test_04_local_admin_session_has_no_realm(self):
+        set_policy("remote_any", scope=SCOPE.WEBUI, action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        status, value = self._remote_user_auth(self.testadmin, {"username": self.testadmin})
+        self.assertEqual(200, status)
+        self.assertEqual(("admin", ""), (value["role"], value["realm"]))
+
+    def test_05_unreachable_user_store_falls_back_to_the_name_and_realm(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        with mock.patch("privacyidea.api.lib.prepolicy.User", side_effect=ResolverError("The user store is down")):
+            self.assertEqual("cornelius", self._config_remote_user("cornelius"))
+
+    def test_06_login_page_without_a_remote_user_policy(self):
+        """The WebUI loads for a REMOTE_USER of an existing account, and without a policy it does not use the name."""
+        self.assertEqual("", self._config_remote_user("selfservice"))
+        with self.app.test_request_context("/", method="GET", environ_base={"REMOTE_USER": "selfservice"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code)
+
+    def test_07_policy_error_uses_the_password_login(self):
+        # The condition of the remote_user policy reads a userinfo key that the user store does not have. The login
+        # does not use REMOTE_USER and checks the password, and the log file gets the error.
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}",
+                   conditions=[(ConditionSection.USERINFO, "no_such_key", PrimaryComparators.EQUALS, "x", True,
+                                ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.assertEqual("", self._config_remote_user("cornelius"))
+        cases = [({"username": "cornelius"}, 401),
+                 ({"username": "cornelius", "password": "wrong"}, 401),
+                 ({"username": "cornelius", "password": "test"}, 200)]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with self.assertLogs("privacyidea.api.auth", level="ERROR") as captured_logs:
+                    status, value = self._remote_user_auth("cornelius", data)
+                self.assertEqual(expected, status)
+                self.assertTrue(any(f"'{PolicyAction.REMOTE_USER}'" in line for line in captured_logs.output),
+                                captured_logs.output)
+                if expected == 200:
+                    self.assertEqual(("user", "mixedrealm"), (value["role"], value["realm"]))
+

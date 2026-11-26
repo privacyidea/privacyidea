@@ -38,6 +38,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -49,11 +50,59 @@ import {
   UserAgentOption
 } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { hasError } from "@utils/form-state.utils";
 
 interface ClientSuggestion {
   ip: string;
   hostname?: string;
   applications: string[];
+}
+
+interface TimeRange {
+  days: string;
+  startMinutes: number;
+  endMinutes: number;
+}
+
+export interface OvernightTimeRange {
+  days: string;
+  start: string;
+  end: string;
+}
+
+const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+function toMinutes(time: string): number | null {
+  const [hours, minutes = 0] = time.split(":").map(Number);
+  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
+}
+
+function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  return `${String(hours).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+function formatDayName(day: string): string {
+  return day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+}
+
+// Mirrors check_time_in_range on the server: whitespace is ignored and day names are case-insensitive.
+// A day range can wrap around the end of the week (Sat-Mon) and a time range can cross midnight (22-6).
+// Returns null if one of the ranges is not valid.
+function parseTimeRanges(value: string): TimeRange[] | null {
+  const timeRanges: TimeRange[] = [];
+  for (const range of value.replace(/\s+/g, "").split(",")) {
+    const match = /^([a-z]{3})(?:-([a-z]{3}))?:(\d{1,2}(?::\d{1,2})?)-(\d{1,2}(?::\d{1,2})?)$/i.exec(range);
+    if (!match) return null;
+    const [, dayStart, dayEnd, timeStart, timeEnd] = match;
+    const dayNames = dayEnd === undefined ? [dayStart] : [dayStart, dayEnd];
+    if (!dayNames.every((day) => WEEKDAYS.includes(day.toLowerCase()))) return null;
+    const startMinutes = toMinutes(timeStart);
+    const endMinutes = toMinutes(timeEnd);
+    if (startMinutes === null || endMinutes === null) return null;
+    timeRanges.push({ days: dayNames.map(formatDayName).join("-"), startMinutes, endMinutes });
+  }
+  return timeRanges;
 }
 
 @Component({
@@ -69,7 +118,8 @@ interface ClientSuggestion {
     MatExpansionModule,
     MultiSelectOnlyComponent,
     ClearButtonComponent,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    ChipListInputComponent
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"
@@ -85,24 +135,28 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  readonly addUserAgentSignal = signal("");
-  readonly addUserAgentField = form(this.addUserAgentSignal, (f) => {
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      return value && value.includes(",") ? [{ kind: "includesComma" }] : [];
-    });
-  });
+  protected readonly hasError = hasError;
 
   readonly validTimeSignal = signal("");
   readonly validTimeField = form(this.validTimeSignal, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (!value) return [];
-      const regex =
-        /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
-      return regex.test(value) ? [] : [{ kind: "invalidValidTime" }];
+      return parseTimeRanges(value) !== null ? [] : [{ kind: "invalidValidTime" }];
     });
   });
+
+  // A range that ends before it starts is valid and crosses midnight. The hint shows these ranges, so that an admin
+  // sees that a swapped range like "Mon-Fri: 18-8" applies at night and not from 08:00 to 18:00.
+  readonly overnightTimeRanges = computed<OvernightTimeRange[]>(() =>
+    (parseTimeRanges(this.validTimeSignal()) ?? [])
+      .filter((timeRange) => timeRange.startMinutes > timeRange.endMinutes)
+      .map((timeRange) => ({
+        days: timeRange.days,
+        start: formatMinutes(timeRange.startMinutes),
+        end: formatMinutes(timeRange.endMinutes)
+      }))
+  );
 
   readonly regexIpV4 =
     /^!?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
@@ -168,7 +222,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
       label: integration.label
     }))
   );
-  getUserAgentLabel = (identifier: string): string => this.integrationsService.labelForPolicyValue(identifier);
+  getUserAgentDisplay = (userAgent: string): string => this.integrationsService.displayForPolicyValue(userAgent);
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   readonly selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
@@ -237,20 +291,6 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     if (!oldUserAgents.includes(userAgent)) {
       this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
     }
-  }
-
-  addUserAgent() {
-    const userAgent = this.addUserAgentSignal()?.trim();
-    if (this.addUserAgentField().errors().length > 0 || !userAgent) return;
-    const oldUserAgents = this.selectedUserAgents();
-    if (!oldUserAgents.includes(userAgent)) {
-      this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
-    }
-    this.addUserAgentSignal.set("");
-  }
-
-  removeUserAgent(userAgent: string) {
-    this.emitEdits({ user_agents: this.selectedUserAgents().filter((ua) => ua !== userAgent) });
   }
 
   clearUserAgents() {

@@ -19,16 +19,14 @@
 #
 import copy
 import importlib
-import json
 import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime, UTC
 from collections.abc import Generator
 
-from flask import g
-from sqlalchemy import func, select, and_, false
-from sqlalchemy.orm import aliased
+from flask import g, Request
+from sqlalchemy import func, select, and_, false, true
 from sqlalchemy.sql import Select
 
 from privacyidea.api.lib.utils import send_result
@@ -40,11 +38,12 @@ from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContain
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge)
+                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge, PrivacyIDEAError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
@@ -174,15 +173,16 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
 def _create_container_query(user: User = None, serial: str = None, ctype: str = None,
                             ctype_exact: list[str] = None,
                             token_serial: str = None,
-                            realm: str = None, allowed_realms: list[str] = None, template: str = None,
+                            realm: str = None, has_realm: bool | None = None, allowed_realms: list[str] = None,
+                            template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
-                            sortby: str = 'serial', sortdir: str = 'asc') -> Select:
+                            sortby: str = 'serial', sortdir: str = 'asc', has_template: bool = None) -> Select:
     """
     Generates a sql query to filter containers by the given parameters.
 
-    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
-        independently, hence a user object carrying only a realm lists the containers of all users of that
+    :param user: container owner, optional. The realm, the resolver and the user id of the user only apply if
+        they are set, hence a user object carrying only a realm lists the containers of all users of that
         realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
         and therefore does not filter at all. Since only assigned containers have an owner, a user object
         never matches an unassigned container, and neither does a realm that does not exist. Raises a
@@ -194,15 +194,19 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
+    :param has_realm: True to only return containers with at least one realm, False to only return containers
+        without any realm, None for no filtering by realm assignment, optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
-        empty list if none is), optional.
-        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
-        container is returned.
+        empty list if none is), optional. A container matches if one of its realms is in the list. This condition
+        is independent of the realm filter: a container in the realms A and B matches the realm "A" with the
+        allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as
         wildcard), optional
+    :param has_template: Whether the container was created from a template, optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False if not, optional
-    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
+        given too, the user and the resolver must match the same owner of the container.
     :param info: The info dictionary in the format {key: value} of length 1, optional
         Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
     :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
@@ -215,12 +219,14 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :return: sql query
     """
     stmt = select(TokenContainer)
-    realm1 = aliased(Realm)
+    # The conditions of the user filter and of the resolver filter apply to the same owner, because a container can
+    # have several owners in the database. None means that the query does not filter by the owner.
+    owner_conditions = None
     if user:
         realm_db = None
         if user.realm:
             realm_db = db.session.execute(
-                select(realm1).where(func.lower(realm1.name) == user.realm.lower())
+                select(Realm).where(func.lower(Realm.name) == user.realm.lower())
             ).scalar_one_or_none()
         if user.realm and not realm_db:
             # No user can be in a realm that does not exist: like every other filter, an unknown value
@@ -232,19 +238,31 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                 # the resolver of the user may be used as a fallback filter, because the query would then
                 # return the containers of all users of that realm or resolver.
                 raise UserError("The user can not be found in any resolver in this realm!")
-            # The realm, the resolver and the user id are applied independently, so that the containers of
+            # The realm, the resolver and the user id only apply if they are set, so that the containers of
             # all users of a realm can be listed without specifying a username.
-            stmt = stmt.join(TokenContainer.owners)
+            owner_conditions = []
             if realm_db:
-                stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
+                owner_conditions.append(TokenContainerOwner.realm_id == realm_db.id)
             if user.resolver:
                 if "*" in user.resolver:
-                    stmt = stmt.where(TokenContainerOwner.resolver.ilike(
+                    owner_conditions.append(TokenContainerOwner.resolver.ilike(
                         convert_wildcard_to_sql_like(user.resolver), escape=SQL_LIKE_ESCAPE))
                 else:
-                    stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+                    owner_conditions.append(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
             if user.uid:
-                stmt = stmt.where(TokenContainerOwner.user_id == user.uid)
+                owner_conditions.append(TokenContainerOwner.user_id == user.uid)
+
+    if resolver and resolver.strip("*"):
+        if owner_conditions is None:
+            owner_conditions = []
+        if "*" in resolver:
+            owner_conditions.append(TokenContainerOwner.resolver.ilike(
+                convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE))
+        else:
+            owner_conditions.append(func.lower(TokenContainerOwner.resolver) == resolver.lower())
+
+    if owner_conditions is not None:
+        stmt = stmt.where(TokenContainer.owners.any(and_(true(), *owner_conditions)))
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -272,42 +290,25 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             stmt = stmt.where(TokenContainer.tokens.any(Token.serial.ilike(
                 convert_wildcard_to_sql_like(token_serial), escape=SQL_LIKE_ESCAPE)))
         else:
-            stmt = stmt.join(TokenContainer.tokens, isouter=True).where(
-                func.upper(Token.serial) == token_serial.upper()
-            )
+            stmt = stmt.where(TokenContainer.tokens.any(func.upper(Token.serial) == token_serial.upper()))
 
     if realm and realm.strip("*"):
-        # Correctly join with the aliased Realm table
-        stmt = stmt.join(TokenContainer.realms.of_type(realm1), isouter=True)
-
         if "*" in realm:
-            # Use the input parameter 'realm' for the wildcard filter
-            stmt = stmt.where(realm1.name.ilike(
-                convert_wildcard_to_sql_like(realm), escape=SQL_LIKE_ESCAPE))
+            stmt = stmt.where(TokenContainer.realms.any(Realm.name.ilike(
+                convert_wildcard_to_sql_like(realm), escape=SQL_LIKE_ESCAPE)))
         else:
-            # Use the input parameter 'realm' for the exact match filter
-            stmt = stmt.where(func.lower(realm1.name) == realm.lower())
+            stmt = stmt.where(TokenContainer.realms.any(func.lower(Realm.name) == realm.lower()))
 
-    # Use separate alias for each join to avoid conflicts
-    realm_alias_allowed = aliased(Realm)
+    if has_realm is True:
+        stmt = stmt.where(TokenContainer.realms.any())
+    elif has_realm is False:
+        stmt = stmt.where(~TokenContainer.realms.any())
+
     # An empty list means the caller is allowed no realm at all, which is not the same as None
     # ("every realm"): it has to match nothing rather than lift the restriction.
     if allowed_realms is not None:
         allowed_realms = [r.lower() for r in allowed_realms]
-        stmt = stmt.join(TokenContainer.realms.of_type(realm_alias_allowed), isouter=True).where(
-            func.lower(realm_alias_allowed.name).in_(allowed_realms)
-        )
-
-    if resolver and resolver.strip("*"):
-        if "*" in resolver:
-            stmt = stmt.where(TokenContainer.owners.any(
-                TokenContainerOwner.resolver.ilike(
-                    convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
-            ))
-        else:
-            stmt = stmt.where(TokenContainer.owners.any(
-                func.lower(TokenContainerOwner.resolver) == resolver.lower()
-            ))
+        stmt = stmt.where(TokenContainer.realms.any(func.lower(Realm.name).in_(allowed_realms)))
 
     if template and template.strip("*"):
         if "*" in template:
@@ -319,6 +320,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             stmt = stmt.where(TokenContainer.template.has(
                 TokenContainerTemplate.name == template
             ))
+
+    if has_template is True:
+        stmt = stmt.where(TokenContainer.template.has())
+    elif has_template is False:
+        stmt = stmt.where(~TokenContainer.template.has())
 
     if description and description.strip("*"):
         if "*" in description:
@@ -384,10 +390,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     else:
         sort_col = sortby
 
+    # Containers with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a container then appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_col.desc())
+        stmt = stmt.order_by(sort_col.desc(), TokenContainer.id.desc())
     else:
-        stmt = stmt.order_by(sort_col.asc())
+        stmt = stmt.order_by(sort_col.asc(), TokenContainer.id.asc())
     # print("----------------------------- CREATE CONTAINER QUERY -----------------------------")
     # from sqlalchemy.dialects import postgresql
     # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
@@ -398,11 +406,13 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        ctype_exact: list[str] = None,
                        token_serial: str = None,
-                       realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
+                       realm: str = None, has_realm: bool | None = None, allowed_realms: list[str] = None,
+                       sortby: str = 'serial',
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
-                       pagesize: int = 0) -> dict[str, int | None | list[TokenContainerClass]]:
+                       pagesize: int = 0,
+                       has_template: bool = None) -> dict[str, int | None | list[TokenContainerClass]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -410,8 +420,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
     The containers are filtered by the given parameters.
 
-    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
-        independently, hence a user object carrying only a realm lists the containers of all users of that
+    :param user: container owner, optional. The realm, the resolver and the user id of the user only apply if
+        they are set, hence a user object carrying only a realm lists the containers of all users of that
         realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
         and therefore does not filter at all. Since only assigned containers have an owner, a user object
         never matches an unassigned container, and neither does a realm that does not exist. Raises a
@@ -423,15 +433,18 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
+    :param has_realm: True to only return containers with at least one realm, False to only return containers
+        without any realm, None for no filtering by realm assignment, optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
-        empty list if none is), optional.
-        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
-        container is returned.
+        empty list if none is), optional. A container matches if one of its realms is in the list. This condition
+        is independent of the realm filter: a container in the realms A and B matches the realm "A" with the
+        allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
         , optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False otherwise, optional
-    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
+        given too, the user and the resolver must match the same owner of the container.
     :param info: The info dictionary in the format {key: value} of length 1, optional
         Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
     :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
@@ -448,18 +461,18 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     """
     sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, ctype_exact=ctype_exact,
                                                 token_serial=token_serial,
-                                                realm=realm, allowed_realms=allowed_realms, template=template,
-                                                description=description,
+                                                realm=realm, has_realm=has_realm, allowed_realms=allowed_realms,
+                                                template=template, description=description,
                                                 assigned=assigned, resolver=resolver, info=info,
                                                 last_auth_delta=last_auth_delta,
                                                 last_sync_delta=last_sync_delta, state=state, sortby=sortby,
-                                                sortdir=sortdir)
+                                                sortdir=sortdir, has_template=has_template)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        ret["containers"] = db.session.scalars(sql_query).unique().all()
+        ret["containers"] = db.session.scalars(sql_query).all()
 
     container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
     ret["containers"] = container_list
@@ -485,14 +498,15 @@ def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[Toke
     last_id = None
     while True:
         page_query = sql_query if last_id is None else sql_query.where(TokenContainer.id > last_id)
-        # A join of the filter can return a container in several rows, so a page can hold fewer containers than
-        # pagesize: only an empty page ends the iteration.
-        db_containers = db.session.scalars(page_query.limit(pagesize)).unique().all()
+        db_containers = db.session.scalars(page_query.limit(pagesize)).all()
         if not db_containers:
             break
         last_id = db_containers[-1].id
         containers = [create_container_from_db_object(db_container) for db_container in db_containers]
         yield [container for container in containers if container]
+        # The query returns each container in one row, so a page that is not full is the last page
+        if len(db_containers) < pagesize:
+            break
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Select,
@@ -513,7 +527,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
 
     offset = (page - 1) * pagesize
     paginated_query = sql_query.limit(pagesize).offset(offset)
-    db_objects = db.session.scalars(paginated_query).unique().all()
+    db_objects = db.session.scalars(paginated_query).all()
 
     # Get total count
     count_query = select(func.count()).select_from(sql_query.subquery())
@@ -608,6 +622,9 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
                 "container_serial": "CONT0001",
                 "template_tokens": [{"type": "hotp", ...}, ...]
             }
+    :raises EnrollmentError: If the type is missing or invalid or a container with the serial already exists
+    :raises ParameterError: If both template and template_name are given, or if the template has the container type
+        and change_pin_on_first_use of one of its tokens is not a boolean
     """
     ctype = params.get("type")
     if not ctype:
@@ -619,6 +636,10 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     template_name = params.get("template_name")
     if template_dict and template_name:
         raise ParameterError("Both template and template_name are given. Choose only one!")
+    if template_dict and template_dict.get("container_type") == ctype:
+        # Only a template of the container type is used. The check runs before the container is created.
+        for token in (template_dict.get("template_options") or {}).get("tokens") or []:
+            ContainerTemplateBase.check_change_pin_on_first_use(token)
 
     desc = params.get("description") or ""
     serial = params.get("container_serial")
@@ -693,19 +714,53 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
-                                          user_role: str) -> dict[str, dict]:
+def _report_token_not_created(tokens_not_created: list[dict] | None, token_info: dict, token: TokenClass | None,
+                              exception: Exception):
+    """
+    Append an entry for a template token that was not created to the given list. The message of a privacyIDEA error is
+    returned to the client. Any other error is only logged, as its message may contain internal details.
+
+    :param tokens_not_created: The list to append the entry to. Nothing is done if it is None.
+    :param token_info: The enroll information of the token from the template
+    :param token: The token object if the token was already created, otherwise None
+    :param exception: The error that prevented the creation of the token
+    """
+    if tokens_not_created is None:
+        return
+    if isinstance(exception, PrivacyIDEAError):
+        error = str(exception)
+    else:
+        error = "Unexpected error while creating the token. Check the server log for details."
+    entry = {"type": token.get_type() if token else token_info.get("type"), "error": error}
+    serial = token.get_serial() if token else token_info.get("serial")
+    if serial:
+        entry["serial"] = serial
+    tokens_not_created.append(entry)
+
+
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request: Request,
+                                          user_role: str,
+                                          tokens_not_created: list[dict] | None = None) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
-    tokens.
+    tokens. A token that fails the pre-policies, the creation or the post-policies is not created: a token the
+    function created is deleted again, and a token that existed before is only removed from the container.
+
+    The post-policies apply as for a single token enrollment, for example change_pin_on_first_use for an admin. In
+    addition, the PIN of a token is marked to be changed on first use if its template entry sets
+    "change_pin_on_first_use" to True. This applies after the post-policies, so it also wins over a PIN set by a user
+    and over change_pin_every.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
         contains the details for a token to be enrolled
     :param request: The request object
     :param user_role: The role of the user ('admin' or 'user')
+    :param tokens_not_created: Optional list to which an entry is appended for each template token that was not
+        created, in the format ``{"type": <token_type>, "error": <error message>, "serial": <token_serial>}``. The
+        serial is only contained if it is known. The entry contains no enrollment data of the token.
     :return: A dictionary containing the enroll details for each created token in the format:
 
     ::
@@ -727,6 +782,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
     init_result = {}
     request_all_data_original = copy.deepcopy(request.all_data)
+    request_data_original = g.request_data
+    request_user_original = request.User
     policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
@@ -740,96 +797,119 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                require_description, force_server_generate_key)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
-    # Create each token defined in the template. The template contains the enroll information for each token.
-    for token_info in template_tokens:
-        token = None
-        user = User()
-        # If the user flag is set, the token is assigned to the container owner: set the full user information in the
-        # enroll information
-        if token_info.get("user"):
-            if container_owner:
-                token_info["user"] = container_owner.login
-                token_info["realm"] = container_owner.realm
-                token_info["resolver"] = container_owner.resolver
-            elif realms:
-                token_info["realm"] = realms[0]
+    try:
+        # Create each token defined in the template. The template contains the enroll information for each token.
+        for token_info in template_tokens:
+            token = None
+            user = User()
+            change_pin_on_first_use = token_info.pop("change_pin_on_first_use", False)
+            if user_role == "user" and request_user_original:
+                # Users are always assigned to the tokens, only admins can create tokens without a user
+                user = request_user_original
+                token_info["user"] = user.login
+                token_info["realm"] = user.realm
+                token_info["resolver"] = user.resolver
+            elif token_info.get("user"):
+                # If the user flag is set, the token is assigned to the container owner: set the full user information
+                # in the enroll information
+                if container_owner:
+                    token_info["user"] = container_owner.login
+                    token_info["realm"] = container_owner.realm
+                    token_info["resolver"] = container_owner.resolver
+                elif realms:
+                    token_info["realm"] = realms[0]
+                    del token_info["user"]
+                else:
+                    del token_info["user"]
+                user = container_owner
+            elif token_info.get("user") is not None:
                 del token_info["user"]
-            else:
-                del token_info["user"]
-            user = container_owner
-        elif user_role == "user" and request.User:
-            # Users are always assigned to the tokens, only admins can create tokens without a user
-            user = request.User
-            token_info["user"] = user.login
-            token_info["realm"] = user.realm
-            token_info["resolver"] = user.resolver
-        elif token_info.get("user") is not None:
-            del token_info["user"]
 
-        # The pre-policy decorator functions require a request object containing the enroll information.
-        # Hence, we need to clear the data in the request object from the previous token and set the new enroll
-        # information for the current token.
-        request.all_data = {}
-        request.all_data.update(token_info)
-        g.policies = {}
+            # The pre-policy decorator functions require a request object containing the enroll information.
+            # Hence, we need to clear the data in the request object from the previous token and set the new enroll
+            # information for the current token. The policy conditions on the request data and the user are evaluated
+            # against the current token as in a token enrollment request. The user object of the token is used as it
+            # is, so that no user store lookup can stop the creation of the remaining tokens. A token without a user
+            # is checked against the realm it gets, if any.
+            request.all_data = {}
+            request.all_data.update(token_info)
+            g.request_data = copy.deepcopy(token_info)
+            request.User = user or User(realm=token_info.get("realm", ""))
+            g.policies = {}
 
-        # Pre-policy checks
-        # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
-        try:
-            check_max_token_realm(request, None)
-            require_description(request, None)
-            check_max_token_user(request, None)
-            check_token_init(request, None)
-            init_tokenlabel(request, None)
-            enroll_pin(request, None)
-            twostep_enrollment_activation(request, None)
-            twostep_enrollment_parameters(request, None)
-            init_random_pin(request, None)
-            encrypt_pin(request, None)
-            check_otp_pin(request, None)
-            check_external(request, None)
-            init_token_defaults(request, None)
-            init_token_length_contents(request, None)
-            papertoken_count(request, None)
-            sms_identifiers(request, None)
-            tantoken_count(request, None)
-            pushtoken_add_config(request, None)
-            indexedsecret_force_attribute(request, None)
-            force_server_generate_key(request, None)
-        except Exception as ex:
-            log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
-            continue
+            # Pre-policy checks
+            # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
+            try:
+                check_token_init(request, None)
+                check_max_token_realm(request, None)
+                require_description(request, None)
+                check_max_token_user(request, None)
+                init_tokenlabel(request, None)
+                enroll_pin(request, None)
+                twostep_enrollment_activation(request, None)
+                twostep_enrollment_parameters(request, None)
+                init_random_pin(request, None)
+                encrypt_pin(request, None)
+                check_otp_pin(request, None)
+                check_external(request, None)
+                init_token_defaults(request, None)
+                init_token_length_contents(request, None)
+                papertoken_count(request, None)
+                sms_identifiers(request, None)
+                tantoken_count(request, None)
+                pushtoken_add_config(request, None)
+                indexedsecret_force_attribute(request, None)
+                force_server_generate_key(request, None)
+            except Exception as ex:
+                log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
+                _report_token_not_created(tokens_not_created, token_info, None, ex)
+                continue
 
-        init_params = request.all_data
-        init_params["policies"] = g.policies
-        try:
-            token = init_token(init_params, user)
-            init_result[token.get_serial()] = {"type": token.get_type()}
-            init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
-            container.add_token(token)
-        except Exception as ex:
-            log.warning(f"Error creating token {token_info} from template: {ex}")
-            if token:
-                if init_result.get(token.get_serial()):
-                    del init_result[token.get_serial()]
-                token.delete_token()
-            continue
+            init_params = request.all_data
+            init_params["policies"] = g.policies
+            try:
+                token = init_token(init_params, user)
+                init_result[token.get_serial()] = {"type": token.get_type()}
+                init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
+                container.add_token(token)
 
-        # Post-policy checks
-        try:
-            # Post-policy decorators require a response object containing the result of the token creation.
-            response = send_result(True, details=init_result[token.get_serial()])
-            check_verify_enrollment(request, response)
-            save_pin_change(request, response)
-        except Exception as ex:
-            log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
-            continue
+                # Post-policy checks
+                # Post-policy decorators require a response object containing the result of the token creation.
+                response = send_result(True, details=init_result[token.get_serial()])
+                check_verify_enrollment(request, response)
+                save_pin_change(request, response)
+                # Only True sets the PIN change. A stored template is not validated again when it is used, so it can
+                # hold another value, for example the string "false".
+                if change_pin_on_first_use is True:
+                    token.set_next_pin_change(diff="0d")
+            except Exception as ex:
+                log.warning(f"Error creating token {token_info} from template or checking its post-policies: {ex}")
+                if token:
+                    if init_result.get(token.get_serial()):
+                        del init_result[token.get_serial()]
+                    container.remove_token(token.get_serial())
+                    if token.newly_created:
+                        token.delete_token()
+                    else:
+                        # The token existed before and init_token gave it a new key that nobody has, so it is
+                        # disabled instead of deleted.
+                        token.enable(False)
+                        token.save()
+                _report_token_not_created(tokens_not_created, token_info, token, ex)
+                continue
 
-        init_result[token.get_serial()].update(response.json["detail"])
-        init_result[token.get_serial()]["init_params"] = init_params
-
-    request.all_data = request_all_data_original
-    g.policies = policies
+            init_result[token.get_serial()].update(response.json["detail"])
+            # A PIN the server generated goes to the PIN handlers only and is not returned, like on /token/init. A PIN
+            # from the template stays, so that the parameters can be sent to /token/init again.
+            response_init_params = dict(init_params)
+            if response_init_params.get("pin") is not None and response_init_params.get("pin") != token_info.get("pin"):
+                del response_init_params["pin"]
+            init_result[token.get_serial()]["init_params"] = response_init_params
+    finally:
+        request.all_data = request_all_data_original
+        g.request_data = request_data_original
+        request.User = request_user_original
+        g.policies = policies
     return init_result
 
 
@@ -1576,10 +1656,15 @@ def create_container_template(container_type: str, template_name: str, options: 
         ::
 
             {
-                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...]
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256", "change_pin_on_first_use": False},
+                           ...]
             }
 
+    "change_pin_on_first_use" of a token is optional and must be a boolean. A missing value means False.
+
     :return: ID of the created template
+    :raises EnrollmentError: If the container type is invalid or a template with the name already exists
+    :raises ParameterError: If the options are invalid
     """
     # Check container type
     if container_type.lower() not in get_container_classes().keys():
@@ -1675,10 +1760,12 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     else:
         sort_col = sortby
 
+    # Templates with the same value in the sort column are ordered by their id, so that every page query sees the
+    # same order and no template appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_col.desc())
+        stmt = stmt.order_by(sort_col.desc(), TokenContainerTemplate.id.desc())
     else:
-        stmt = stmt.order_by(sort_col.asc())
+        stmt = stmt.order_by(sort_col.asc(), TokenContainerTemplate.id.asc())
 
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, stmt, "templates")
@@ -1690,12 +1777,9 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     # convert to dict
     template_list = []
     for template in template_obj_list:
-        template_options = {}
-        if template.template_options != "":
-            template_options = json.loads(template.template_options)
         template_dict = {"name": template.name,
                          "container_type": template.container_type,
-                         "template_options": template_options,
+                         "template_options": template.get_template_options_as_dict(),
                          "default": template.default}
         template_list.append(template_dict)
 
@@ -1784,7 +1868,7 @@ def compare_template_with_container(template: ContainerTemplateBase, container: 
             }
     """
     result = {"tokens": {"missing": [], "additional": []}}
-    template_options = json.loads(template.template_options)
+    template_options = template.get_template_options_as_dict()
 
     # compare tokens
     template_tokens = template_options.get("tokens", [])

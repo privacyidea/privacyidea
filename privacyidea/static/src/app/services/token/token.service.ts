@@ -51,10 +51,17 @@ import {
 } from "@services/table-utils/filterable-table-service";
 import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
-import { filterParamsEqual, splitExactMatch, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
+import {
+  filterParamsEqual,
+  keyRuleParam,
+  splitExactMatch,
+  toBooleanParam,
+  typedFilterEntries,
+  withDefaultRealm
+} from "@utils/filter.utils";
 import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
-import { tokenTypes } from "@utils/token.utils";
+import { tokenTypeDisplayLabel, tokenTypes } from "@utils/token.utils";
 import {
   catchError,
   firstValueFrom,
@@ -454,7 +461,7 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
 
@@ -490,6 +497,10 @@ export class TokenService extends FilterableTableService implements TokenService
   override readonly hiddenApiFilterKeys = hiddenApiFilterKeys;
   override readonly apiFilterKeyMap = apiFilterKeyMap;
   override readonly exactMatchKeys = exactMatchKeys;
+  // A bare `container_serial:` is what the container details route puts in the hidden filter, to list
+  // the tokens that are in no container.
+  override readonly keepEmptyKeys = new Set(["container_serial"]);
+  override readonly presenceKeys = new Set(["tokenrealm"]);
   readonly booleanKeys = booleanKeys;
   readonly caseNotes = caseNotes;
 
@@ -549,24 +560,30 @@ export class TokenService extends FilterableTableService implements TokenService
     }
   });
 
-  // Reads allEntries rather than filterMap, so that the hidden entries the route seeded
-  // reach the backend, and maps the boolean keywords the token endpoint expects.
+  // Reads the hidden entries too, so that those the route seeded reach the backend, and maps the
+  // boolean keywords the token endpoint expects.
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const allowed = [...this.allFilterKeys(), "infokey", "infovalue"];
       const activeFilter = this.activeFilter();
-      const entries = activeFilter.allEntries
+      const rules = { keepEmptyKeys: this.keepEmptyKeys, presenceKeys: this.presenceKeys };
+      const entries = typedFilterEntries(activeFilter, { withHidden: true })
         // Filter unknown keys, token types are handled by toTypeParams
         .filter(([key]) => allowed.includes(key) && key !== "type" && key !== "type_list")
-        // Normalize values
-        .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-        // Remove empty values
-        .filter(([key, v]) =>
-          key === "container_serial" ? true : StringUtils.validFilterValue(splitExactMatch(v).text)
-        )
-        // Convert to query param values
-        // A value handed over by another view counts exactly what that view counted.
-        .map(([key, v]) => [key, activeFilter.isExactKey(key) ? v : toParamValue(key, v)] as const);
+        .flatMap(([key, value]): [string, string][] => {
+          // An empty or wildcard-only value of a keepEmptyKeys or presenceKeys key
+          const ruled = keyRuleParam(key, value, rules);
+          if (ruled !== undefined) {
+            return Object.entries(ruled);
+          }
+          const v = (value ?? "").trim();
+          // Remove empty values
+          if (!StringUtils.validFilterValue(splitExactMatch(v).text)) {
+            return [];
+          }
+          // A value handed over by another view counts exactly what that view counted.
+          return [[key, activeFilter.isExactKey(key) ? v : toParamValue(key, v)]];
+        });
       return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
@@ -666,7 +683,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     // Only load token details on the token details page.
-    if (!this.contentService.onTokenDetails() || !this.canListTokens()) {
+    if (!this.contentService.onTokenDetails() || !this.canListTokens() || !this.tokenSerial()) {
       return undefined;
     }
 
@@ -706,7 +723,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
     // Only load user tokens on the user details page.
-    if (!this.contentService.onUserDetails() || !this.canListTokens()) {
+    if (!this.contentService.onUserDetails() || !this.canListTokens() || !this.detailsUser().username) {
       return undefined;
     }
 
@@ -725,14 +742,15 @@ export class TokenService extends FilterableTableService implements TokenService
     return Object.entries(obj)
       .map(([key, info]) => {
         const infoString = String(info);
+        const name = tokenTypes.find((t) => t.key === key)?.name || key;
         return {
           value: {
             key: key as TokenTypeKey,
-            name: tokenTypes.find((t) => t.key === key)?.name || key,
+            name,
             info: infoString,
             text: tokenTypes.find((t) => t.key === key)?.text || ""
           },
-          label: infoString.split(":")[0]
+          label: tokenTypeDisplayLabel(infoString, name)
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label))
@@ -1305,10 +1323,11 @@ export class TokenService extends FilterableTableService implements TokenService
       );
   }
 
-  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
+  // The server takes the type from the token, so the request does not name it
+  verifyToken(serial: string, verify: string): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, { serial, verify }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to verify token.", error);

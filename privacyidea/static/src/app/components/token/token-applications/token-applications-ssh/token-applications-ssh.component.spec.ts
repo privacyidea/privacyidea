@@ -39,6 +39,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { axe } from "@testing/axe";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -100,10 +101,6 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
     expect(component.getObjectStrings(options)).toEqual(["key1: value1", "key2: value2"]);
   });
 
-  it("should label a link with the given label", () => {
-    expect(component["linkLabel"]("Serial")).toBe("Serial link");
-  });
-
   describe("dataSource computed", () => {
     it("returns a MatTableDataSource when tokenApplications() yields data", () => {
       const fakeApps: TokenApplication[] = [
@@ -137,5 +134,11 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
 
       expect(machineServiceMock.activeFilter().getValueOfKey("serial")).toBe("=SSH1");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

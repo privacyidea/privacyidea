@@ -24,7 +24,9 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for PyCQA/bandit-action to upload SARIF results
 
-    runs-on: ubuntu-latest
+    # The released bandit-action installs Python 3.9, which has no build for Ubuntu 26.04. Back to ubuntu-latest
+    # once a release increases the default python version
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

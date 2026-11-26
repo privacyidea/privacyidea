@@ -93,6 +93,11 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
                                                       'desc': ApplicationSpecificPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
+                       **ApplicationSpecificPasswordTokenClass.get_password_policy_definitions(
+                           _("Set the length of the password of generated application specific password tokens."),
+                           _("Specify the required contents of the password of an application specific password "
+                             "token. (c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
+                             "characters [1234567890]")),
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of application specific "

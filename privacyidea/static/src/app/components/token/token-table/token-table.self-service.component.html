@@ -19,9 +19,7 @@
 <div
   #scrollContainer
   appScrollToTop
-  aria-label="Token Table"
-  class="token-table-layout"
-  i18n-aria-label="@@token.tokenTable">
+  class="token-table-layout token-table-layout--self-service">
   @if (tableState.showTable()) {
     <div
       [appStickyHeader]="scrollContainer"
@@ -64,8 +62,7 @@
                 <div class="flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label="@@common.sortBy"
+                    [attr.aria-label]="column.label | sortByLabel"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -78,65 +75,46 @@
               *matCellDef="let element; let row"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        (keydown.enter)="contentService.tokenSelected(element.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                        [appTruncationTooltip]="element.serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                    </app-copyable>
-                  }
-                  @case ("container_serial") {
-                    <app-copyable [copyText]="element.container_serial">
-                      @if (containerService.containerBelongsToUser(element.container_serial)) {
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.container_serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
-                          (keydown.space)="
-                            $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
-                          "
-                          [appTruncationTooltip]="element.container_serial"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
-                          {{ element[column.key] }}
-                        </a>
-                      } @else {
-                        <span
-                          [appTruncationTooltip]="element[column.key]"
+                          [appTruncationTooltip]="element.serial"
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.serial]"
                           class="cell-truncate">
                           {{ element[column.key] }}
-                        </span>
-                      }
-                    </app-copyable>
+                        </a>
+                      </app-copyable>
+                    }
+                  }
+                  @case ("container_serial") {
+                    @if (element.container_serial) {
+                      <app-copyable [copyText]="element.container_serial">
+                        @if (containerService.containerBelongsToUser(element.container_serial)) {
+                          <a
+                            [appTruncationTooltip]="element.container_serial"
+                            [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.container_serial]"
+                            class="cell-truncate">
+                            {{ element[column.key] }}
+                          </a>
+                        } @else {
+                          <span
+                            [appTruncationTooltip]="element[column.key]"
+                            class="cell-truncate">
+                            {{ element[column.key] }}
+                          </span>
+                        }
+                      </app-copyable>
+                    }
                   }
                   @case ("active") {
-                    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                      <span
-                        (click)="toggleActive(element)"
-                        (keydown.enter)="toggleActive(element)"
-                        (keydown.space)="$event.preventDefault(); toggleActive(element)"
-                        [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        role="button"
-                        tabindex="0">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    } @else {
-                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    }
+                    <app-token-active-toggle
+                      (toggled)="tokenResource.reload()"
+                      [token]="element" />
                   }
                   @case ("failcount") {
                     @if (authService.actionAllowed("reset")) {
@@ -180,17 +158,9 @@
                     </button>
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key)) {
-                      <a
-                        [attr.aria-label]="linkLabel(column.label)"
-                        href="#">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </a>
-                    } @else {
-                      <span>
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    }
+                    <span>
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
                   }
                 }
               </div>
@@ -225,7 +195,7 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <span class="icon-badge">
-            <mat-icon class="padding-right-3">shield</mat-icon>
+            <mat-icon class="icon-badge-pad-3">shield</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
           <span i18n="@@common.enrollToken">Enroll Token</span>

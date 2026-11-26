@@ -24,6 +24,10 @@ options::
 
 For example ``pi-manage config challenge cleanup --dryrun``. Every level lists
 its commands and options with ``-h``, e.g. ``pi-manage config -h``.
+
+.. note:: ``pi-manage run`` is the exception: there ``-h`` sets the host. Use
+   ``pi-manage run --help`` instead.
+
 ``pi-manage --version`` shows the versions of privacyIDEA, Python and Flask.
 
 In the Docker deployment pi-manage runs in the container of the ``pi``
@@ -106,7 +110,10 @@ key to standard output or to the file given with ``-o``::
 
    pi-manage setup encrypt_enckey /etc/privacyidea/enckey -o /etc/privacyidea/enckey.enc
 
-Point ``PI_ENCFILE`` to the encrypted file. The server recognizes an encrypted
+A new file given with ``-o`` gets the permissions ``0600``. Make sure it is
+owned by the user privacyIDEA runs as. An existing file keeps its owner and
+permissions. ``-o`` can not be the key file itself. Point ``PI_ENCFILE`` to the
+encrypted file. The server recognizes an encrypted
 key and waits for the passphrase after every start. The passphrase unlocks the
 key only in the server process that receives it (``POST /system/hsm``), which
 then keeps the decrypted key in memory: with several server processes (WSGI
@@ -138,13 +145,23 @@ Database tables
 creates the tables in the database given by ``SQLALCHEMY_DATABASE_URI``. The
 database itself has to exist; only an SQLite database file is created.
 Afterwards the database is stamped with the newest schema revision, so that
-later upgrades know where to start. ``-n`` skips the stamp.
+later upgrades know where to start. ``-n`` skips the stamp. Stamp such a
+database with ``pi-manage db stamp head`` before installing a newer version:
+``privacyidea-schema-upgrade`` stops on a database without stamp.
 
-.. warning:: Run ``create_tables`` only on an empty database. On the database
-   of an older privacyIDEA version it only adds the missing tables, leaves the
-   existing ones unchanged and then stamps the newest revision, so the schema
-   migrations of the upgrade are skipped. Upgrade an existing database with
-   ``pi-manage db upgrade``, see :ref:`pimanage_db`.
+``create_tables`` stops on a database that holds privacyIDEA tables or a
+schema revision stamp, because it only adds the missing tables and leaves the
+existing ones unchanged. Without ``-n``, it then stamps the newest revision, so
+the schema upgrade skips the migrations that the database needs. With ``-n``,
+the schema upgrade later runs its migrations also on the added tables and can
+fail. Upgrade a stamped database with ``pi-manage db upgrade``, see
+:ref:`pimanage_db`. A database without stamp needs the stamp first: ``head``
+for the tables of the installed version, or the newest revision of the older
+version that created the tables, see :ref:`upgrade`.
+
+.. warning:: ``-f``/``--force`` runs the command on such a database anyway.
+   Use it only if you know that the existing tables match the installed
+   version.
 
 PGP keys
 ~~~~~~~~
@@ -179,7 +196,11 @@ Local Administrators
 .. index:: admin accounts
 
 Local administrators are stored in the privacyIDEA database and log in to the
-WebUI with their name and password, see :ref:`faq_admins`::
+WebUI with their name and password. They log in without a second factor. Use them
+for the first setup and for recovery work only, and delete them when an admin realm
+works, see :ref:`faq_admins`.
+
+Manage them with these commands::
 
    pi-manage admin add <name> [-e <email>]
    pi-manage admin list
@@ -190,8 +211,9 @@ WebUI with their name and password, see :ref:`faq_admins`::
 ``-p`` (``add``) or ``--password`` (``change``), which leaves it in the shell
 history. Both commands create the administrator if the name does not exist, and
 otherwise set a new password and, if ``-e`` is given, a new email address;
-``add`` does not check whether the name is taken. ``change`` always sets the
-password, so enter the current one again to change only the email address.
+``add`` does not check whether the name is taken. A new administrator needs a
+password. To change only the email address of an existing administrator, use
+``change`` with ``--password ''``.
 ``delete`` does not ask for confirmation and ends with an error if the name
 does not exist.
 
@@ -214,10 +236,10 @@ upgrade runs them for you through ``privacyidea-schema-upgrade``, see
    pi-manage db heads       # the newest revision of the installed version
    pi-manage db upgrade     # migrate the database to the installed version
 
-The migration directory is found automatically. If it is not, e.g. in an
-editable installation, pass it with ``-d``::
+The migrations of the installed version are used. ``-d`` takes them from
+another directory::
 
-   pi-manage db upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
+   pi-manage db upgrade -d /path/to/privacyidea/migrations
 
 ``db stamp <revision>`` only records a revision in the database without
 running any migration; a wrong stamp makes later upgrades skip or repeat
@@ -252,7 +274,9 @@ only by its owner. The options are:
   inside the configuration directory. Without ``-e``, or if ``PI_ENCFILE``
   points to a file outside of it, the key is not in the backup, and you have to
   keep a copy of it elsewhere.
-* ``-d <directory>`` writes the archive to another directory.
+* ``-d <directory>`` writes the archive to another directory. If this directory
+  is the configuration directory or lies inside it, the archive does not
+  contain the earlier archives and database dumps from it.
 * ``-c <directory>`` backs up another configuration directory.
 * ``-r <directory>`` also adds a FreeRADIUS configuration directory.
 
@@ -265,10 +289,9 @@ installation, with these limits:
 * Only the database of ``SQLALCHEMY_DATABASE_URI`` is dumped. An audit log in
   a database of its own (``PI_AUDIT_SQL_URI``, see :ref:`audit_parameters`) is
   not part of the backup.
-* The restore needs a configuration file named *pi.cfg* in the backed up
-  configuration directory. A configuration file that lives elsewhere or has
-  another name (see ``PRIVACYIDEA_CONFIGFILE`` above) is not backed up, and
-  the archive cannot be restored.
+* The restore needs a file named *pi.cfg* in the backed up configuration
+  directory. A configuration file outside of this directory is not backed up.
+  A file with another name is backed up, but the restore refuses the archive.
 * Besides the database dump, only the configuration directory (and a
   FreeRADIUS directory given with ``-r``) is archived. Files that privacyIDEA
   uses outside of it are not in the backup: the encryption key
@@ -325,9 +348,13 @@ points to::
 
    pi-manage backup restore /var/lib/privacyidea/backup/privacyidea-backup-<YYYYMMDD-HHMM>.tgz
 
-It does not create the database: the database and the database user have to
-exist already, as they do on a machine that has been set up before. Only the
-contents are replaced.
+The database user has to exist. Whether the database has to exist depends on
+the database:
+
+* PostgreSQL: the database has to exist.
+* MySQL/MariaDB: the restore creates a missing database, if the user may do
+  this. See the warning below.
+* SQLite: the restore writes the database file. Its directory has to exist.
 
 .. warning:: The restore extracts every file of the archive to its original
    path and overwrites the file there: the configuration directory with
@@ -337,10 +364,11 @@ contents are replaced.
    back in place yourself.
 
 .. note:: The archive also contains the *pi.cfg* of the machine the backup was
-   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If you restore onto a
-   machine whose database is reached under a different URI, use
-   ``--keep-db-uri`` to keep the URI of the running installation instead of
-   the one from the backup.
+   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If your database has a
+   different URI, use ``--keep-db-uri``. It reads the URI from the *pi.cfg*
+   that the restore overwrites, and writes it into the restored file. If there
+   is no such file, the restore shows a warning and uses the URI from the
+   backup.
 
 .. warning:: On MySQL/MariaDB the dump contains the name of the database it was
    taken from and creates that database if it is missing, so the restore always
@@ -517,14 +545,20 @@ user, client or time condition, e.g.::
 
    pi-manage config policy create helpdesk admin "tokenlist, enable, disable"
 
+If a policy with this name exists, ``create`` changes it: it sets the new
+scope and actions. All other attributes stay as they are, unless the file of
+``-f`` sets them. A disabled policy stays disabled. To activate it, use
+``pi-manage config policy enable``.
+
 With ``-f`` the policy is read from a file that contains a Python dictionary
 with the attributes of the policy. Only ``name``, ``scope``, ``action``,
 ``realm``, ``resolver``, ``user``, ``time``, ``client``, ``active``,
 ``adminrealm``, ``adminuser`` and ``check_all_resolvers`` are read; other
 attributes, such as ``priority``, ``conditions``, ``pinode``, ``description``,
 ``user_agents`` or ``user_case_insensitive``, are ignored without a message.
-Without ``active`` in the file the policy is active, without
-``check_all_resolvers`` that option is off. The ``name``, ``scope`` and
+Without ``active`` in the file, a new policy is active. Without
+``check_all_resolvers``, that option is off for a new policy. An existing
+policy keeps both values. The ``name``, ``scope`` and
 ``action`` in the file take precedence over the arguments, which still have to
 be given. If the policy cannot be created, the command prints the error and
 exits with a non-zero status. To transfer complete policies, or many of them,
@@ -577,13 +611,16 @@ the WebUI or transferred with ``pi-manage config import``, see
    pi-manage config realm list
    pi-manage config realm create <name> [<resolver> ...]
    pi-manage config realm delete <name> [--delete-custom-attributes]
+                                        [--ignore-conditional-access-policies]
    pi-manage config realm set_default <name>
    pi-manage config realm clear_default
 
 ``list`` marks the default realm with ``*``. ``create`` replaces an existing
-realm of the same name. ``delete`` refuses a realm that still has custom user
-attributes and asks whether to delete them as well;
-``--delete-custom-attributes`` deletes them without asking.
+realm of the same name. ``delete`` asks before it deletes a realm that still
+has custom user attributes or that a conditional access policy uses.
+``--delete-custom-attributes`` and ``--ignore-conditional-access-policies`` skip
+the question. The conditional access policies are not changed and still name
+the deleted realm.
 
 :ref:`Resolvers <useridresolvers>`::
 
@@ -591,8 +628,8 @@ attributes and asks whether to delete them as well;
    pi-manage config resolver create <name> <type> <file>
    pi-manage config resolver create_internal <name>
 
-``list -v`` also prints the configuration of each resolver; only the values
-named ``bindpw`` and ``password`` are masked. ``create`` reads the parameters
+``list -v`` also prints the configuration of each resolver. Passwords and
+other secrets are shown as ``__CENSORED__``. ``create`` reads the parameters
 of the resolver from a file that contains a Python dictionary; ``<type>`` is
 the resolver type, e.g. ``ldapresolver`` or ``sqlresolver``.
 ``create_internal`` creates an editable SQL resolver whose users are stored in
@@ -615,7 +652,8 @@ for confirmation.
    pi-manage config ca create_crl <name> [-f]
 
 ``create`` with the default type ``local`` asks for the details of a new local
-CA and creates its files as well, see :ref:`local_caconnector`.
+CA and creates its files as well, see :ref:`local_caconnector`. ``list -v``
+shows the configuration, with secrets as ``__CENSORED__``.
 ``create_crl`` creates and publishes a new CRL if the current one is about to
 expire; ``-f`` creates one in any case.
 
@@ -646,7 +684,9 @@ A token whose serial exists already is updated with the data from the file if
 it has the same token type. A serial that exists with another token type ends
 the import with an error at that line: the tokens before it are imported, the
 ones after it are not.
-``-t`` puts the tokens into a realm and can be given several times. The file
+``-t`` puts the tokens into a realm and can be given several times. If a realm
+does not exist, or the file contains an unknown token type, no token is
+imported. The file
 has to be plain text; GPG encrypted files and the other formats are imported
 in the WebUI or through the API, see :ref:`import`.
 
@@ -712,7 +752,13 @@ on your installation.
 
 Not included are tokens, local administrators, conditional access policies, API
 clients, service IDs, token groups and container templates. Set these up on the
-target instance separately.
+target instance separately. Entries of the global configuration whose key starts
+with ``__``, such as the config timestamp, belong to the instance that wrote them:
+they are neither exported nor imported.
+
+.. versionchanged:: 3.14.1 Entries whose key starts with ``__`` are left out of the
+   export and skipped by the import. Earlier versions exported them, and an import
+   of such an entry replaced the one of the target instance.
 
 This can be used to keep a versionable, human-readable copy of single
 configuration objects, or to transfer a configuration from one privacyIDEA
@@ -738,6 +784,15 @@ or from standard input::
 Existing configuration objects with the same name are overwritten, all other
 existing configuration is kept as is. As with the export, ``-t`` and ``-n``
 restrict the import to certain types or to a single object.
+
+Events and periodic tasks are also found by their name, not by their ID. For
+events, the handler module must match as well. Several events can have the same
+name and handler module. Then the file must contain at least as many of them as
+the instance has, and they replace all of them. Otherwise these events are not
+imported, and neither is an event without a name. The other events are
+imported, and the command ends with an error. A periodic task keeps its nodes
+from the export.
+Check them if the target instance uses other node names.
 
 .. note:: In contrast to ``pi-manage backup``, the configuration export does not
    contain any tokens and is not a full disaster-recovery backup. It exports the
@@ -781,7 +836,9 @@ works on the instance the data was exported from, because that is where the
 original secrets still exist:
 
 * When importing into the **same** instance, the existing secret is kept and the
-  rest of the configuration is updated.
+  rest of the configuration is updated. For an SMTP server this only applies if
+  server, port, username and TLS flag are unchanged, see
+  :ref:`smtpserver_password`. Otherwise the import of the SMTP servers fails.
 * When importing into a **different or fresh** instance, there is no stored
   secret to keep. A censored entry of the global configuration is not imported
   at all, and the other affected objects are created without a usable secret.
@@ -801,9 +858,57 @@ remaining configuration::
 
    pi-manage config import -i backup.json --skip-invalid
 
-Currently ``--skip-invalid`` is evaluated for policies, where it removes policy
-actions that are not available in the running version. A policy that has no
-valid action left after this is skipped.
+``--skip-invalid`` currently only works for policies. It removes actions that this version
+does not know. If no action is left, the policy is not imported.
+
+The import plan
+~~~~~~~~~~~~~~~
+
+Before anything is written, ``pi-manage config import`` compares the import with
+the running system and prints a plan with one line per entry and type: ``create``,
+``update`` (followed by the names of the changed fields), ``unchanged`` and
+``skip``. Entries marked ``unchanged`` are not written again. The plan only
+shows names, a changed secret appears as a changed field and its value is never
+printed. Event handlers and periodic tasks are matched by their name (event
+handlers additionally by their handler module), not by the id of the exporting
+system. A name matches the entry that the import itself would update: if the
+database compares names without regard to case (as MySQL and MariaDB do by
+default), an imported name that differs only in case from a stored one updates
+that entry and the stored entry is not deleted with ``--replace``.
+
+With ``--dry-run`` only the plan is printed and nothing is changed::
+
+   pi-manage config import -i backup.json --dry-run
+
+With ``--replace`` the plan also contains ``delete`` lines for every entry of an
+imported type that is missing from the import. The types given with ``-t`` and
+the object given with ``-n`` limit what is deleted as well::
+
+   pi-manage config import -i backup.json --replace
+
+* Deleting runs after the import, in the reverse order of the import, so that
+  for example policies and event handlers are removed before realms and realms
+  before resolvers.
+* Nothing is forced. A realm that still has tokens or a resolver that is used
+  by a realm is kept and reported as an error, and the other deletions go on.
+* The type ``config`` is never replaced. Global configuration keys that are
+  missing from the import are kept.
+* If the realms are replaced (without ``-n``), the default realm is set to the
+  realm that is marked as default in the file, and the plan shows the change as
+  ``default realm: "old" -> "new"``.
+* If no active admin policy is left after the import, the plan warns that every
+  administrator may then do everything.
+
+With ``--interactive`` the plan is printed and you are asked once whether to
+apply it::
+
+   pi-manage config import -i backup.json --replace --interactive
+
+This needs an input file given with ``-i`` and a terminal, so the data can not
+be read from standard input. It can not be combined with ``--dry-run``.
+
+If the import of a type or a deletion fails, the command prints the error, still
+processes the remaining types and exits with status 1.
 
 .. _pimanage_development:
 

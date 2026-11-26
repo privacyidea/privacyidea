@@ -26,8 +26,8 @@ from flask import g
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import (admin_granted_realms, get_policy_visibility_scopes, own_entries_scope,
-                                             policy_realm_names)
+from privacyidea.lib.policies.helper import (admin_granted_realms, get_admin_audit_params, get_policy_visibility_scopes,
+                                             own_entries_scope, policy_realm_names)
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
 from privacyidea.lib.user import User
 from .base import FakeAudit, MyTestCase
@@ -68,6 +68,35 @@ class OwnEntriesScopeTestCase(MyTestCase):
                         side_effect=ResolverError("The resolver is not reachable")):
             with self.app.test_request_context():
                 self.assertIsNone(own_entries_scope("cornelius", self.realm1))
+
+
+class AdminAuditParamsTestCase(MyTestCase):
+    """The audit parameters of an admin: the realms their audit policies grant, and who they are for the own entries."""
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"username": "helpdesk", "realm": "admins", "role": ROLE.ADMIN}
+        g.client_ip = None
+        g.serial = None
+        g.policy_object = PolicyClass()
+
+    def test_a_realm_restricted_admin_is_named_with_their_admin_realm(self):
+        set_policy("audit_realm1", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, realm=self.realm1)
+        try:
+            self.assertDictEqual({"admin": "helpdesk", "admin_realm": "admins", "allowed_audit_realms": [self.realm1]},
+                                 get_admin_audit_params())
+        finally:
+            delete_policy("audit_realm1")
+
+    def test_an_admin_with_only_a_policy_for_users_sees_only_the_own_entries(self):
+        set_policy("audit_users", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, realm=self.realm1, user="cornelius")
+        try:
+            self.assertDictEqual({"admin": "helpdesk", "admin_realm": "admins", "allowed_audit_realms": []},
+                                 get_admin_audit_params())
+        finally:
+            delete_policy("audit_users")
 
 
 class AdminGrantedRealmsTestCase(MyTestCase):

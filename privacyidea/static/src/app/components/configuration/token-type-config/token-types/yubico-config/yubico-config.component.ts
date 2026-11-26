@@ -16,30 +16,35 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
-
+import { Component, input } from "@angular/core";
+import { FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import {
+  panelCompleteness,
+  YUBICO_KEYS,
+  TokenTypeConfigForm
+} from "@components/configuration/token-type-config/token-type-config.form";
+import { PanelIncompleteComponent } from "@components/configuration/token-type-config/token-types/panel-incomplete/panel-incomplete.component";
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-yubico-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, FormField, PanelIncompleteComponent],
   templateUrl: "./yubico-config.component.html"
 })
 export class YubicoConfigComponent {
   protected readonly YUBICO_ID = YUBICO_ID;
   protected readonly YUBICO_SECRET = YUBICO_SECRET;
   protected readonly YUBICO_URL = YUBICO_URL;
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
 
-  formData = input.required<Record<string, string | undefined>>();
-  formDataChange = output<Record<string, string | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
+  protected readonly panel = panelCompleteness(this.config, () => YUBICO_KEYS);
   expanded = input<boolean>(false);
-
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
 }

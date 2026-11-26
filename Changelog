@@ -1,4 +1,236 @@
-Version 3.14, 2026-09-30
+Version 3.14.1
+
+  Features:
+  * The new authentication policy action `remember_device_idle_timeout` ends the recognition of a remembered device
+    that nobody used for the given time, for example `7d`. `remember_device_validity` also accepts a unit, for example
+    `8h` or `90m` (#6155)
+  * Administrators can list and revoke the remembered devices of a user on the user details page of the WebUI and with
+    the new endpoint `GET /clients/remembered_devices`. The new admin policy actions `remembered_device_list` and
+    `remembered_device_revoke` give these rights (#6155)
+  * The passkey registration requests the WebAuthn extension `prf`, which lets a client application derive a secret
+    from the passkey. The new enrollment policy `passkey_disable_prf` turns the request off. The token info of a
+    passkey shows details of its registration, for example `attestation_format` and `user_verified` (#6342)
+  * The new enrollment policies `applspec.length` and `applspec.contents` set the length and the characters of the
+    password that the server generates for an `applspec` token. The request parameters of the same names have no
+    effect, as for `pw` and `registration` tokens (#5828)
+  * Each token of a container template has the new option "Change PIN on first use". The option also applies if a user
+    creates the container or enrolls it via multichallenge. Without the option, the policy `change_pin_on_first_use`
+    decides (#6319)
+  * The Docker deployment in `deploy/docker/` runs privacyIDEA with a bundled MariaDB or with an external PostgreSQL,
+    MariaDB, MySQL or Oracle database. `make init` creates the configuration files, and `make upgrade` makes a backup
+    before it starts a new image (#6083, #6329)
+  * WebUI: If the user policy `password_reset` is set, the login page offers "Reset Password". The user gets a recovery
+    email and sets the new password on a page of the WebUI (#6093)
+  * WebUI: Users with the user policy `updateuser` can edit their own user data on their user details page. With
+    `set_custom_user_attributes` and `delete_custom_user_attributes`, they can also change their custom attributes
+    (#6108)
+  * WebUI: The token details and the token enrollment can create a new container, and the user details page adds
+    selected tokens to an existing container. The container list filters by template and compares the containers with
+    their templates. `GET /container/` accepts the new parameter `has_template` (#6238)
+  * WebUI: The Test section of the token details can trigger a challenge. It then takes the response or waits for the
+    confirmation of a push token. "Trigger Challenge" needs the admin right `triggerchallenge` (#6291)
+  * WebUI: The edit pages of policies and of conditional access policies have a Copy button. The copy contains the
+    unsaved changes, and the stored policy does not change (#6038)
+  * WebUI: The UI Settings have the new option "Status Colors" with three contrast levels for status chips, bars and
+    notifications. The default level "AA" uses darker colors than 3.14.0, so that white text has a contrast of at
+    least 4.5:1 (#6052)
+
+  Enhancements:
+  * The realms and resolvers of an admin policy apply to the actions `resolverread`, `resolverwrite` and
+    `resolverdelete`. `GET /resolver/` lists the resolvers that the policy covers and the resolvers in no realm. A
+    change to a resolver, a realm or the default realm needs the action for all realms and resolvers concerned (#1732)
+  * The token list is faster with many tokens, with large pages and for administrators whose policies name realms. A
+    new database index speeds up the realm filter (#6142)
+  * `find --orphaned` of both token janitors looks up the token owners with one batch lookup per resolver and chunk.
+    A user store that can not be reached costs at most one request timeout per chunk (#1653)
+  * The audit log records each autoresync step of a token in the `info` column: `autoresync started`,
+    `autoresync successful` or `autoresync failed` (#3984)
+  * The system documentation names the privacyIDEA version, the schema revision and the nodes. New sections list, for
+    example, the event handlers and the external services. It lists only selected settings, without hosts, URLs,
+    paths, credentials and free text. The WebUI dialog downloads the documentation and opens an email for it (#6165)
+  * With `PI_CHECK_RELOAD_CONFIG` above 0, each process reads the configuration timestamp from the database at most
+    once per interval. A configuration change can then take up to that many seconds to apply (#6140)
+  * The new `pi.cfg` key `PI_SUBSCRIPTION_KEY_DIRECTORY` sets the folder of the public keys for the signature check of
+    a subscription. Without it, privacyIDEA uses the folder of `PI_ENCFILE` (#6323)
+  * `privacyidea-usercache-cleanup` deletes the expired entries of the user cache with one database statement. It no
+    longer prints a line for each deleted entry (#6140)
+  * `pi-manage config realm delete` asks for confirmation if a conditional access policy names the realm. The new
+    option `--ignore-conditional-access-policies` skips the question (#6336)
+  * `privacyidea-diag` handles RHEL rebuilds such as Rocky Linux and AlmaLinux like RHEL, and it collects the SELinux
+    denials on these systems (#6077)
+  * Each server process caches the version number, the parsed attribute mappings of LDAP and SQL resolvers and the
+    WebUI menus of the policy actions. This makes responses and user lookups faster (#6210)
+  * Updated dependencies, for example certifi 2026.10.23, urllib3 2.8.0, PyJWT 2.15.1, Werkzeug 3.1.9 and Angular
+    21.2.25. The CA bundle of certifi 2026.10.23 no longer contains three emSign root certificates (#6251)
+  * The documentation has a new section "Response format" for the REST API and a new page "Where Policy Conditions Are
+    Checked" (#6051, #6270)
+  * `GET /info/integrations` answers every authenticated user. The client filter of the authentication log in the
+    WebUI uses it and shows the same client names as the rest of the WebUI (#6157)
+  * WebUI: The policy editor shows the actions and the conditions in tabs and sorts the action groups by name. It
+    checks each action value, and it shows a user agent condition with its display name and its stored value
+    (#6007, #6111, #6114, #6157)
+  * WebUI: Each page sets the title of the browser tab, and controls have names for screen readers. The self-service
+    pages work better with the keyboard, and the dark theme has a better contrast (#6052, #6269, #6276)
+  * WebUI: Many pages got smaller improvements, for example a subscription warning, the resolver order of a realm and a
+    faster authentication log (#5679, #6050, #6107, #6113, #6238)
+
+  Fixes:
+  * If a user store answers the lookup of a login name with an error, an authentication request fails with ERR907. The
+    realm does not ask its next resolver, and `passOnNoUser` does not apply. An HTTP resolver takes only a `404`, or a
+    response that matches "Special error handling", as an unknown user (#6118)
+  * A `/validate/check` request by `serial` or by the `credential_id` of a FIDO2 token matches the authentication
+    policies for the token owner. Policies restricted to a realm, a resolver or a user then apply, for example
+    `auth_max_fail`, `auth_max_success` and `last_auth` (#6189)
+  * A passkey or WebAuthn login by `credential_id` gets the same token checks as other logins. A login without a
+    username fails if the login name of the passkey owner leads to another user. The authentication log records a
+    failed answer as `CHALLENGE_ANSWERED_FAIL` (#6086, #6103)
+  * With `webauthn_user_verification_requirement=required`, a passkey registration succeeds only if the authenticator
+    verified the user (#6311)
+  * `/validate/check` with `otponly` checks the token like other logins. It needs the session token of an
+    administrator with `tokenlist` for the token or of the token owner, which both WebUIs send (#6086, #6291)
+  * If several requests use the same OTP value, challenge, push approval or recovery code at the same time, only one of
+    them succeeds. The same applies to a remember-device cookie and to an offline refill (#6109)
+  * Email and SMS tokens refuse a sent OTP value after its validity time. This also applies if the client sends PIN and
+    OTP value in one request or uses `otponly`. The validity time starts before the server sends the value (#6134)
+  * The PIN change via `/validate/check` (`change_pin_via_validate`) checks the token and the authorization policies
+    like a login. Each of its challenges can be answered once. A confirmation that does not match the new PIN ends the
+    PIN change as a failed authentication (#6148)
+  * `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents` check the PIN that the endpoint stores, also a PIN
+    sent with `rollover` or `verify`. With `otppin=none`, a simple pass token still checks its PIN. A container from a
+    template returns only the PIN of the template (#6148)
+  * A push token creates no challenge if no push gateway is configured for it, or if the gateway fails and polling is
+    not allowed. With `push_wait`, the login then fails at once. `/validate/triggerchallenge` checks the token state as
+    `/validate/check` does. The authentication log records a request without a challenge as `CHALLENGE_TRIGGER_FAIL`
+    (#6264, #6265)
+  * With `resync_via_multichallenge`, a PIN that triggers challenges returns all of them, also if a token waits for the
+    second value of an autoresync. A value in the normal window ends a pending autoresync. TOTP tokens use
+    `AutoResyncTimeout` like HOTP tokens (#6206, #6308)
+  * The server issues a remembered device only if a token verified the login. It recognizes the device only while the
+    user has a token that the policies allow for a login. The device table stores a SHA-256 digest of the cookie
+    secret, and the schema update converts the stored devices (#6155)
+  * `/validate/offlinerefill` applies the conditional access policies to the token owner, like the other
+    authentication endpoints. The authentication log records each refill as `OFFLINE_REFILL_SUCCESS` or
+    `OFFLINE_REFILL_FAIL` (#6072)
+  * Conditional access resets a count only on a successful login that the conditions of the policy cover. With
+    `DISTINCT_USERS`, a new attempt for an account that the policy already counted does not run the action again
+    (#6086)
+  * The audit log records an authentication as failed if a policy refuses it after the credential check, or if an
+    error ends it there. The authentication log records it as `NOT_AUTHORIZED` or as the new event type
+    `POST_AUTHENTICATION_FAIL`. A login that starts an enrollment via multichallenge counts as a challenge (#6160)
+  * The self-service audit log and the counts of `auth_max_fail` and `auth_max_success` compare the user identity for
+    equality. A custom audit module (`PI_AUDIT_MODULE`) must accept the new argument `exact_params` (#6099)
+  * The server decodes the request parameters of the PAM module only once. A password with `%` and two hexadecimal
+    digits then reaches the server unchanged (#4658)
+  * With `OverrideAuthorizationClient`, the server reads `X-Forwarded-For` entries with a port or with an IPv6 address
+    in brackets. An entry that is not an IP address ends the proxy path. A proxy entry without a mapping target also
+    maps IPv6 clients. The client IP of an IPv4 client on a dual-stack listener is its IPv4 address (#6002)
+  * Without a subscription, the server accepts the requests of the FreeRADIUS plugin also if more than 50 users have
+    tokens. The WebUI then shows the free tier warning, also to administrators with `hide_welcome_info` (#6097)
+  * An event handler that can not do its action records a failure in its audit entry. With "Abort the request if the
+    handler fails", the request fails as well. The schema update sets this option for the existing manglers and for
+    Script handlers with `raise_error`. The token handler writes every token info entry again (#6086)
+  * If a request acts on several tokens, event handlers check the token conditions for each token. The token handler
+    acts only on the tokens that fulfill them. Without a token in the request, `token_locked` checks the tokens of the
+    user (#6123)
+  * `POST /policy/<name>` for an existing policy keeps the stored value of each field that the request does not send,
+    for example `active`, `priority` and `description` (#6040)
+  * If you save a boolean policy action with the value `false` or `0`, privacyIDEA stores the excluded action, for
+    example `-policywrite`. The schema update removes each stored boolean value that is not `true` or `1`, and it names
+    the changed policies. These actions stay enabled as before, except `disable_client_token_deletion` (#6044)
+  * The `HTTP Request header` and `HTTP Environment` conditions of policies get the data of the request on the WebUI
+    start page and at `/ttype/push`. On the start page, `Request Data` conditions get the URL parameters (#6302)
+  * The WebUI start page stays available if one of its policies fails with a policy error. The setting then uses its
+    default value, and the log records the error. If the `remote_user` policy fails in this way, `POST /auth` checks
+    the password (#6303)
+  * The condition `date_within_last` does not match a date in the future. A negative duration such as `-1d` is an
+    invalid comparison (#6305)
+  * A policy with `check_all_resolvers` applies to a user only if the user is in one of its resolvers, as documented.
+    If such a resolver can not be reached, the request fails (#6226)
+  * Policy node names can not contain `*` or start with `!` or `-`, and policy user agents must be plain names. The
+    policy file import reads values with commas, imports each policy on its own and names the policies that failed
+    (#6340)
+  * The schema update removes the `u2f` policy actions and deletes the policies that have only these actions. It keeps
+    the last active `admin` or `user` policy. A policy without actions applies to every action only in the `admin`,
+    `user` and `container` scopes (#6086, #6168)
+  * Token actions with the serial in the path, the token import and `POST /token/init` with an existing serial check
+    the policies for that token. Users can assign only tokens and containers of their own realm or of no realm.
+    Realm-scoped WebAuthn and passkey policies apply only to the users of their realm. The health panels of the
+    dashboard need the admin action `configread` (#6086)
+  * `POST /defaultrealm/<realm>` and `DELETE /realm/<realm>` read the realm name as `POST /realm/<realm>` stores it, in
+    lower case and with `-` for each space. If a delete leaves one realm and no default realm, that realm becomes the
+    default realm (#1732)
+  * The audit log download contains the entries that the administrator caused and the entries of the realms that both
+    `auditlog_download` and `auditlog` grant. `hide_tokeninfo` and `hide_audit_columns` policies that name realms,
+    resolvers or users apply to each list entry of these users and realms (#6163)
+  * Admin policies that name users match the owner of a token or container in several realms. The same rules apply as
+    in one realm, for example for `*` or a regular expression (#6163)
+  * The enrollment policies compare the token type in lower case, so that `type=HOTP` gets the policies of `hotp`. If
+    `hotp_2step` or `totp_2step` is `force`, every rollover uses the two-step enrollment and refuses `otpkey` (#6309)
+  * For the serial of an existing token, `POST /token/init` checks the `enroll<TYPE>` right of the type of that token
+    and refuses a different `type`. The WebUI shows the enrollment data of this type and has a card "Verify Enrollment"
+    (#6351)
+  * If the check of `verify_enrollment`, `change_pin_on_first_use` or `change_pin_every` fails with an error at
+    `/token/init`, the server returns the error. It deletes the new token, or disables a token that existed before.
+    `/container/init` lists such template tokens in `tokens_not_created` (#6306)
+  * For a container from a template, the server checks the enrollment policies of each token with its own user, realm
+    and parameters. The `container` and `container_info` conditions of PIN change and resync policies check the
+    container of the token (#6240)
+  * `GET /container/` counts and pages a container in several realms once. The lists of containers, templates, tokens,
+    challenges and remembered devices sort entries with the same sort value by their ID (#6162, #6267)
+  * `GET /token/` and the token janitors also list a token whose owner has no resolver. The token list shows such an
+    owner, and an owner whose login name can not be looked up, as `**resolver error**` (#1653, #6142)
+  * If an HTTP, Keycloak or Entra ID user store answers with an error, `--orphaned-on-error` of the token janitors
+    applies, as for LDAP and SQL. `container --orphaned` reports the error. A SQL resolver with an integer user ID
+    column finds a user whose stored ID has leading zeros (#1653)
+  * `POST /user/` creates the user also if an active admin policy exists, instead of an internal server error (#6233)
+  * `POST /token/set` refuses an empty `radius.user` for a RADIUS token, as the enrollment does (#6331)
+  * The token settings `yubico.secret`, `yubikey.apiid.*`, `radius.secret`, `email.password` and `sms.providerConfig`
+    are stored encrypted, and a value in plain text gets encrypted at its next save. The log and the audit entries of
+    event handlers show configuration objects and options by name, without their values (#6165)
+  * The token and container info endpoints, `POST /token/realm/<serial>` and `POST /token/group/<serial>` accept empty
+    values again. `POST /smtpserver/<identifier>` keeps the stored values of the fields that the request does not
+    send. HTTP, Keycloak and Entra ID resolvers ignore a request configuration without an endpoint (#6086)
+  * An SMTP server uses its stored password only with the host, port, user name and TLS setting that it was saved
+    with. A RADIUS server uses its stored secret only with the host and port that it was saved with. A request that
+    sends the censored placeholder with changed values fails, also in `pi-manage config import` (#3544)
+  * `POST /smtpserver/<identifier>` and `pi-manage config import` check the port, the timeout, the server URL and the
+    sender of an SMTP server. The identifier of an SMTP or RADIUS server can not contain `/`, `\` or control
+    characters. The test email reports SMTP, network and TLS errors with a readable message (#3544)
+  * With the user cache on, privacyIDEA no longer looks up a token owner by an empty login name. For a Keycloak
+    resolver, this lookup failed with ERR907 (#6136)
+  * An LDAP resolver stores a "Cache Timeout" of 0, which turns its user cache off. "TLS v1.2" works on systems with
+    OpenSSL 4, and a "Per-Process Server Pool" uses the "Server Pool Strategy" of its resolver (#6137, #6255, #6315)
+  * An Entra ID resolver uses its timeout and TLS settings also for the token requests to the authority, by default
+    `login.microsoftonline.com` (#6138)
+  * Each process reloads the configuration if the configuration timestamp in the database differs from the one of its
+    loaded configuration. A successful authentication stores the last used token type only if a
+    `client_mode_per_user` policy matches the user (#6140)
+  * On Oracle, conditional access locks local administrators, `POST /token/lost/<serial>` works, and empty
+    configuration values read back as empty strings. `pi-manage config import` assigns the resolvers to their realms,
+    also with an export file from Oracle. The template comparison works for a template without options
+    (#5039, #6045, #6184)
+  * With `PI_ENABLE_CSP`, the WebUI keeps its styles and icons, because the Content Security Policy allows them with a
+    nonce (#6339)
+  * privacyIDEA does not switch off the loggers of other packages, for example of SQLAlchemy. A YAML logging
+    configuration must set `disable_existing_loggers: false` for this (#6077)
+  * The schema update finishes a 3.14 migration that stopped midway, and it moves each id sequence past the highest id
+    of its table. This ends duplicate key errors on MariaDB. The update stops on a database without schema revision
+    stamp and prints the revision before and after the update (#6161, #6164, #6174, #6175)
+  * `pi-manage setup create_tables` stops on a database with a schema revision stamp or with privacyIDEA tables. The
+    new option `--force` runs it anyway (#6337)
+  * `pi-manage config import` matches event handlers and periodic tasks by name, not by database ID. It skips the event
+    handlers that it can not match clearly and then exits with status 1 (#6036)
+  * The `pi-manage` commands for backups, setup, administrators, the configuration import and the audit log check their
+    input. They report errors with a message instead of a traceback. `pi-manage backup create` and
+    `pi-manage setup encrypt_enckey -o` create their files readable only by the owner (#6336)
+  * `pi-tokenjanitor update` writes only the secrets of an export entry and keeps the other values of the token.
+    `pi-manage config realm delete` exits with status 1 if it does not delete the realm (#6086)
+  * WebUI: Many fixes for the new WebUI. For example, logout works from every page, and a browser clock that differs
+    from the server clock no longer ends the session. The enrollment forms use the values of the enrollment policies,
+    and the resolver forms offer the options of the old WebUI (#5781, #6038, #6042, #6096, #6108, #6112, #6113, #6117,
+    #6146, #6188, #6197, #6240, #6275)
+
+Version 3.14, 2026-10-08
 
   Features:
   * API clients can authenticate with an API key in the `X-API-Key` header, which gives an integration a stable,
@@ -129,6 +361,13 @@ Version 3.14, 2026-09-30
     imported and reports the result at the end. Configurations from older versions containing actions that no longer
     exist can be imported with `--skip-invalid`. `pi-manage config export --censor` replaces the secrets with the
     placeholder `__CENSORED__`, such an export can only be imported again on the same instance (#5516)
+  * `pi-manage config import` compares the import with the system first and prints a plan of the entries it creates,
+    updates, leaves unchanged or skips. Unchanged entries are not written again. `--dry-run` only prints the plan,
+    `--interactive` asks before applying it and `--replace` deletes the entries of the imported types that are missing
+    from the import. Event handlers are matched by name and handler module and periodic tasks by name instead of by the
+    id of the exporting system, hence a repeated import no longer creates duplicates. Names are matched the way the
+    system itself looks them up, so `-n` finds a realm or resolver regardless of case and, on MySQL and MariaDB, an
+    entry whose name differs only in case is updated instead of being created and deleted (#4945)
   * Removed the `/validate/samlcheck` endpoint, which was deprecated in 3.11. Use `/validate/check` with the
     authorization policies `add_user_in_response` and `add_resolver_in_response` instead (#5414)
   * The endpoints `POST /token/copypin` and `POST /token/copyuser` are deprecated and will be removed in a

@@ -1,6 +1,7 @@
 import base64
 import json
 from contextlib import contextmanager
+from unittest import mock
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, set_policy
 from privacyidea.lib.resolver import delete_resolver, save_resolver
@@ -82,6 +83,24 @@ class APIHealthcheckTestCase(MyApiTestCase):
         with self.app.test_request_context('/healthz/', method='GET'):
             check_status(503, "not ready", False)
             check_status(200, "ready", True)
+
+    def test_readyz_and_healthz_hsm_not_ready(self):
+        # get_hsm() must not raise for a not-ready HSM; readyz reports it as 503 instead.
+        not_ready_hsm = mock.MagicMock(is_ready=False)
+        saved_app_ready = self.app.config.get('APP_READY')
+        self.app.config['APP_READY'] = True
+        try:
+            with mock.patch('privacyidea.lib.crypto.init_hsm', return_value=not_ready_hsm):
+                for url in ('/healthz/readyz', '/healthz/'):
+                    with self.app.test_request_context(url, method='GET'):
+                        res = self.app.full_dispatch_request()
+                        self.assertEqual(res.status_code, 503, res.data)
+                        result = res.json.get('result')
+                        self.assertIsNotNone(result, res.data)
+                        self.assertEqual({'status': 'not ready', 'hsm': 'fail'},
+                                         result.get('value'))
+        finally:
+            self.app.config['APP_READY'] = saved_app_ready
 
     @ldap3mock.activate
     def test_resolversz(self):

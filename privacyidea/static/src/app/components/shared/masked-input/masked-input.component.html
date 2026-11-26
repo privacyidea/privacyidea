@@ -27,12 +27,11 @@
     type="text" />
   <button
     (click)="toggleMasked()"
-    [attr.aria-label]="label()"
-    [attr.aria-pressed]="!masked()"
+    [attr.aria-label]="toggleLabel()"
     mat-icon-button
     matSuffix
     type="button">
-    <mat-icon>{{ masked() ? "visibility_off" : "visibility" }}</mat-icon>
+    <mat-icon>{{ masked() ? "visibility" : "visibility_off" }}</mat-icon>
   </button>
   @if (hint()) {
     <mat-hint>{{ hint() }}</mat-hint>

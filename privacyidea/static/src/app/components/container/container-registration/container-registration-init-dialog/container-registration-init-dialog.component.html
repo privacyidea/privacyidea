@@ -21,7 +21,5 @@
   [actions]="[getAction()]"
   [showCloseButton]="false"
   (actionTriggered)="onAction($event)">
-  <app-container-registration-config
-    [containerHasOwner]="data.containerHasOwner"
-    (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
+  <app-container-registration-config [registration]="form"></app-container-registration-config>
 </app-dialog-wrapper>

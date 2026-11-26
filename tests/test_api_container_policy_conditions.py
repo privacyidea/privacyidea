@@ -9,7 +9,7 @@ from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token, unassign_token
+from privacyidea.lib.token import get_one_token, get_tokeninfo, init_token, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from tests.test_lib_tokencontainer import MockSmartphone
@@ -525,3 +525,29 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         delete_policy("registration")
         delete_policy("rollover")
         container.delete()
+
+    def test_12_token_init_in_container(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
+
+        def enroll_token(container_type):
+            container_serial = init_container({"type": container_type})["container_serial"]
+            result = self.request_assert_success("/token/init", {"type": "hotp", "genkey": True,
+                                                                 "container_serial": container_serial},
+                                                 self.at, "POST")
+            self.assertEqual(container_serial, result["detail"]["container_serial"])
+            return container_serial, result["detail"]["serial"]
+
+        # Policy applies to tokens in a smartphone
+        smartphone_serial, smartphone_token_serial = enroll_token("smartphone")
+        self.assertIsNotNone(get_tokeninfo(smartphone_token_serial, "next_pin_change"))
+
+        # Policy does not apply to tokens in other container types
+        generic_serial, generic_token_serial = enroll_token("generic")
+        self.assertIsNone(get_tokeninfo(generic_token_serial, "next_pin_change"))
+
+        delete_policy("change_pin")
+        delete_container_by_serial(smartphone_serial)
+        delete_container_by_serial(generic_serial)
+        get_one_token(serial=smartphone_token_serial).delete_token()
+        get_one_token(serial=generic_token_serial).delete_token()

@@ -20,7 +20,6 @@ import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
-  effect,
   inject,
   linkedSignal,
   OnDestroy,
@@ -52,6 +51,8 @@ import {
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
+import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -71,14 +72,18 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsRememberedDevicesComponent } from "./user-details-remembered-devices/user-details-remembered-devices.component";
 import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 import { formatLocalDateTime } from "@utils/date-format.utils";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { exactMatch, withUser } from "@utils/filter.utils";
 
 @Component({
   selector: "app-user-details",
   imports: [
+    TooltipAriaLabelDirective,
     ScrollToTopDirective,
     MatButtonModule,
     UserDetailsTokenTableComponent,
@@ -94,11 +99,13 @@ import { formatLocalDateTime } from "@utils/date-format.utils";
     NgClass,
     NgTemplateOutlet,
     UserDetailsContainerTableComponent,
+    UserDetailsRememberedDevicesComponent,
     MatSelectModule,
     MatTooltip,
     RouterLink,
     CopyableComponent,
     UserDetailsEditComponent,
+    UserCustomAttributesComponent,
     StickyHeaderDirective,
     DetailsCardComponent,
     DetailFieldComponent,
@@ -126,7 +133,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   readonly labels: Record<string, string> = {
     username: $localize`:@@common.username:Username`,
-    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    givenname: $localize`:@@user.givenNameLabel:Given Name`,
     surname: $localize`:@@user.surname:Surname`,
     email: $localize`:@@common.email:Email`,
     phone: $localize`:@@user.phone:Phone`,
@@ -153,54 +160,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     }
   });
 
-  attributeSetMap = this.userService.attributeSetMap;
-  deletableAttributes = this.userService.deletableAttributes;
-  keyOptions = this.userService.keyOptions;
-  hasWildcardKey = this.userService.hasWildcardKey;
-  canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
+  readonly attributeDraft = new CustomAttributeDraft();
   showsAttributeExtrasColumn = computed(
     () =>
-      this.canSetCustomAttribute() ||
+      this.attributeDraft.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
       this.authService.actionAllowed("get_user_internal_attributes") ||
       this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
-  addKeyInput = signal<string>("");
-  addValueInput = signal<string>("");
-  selectedKey = signal<string | null>(null);
-  selectedValue = signal<string | null>(null);
-  keyMode = signal<"select" | "input">("select");
-  valueOptions = computed<string[]>(() => {
-    const map = this.attributeSetMap();
-    const mode = this.keyMode();
-    const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
-    if (key && map[key]) return map[key];
-    if (map["*"]) return map["*"];
-    return [];
-  });
-  isValueInput = computed<boolean>(() => {
-    const opts = this.valueOptions();
-    if (opts.includes("*")) return true;
-    return opts.length === 0;
-  });
-  canAddAttribute = computed<boolean>(() => {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-    return key.length > 0 && value.length > 0;
-  });
-
-  constructor() {
-    effect(() => {
-      const hasWildcard = this.hasWildcardKey();
-      const hasFixedKeys = this.keyOptions().length > 0;
-      if (hasWildcard && !hasFixedKeys) {
-        this.keyMode.set("input");
-      } else {
-        this.keyMode.set("select");
-      }
-    });
-  }
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
@@ -248,23 +216,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.editIsDirty() ||
-        !!this.addKeyInput() ||
-        !!this.addValueInput() ||
-        !!this.selectedKey() ||
-        !!this.selectedValue()
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
+    this.pendingChangesService.registerValidChanges(
+      () => !this.attributeDraft.hasChanges() || this.attributeDraft.hasValidChanges()
     );
-    this.pendingChangesService.registerValidChanges(() => {
-      if (this.editMode()) return true;
-      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-      return !!key && !!value;
-    });
-    this.pendingChangesService.registerSave(() => {
-      if (this.editMode()) return this.saveEditAsync();
-      return this.addCustomAttribute();
+    this.pendingChangesService.registerSave(async () => {
+      if (this.editMode() && !(await this.saveEditAsync())) return false;
+      return !this.attributeDraft.hasChanges() || this.attributeDraft.save();
     });
   }
 
@@ -303,45 +261,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       next.add(key);
     }
     this.expandedKeys.set(next);
-  }
-
-  switchToCustomKey() {
-    this.keyMode.set("input");
-    this.selectedKey.set(null);
-  }
-
-  switchToSelectKey() {
-    this.keyMode.set("select");
-    this.addKeyInput.set("");
-  }
-
-  async addCustomAttribute(): Promise<boolean> {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-
-    if (!key || !value) return false;
-
-    try {
-      await firstValueFrom(this.userService.setUserAttribute(key, value));
-      this.userService.userAttributesResource.reload();
-      this.userService.userResource.reload();
-      this.addKeyInput.set("");
-      this.addValueInput.set("");
-      this.selectedKey.set(null);
-      this.selectedValue.set(null);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  deleteCustomAttribute(key: string) {
-    this.userService.deleteUserAttribute(key).subscribe({
-      next: () => {
-        this.userService.userAttributesResource.reload();
-        this.userService.userResource.reload();
-      }
-    });
   }
 
   assignUserToToken(option: TokenDetails) {
@@ -385,7 +304,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   public showUserAuditLog() {
-    this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+    const user = this.userService.detailsUser();
+    this.auditService.setFilter(
+      withUser(new FilterValue(), exactMatch(user.username), user.realm && exactMatch(user.realm))
+    );
   }
 
   public showUserAuthenticationLog() {
@@ -437,7 +359,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
           title: $localize`:@@common.resetUserLock:Reset User Lock`,
           items: [`${lockStatus.username}@${lockStatus.realm}`],
           itemType: "user",
-          confirmAction: { label: $localize`:@@user.resetLock:Reset lock`, value: true, type: "confirm" }
+          confirmAction: { label: $localize`:@@user.resetLock:Reset Lock`, value: true, type: "confirm" }
         }
       })
       .afterClosed()

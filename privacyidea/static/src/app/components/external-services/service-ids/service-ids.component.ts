@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -28,7 +29,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -49,16 +49,16 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-service-ids",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -91,11 +91,20 @@ export class ServiceIdsComponent {
     allowed: () => this.authService.actionAllowed("serviceid_list"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("serviceid_add")
+      ? $localize`:@@serviceId.createServiceID:Create a service ID to attach SSH tokens to it.`
+      : ""
+  );
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "id", "servicename", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("serviceid_delete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["id", "servicename", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
@@ -110,12 +119,36 @@ export class ServiceIdsComponent {
     visibleRows: renderedRows(this.serviceIdDataSource)
   });
 
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createService:Create Service ID`,
+      tone: "primary",
+      width: "l",
+      icon: "storage",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("serviceid_add"),
+      run: () => this.onCreateNewServiceId()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
+      run: () => this.deleteSelected()
+    }
+  ]);
+
   onCreateNewServiceId(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);
   }
 
   onEditServiceId(serviceId: ServiceId): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS, serviceId.servicename]);
   }
 
   deleteSelected(): void {

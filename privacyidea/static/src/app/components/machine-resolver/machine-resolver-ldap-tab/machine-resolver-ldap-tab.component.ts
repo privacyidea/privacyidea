@@ -17,99 +17,150 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, OnInit, output } from "@angular/core";
+import { Component, effect, input, linkedSignal, output, untracked } from "@angular/core";
+import { disabled, form, FormField } from "@angular/forms/signals";
+import { MatButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { LdapMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
 
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
+interface LdapFormModel {
+  LDAPURI: string;
+  TLS_VERIFY: boolean;
+  TLS_CA_FILE: string;
+  LDAPBASE: string;
+  BINDDN: string;
+  BINDPW: string;
+  AUTHTYPE: string;
+  TIMEOUT: string;
+  SIZELIMIT: string;
+  NOREFERRALS: boolean;
+  IDATTRIBUTE: string;
+  SEARCHFILTER: string;
+  HOSTNAMEATTRIBUTE: string;
+  IPATTRIBUTE: string;
+}
+
+type LdapTextKey = {
+  [K in keyof LdapFormModel]: LdapFormModel[K] extends string ? K : never;
+}[keyof LdapFormModel];
+
+// The timeout input shows 5 while the data holds no timeout.
+const DEFAULT_TIMEOUT = "5";
+
+const TEXT_KEYS: readonly LdapTextKey[] = [
+  "LDAPURI",
+  "TLS_CA_FILE",
+  "LDAPBASE",
+  "BINDDN",
+  "BINDPW",
+  "AUTHTYPE",
+  "TIMEOUT",
+  "SIZELIMIT",
+  "IDATTRIBUTE",
+  "SEARCHFILTER",
+  "HOSTNAMEATTRIBUTE",
+  "IPATTRIBUTE"
+];
+
+function defaultText(key: LdapTextKey): string {
+  return key === "TIMEOUT" ? DEFAULT_TIMEOUT : "";
+}
+
+function toFormModel(source: MachineResolverData): LdapFormModel {
+  const data = source as LdapMachineResolverData;
+  return {
+    LDAPURI: data.LDAPURI ?? "",
+    TLS_VERIFY: !!data.TLS_VERIFY,
+    TLS_CA_FILE: data.TLS_CA_FILE ?? "",
+    LDAPBASE: data.LDAPBASE ?? "",
+    BINDDN: data.BINDDN ?? "",
+    BINDPW: data.BINDPW ?? "",
+    AUTHTYPE: data.AUTHTYPE ?? "",
+    TIMEOUT: data.TIMEOUT ?? DEFAULT_TIMEOUT,
+    SIZELIMIT: data.SIZELIMIT ?? "",
+    NOREFERRALS: data.NOREFERRALS === "True",
+    IDATTRIBUTE: data.IDATTRIBUTE ?? "",
+    SEARCHFILTER: data.SEARCHFILTER ?? "",
+    HOSTNAMEATTRIBUTE: data.HOSTNAMEATTRIBUTE ?? "",
+    IPATTRIBUTE: data.IPATTRIBUTE ?? ""
+  };
+}
+
+// A key the base data did not hold and the form still shows at its initial value stays absent from the emitted data.
+// The CA file only applies while TLS Verify is on, so it is dropped otherwise.
+function toData(model: LdapFormModel, base: MachineResolverData): LdapMachineResolverData {
+  const data = { ...(base as LdapMachineResolverData), type: "ldap" } as LdapMachineResolverData;
+  const record = data as unknown as Record<string, unknown>;
+  for (const key of TEXT_KEYS) {
+    if (data[key] === undefined && model[key] === defaultText(key)) {
+      continue;
+    }
+    record[key] = model[key];
+  }
+  if (data.TLS_VERIFY !== undefined || model.TLS_VERIFY) {
+    data.TLS_VERIFY = model.TLS_VERIFY;
+  }
+  if (data.NOREFERRALS !== undefined || model.NOREFERRALS) {
+    data.NOREFERRALS = model.NOREFERRALS ? "True" : "False";
+  }
+  if (!model.TLS_VERIFY) {
+    delete data.TLS_CA_FILE;
+  }
+  return data;
+}
 
 @Component({
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton, MatIcon],
+  imports: [FormField, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton, MatIcon],
   standalone: true
 })
-export class MachineResolverLdapTabComponent implements OnInit {
+export class MachineResolverLdapTabComponent {
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+
   readonly canEdit = input<boolean>(false);
-  readonly machineResolverData = input.required<MachineResolverData>();
-  readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
-    let data = this.machineResolverData() as LdapMachineResolverData;
-    data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
-    return data;
-  });
+  // The default data is read while the details page evaluates the validity of a tab whose inputs are not bound yet.
+  readonly machineResolverData = input<MachineResolverData>({ resolver: "", type: "ldap" });
   readonly newData = output<MachineResolverData>();
-  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
-  ngOnInit(): void {
-    this.newValidator.emit(this.isValid.bind(this));
-  }
+  readonly model = linkedSignal<LdapFormModel>(() => toFormModel(this.machineResolverData()));
+  readonly ldapForm = form(this.model, (f) => {
+    requiredNonBlank(f.LDAPURI);
+    requiredNonBlank(f.LDAPBASE);
+    requiredNonBlank(f.BINDDN);
+    requiredNonBlank(f.BINDPW);
+    disabled(f, () => !this.canEdit());
+    disabled(f.TLS_CA_FILE, () => !this.model().TLS_VERIFY);
+  });
 
-  updateData(
-    args:
-      | { patch: Partial<LdapMachineResolverData>; remove?: (keyof LdapMachineResolverData)[] }
-      | { patch?: Partial<LdapMachineResolverData>; remove: (keyof LdapMachineResolverData)[] }
-      | Partial<LdapMachineResolverData>
-  ) {
-    let patch: Partial<LdapMachineResolverData>;
-    let remove: (keyof LdapMachineResolverData)[];
-    if ("remove" in args || "patch" in args) {
-      const complexArgs = args as {
-        patch?: Partial<LdapMachineResolverData>;
-        remove?: (keyof LdapMachineResolverData)[];
-      };
-      patch = complexArgs.patch || {};
-      remove = complexArgs.remove || [];
-    } else {
-      patch = args as Partial<LdapMachineResolverData>;
-      remove = [];
-    }
-    const newData = { ...this.machineResolverData(), ...patch, type: "ldap" };
-    if (remove.length > 0) {
-      remove.forEach((key) => {
-        delete newData[key];
-      });
-    }
-    this.newData.emit(newData);
-  }
-  updateTlsVerify($event: boolean) {
-    this.updateData({ patch: { TLS_VERIFY: $event, TLS_CA_FILE: undefined }, remove: ["TLS_CA_FILE"] });
-  }
+  readonly isValid = () => this.ldapForm().valid();
+  readonly touchAll = () => touchAll(this.ldapForm);
 
-  isValid(data: MachineResolverData): boolean {
-    if (data.type !== "ldap") return false;
-    const ldapData = data as LdapMachineResolverData;
-
-    if (!ldapData.LDAPURI || ldapData.LDAPURI.trim() === "") {
-      return false;
-    }
-    if (!ldapData.LDAPBASE || ldapData.LDAPBASE.trim() === "") {
-      return false;
-    }
-    if (!ldapData.BINDDN || ldapData.BINDDN.trim() === "") {
-      return false;
-    }
-    if (!ldapData.BINDPW || ldapData.BINDPW.trim() === "") {
-      return false;
-    }
-
-    return true;
-  }
-
-  onClickNoReferrals($event: boolean) {
-    this.updateData({ NOREFERRALS: $event ? "True" : "False" });
+  constructor() {
+    effect(() => {
+      const model = this.model();
+      const base = untracked(() => this.machineResolverData());
+      if (JSON.stringify(model) !== JSON.stringify(toFormModel(base))) {
+        this.newData.emit(toData(model, base));
+      }
+    });
   }
 
   preassignActiveDirectoryAttributes() {
-    this.updateData({
+    this.model.update((model) => ({
+      ...model,
       SEARCHFILTER: "(objectClass=computer)",
       IDATTRIBUTE: "DN",
       HOSTNAMEATTRIBUTE: "dNSHostName",
-      NOREFERRALS: "True"
-    });
+      NOREFERRALS: true
+    }));
   }
 }

@@ -13,6 +13,11 @@ real wsrep node to reproduce), a PostgreSQL dump that cannot be replayed into a
 database that still holds the old schema, or a silently incomplete dump being
 packaged and reported as success.
 
+The same round trip also runs on a database of privacyIDEA itself, a release seed
+upgraded to head, so that a change of the schema that a dump cannot restore fails
+here. And a backup taken before an upgrade is restored into the upgraded database,
+the way back after a failed upgrade, after which the upgrade has to run again.
+
 The test is gated on a MySQL/MariaDB or PostgreSQL ``TEST_DATABASE_URL`` *and*
 on the dump client for that engine being available, so it is skipped where
 those are absent (plain local runs, SQLite).
@@ -22,9 +27,17 @@ import pathlib
 import shutil
 import subprocess
 import sys
+from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import create_engine, text
+from alembic import command
+from alembic.script import ScriptDirectory
+from flask import Flask
+from sqlalchemy import Engine, create_engine, text
+
+from tests.migration_test_utils import (RELEASE_HEADS, drop_all_tables, get_alembic_cfg,
+                                        insert_minimal_row_into_every_table, load_seed, sequences_behind_their_table,
+                                        sorted_rows, table_contents)
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 # tests/cli/test_backup_roundtrip.py -> repo root
@@ -56,6 +69,65 @@ def _run_pimanage(args, config_file):
         [sys.executable, "pi-manage", *args],
         cwd=REPO_ROOT, env=env, capture_output=True, text=True,
     )
+
+
+def _write_config(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    """A minimal configuration pointing at the test database, as (config directory, pi.cfg)."""
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    enc_file = config_dir / "enckey"
+    enc_file.write_bytes(b"x" * 96)
+    pi_cfg = config_dir / "pi.cfg"
+    pi_cfg.write_text(
+        f"SQLALCHEMY_DATABASE_URI = {DB_URL!r}\n"
+        f"PI_ENCFILE = {str(enc_file)!r}\n"
+        "SECRET_KEY = 'roundtrip-secret'\n"
+        "PI_PEPPER = 'roundtrip-pepper'\n"
+    )
+    return config_dir, pi_cfg
+
+
+def _create_backup(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    """Back the test database up with pi-manage, as (backup archive, pi.cfg)."""
+    config_dir, pi_cfg = _write_config(tmp_path)
+    backup_dir = tmp_path / "backup"
+    result = _run_pimanage(["backup", "create", "-d", str(backup_dir), "-c", str(config_dir)], pi_cfg)
+    assert result.returncode == 0, result.stdout + result.stderr
+    archives = list(backup_dir.glob("*.tgz"))
+    assert len(archives) == 1, f"expected exactly one backup archive, got {archives}"
+    return archives[0], pi_cfg
+
+
+def _restore_backup(archive: pathlib.Path, pi_cfg: pathlib.Path) -> None:
+    result = _run_pimanage(["backup", "restore", "--keep-db-uri", str(archive)], pi_cfg)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.fixture
+def privacyidea_app() -> Iterator[Flask]:
+    """An app context for the migrations, whose env.py reads the database of the current app."""
+    from privacyidea.app import create_app
+    from privacyidea.models import db
+
+    app = create_app("testing", REPO_ROOT / "tests/testdata/test_pi.cfg", silent=True)
+    with app.app_context():
+        yield app
+        db.session.remove()
+        for engine in db.engines.values():
+            engine.dispose()
+
+
+def _contents(engine: Engine) -> dict[str, list[dict]]:
+    return {table: sorted_rows(rows) for table, rows in table_contents(engine).items()}
+
+
+def _stamps(engine: Engine) -> list[str]:
+    with engine.connect() as conn:
+        return sorted(conn.execute(text("SELECT version_num FROM alembic_version")).scalars())
+
+
+def _differing_tables(expected: dict[str, list[dict]], actual: dict[str, list[dict]]) -> list[str]:
+    return sorted(table for table in expected if actual.get(table) != expected[table])
 
 
 def test_backup_restore_roundtrip(tmp_path):
@@ -92,17 +164,7 @@ def test_backup_restore_roundtrip(tmp_path):
 
     try:
         # 2. Minimal config pointing at the test database.
-        config_dir = tmp_path / "config"
-        config_dir.mkdir()
-        enc_file = config_dir / "enckey"
-        enc_file.write_bytes(b"x" * 96)
-        pi_cfg = config_dir / "pi.cfg"
-        pi_cfg.write_text(
-            f"SQLALCHEMY_DATABASE_URI = {DB_URL!r}\n"
-            f"PI_ENCFILE = {str(enc_file)!r}\n"
-            "SECRET_KEY = 'roundtrip-secret'\n"
-            "PI_PEPPER = 'roundtrip-pepper'\n"
-        )
+        config_dir, pi_cfg = _write_config(tmp_path)
         backup_dir = tmp_path / "backup"
 
         # 3. Create the backup via the real CLI command.
@@ -149,4 +211,67 @@ def test_backup_restore_roundtrip(tmp_path):
             conn.execute(text("DROP TABLE IF EXISTS backup_roundtrip"))
             if has_sequences:
                 conn.execute(text("DROP SEQUENCE IF EXISTS backup_rt_seq"))
+        engine.dispose()
+
+
+def test_backup_restore_of_a_privacyidea_database(tmp_path, privacyidea_app):
+    """
+    The round trip for a database of privacyIDEA: the seed of the newest release upgraded to head, with the tables of
+    the models, their sequences, indexes and foreign keys. Dropping everything and restoring the backup brings back the
+    contents of every table, the stamp and sequences that are ahead of their tables.
+    """
+    engine = create_engine(DB_URL)
+    try:
+        drop_all_tables(engine)
+        load_seed(list(RELEASE_HEADS.values())[-1])
+        command.upgrade(get_alembic_cfg(), "head")
+        # pi-manage registers its node in the nodename table, so the backup holds the database after that
+        archive, pi_cfg = _create_backup(tmp_path)
+        contents = _contents(engine)
+        stamps = _stamps(engine)
+
+        drop_all_tables(engine)
+        _restore_backup(archive, pi_cfg)
+
+        assert _stamps(engine) == stamps
+        restored_contents = _contents(engine)
+        assert set(restored_contents) == set(contents)
+        assert not _differing_tables(contents, restored_contents)
+        assert not sequences_behind_their_table(engine)
+    finally:
+        drop_all_tables(engine)
+        engine.dispose()
+
+
+@pytest.mark.xfail(
+    DB_URL.startswith("postgresql"), raises=AssertionError, strict=True,
+    reason="On PostgreSQL the restore fails: the tables that 3.14.0 added keep foreign keys on realm, so the dump of "
+           "3.13.4 cannot drop realm's primary key (pg_dump --clean), and psql rolls the whole restore back")
+def test_restore_of_a_backup_from_before_an_upgrade(tmp_path, privacyidea_app):
+    """
+    The way back after an upgrade: a backup of a database of the oldest release, restored into that database after its
+    upgrade to head, brings back the release's tables with their contents and its stamp. The tables that the upgrade
+    added stay. The upgrade then runs again on that database, as after a failed upgrade.
+    """
+    engine = create_engine(DB_URL)
+    try:
+        drop_all_tables(engine)
+        load_seed(list(RELEASE_HEADS.values())[0])
+        archive, pi_cfg = _create_backup(tmp_path)
+        contents_before = _contents(engine)
+        stamps_before = _stamps(engine)
+        command.upgrade(get_alembic_cfg(), "head")
+
+        _restore_backup(archive, pi_cfg)
+
+        assert _stamps(engine) == stamps_before
+        assert not _differing_tables(contents_before, _contents(engine))
+
+        command.upgrade(get_alembic_cfg(), "head")
+
+        assert _stamps(engine) == [ScriptDirectory.from_config(get_alembic_cfg()).get_current_head()]
+        assert not sequences_behind_their_table(engine)
+        assert not insert_minimal_row_into_every_table()
+    finally:
+        drop_all_tables(engine)
         engine.dispose()

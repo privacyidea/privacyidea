@@ -17,35 +17,30 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <app-selector-buttons
-    (selected)="onIntentionSelected($event)"
-    [initialValue]="intention()"
+  <app-toggle-group
+    (valueChange)="onIntentionSelected($event)"
+    [value]="intention()"
     [labels]="intentionLabels()"
     [values]="intentionValues"
-    class="intention-selector width-100" />
+    groupLabel="Certificate request type"
+    i18n-groupLabel="@@token.certificateIntention"
+    class="intention-selector width-full" />
   @if (intention() !== "uploadCert") {
     <div class="flex-row gap-16">
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.caConnector">CA Connector</mat-label>
-        <mat-select
-          [value]="caConnector()"
-          (selectionChange)="caConnector.set($event.value); caConnectorTouched.set(true)"
-          [disabled]="disabled()"
-          required>
+        <mat-select [formField]="caConnectorForm">
           @for (option of caConnectorOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-select>
-        @if (!caConnector() && caConnectorTouched()) {
-          <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong></mat-error>
+        @if (hasError(caConnectorForm, ERR.required)) {
+          <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.certificateTemplate">Certificate Template</mat-label>
-        <mat-select
-          [value]="certTemplate()"
-          (selectionChange)="certTemplate.set($event.value)"
-          [disabled]="disabled()">
+        <mat-select [formField]="certTemplateForm">
           @for (option of certTemplateOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
@@ -73,7 +68,7 @@
       >
     }
     @case ("uploadRequest") {
-      <mat-form-field class="width-100">
+      <mat-form-field class="width-full">
         <mat-label i18n="@@token.certificateSigning">Certificate Signing Request (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
@@ -82,12 +77,12 @@
           placeholder="Paste the Certificate Signing Request here"
           rows="3"></textarea>
         <mat-error i18n="@@token.certificateSigningRequest"
-          >Certificate Signing Request is <strong>required</strong></mat-error
+          >Certificate Signing Request is <strong>required</strong>.</mat-error
         >
       </mat-form-field>
     }
     @case ("uploadCert") {
-      <mat-form-field class="width-100">
+      <mat-form-field class="width-full">
         <mat-label i18n="@@token.certificatePem">Certificate (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
@@ -95,7 +90,7 @@
           matInput
           placeholder="Paste the Certificate here"
           rows="3"></textarea>
-        <mat-error i18n="@@token.certificateRequired">Certificate is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.certificateRequired">Certificate is <strong>required</strong>.</mat-error>
       </mat-form-field>
     }
   }

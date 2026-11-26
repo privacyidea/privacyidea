@@ -189,7 +189,11 @@ store cannot be reached is skipped. To count such users as gone anyway, pass
 ``--orphaned-on-error`` before the subcommand, e.g.
 ``pi-tokenjanitor user-settings --orphaned-on-error list``; ``container`` has no
 such option.
-The commands also ask the user store about every single entry, which takes a
-while with many users. The leftovers only appear when users are deleted and
-cost little, so run the commands by hand from time to time and check the list
-before you delete anything.
+
+``find --orphaned`` asks an LDAP or SQL user store about many token owners in
+one search instead of one lookup per token, and it only asks about the owners
+no user cache knows. Every other command, and every other resolver type, asks
+about each entry on its own, which takes a while with many users. The
+leftovers only appear when users are deleted and cost little, so run the
+commands by hand from time to time and check the list before you delete
+anything.
