@@ -40,14 +40,34 @@ from flask import Flask, g, request  # noqa: E402
 from sqlalchemy import Sequence, event, text  # noqa: E402
 from sqlalchemy.engine import Engine  # noqa: E402
 
+from privacyidea.api import healthcheck  # noqa: E402
 from privacyidea.app import create_app  # noqa: E402
+from privacyidea.lib import health  # noqa: E402
 from privacyidea.lib.conditional_access.request_context import reset_ca_context  # noqa: E402
 from privacyidea.lib.conditional_access.session import close_ca_session  # noqa: E402
 from privacyidea.lib.lifecycle import call_finalizers  # noqa: E402
+from privacyidea.lib.resolvers import LDAPIdResolver  # noqa: E402
 from privacyidea.models import db, save_config_timestamp  # noqa: E402
 
-REPOSITORY = Path(__file__).resolve().parent.parent
+TESTS_NEW = Path(__file__).resolve().parent
+REPOSITORY = TESTS_NEW.parent
 CONFIG_FILE = REPOSITORY / "tests" / "testdata" / "test_pi.cfg"
+LOCAL_HOSTS = ["127.0.0.1", "::1", "localhost"]
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """
+    Network guard: a test in tests_new may only connect to this machine, unless it is marked ``integration``.
+
+    The rules are pytest-socket markers, set here so they only apply to tests_new and not to the old tests.
+    """
+    for item in items:
+        if TESTS_NEW not in Path(item.path).parents:
+            continue
+        if item.get_closest_marker("integration"):
+            item.add_marker(pytest.mark.enable_socket)
+        else:
+            item.add_marker(pytest.mark.allow_hosts(LOCAL_HOSTS))
 
 
 @event.listens_for(Engine, "connect")
@@ -79,6 +99,22 @@ def _start_request_with_empty_g() -> None:
     request.environ["privacyidea.tests.g_emptied"] = True
     for key in list(iter(g)):
         g.pop(key)
+
+
+def _reset_global_state() -> None:
+    """
+    Empty the caches that production code keeps at module level. They outlive app contexts.
+
+    - ``LDAPIdResolver.CACHE``: users found per resolver, keyed on the resolver configuration
+    - ``health._CACHE``: results of the certificate and endpoint checks
+    - ``healthcheck._resolver_probe_cache``: the last result of the resolver probe
+
+    The app-local store (configuration, client write throttle, subscription user count) is emptied in ``app_context``.
+    """
+    LDAPIdResolver.CACHE.clear()
+    with health._CACHE_LOCK:
+        health._CACHE.clear()
+    healthcheck._resolver_probe_cache["snapshot"] = None
 
 
 def _declared_sequences() -> list[str]:
@@ -140,11 +176,11 @@ def app_context(app: Flask) -> Iterator[None]:
     """
     A fresh app context, and with it a fresh ``g``, for one test.
 
-    The app-local store survives app contexts. It caches the configuration (realms, resolvers, policies) and a few
-    counters, so it is emptied as well.
+    The app-local store and the module-level caches survive app contexts, so they are emptied as well.
     """
     with app.app_context():
         app.config.get("_app_local_store", {}).clear()
+        _reset_global_state()
         yield
         close_ca_session()
         reset_ca_context()

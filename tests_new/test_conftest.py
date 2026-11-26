@@ -6,9 +6,15 @@ The base fixtures isolate the tests from each other.
 Each pair has one test that leaves something behind and one that expects nothing. Both pass in any order only if the
 fixtures reset that state.
 """
+import socket
+
+import pytest
 from flask import current_app, g, has_app_context
+from pytest_socket import SocketConnectBlockedError
 from sqlalchemy import func, select
 
+from privacyidea.lib import health
+from privacyidea.lib.resolvers import LDAPIdResolver
 from privacyidea.lib.token import get_tokens, init_token
 from privacyidea.models import Config, db
 
@@ -61,3 +67,51 @@ def test_app_context_starts_with_empty_app_local_store(app_context):
 
 def test_pure_logic_needs_no_app_context():
     assert not has_app_context()
+
+
+def test_entry_put_into_the_ldap_cache_by_a_test(app_context):
+    LDAPIdResolver.CACHE["left-behind"] = {}
+
+    assert "left-behind" in LDAPIdResolver.CACHE
+
+
+def test_app_context_starts_with_empty_ldap_cache(app_context):
+    assert LDAPIdResolver.CACHE == {}
+
+
+def test_entry_put_into_the_health_cache_by_a_test(app_context):
+    health._CACHE["left-behind"] = (0, None)
+
+    assert "left-behind" in health._CACHE
+
+
+def test_app_context_starts_with_empty_health_cache(app_context):
+    assert health._CACHE == {}
+
+
+# TEST-NET-1 (RFC 5737): never routed, so a connection attempt cannot reach anything
+OTHER_HOST = ("192.0.2.1", 389)
+
+
+def test_connection_to_another_host_is_blocked():
+    with socket.socket() as client, pytest.raises(SocketConnectBlockedError):
+        client.connect(OTHER_HOST)
+
+
+def test_connection_to_localhost_is_allowed():
+    with socket.socket() as server, socket.socket() as client:
+        server.bind(("127.0.0.1", 0))
+        server.listen()
+
+        client.connect(server.getsockname())
+
+        assert client.getpeername() == server.getsockname()
+
+
+@pytest.mark.integration
+def test_integration_test_may_connect_to_another_host():
+    with socket.socket() as client:
+        client.settimeout(0.01)
+        # The connection itself fails, but it is attempted instead of blocked
+        with pytest.raises(OSError):
+            client.connect(OTHER_HOST)

@@ -13,7 +13,16 @@ python -m pytest tests_new/api/validate/                   # one folder
 python -m pytest tests_new/<path>/test_<name>.py           # one file
 python -m pytest "tests_new/<path>/test_<name>.py::<test>" # one test
 python -m pytest -n auto tests_new                         # parallel
+python -m pytest -p randomly tests_new                     # random order, as CI runs it
+python -m pytest -p randomly --randomly-seed=1234 tests_new  # repeat the order of a failed run
 ```
+
+`pytest-randomly` is off by default in `pyproject.toml`, because the old tests in `tests/` rely on their order. CI runs
+this folder with `-p randomly -n <workers>`. The seed is printed at the top of each run.
+
+A network guard (`pytest-socket`) blocks connections to other hosts. Tests may connect to this machine only. A test
+marked `@pytest.mark.integration` may connect anywhere. Markers have to be registered in `pyproject.toml`
+(`--strict-markers`).
 
 ## Layout
 
@@ -59,7 +68,7 @@ Every folder has an `__init__.py`, so files with the same name in different fold
   a second folder needs it.
 - **`lib/` tests the logic, `api/` what the request adds:** parameters, rights, policies, response format, audit.
 - **Pure logic needs no app.** A test without the `app` fixture runs without database.
-- **Real servers only in `integration/`.** These tests are marked and run in their own CI job.
+- **Real servers only in `integration/`.** These tests are marked `integration` and run in their own CI job.
 - **Nothing is imported from `tests/`.** Shared code lives in `helpers/` or in fixtures.
 
 ## What a good test looks like
@@ -135,7 +144,7 @@ Each fixture is listed here with what it provides, once it exists.
 | Fixture       | Scope    | Defined in    | Provides                                                                   |
 |---------------|----------|---------------|----------------------------------------------------------------------------|
 | `app`         | session  | `conftest.py` | The Flask app with a freshly built schema, one per process                 |
-| `app_context` | function | `conftest.py` | A fresh app context with an empty `g` and an empty app-local store         |
+| `app_context` | function | `conftest.py` | A fresh app context with an empty `g`, app-local store and module caches   |
 | `clean_db`    | function | `conftest.py` | Empty tables and sequences from 1, apart from the config timestamp         |
 
 A test that needs the database requests `clean_db`, directly or through another fixture. A test of pure logic requests
