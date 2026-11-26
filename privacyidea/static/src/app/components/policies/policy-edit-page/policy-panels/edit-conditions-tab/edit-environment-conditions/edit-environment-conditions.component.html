@@ -35,7 +35,8 @@
 
   <div class="flex-row-stretch">
     <mat-form-field
-      class="input-width-l margin-bottom-16">
+      class="input-width-l margin-bottom-16"
+      subscriptSizing="dynamic">
       <mat-label i18n="@@policy.validTime">Valid Time</mat-label>
       <input
         matInput
@@ -44,6 +45,15 @@
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
       @if (hasError(validTimeField, 'invalidValidTime')) {
         <mat-error i18n="@@policy.pleaseEnterValidTime">Enter a valid time format.</mat-error>
+      }
+      @if (overnightTimeRanges().length > 0) {
+        <mat-hint class="overnight-time-ranges">
+          @for (timeRange of overnightTimeRanges(); track $index) {
+            <div i18n="@@policy.validTimeEndsNextDay"
+              >{{ timeRange.days }}: {{ timeRange.start }} to {{ timeRange.end }} of the next day</div
+            >
+          }
+        </mat-hint>
       }
       @if (validTimeSignal() !== "") {
         <app-clear-button

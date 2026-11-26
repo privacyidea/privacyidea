@@ -99,20 +99,28 @@ provides a wrong OTP value. AutoResync works like this:
   field ``otp1c``.
 
 * Now the user needs to authenticate a second time within the time-interval
-  given in **Auto resync timeout** with the next successive OTP value.
+  given in **Auto resync timeout** with a newer OTP value.
 
-* The system checks if the counter of the second OTP value is the successive
-  value to ``otp1c``.
+* The system checks if the counter of the second OTP value follows ``otp1c``.
+  A HOTP token needs the next value. A TOTP token also accepts a later value
+  if the user skipped some. The counters of the two values may differ by at
+  most the number of time steps of the time window of the token and of the
+  **Auto resync timeout**, whichever is smaller. With the default time window
+  of 180 seconds and a time step of 30 seconds, this is six values.
 
-* If it is, the token counter is set and the user is successfully authenticated.
+* Both OTP values must be newer than the last OTP value used. A value that was
+  used already does not start or complete an AutoResync.
 
-.. note:: AutoResync works for all HOTP and TOTP based tokens including SMS and
-   Email tokens. For TOTP tokens, the second OTP value must belong to the time
-   step directly after the remembered one. privacyIDEA uses at least three time
-   steps as **Auto resync timeout** for TOTP tokens. The token shows each value
-   for one time step, so the user needs up to two time steps to read both
-   values. The third time step leaves time for the requests. Day password
-   tokens are not resynchronized automatically.
+* If the second value follows, the token counter is set and the user is
+  successfully authenticated.
+
+.. note:: AutoResync works for HOTP and TOTP based tokens. SMS and Email tokens
+   are excluded, since privacyIDEA sends every value itself and their counter
+   can not fall behind. privacyIDEA uses at least three time steps as
+   **Auto resync timeout** for TOTP tokens. The token shows a new value only
+   once per time step, so a shorter timeout would not leave the user time to
+   read the next value and to send the requests. Day password and TAN tokens are
+   not resynchronized automatically.
 
 
 .. index:: usercache

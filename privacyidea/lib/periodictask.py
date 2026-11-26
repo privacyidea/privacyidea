@@ -370,7 +370,7 @@ def export_periodictask(name=None):
 
 
 @register_import('periodictask')
-def import_periodictask(data, name=None):
+def import_periodictask(data: list[dict], name: str | None = None) -> None:
     """Import periodictask configuration"""
     log.debug(f'Import periodictask config: {get_import_names(data)}')
     for res_data in data:

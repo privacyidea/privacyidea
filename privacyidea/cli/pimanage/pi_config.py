@@ -24,7 +24,7 @@ import sys
 import ast
 import inspect
 from functools import partial
-from typing import TextIO
+from typing import Any, TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
@@ -48,6 +48,8 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+from privacyidea.lib.utils.import_plan import (PlanEntry, apply_import_plan, build_import_plan, format_import_plan,
+                                               plan_has_changes)
 from privacyidea.cli.pimanage.challenge import challenge_cli
 from privacyidea.cli.pimanage.metrics import metrics_cli
 from privacyidea.cli.pimanage.remembered_device import remembered_device_cli
@@ -614,6 +616,21 @@ def _accepts_parameter(func, parameter):
     return parameter in inspect.signature(func).parameters
 
 
+def _is_interactive() -> bool:
+    """Whether a terminal is connected to stdin, so that the user can answer a question."""
+    return sys.stdin.isatty()
+
+
+def _reads_stdin(infile: Any) -> bool:
+    """Whether the import data is read from stdin (no -i or -i -)."""
+    return infile in (sys.stdin, sys.__stdin__) or getattr(infile, "name", None) in ("<stdin>", "-")
+
+
+def _plan_entry_name(typ: str, entry: PlanEntry) -> str:
+    """The quoted name of a plan entry as the plan prints it, with the handler module for event."""
+    return f'"{entry.key[0]}" ({entry.key[1]})' if typ == "event" else f'"{entry.key}"'
+
+
 @config_cli.command("import")
 @click.option('-i', '--input', "infile", type=click.File('r'),
               default=sys.stdin, show_default=False,
@@ -631,14 +648,33 @@ def _accepts_parameter(func, parameter):
               help='Skip parts of the configuration that are not valid for this '
                    'privacyIDEA version (e.g. policy actions of a removed token '
                    'type) instead of failing, and import the rest.')
+@click.option('--replace', is_flag=True, default=False,
+              help='Delete the entries of the imported types that are missing from '
+                   'the import (system settings of the type config are never deleted).')
+@click.option('--dry-run', is_flag=True, default=False,
+              help='Only print the import plan, change nothing.')
+@click.option('--interactive', is_flag=True, default=False,
+              help='Print the import plan and ask before applying it. Needs an input '
+                   'file and a terminal.')
 @click.pass_context
-def config_import(ctx, infile, types, name, skip_invalid):
+def config_import(ctx: click.Context, infile: TextIO, types: tuple[str, ...], name: str | None,
+                  skip_invalid: bool, replace: bool, dry_run: bool, interactive: bool) -> None:
     """
     Import server configuration using specific or all registered importer types.
 
+    The import is compared with this system first and the resulting plan is
+    printed: which entries are created, updated, left unchanged, deleted (with
+    --replace) or skipped. Unchanged entries are not written again.
+
     Note: Existing configuration with the same name will be overwritten, other
-    existing configurations will be kept as is.
+    existing configurations will be kept as is unless --replace is given.
     """
+    if interactive and dry_run:
+        raise click.UsageError("--interactive can not be combined with --dry-run.")
+    if interactive and (_reads_stdin(infile) or not _is_interactive()):
+        click.secho("--interactive needs an input file (-i FILE) and a terminal.", fg="red")
+        ctx.exit(1)
+
     data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
 
@@ -682,28 +718,36 @@ def config_import(ctx, infile, types, name, skip_invalid):
             click.secho("Please make sure that the imported configuration "
                         "works as expected.", fg="yellow")
 
-    # we need to go through the importer functions based on priority
-    failed_types = []
-    for typ, value in sorted(IMPORT_FUNCTIONS.items(), key=lambda x: x[1]['prio']):
-        if typ in imp_types:
-            if typ in data:
-                click.echo(f"Importing configuration type '{typ}'.")
-                # only pass 'skip_invalid' to importers that support it
-                kwargs = {"name": name}
-                supports_skip_invalid = _accepts_parameter(value['func'], "skip_invalid")
-                if supports_skip_invalid:
-                    kwargs["skip_invalid"] = skip_invalid
-                try:
-                    value['func'](data[typ], **kwargs)
-                except Exception as e:
-                    click.secho(f"Could not successfully import data of "
-                                f"type {typ}: {e!r}", fg="red")
-                    failed_types.append(typ)
-                    if supports_skip_invalid and not skip_invalid:
-                        click.secho("  Hint: some entries may use configuration "
-                                    "not available in this privacyIDEA version. "
-                                    "Re-run with '--skip-invalid' to skip them and "
-                                    "import the rest.", fg="yellow")
+    try:
+        plans = build_import_plan(data, imp_types, name=name, replace=replace, skip_invalid=skip_invalid)
+    except Exception as e:
+        click.secho(f"Could not compare the import data with this system: {e!r}", fg="red")
+        ctx.exit(1)
+
+    for line in format_import_plan(plans):
+        click.echo(line)
+
+    if dry_run:
+        click.echo("Dry run: nothing was changed.")
+        return
+
+    if interactive and plan_has_changes(plans):
+        click.confirm("Apply this import plan?", abort=True)
+
+    def on_error(typ: str, entry: PlanEntry | None, e: Exception) -> None:
+        if entry is not None:
+            click.secho(f"Could not delete {typ} {_plan_entry_name(typ, entry)}: {e}", fg="red")
+            return
+        click.secho(f"Could not successfully import data of type {typ}: {e!r}", fg="red")
+        if _accepts_parameter(IMPORT_FUNCTIONS[typ]['func'], "skip_invalid") and not skip_invalid:
+            click.secho("  Hint: some entries may use configuration "
+                        "not available in this privacyIDEA version. "
+                        "Re-run with '--skip-invalid' to skip them and "
+                        "import the rest.", fg="yellow")
+
+    failed_types = apply_import_plan(plans, name=name, skip_invalid=skip_invalid,
+                                     on_import=lambda typ: click.echo(f"Importing configuration type '{typ}'."),
+                                     on_error=on_error)
 
     if failed_types:
         click.secho(f"Import finished with errors. Failed configuration types: "

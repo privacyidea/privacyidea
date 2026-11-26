@@ -24,6 +24,7 @@ import functools
 import logging
 import traceback
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import zip_longest
 
 from sqlalchemy import select, delete
@@ -307,8 +308,10 @@ def enable_event(event_id, enable=True):
     return r
 
 
-def set_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
-              ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+def set_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+              action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+              options: dict | None = None, id: int | None = None, active: bool | None = True,
+              position: str | None = "post", abort_on_error: bool | None = None) -> int:
     """
     Set an event handling configuration. This writes an entry to the
     database eventhandler.
@@ -353,8 +356,10 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     return event_id
 
 
-def _stage_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
-                 ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+def _stage_event(name: str | None = None, event: str | list | None = None, handlermodule: str | None = None,
+                 action: str | None = None, conditions: dict | None = None, ordering: int | None = 0,
+                 options: dict | None = None, id: int | None = None, active: bool | None = True,
+                 position: str | None = "post", abort_on_error: bool | None = None) -> int:
     """
     Write the event handler like :func:`set_event`, but neither save the config timestamp nor commit, so that several
     event handlers can be written in one transaction.
@@ -489,18 +494,24 @@ def export_event(name=None):
 
 
 @register_import('event')
-def import_event(data, name=None):
+def import_event(data: list[dict], name: str | None = None, delete_ids: Iterable[int] = ()) -> None:
     """
     Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
     by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
     handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
     these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
+
+    :param delete_ids: The ids of the event handlers of this system to delete in the same transaction. The import
+        matches the imported event handlers with the remaining ones only, so if the import fails, the deleted event
+        handlers are restored as well.
     """
     log.debug(f'Import event config: {get_import_names(data)}')
+    delete_ids = set(delete_ids)
     existing = defaultdict(list)
     for handler_id, handler_name, handlermodule in db.session.execute(
             select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):
-        existing[(handler_name, handlermodule)].append(handler_id)
+        if handler_id not in delete_ids:
+            existing[(handler_name, handlermodule)].append(handler_id)
     imported = defaultdict(list)
     without_name = 0
     for res_data in data:
@@ -508,7 +519,7 @@ def import_event(data, name=None):
             continue
         res_data.pop('id', None)
         # condition is apparently not used anymore
-        del res_data["condition"]
+        res_data.pop("condition", None)
         if res_data.get('name'):
             imported[(res_data['name'], res_data.get('handlermodule'))].append(res_data)
         else:
@@ -528,6 +539,9 @@ def import_event(data, name=None):
                          else 'one handler without a name')
 
     try:
+        for handler_id in sorted(delete_ids):
+            db.session.delete(fetch_one_resource(EventHandler, id=handler_id))
+            log.info(f"Deleting event handler with id {handler_id}")
         for target_id, res_data in writes:
             rid = _stage_event(id=target_id, **res_data)
             log.info(f'Importing event "{res_data["name"]}", id: {rid}')

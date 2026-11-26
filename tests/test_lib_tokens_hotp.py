@@ -23,6 +23,7 @@ from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
 from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode
@@ -950,3 +951,43 @@ class HOTPTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(hotptoken.token.serial)
+
+    def test_30_autoresync_hooks(self):
+        # The hooks of the autoresync: the sync window looks ahead of the counter only, a counter is never used
+        # already and the timeout is the AutoResyncTimeout
+        token = init_token({"serial": "HOTPHOOKS", "otpkey": self.otpkey})
+        self.addCleanup(remove_token, "HOTPHOOKS")
+        token.set_sync_window(10)
+        hmac2otp = HmacOtp(token.token.get_otpkey(), 5, 6, token.get_hashlib(token.hashlib))
+        # counter 8 is ahead, counter 2 is behind the counter 5
+        self.assertEqual(8, token._check_sync_window(hmac2otp, "399871"))
+        self.assertEqual(-1, token._check_sync_window(hmac2otp, "359152"))
+        self.assertFalse(token._is_used_counter(0))
+        self.assertFalse(token._is_used_counter(100))
+        self.assertEqual(token.get_sync_timeout(), token.get_autoresync_timeout())
+        set_privacyidea_config("AutoResyncTimeout", 123)
+        self.addCleanup(delete_privacyidea_config, "AutoResyncTimeout")
+        self.assertEqual(123, token.get_autoresync_timeout())
+
+    def test_31_autoresync_next_counter(self):
+        # A HOTP token completes the autoresync only with the next value
+        token = init_token({"serial": "HOTPNEXT", "otpkey": self.otpkey})
+        self.addCleanup(remove_token, "HOTPNEXT")
+        self.assertTrue(token._is_next_counter(10, 11))
+        self.assertFalse(token._is_next_counter(10, 12))
+        self.assertFalse(token._is_next_counter(10, 10))
+        self.assertFalse(token._is_next_counter(10, 9))
+
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token.set_sync_window(20)
+        token.set_count_window(5)
+        hmac2otp = HmacOtp(token.token.get_otpkey(), 0, 6, token.get_hashlib(token.hashlib))
+        # counter 8 starts, counter 10 is no successor
+        self.assertEqual(-1, token.check_otp(hmac2otp.generate(8)))
+        self.assertEqual(-1, token.check_otp(hmac2otp.generate(10)))
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(0, token.token.count)
+        # counter 8 and 9 complete it
+        self.assertEqual(-1, token.check_otp(hmac2otp.generate(8)))
+        self.assertEqual(9, token.check_otp(hmac2otp.generate(9)))

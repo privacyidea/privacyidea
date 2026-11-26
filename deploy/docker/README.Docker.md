@@ -491,6 +491,48 @@ the new service are your files; an upgrade leaves them alone. Renewing the
 certificates is up to you: replace the files and run
 `docker compose exec nginx nginx -s reload`.
 
+### Remote user login behind the proxy
+
+The `remote_user` login needs a proxy that authenticates the user. gunicorn does
+not set `REMOTE_USER`, so the proxy passes the user name in a request header.
+Set the name of the header and the proxy's address in `privacyidea.env`. Caddy
+and nginx both use the fixed address `192.168.255.242`:
+
+```
+PRIVACYIDEA_PI_REMOTE_USER_HEADER=X-Forwarded-User
+PRIVACYIDEA_PI_REMOTE_USER_HEADER_PROXIES=["192.168.255.242"]
+```
+
+The proxy must authenticate the user, remove the header that the client sent
+and then set the header to the user name. `OverrideAuthorizationClient` has no
+effect on this header. If you change `PI_PROXY_ADDRESS`, update the list too.
+The privacyIDEA documentation describes both settings under *The Config File →
+REMOTE_USER from a reverse proxy*, with a `Caddyfile` that uses `forward_auth`.
+
+With nginx, authenticate the user in `location /` of `nginx.conf`, for example
+with `auth_request` and an authentication service, and set the header there:
+
+```nginx
+    location / {
+        auth_request /auth;
+        auth_request_set $authenticated_user $upstream_http_remote_user;
+        proxy_pass $pi;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-User $authenticated_user;
+    }
+```
+
+- `proxy_set_header` replaces a header of the same name that the client sent.
+  If the user name is empty, nginx does not pass the header.
+- Put the line in the same block as the other `proxy_set_header` lines. A block
+  with its own `proxy_set_header` lines does not get the lines of an outer
+  block.
+- `$upstream_http_remote_user` is the `Remote-User` header of the response of
+  the authentication service, as Authelia sends it. The `/auth` location and
+  the header name depend on the service. See its documentation.
+- With `auth_basic` instead of `auth_request`, set the header to `$remote_user`.
+
 Database or web server outside Docker
 -------------------------------------
 
