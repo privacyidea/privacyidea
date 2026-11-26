@@ -41,6 +41,12 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **Email and SMS tokens are no longer resynchronized automatically.** privacyIDEA sends every value itself and moves
+  the counter on for each, so the counter of these tokens can not fall behind. A value that matches only in the sync
+  window is now refused, and the challenge no longer asks the user to resync the token (`resync_via_multichallenge`).
+  The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
+  successful authentication.
+
 * **Policy time ranges over the end of the week or over midnight now apply.** A day range such as `Sat-Mon: 8-18`
   now applies on Saturday, Sunday and Monday. A time range such as `Fri: 22-6` now applies from Friday 22:00 to
   Saturday 06:00: the hours after midnight belong to the day on which the range starts. Before, a day range over the
