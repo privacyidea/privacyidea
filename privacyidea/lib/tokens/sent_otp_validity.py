@@ -107,6 +107,28 @@ class SentOtpValidityMixin:
             return -1
         return matched_counter
 
+    def _autosync(self, hmac2Otp, anOtpVal) -> int:
+        """
+        The autoresync does not run for tokens that send their OTP values. The server generates every value and
+        increments the counter for each, so the latest sent value is always at the start of the count window. A value
+        that matches only in the sync window is never one the server sent. The method neither reads nor writes
+        token info or auth_details.
+
+        :param hmac2Otp: The HmacOtp object of the check
+        :param anOtpVal: The OTP value that did not match in the count window
+        :return: Always -1
+        """
+        return -1
+
+    def has_pending_autoresync(self) -> bool:
+        """
+        The token never waits for the next OTP value of an autoresync, so an otp1c and dueDate left by an older
+        version do not make a challenge ask for a resync. The next matching value removes them.
+
+        :return: Always False
+        """
+        return False
+
     def _is_sent_otp_expired(self, counter: int, record: str) -> bool:
         """
         Whether the OTP value at the given counter was sent with a validity time that has passed.
