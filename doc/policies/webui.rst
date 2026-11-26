@@ -100,6 +100,11 @@ can only log in with the REMOTE_USER from the browser.
 .. note:: The policies *login_mode* and *remote_user* work independently of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
 
+Behind an HTTP reverse proxy in front of gunicorn, for example in the Docker
+image with Caddy, the web server does not set ``REMOTE_USER``. Then this policy
+has no effect, unless the proxy passes the authenticated user in a request
+header. See :ref:`picfg_remote_user_header`.
+
 You can use this policy to enable Single-Sign-On and integration into Kerberos
 or Active Directory. Using the Apache module *mod_auth_gssapi*, add the following
 template into your apache configuration
