@@ -6245,25 +6245,51 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         identifier = EventConfiguration().events[0]["options"]["webhook"]
         self.assertEqual(self.URL, get_webhook(identifier)["url"])
 
-    def test_the_import_of_an_old_export_reuses_the_migrated_webhook(self):
+    def test_the_import_of_an_old_export_keeps_the_migrated_webhook(self):
         """
-        The migration names the webhook of a handler by the same rule as the import. Without
-        accepting its marker, the import of a 3.14 export would link the handler to a new webhook
-        and leave the migrated one unused.
+        The migration names the webhook of a handler by the same rule as the import, so the import of a 3.14 export
+        links the handler to the migrated webhook. The webhook keeps the settings that an administrator gave it after
+        the upgrade: the inline options of the export only create a webhook.
         """
         import_event(self._exported())
         migrated = EventConfiguration().events[0]["options"]["webhook"]
         description = f"{MIGRATION_MARKER} - created from the inline options of WebHook event handler 1 (#5751)"
-        set_webhook(migrated, url="https://migrated.example.com/hook", description=description)
+        set_webhook(migrated, url="https://migrated.example.com/hook", description=description, timeout=5,
+                    verify_tls=False, auth_type="basic", username="siem", password="siem-password")
 
-        import_event(self._exported())
+        with self.assertLogs("privacyidea.lib.event", level="INFO") as captured:
+            import_event(self._exported())
 
         self.assertEqual(migrated, EventConfiguration().events[0]["options"]["webhook"])
         self.assertEqual(1, Webhook.query.count())
         webhook = get_webhook(migrated)
-        self.assertEqual(self.URL, webhook["url"])
+        self.assertEqual("https://migrated.example.com/hook", webhook["url"])
+        self.assertEqual(5, webhook["timeout"])
+        self.assertFalse(webhook["verify_tls"])
+        self.assertEqual("basic", webhook["auth_type"])
+        self.assertEqual("siem", webhook["username"])
+        self.assertEqual("siem-password", webhook["password"])
         # restore_snapshot() of the migration removes the webhooks by this marker.
         self.assertEqual(description, webhook["description"])
+        # The log says that the URLs differ, but names neither of them
+        kept = [line for line in captured.output if "keeps its URL" in line]
+        self.assertEqual(1, len(kept), captured.output)
+        self.assertNotIn("example.com", kept[0])
+
+    def test_a_second_import_keeps_the_webhook_of_the_first(self):
+        # The webhook that the first import created holds the endpoint, also if the second export names another URL.
+        import_event(self._exported())
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+
+        import_event(self._exported(options={"URL": "https://other.example.com/hook",
+                                             "content_type": "application/x-www-form-urlencoded"}))
+
+        self.assertEqual(identifier, EventConfiguration().events[0]["options"]["webhook"])
+        self.assertEqual(1, Webhook.query.count())
+        webhook = get_webhook(identifier)
+        self.assertEqual(self.URL, webhook["url"])
+        self.assertEqual("application/json", webhook["content_type"])
+        self.assertTrue(webhook["description"].startswith(IMPORT_MARKER))
 
     def test_a_handler_without_a_name_is_reported_and_gets_no_webhook(self):
         # The import matches the event handlers by their name, so it reports one without a name

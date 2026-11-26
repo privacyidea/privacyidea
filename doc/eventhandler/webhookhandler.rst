@@ -87,7 +87,10 @@ If enabled, the placeholders in the data are replaced.
     privacyIDEA 3.16, after which it sends nothing.
 
     Convert it before that release by selecting a webhook above. The upgrade to 3.15 does it automatically,
-    and ``pi-manage config import`` converts an export taken before 3.15 on the way in. A handler that sends
+    and ``pi-manage config import`` converts an export taken before 3.15 on the way in. If the upgrade or an
+    earlier import already created the webhook of the handler, the import links the handler to it and does not
+    change the webhook. The webhook holds the endpoint after the conversion, so a different ``URL`` in the
+    export is not used. To use it, edit the webhook. A handler that sends
     nothing as it stands -- no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded -- cannot
     be converted: the upgrade names it in the log and leaves it alone. The import plan shows it as ``skip``
     with the reason, and the import does not write it. The import writes the other event handlers. Without

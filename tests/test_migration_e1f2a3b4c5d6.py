@@ -522,11 +522,11 @@ class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
         )
         assert mirrored == MIGRATION_MARKER
 
-    def test_the_import_of_an_old_export_reuses_the_migrated_webhook(self):
+    def test_the_import_of_an_old_export_keeps_the_migrated_webhook(self):
         """
         The import names the webhook of an inline handler by the same rule as this migration. A
-        3.14 export imported after the upgrade must link the handler to the migrated webhook,
-        not to a new one next to it.
+        3.14 export imported after the upgrade links the handler to the migrated webhook, not to a
+        new one next to it, and the migrated webhook keeps its URL.
         """
         from privacyidea.lib.event import import_event
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
@@ -547,7 +547,7 @@ class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
         assert self._webhook_option(eh.id).Value == migrated
         assert Webhook.query.count() == 1
         webhook = get_webhook(migrated)
-        assert webhook["url"] == "https://siem.example.com/new"
+        assert webhook["url"] == "https://siem.example.com"
         # restore_snapshot() removes the migrated webhooks by this marker.
         assert webhook["description"].startswith(MIGRATION_MARKER)
 

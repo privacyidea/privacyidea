@@ -507,7 +507,8 @@ def _free_webhook_identifier(base, handler_id):
 
     :param base: the identifier the naming rule produces for this handler
     :param handler_id: the handler being converted, for the log message
-    :return: a free identifier, or the one of our own rows that may be reused
+    :return: a free identifier, or the identifier of a webhook that the migration or an import created for this
+        handler, which the caller links the handler to unchanged
     """
     existing = set(get_webhook_identifiers())
     candidate = base
@@ -561,7 +562,11 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
     stop sending.
 
     The caller has already ruled out the definitions that cannot be converted
-    (:func:`_inline_webhook_defect`), so this always produces a webhook.
+    (:func:`_inline_webhook_defect`), so this always links the handler to a webhook.
+
+    The inline options only create the webhook. If the migration or an earlier import already
+    created the webhook of this handler, the handler is linked to it and the webhook stays as it
+    is: it holds the endpoint now, and an administrator can change it after the upgrade.
 
     :param handler_id: the id ``_stage_event()`` gave the imported handler
     :param handler_name: the name of the imported handler
@@ -571,23 +576,23 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
     from privacyidea.lib.eventhandler.webhookeventhandler import (ContentType,
                                                                   DB_CONTENT_TYPE_MAP)
 
-    raw_content_type = options.get("content_type") or ContentType.JSON
-    content_type = DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type)
-
     base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
     identifier = _free_webhook_identifier(base, handler_id)
-    # A reused webhook keeps its description: a migrated one has to keep its marker, because
-    # restore_snapshot() of the migration removes the webhooks by that marker.
-    description = None
-    if identifier not in get_webhook_identifiers():
-        description = (f"{IMPORT_MARKER} - created from the inline options of WebHook event "
-                       f"handler {handler_id} (#5751)")
+    if identifier in get_webhook_identifiers():
+        if get_webhook(identifier).get("url") != options["URL"]:
+            # Neither URL is logged: the URL of a webhook can be the credential of the receiving service.
+            log.info(f"Imported WebHook handler {handler_id} is linked to the existing webhook {identifier!r}, "
+                     f"which keeps its URL. The URL in the imported options is a different one.")
+        return identifier
 
+    raw_content_type = options.get("content_type") or ContentType.JSON
+    content_type = DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type)
     # timeout=10 is the inline shape's fixed TIMEOUT, kept so the imported handler behaves
     # exactly as it did (a webhook created by hand defaults to 3).
     _stage_webhook(identifier,
                    url=options["URL"],
-                   description=description,
+                   description=f"{IMPORT_MARKER} - created from the inline options of WebHook event "
+                               f"handler {handler_id} (#5751)",
                    http_method="POST",
                    content_type=content_type,
                    auth_type="none",
