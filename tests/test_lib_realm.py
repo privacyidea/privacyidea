@@ -384,9 +384,9 @@ class ResolverTestCase(MyTestCase):
         delete_conditional_access_policy(restricted_id)
         delete_resolver(self.resolvername1)
 
-    def test_31_import_clears_default_of_imported_realm(self):
-        # Importing a realm with "default": false takes away its default, also without --replace, so that a
-        # repeated import of the same data leads to the same configuration.
+    def test_31_import_keeps_the_default_of_a_realm_not_marked_as_default(self):
+        # Importing a realm with "default": false keeps its default, so that the import of one realm does not leave
+        # the system without a default realm. Only "pi-manage config import --replace" removes the default.
         realm = "realm-imp-default"
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": "/etc/passwd"})
         self.addCleanup(delete_resolver, self.resolvername1)
@@ -398,6 +398,6 @@ class ResolverTestCase(MyTestCase):
         import_realms({realm: {"default": False, "resolver": [
             {"priority": None, "name": self.resolvername1, "type": "passwdresolver", "node": ""}]}})
 
-        self.assertFalse(get_default_realm(), "the imported realm is still the default realm")
-        self.assertFalse(get_realms(realm)[realm]["default"])
+        self.assertEqual(realm, get_default_realm())
+        self.assertTrue(get_realms(realm)[realm]["default"])
         self.assertEqual([self.resolvername1], [r["name"] for r in get_realms(realm)[realm]["resolver"]])

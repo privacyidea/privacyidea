@@ -25,6 +25,7 @@ import logging
 import re
 import traceback
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import zip_longest
 
 from sqlalchemy import select, delete
@@ -621,7 +622,8 @@ def inline_webhook_defect(res_data: dict) -> str | None:
 
 
 @register_import('event')
-def import_event(data: list[dict], name: str | None = None, skip_invalid: bool = False) -> None:
+def import_event(data: list[dict], name: str | None = None, skip_invalid: bool = False,
+                 delete_ids: Iterable[int] = ()) -> None:
     """
     Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
     by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
@@ -638,12 +640,17 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
         stands - no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded - is skipped. Without it
         such a definition is reported in the ConfigAdminError, the way an unimportable policy is, so that a
         configuration that cannot be restored faithfully does not look like one that was.
+    :param delete_ids: The ids of the event handlers of this system to delete in the same transaction. The import
+        matches the imported event handlers with the remaining ones only, so if the import fails, the deleted event
+        handlers are restored as well.
     """
     log.debug(f'Import event config: {get_import_names(data)}')
+    delete_ids = set(delete_ids)
     existing = defaultdict(list)
     for handler_id, handler_name, handlermodule in db.session.execute(
             select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):
-        existing[(handler_name, handlermodule)].append(handler_id)
+        if handler_id not in delete_ids:
+            existing[(handler_name, handlermodule)].append(handler_id)
     imported = defaultdict(list)
     without_name = 0
     skipped = []
@@ -653,7 +660,7 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
             continue
         res_data.pop('id', None)
         # condition is apparently not used anymore
-        del res_data["condition"]
+        res_data.pop("condition", None)
         if not res_data.get('name'):
             without_name += 1
             continue
@@ -683,6 +690,9 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
                          else 'one handler without a name')
 
     try:
+        for handler_id in sorted(delete_ids):
+            db.session.delete(fetch_one_resource(EventHandler, id=handler_id))
+            log.info(f"Deleting event handler with id {handler_id}")
         for target_id, res_data in writes:
             rid = _stage_event(id=target_id, **res_data)
             if _is_inline_webhook(res_data):
