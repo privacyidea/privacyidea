@@ -1165,7 +1165,9 @@ def fire_webhook(identifier, payload=None, config=None):
                         "error": f"blocked by the outbound request guard "
                                  f"({mode}): {rejection}"}
 
-        headers = dict(config["headers"] or {})
+        # Case-insensitive, as HTTP header names are: a configured "content-type" has to keep the
+        # setdefault() below from adding a second entry, which requests would let win.
+        headers = requests.structures.CaseInsensitiveDict(config["headers"] or {})
         body = _resolve_body(config, payload)
         if body is not None:
             # Only advertise a content type when there is something to describe.

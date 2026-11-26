@@ -187,6 +187,19 @@ class FireWebhookTestCase(MyTestCase):
         self.assertEqual(responses.calls[0].request.headers["Content-Type"],
                          "application/xml")
 
+    @responses.activate
+    def test_a_content_type_header_in_another_case_wins_too(self):
+        """HTTP header names are case-insensitive, so "content-type" is the same header."""
+        responses.add(responses.POST, URL, status=200)
+        set_webhook("hook", url=URL, content_type=ContentType.JSON,
+                    headers={"content-type": "application/cloudevents+json"})
+
+        fire_webhook("hook", payload={"a": 1})
+
+        sent = responses.calls[0].request.headers
+        self.assertEqual("application/cloudevents+json", sent["Content-Type"])
+        self.assertEqual(1, sum(1 for name in sent if name.lower() == "content-type"))
+
     # ------------------------------------------------------------------
     # TLS, proxy and timeout wiring
     # ------------------------------------------------------------------
