@@ -296,6 +296,103 @@ describe("EnrollmentFlow", () => {
     expect(options.onIncomplete).not.toHaveBeenCalled();
   });
 
+  describe("with the request that finishes a step", () => {
+    const first = response({ rollout_state: "clientwait" });
+    let finishes: boolean;
+    const toResponse = (result: EnrollmentResponse) => (finishes ? result : null);
+    let flow: EnrollmentFlow;
+    let request: Subject<EnrollmentResponse>;
+
+    beforeEach(() => {
+      finishes = true;
+      flow = startFlow(first);
+      flow.continue(first);
+      request = new Subject<EnrollmentResponse>();
+      flow.sendStepRequest(request, toResponse, "CLIENTPART");
+    });
+
+    const answer = (result: EnrollmentResponse) => {
+      request.next(result);
+      request.complete();
+    };
+
+    it("keeps the sent input while the request runs and moves on with its response", () => {
+      expect(flow.sentInput()).toBe("CLIENTPART");
+
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      expect(flow.sentInput()).toBeNull();
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not send a second request while one runs", () => {
+      const second = new Subject<EnrollmentResponse>();
+
+      flow.sendStepRequest(second, toResponse, "OTHER");
+
+      expect(second.observed).toBe(false);
+      expect(flow.sentInput()).toBe("CLIENTPART");
+    });
+
+    it("stays at the step when the response does not finish it, or the request failed", () => {
+      finishes = false;
+      request.next(response({ rollout_state: "clientwait" }));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+
+      request.error(new Error("failed"));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.sentInput()).toBeNull();
+    });
+
+    it("moves on without opening the dialog after it was closed, and the reopen shows the next step", () => {
+      flow.close();
+      answer(response({ rollout_state: "verify", verify: { message: "Enter OTP" } }));
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+      expect(flow.step()).toBe("verify");
+
+      flow.resume();
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
+    });
+
+    it("reports a token completed after the dialog was closed", () => {
+      flow.close();
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(options.onIncomplete).toHaveBeenCalledTimes(1);
+      expect(options.onCompleted).toHaveBeenCalledTimes(1);
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+
+      flow.resume();
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+    });
+
+    it("keeps the sent input for a step reopened while the request runs", () => {
+      flow.close();
+      flow.resume();
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.sentInput()).toBe("CLIENTPART");
+    });
+
+    it("ignores the response once the enrollment was reset or another one started", () => {
+      flow.reset();
+      expect(flow.sentInput()).toBeNull();
+      const next = response({ serial: "OATH0002", rollout_state: "clientwait" });
+      flow.start({ response: next, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" });
+      flow.continue(next);
+      flow.sendStepRequest(new Subject<EnrollmentResponse>(), toResponse, "NEXT");
+
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.dialogData()?.response).toBe(next);
+      expect(flow.sentInput()).toBe("NEXT");
+    });
+  });
+
   it("reads the success step when it opens", () => {
     class OtherSuccessStep extends TokenEnrollmentSuccessComponent {}
     let successStep: typeof TokenEnrollmentSuccessComponent = TokenEnrollmentSuccessComponent;

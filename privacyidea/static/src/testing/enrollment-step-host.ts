@@ -26,6 +26,8 @@ export interface MockEnrollmentStepHost {
   flow: {
     dialogData: WritableSignal<TokenEnrollmentDialogData | null>;
     finishStep: jest.Mock;
+    sendStepRequest: jest.Mock;
+    sentInput: WritableSignal<string | null>;
     close: jest.Mock;
     firstStep: EnrollmentFirstStep | null;
     reopened: boolean;
@@ -37,11 +39,13 @@ export interface MockEnrollmentStepHost {
 // A stand-in for the enrollment dialog, so a step can be tested on its own with the given enrollment data.
 export function mockEnrollmentStepHost(
   data: unknown,
-  state: { firstStep?: EnrollmentFirstStep; reopened?: boolean } = {}
+  state: { firstStep?: EnrollmentFirstStep; reopened?: boolean; sentInput?: string } = {}
 ): MockEnrollmentStepHost {
   const flow = {
     dialogData: signal(data as TokenEnrollmentDialogData | null),
     finishStep: jest.fn(),
+    sendStepRequest: jest.fn(),
+    sentInput: signal<string | null>(state.sentInput ?? null),
     close: jest.fn(),
     stepFinished: NEVER,
     firstStep: state.firstStep ?? null,

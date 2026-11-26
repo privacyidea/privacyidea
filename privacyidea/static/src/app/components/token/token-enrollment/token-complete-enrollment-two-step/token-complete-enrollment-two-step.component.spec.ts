@@ -27,7 +27,7 @@ import { axe } from "@testing/axe";
 import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollment-step-host";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of, Subject } from "rxjs";
+import { Subject } from "rxjs";
 import { TokenCompleteEnrollmentTwoStepComponent } from "./token-complete-enrollment-two-step.component";
 
 describe("TokenCompleteEnrollmentTwoStepComponent", () => {
@@ -37,14 +37,14 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
   let host: MockEnrollmentStepHost;
 
   const dialogData = {
-    response: { detail: { serial: "123" }, type: "hotp" },
+    response: { detail: { serial: "123", "2step_output": 20 }, type: "hotp" },
     enrollParameters: { data: { type: "hotp", twoStepInit: true } },
     onEnrollmentResponseChange: jest.fn()
   };
 
-  const setup = async (data: unknown = dialogData) => {
+  const setup = async (data: unknown = dialogData, state: { sentInput?: string } = {}) => {
     TestBed.resetTestingModule();
-    host = mockEnrollmentStepHost(data);
+    host = mockEnrollmentStepHost(data, state);
     await TestBed.configureTestingModule({
       imports: [TokenCompleteEnrollmentTwoStepComponent],
       providers: [
@@ -113,83 +113,82 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
     expect(component.actions().map((action) => action.value)).toEqual(["enroll"]);
   });
 
-  it("reports the completed enrollment to the flow", () => {
+  describe("on Enroll", () => {
     const completed = {
       type: "hotp",
-      detail: { type: "hotp", serial: "X", rollout_state: "enrolled" },
-      result: { status: true }
-    } as EnrollmentResponse;
-    mockTokenService.enrollToken = jest.fn().mockReturnValue(of(completed));
-    component.clientPart.set("SOMEKEY");
-    component.onAction("enroll");
-    expect(mockTokenService.enrollToken).toHaveBeenCalled();
-    expect(host.flow.finishStep).toHaveBeenCalledWith(completed);
-  });
-
-  it("does not finish the step while the rollout state is client_wait", () => {
-    mockTokenService.enrollToken = jest.fn().mockReturnValue(
-      of({
-        type: "hotp",
-        detail: { type: "hotp", serial: "X", rollout_state: "client_wait" },
-        result: { status: true }
-      } as EnrollmentResponse)
-    );
-    component.clientPart.set("SOMEKEY");
-    component.onAction("enroll");
-    expect(mockTokenService.enrollToken).toHaveBeenCalled();
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
-  });
-
-  describe("while the request runs", () => {
-    const completed = {
       detail: { type: "hotp", serial: "123", rollout_state: "enrolled" },
       result: { status: true }
     } as EnrollmentResponse;
     let request: Subject<EnrollmentResponse>;
+    let toResult: (response: EnrollmentResponse) => EnrollmentResponse | null;
 
     beforeEach(() => {
       request = new Subject<EnrollmentResponse>();
       mockTokenService.enrollToken = jest.fn().mockReturnValue(request);
       component.clientPart.set("SOMEKEY");
       component.onAction("enroll");
+      toResult = host.flow.sendStepRequest.mock.calls[0][1];
     });
 
-    it("sends the client part only once and disables Enroll", () => {
-      component.onAction("enroll");
-
-      expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(1);
-      expect(component.actions()[0].disabled).toBe(true);
+    it("lets the flow send the client part, without twoStepInit", () => {
+      expect(mockTokenService.enrollToken).toHaveBeenCalledWith({
+        data: {
+          type: "hotp",
+          serial: "123",
+          otpKey: "SOMEKEY",
+          otpKeyFormat: "base32check",
+          generateOnServer: false
+        }
+      });
+      expect(host.flow.sendStepRequest).toHaveBeenCalledWith(request, expect.any(Function), "SOMEKEY");
     });
 
-    it("enables Enroll again once the request failed", () => {
-      request.error(new Error("failed"));
-
-      expect(component.actions()[0].disabled).toBe(false);
-      component.onAction("enroll");
-      expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(2);
+    it("leaves the enrollment parameters unchanged for Regenerate QR Code", () => {
+      expect(dialogData.enrollParameters.data).toEqual({ type: "hotp", twoStepInit: true });
     });
 
-    it("ignores a response that arrives after the step was left", () => {
-      fixture.destroy();
-      request.next(completed);
+    it("finishes the step with the completed enrollment", () => {
+      expect(toResult(completed)).toBe(completed);
+    });
 
-      expect(host.flow.finishStep).not.toHaveBeenCalled();
+    it("does not finish the step while the rollout state is client_wait", () => {
+      const waiting = { ...completed, detail: { ...completed.detail, rollout_state: "client_wait" } };
+
+      expect(toResult(waiting as EnrollmentResponse)).toBeNull();
     });
   });
 
-  it("should remove twoStepInit from enrollParameters.data when enrolling", () => {
-    component.clientPart.set("SOMEKEY");
-    fixture.detectChanges();
-    jest.spyOn(component["tokenService"], "enrollToken").mockImplementation((params) => {
-      expect(params.data.type).toEqual("hotp");
-      expect(params.data["twoStepInit"]).toBeUndefined();
-      return of({
-        result: { status: true },
-        detail: { rollout_state: "enrolled", type: "hotp", serial: "123" },
-        type: "hotp"
-      });
+  describe("while the flow sends the client part", () => {
+    beforeEach(() => {
+      host.flow.sentInput.set("SOMEKEY");
+      fixture.detectChanges();
     });
-    component.onAction("enroll");
+
+    it("disables Enroll and does not send it again", () => {
+      component.onAction("enroll");
+
+      expect(component.actions()[0].disabled).toBe(true);
+      expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
+    });
+
+    it("enables Enroll and the input again once the request ended", () => {
+      component.clientPart.set("SOMEKEY");
+      host.flow.sentInput.set(null);
+      fixture.detectChanges();
+
+      expect(component.actions()[0].disabled).toBe(false);
+      expect(fixture.nativeElement.querySelector("input").readOnly).toBe(false);
+    });
+  });
+
+  it("shows the sent client part read-only when it is reopened while the request runs", async () => {
+    await setup(dialogData, { sentInput: "SOMEKEY" });
+    await fixture.whenStable();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector("input");
+    expect(input.value).toBe("SOMEKEY");
+    expect(input.readOnly).toBe(true);
+    expect(component.actions()[0].disabled).toBe(true);
   });
 
   it("passes the axe accessibility checks", async () => {
