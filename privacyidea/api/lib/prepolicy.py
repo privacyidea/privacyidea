@@ -730,16 +730,16 @@ def check_application_tokentype(request=None, action=None):
     return True
 
 
-def get_sms_gateways(user_object: User) -> list[str]:
+def get_sms_gateways(user: User) -> list[str]:
     """
     Returns the sms gateway identifiers the admin or user may set for the given user according to the policy
     scope=SCOPE.ADMIN or scope=SCOPE.USER, action=SMSACTION.GATEWAYS. An empty list means no restriction.
 
-    :param user_object: The user the token is enrolled for
+    :param user: The user the token is enrolled for
     :return: list of gateway identifiers
     """
     from privacyidea.lib.tokens.smstoken import SMSAction
-    return list(Match.admin_or_user(g, action=SMSAction.GATEWAYS, user_obj=user_object).action_values(unique=False))
+    return list(Match.admin_or_user(g, action=SMSAction.GATEWAYS, user_obj=user).action_values(unique=False))
 
 
 def sms_identifiers(request=None, action=None):
@@ -1004,14 +1004,14 @@ def init_subject_components(request=None, action=None):
             request.all_data["subject_components"] = list(subject_pols)
 
 
-def get_twostep_setting(params: dict, user_object: User) -> str | None:
+def get_twostep_setting(params: dict, user: User) -> str | None:
     """
     Returns the value of the ``<type>_2step`` policy that matches the enrollment described by the request
     parameters. The policies are matched for the given user, the token type is taken from the token if ``serial``
     names an existing token, otherwise from ``type`` (default ``hotp``).
 
     :param params: The request parameters
-    :param user_object: The user the policies are matched for
+    :param user: The user the policies are matched for
     :return: "allow", "force" or None if no policy matches
     :raises PolicyError: if the policy value is unknown
     """
@@ -1020,7 +1020,7 @@ def get_twostep_setting(params: dict, user_object: User) -> str | None:
     if token:
         token_type = token.get_tokentype()
     action = f"{token_type.lower()}_2step"
-    twostep_enabled_pols = Match.admin_or_user(g, action=action, user_obj=user_object).action_values(unique=True)
+    twostep_enabled_pols = Match.admin_or_user(g, action=action, user_obj=user).action_values(unique=True)
     if not twostep_enabled_pols:
         return None
     enabled_setting = list(twostep_enabled_pols)[0]
@@ -1034,9 +1034,9 @@ def _get_single_token(serial: str | None) -> TokenClass | None:
     Returns the token with the given serial if exactly one exists, otherwise None.
     """
     if serial:
-        tokensobject_list = get_tokens(serial=serial)
-        if len(tokensobject_list) == 1:
-            return tokensobject_list[0]
+        tokens = get_tokens(serial=serial)
+        if len(tokens) == 1:
+            return tokens[0]
     return None
 
 
@@ -2212,13 +2212,13 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
     return True
 
 
-def get_force_server_generate(token_type: str, user_object: User) -> bool:
+def get_force_server_generate(token_type: str, user: User) -> bool:
     """
     Returns whether a ``<type>_force_server_generate`` policy forces the server to generate the key for the
     given token type and user.
 
     :param token_type: The token type
-    :param user_object: The user the token is enrolled for
+    :param user: The user the token is enrolled for
     :return: True if the server has to generate the key
     """
     action = f"{token_type.lower()}_{PolicyAction.FORCE_SERVER_GENERATE}"
@@ -2226,7 +2226,7 @@ def get_force_server_generate(token_type: str, user_object: User) -> bool:
     # the key if a policy explicitly says so. Use enforced()/any() rather than the
     # fail-open allowed(), which would force key generation on any system that has
     # no admin/user policies defined at all.
-    return Match.admin_or_user(g, action=action, user_obj=user_object).enforced()
+    return Match.admin_or_user(g, action=action, user_obj=user).enforced()
 
 
 def force_server_generate_key(request: Request, action=None):
@@ -3094,14 +3094,14 @@ def increase_failcounter_on_challenge(request=None, action=None):
     request.all_data["increase_failcounter_on_challenge"] = inc_fail_counter
 
 
-def is_description_required(params: dict, user_object: User) -> bool:
+def is_description_required(params: dict, user: User) -> bool:
     """
     Returns whether a policy scope=SCOPE.ENROLL, action=REQUIRE_DESCRIPTION requires a description for the
     enrollment described by the request parameters. It is not required for the second step of an enrollment of
     a token that already exists in the rollout state verify or clientwait.
 
     :param params: The request parameters
-    :param user_object: The user the token is enrolled for
+    :param user: The user the token is enrolled for
     :return: True if a description is required
     """
     (role, username, realm, admin_user, admin_realm) = determine_logged_in_userparams(g.logged_in_user, params)
@@ -3111,7 +3111,7 @@ def is_description_required(params: dict, user_object: User) -> bool:
                                   adminuser=admin_user,
                                   user=username,
                                   realm=realm,
-                                  user_object=user_object).action_values(unique=False)
+                                  user_object=user).action_values(unique=False)
     # Token types are stored in lower case, so both the request and the policy are compared in lower case
     token_types = [token_type.lower() for token_type in action_values.keys()]
     type_value = (params.get("type") or 'hotp').lower()
