@@ -120,3 +120,10 @@ export function presetOrChoice<T>(
 export function samePreset<T>(a: FieldPreset<T>, b: FieldPreset<T>): boolean {
   return a.value === b.value && a.locked === b.locked;
 }
+
+/** Compares two lists as sets, so that the same entries in another order do not count as a change. */
+export function sameEntries<T>(a: readonly T[], b: readonly T[]): boolean {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  return setA.size === setB.size && [...setA].every((entry) => setB.has(entry));
+}

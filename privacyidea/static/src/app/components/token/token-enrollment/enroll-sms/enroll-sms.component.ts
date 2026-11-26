@@ -30,7 +30,7 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
-import { loadedEnrollmentPolicies } from "@components/token/token-enrollment/enrollment-policy-values";
+import { loadedEnrollmentPolicies, sameEntries } from "@components/token/token-enrollment/enrollment-policy-values";
 import { SMS_GATEWAY } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -80,8 +80,10 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
   disabled = input<boolean>(false);
   enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
+  // Equal lists keep the picked gateway when the policies reload, for example after the user was selected.
   private readonly policyGateways = computed(
-    () => loadedEnrollmentPolicies(this.enrollmentPolicies())?.sms_gateways ?? []
+    () => loadedEnrollmentPolicies(this.enrollmentPolicies())?.sms_gateways ?? [],
+    { equal: sameEntries }
   );
   private readonly defaultGatewayId = computed<string | undefined>(() =>
     this.systemService.systemConfigResource.hasValue()

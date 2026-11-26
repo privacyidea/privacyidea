@@ -1381,11 +1381,6 @@ value.
 
 .. versionadded:: 3.9 ``daypassword_hashlib``
 
-If an administrator enrolls a token without a user and realm-specific policies of the same priority define
-different values, the enrollment fails with the policy error "There are policies with conflicting actions".
-The current WebUI shows this message before the enrollment and disables *Enroll*.
-Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
-
 .. _admin_policy_otplen:
 
 hotp_otplen, totp_otplen and daypassword_otplen
@@ -1400,11 +1395,6 @@ Possible values are *6* or *8*, default is *6*.
 .. versionadded:: 3.2 ``hotp_otplen`` and ``totp_otplen``
 
 .. versionadded:: 3.9 ``daypassword_otplen``
-
-If an administrator enrolls a token without a user and realm-specific policies of the same priority define
-different values, the enrollment fails with the policy error "There are policies with conflicting actions".
-The current WebUI shows this message before the enrollment and disables *Enroll*.
-Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
 
 .. _admin_policy_force-server-generate:
 
@@ -1438,11 +1428,6 @@ The WebUI presets its form with that value.
 
 .. versionadded:: 3.2
 
-If an administrator enrolls a token without a user and realm-specific policies of the same priority define
-different values, the enrollment fails with the policy error "There are policies with conflicting actions".
-The current WebUI shows this message before the enrollment and disables *Enroll*.
-Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
-
 .. _admin_policy_daypassword_timestep:
 
 daypassword_timestep
@@ -1454,11 +1439,6 @@ Enforce the time step of the DayPassword token, for example ``24h``. The value i
 of the units *y*, *d*, *h*, *m* or *s*.
 
 .. versionadded:: 3.9
-
-If an administrator enrolls a token without a user and realm-specific policies of the same priority define
-different values, the enrollment fails with the policy error "There are policies with conflicting actions".
-The current WebUI shows this message before the enrollment and disables *Enroll*.
-Select a user or a realm, or give the policies different priorities (see :ref:`policies`).
 
 .. _policy_system_documentation:
 

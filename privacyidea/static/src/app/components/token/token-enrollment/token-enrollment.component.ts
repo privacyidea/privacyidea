@@ -28,6 +28,7 @@ import {
   OnDestroy,
   OnInit,
   signal,
+  untracked,
   viewChild,
   WritableSignal
 } from "@angular/core";
@@ -88,9 +89,10 @@ import {
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { Debouncer } from "@utils/debounce.utils";
 import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
-import { firstValueFrom, lastValueFrom, Observable, of, Subject, switchMap, tap } from "rxjs";
+import { firstValueFrom, lastValueFrom, merge, Observable, of, Subject, switchMap, tap } from "rxjs";
 import { EnrollmentPoliciesLoad, enrollmentPolicyState, loadEnrollmentPolicies } from "./enrollment-policy-values";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import {
@@ -223,6 +225,19 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false
   }));
 
+  /**
+   * The username the policy target is built from. A typed name is applied after the debounce delay, so that
+   * not every keystroke requests the policies. A user found in the user list and a cleared user apply at once.
+   */
+  private readonly policyUsername = signal("");
+  private readonly policyUsernameDebouncer = new Debouncer(this.policyUsername);
+  private readonly selectedUsername = computed(() => this.userService.selectedUser()?.username ?? "");
+  /** True while the typed name is not yet part of the policy target, the policies are then outdated. */
+  private readonly policyUsernamePending = computed(() => this.selectedUsername() !== this.policyUsername());
+  /** Emits when the typed name was applied, so an Enroll clicked meanwhile can re-check the policy request. */
+  private readonly policyUsernameApplied = new Subject<void>();
+  private lastRequestedTarget: EnrollmentPolicyTarget | undefined;
+
   /** The target the enrollment policies are evaluated for, as POST /token/init would see it. */
   readonly enrollmentTarget = computed<EnrollmentPolicyTarget | undefined>(
     () => {
@@ -231,11 +246,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         return undefined;
       }
       const owner = this.enrollmentOwner();
+      const user = this.policyUsername();
       const serial = this.serial();
       return {
         type,
-        ...(owner.user && !owner.onlyAddToRealm && { user: owner.user }),
-        ...(owner.realm && (owner.user || owner.onlyAddToRealm) && { realm: owner.realm }),
+        ...(user && !owner.onlyAddToRealm && { user }),
+        ...(owner.realm && (user || owner.onlyAddToRealm) && { realm: owner.realm }),
         ...(serial && { serial })
       };
     },
@@ -250,6 +266,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private readonly enrollmentPoliciesLoad = toSignal(
     toObservable(this.enrollmentTarget).pipe(
       switchMap((target): Observable<EnrollmentPoliciesLoad> => {
+        this.lastRequestedTarget = target;
         if (!target) {
           return of({ status: "idle" });
         }
@@ -268,7 +285,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     { initialValue: { status: "idle" } as EnrollmentPoliciesLoad }
   );
 
-  readonly enrollmentPoliciesLoading = computed(() => this.enrollmentPoliciesLoad().status === "loading");
+  readonly enrollmentPoliciesLoading = computed(
+    () => this.enrollmentPoliciesLoad().status === "loading" || this.policyUsernamePending()
+  );
 
   /** The server message when the enrollment policies cannot be determined for the target, else null. */
   readonly enrollmentPoliciesError = computed<string | null>(() => {
@@ -402,6 +421,23 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     effect(() => {
       this.containerService.selectedContainerSerial.set(this.selectedContainer());
     });
+    effect(() => {
+      const username = this.selectedUsername();
+      untracked(() => {
+        if (username === this.policyUsername()) {
+          this.policyUsernameDebouncer.cancel();
+        } else if (!username || this.userService.users().some((user) => user.username === username)) {
+          this.policyUsernameDebouncer.set(username);
+        } else {
+          this.policyUsernameDebouncer.schedule(username);
+        }
+      });
+    });
+    effect(() => {
+      if (!this.policyUsernamePending()) {
+        this.policyUsernameApplied.next();
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -507,8 +543,15 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   async enrollToken(): Promise<boolean> {
     // Never enroll with the policies of the previous target: wait for the ones of the current target.
-    while (this.enrollmentPoliciesLoading()) {
-      await firstValueFrom(this.policiesSettled);
+    // A typed name that was just applied has its request started after the next change detection.
+    let waitedForTypedName = false;
+    while (true) {
+      waitedForTypedName ||= this.policyUsernamePending();
+      const requested = JSON.stringify(this.lastRequestedTarget) === JSON.stringify(this.enrollmentTarget());
+      if (!this.enrollmentPoliciesLoading() && (requested || !waitedForTypedName)) {
+        break;
+      }
+      await firstValueFrom(merge(this.policiesSettled, this.policyUsernameApplied));
     }
     const currentTokenType = this.tokenService.selectedTokenType();
     if (!currentTokenType) {

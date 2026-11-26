@@ -75,18 +75,18 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
                                            tantoken_count,
-                                           twostep_enrollment_activation,
+                                           init_twostep_activation,
                                            twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config,
+                                           check_sms_gateway, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description_on_edit, require_description,
+                                           init_subject_components, require_description_on_edit, check_required_description,
                                            check_container_action, check_user_params,
                                            resolver_realm_access,
-                                           force_server_generate_key,
+                                           init_force_server_generate,
                                            get_twostep_setting, get_force_server_generate,
                                            get_sms_gateways, is_description_required)
 from privacyidea.lib.config import get_token_class
@@ -169,14 +169,14 @@ overall policy concept.
 @token_blueprint.route('/init', methods=['POST'])
 @prepolicy(check_token_init, request)
 @prepolicy(check_max_token_realm, request)
-@prepolicy(require_description, request)
+@prepolicy(check_required_description, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_ca_connector, request)
 @prepolicy(init_ca_template, request)
 @prepolicy(init_subject_components, request)
 @prepolicy(enroll_pin, request)
-@prepolicy(twostep_enrollment_activation, request)
+@prepolicy(init_twostep_activation, request)
 @prepolicy(twostep_enrollment_parameters, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
@@ -185,7 +185,7 @@ overall policy concept.
 @prepolicy(init_token_defaults, request)
 @prepolicy(init_token_length_contents, request)
 @prepolicy(papertoken_count, request)
-@prepolicy(sms_identifiers, request)
+@prepolicy(check_sms_gateway, request)
 @prepolicy(tantoken_count, request)
 @prepolicy(pushtoken_add_config, request)
 @prepolicy(indexedsecret_force_attribute, request)
@@ -194,7 +194,7 @@ overall policy concept.
 @prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
-@prepolicy(force_server_generate_key, request)
+@prepolicy(init_force_server_generate, request)
 @postpolicy(remove_new_token_on_error(save_pin_change), request)
 @event("token_init", request, g)
 @postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
@@ -484,7 +484,7 @@ def get_enrollment_policies_api():
     default_settings = token_class.get_default_settings(g, params)
     defaults = {key: value for key, value in default_settings.items() if key in ENROLLMENT_DEFAULT_KEYS}
     result = {"defaults": defaults,
-              "2step": get_twostep_setting(params, request.User),
+              "2step": get_twostep_setting(token_type, request.User),
               "force_server_generate": get_force_server_generate(token_type, request.User),
               "sms_gateways": get_sms_gateways(request.User),
               "require_description": is_description_required(params, request.User)}

@@ -787,14 +787,14 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
-    from privacyidea.api.lib.prepolicy import (check_max_token_realm, sms_identifiers,
+    from privacyidea.api.lib.prepolicy import (check_max_token_realm, check_sms_gateway,
                                                indexedsecret_force_attribute, pushtoken_add_config,
                                                tantoken_count, papertoken_count, init_token_length_contents,
                                                init_token_defaults, check_external, check_otp_pin, encrypt_pin,
                                                init_random_pin, twostep_enrollment_parameters,
-                                               twostep_enrollment_activation, enroll_pin,
+                                               init_twostep_activation, enroll_pin,
                                                init_tokenlabel, check_token_init, check_max_token_user,
-                                               require_description, force_server_generate_key)
+                                               check_required_description, init_force_server_generate)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
     try:
@@ -842,11 +842,11 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             try:
                 check_token_init(request, None)
                 check_max_token_realm(request, None)
-                require_description(request, None)
+                check_required_description(request, None)
                 check_max_token_user(request, None)
                 init_tokenlabel(request, None)
                 enroll_pin(request, None)
-                twostep_enrollment_activation(request, None)
+                init_twostep_activation(request, None)
                 twostep_enrollment_parameters(request, None)
                 init_random_pin(request, None)
                 encrypt_pin(request, None)
@@ -855,11 +855,11 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 init_token_defaults(request, None)
                 init_token_length_contents(request, None)
                 papertoken_count(request, None)
-                sms_identifiers(request, None)
+                check_sms_gateway(request, None)
                 tantoken_count(request, None)
                 pushtoken_add_config(request, None)
                 indexedsecret_force_attribute(request, None)
-                force_server_generate_key(request, None)
+                init_force_server_generate(request, None)
             except Exception as ex:
                 log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
                 _report_token_not_created(tokens_not_created, token_info, None, ex)

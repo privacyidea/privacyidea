@@ -120,9 +120,7 @@ describe("EnrollSmsComponent", () => {
 
     it("should fall back to smsGateways service when no policy list applies", () => {
       fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
-      (smsGatewayServiceMock as unknown as { smsGateways: WritableSignal<SmsGateway[]> }).smsGateways = signal<
-        SmsGateway[]
-      >([
+      smsGatewayServiceMock.smsGateways.set([
         { name: "service-gw1", providermodule: "m", options: {}, headers: {} },
         { name: "service-gw2", providermodule: "m", options: {}, headers: {} }
       ]);
@@ -172,6 +170,37 @@ describe("EnrollSmsComponent", () => {
 
     expect(component.smsGatewayOptions()).toEqual(["gw0", "gw1", "gw2"]);
     expect(component.smsGatewayForm().disabled()).toBe(false);
+  });
+
+  describe("gateway pick across policy reloads", () => {
+    function loadWith(gateways: string[]) {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: gateways }));
+      fixture.detectChanges();
+      TestBed.tick();
+    }
+
+    beforeEach(() => {
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({ "sms.identifier": "gw0" })
+      );
+      loadWith(["gw0", "gw1", "gw2"]);
+      component.smsGateway.set("gw2");
+    });
+
+    it("keeps the pick when the policies reload with the same gateways", () => {
+      loadWith(["gw0", "gw1", "gw2"]);
+      expect(component.smsGateway()).toBe("gw2");
+    });
+
+    it("keeps the pick when the policies reload with the gateways in another order", () => {
+      loadWith(["gw2", "gw0", "gw1"]);
+      expect(component.smsGateway()).toBe("gw2");
+    });
+
+    it("resets the pick to the default when the allowed gateways change", () => {
+      loadWith(["gw0", "gw1"]);
+      expect(component.smsGateway()).toBe("gw0");
+    });
   });
 
   describe("defaultSMSGatewayIsSet", () => {

@@ -874,6 +874,74 @@ describe("TokenEnrollmentComponent", () => {
     });
   });
 
+  describe("policy target of a typed user", () => {
+    const DELAY = 300;
+    const targetUsers = () => tokenService.getEnrollmentPolicies.mock.calls.map((call) => call[0].user);
+    const type = (name: string) => {
+      userService.selectedUser.set({ username: name } as unknown as UserData);
+      TestBed.tick();
+    };
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      TestBed.tick();
+      tokenService.getEnrollmentPolicies.mockClear();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("sends one policy request after five keystrokes of an unknown name", () => {
+      for (const name of ["a", "al", "ali", "alic", "alice"]) {
+        type(name);
+        jest.advanceTimersByTime(DELAY - 100);
+        TestBed.tick();
+      }
+      expect(tokenService.getEnrollmentPolicies).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(DELAY);
+      TestBed.tick();
+
+      expect(targetUsers()).toEqual(["alice"]);
+    });
+
+    it("requests the policies of a user known to the user service at once", () => {
+      userService.users.set([{ username: "bob" } as unknown as UserData]);
+      type("bob");
+
+      expect(targetUsers()).toEqual(["bob"]);
+    });
+
+    it("lets an Enroll click wait for the policies of the typed name", async () => {
+      installStrategy(component, {
+        buildEnrollmentArgs: jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        })
+      });
+      tokenService.enrollToken.mockReturnValue(
+        of({ result: { status: true }, detail: { serial: "TOTP1", googleurl: { img: "", value: "" } } })
+      );
+      type("carol");
+
+      const enrolling = component.enrollToken();
+      await Promise.resolve();
+      expect(tokenService.enrollToken).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(DELAY);
+      TestBed.tick();
+      await enrolling;
+
+      expect(targetUsers()).toEqual(["carol"]);
+      expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+      expect(tokenService.getEnrollmentPolicies.mock.invocationCallOrder[0]).toBeLessThan(
+        tokenService.enrollToken.mock.invocationCallOrder[0]
+      );
+    });
+  });
+
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
       (component as unknown as TokenEnrollmentComponentInternals).openLastStepDialog(null);
@@ -1369,6 +1437,8 @@ describe("TokenEnrollmentComponent", () => {
           )
         );
         userService.selectedUserRealm.set(realm);
+        // A user of the user list is applied to the policy target without the typing delay.
+        userService.users.set([{ username: "wizard-user" } as unknown as UserData]);
         userService.selectedUser.set({ username: "wizard-user" } as unknown as UserData);
       };
 
@@ -1490,7 +1560,12 @@ describe("TokenEnrollmentComponent", () => {
       sms_gateways: [],
       require_description: false
     };
-    const asUser = (username: string): UserData => ({ username }) as unknown as UserData;
+    // A user of the user list is applied to the policy target without the typing delay.
+    const asUser = (username: string): UserData => {
+      const user = { username } as unknown as UserData;
+      userService.users.update((users) => [...users, user]);
+      return user;
+    };
 
     it("enrollment policies follow the selected target", () => {
       userService.selectedUserRealm.set("realm1");

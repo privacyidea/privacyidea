@@ -742,12 +742,13 @@ def get_sms_gateways(user: User) -> list[str]:
     return list(Match.admin_or_user(g, action=SMSAction.GATEWAYS, user_obj=user).action_values(unique=False))
 
 
-def sms_identifiers(request=None, action=None):
+def check_sms_gateway(request=None, action=None):
     """
     This is a token specific wrapper for sms tokens
     to be used with the endpoint /token/init.
     According to the policy scope=SCOPE.ADMIN or scope=SCOPE.USER
     action=SMSACTION.GATEWAYS the sms.identifier is only allowed to be set to the listed gateways.
+    The allowed gateways are evaluated by :func:`get_sms_gateways`, which GET /token/init/policies uses as well.
 
     :param request:
     :param action:
@@ -1004,21 +1005,17 @@ def init_subject_components(request=None, action=None):
             request.all_data["subject_components"] = list(subject_pols)
 
 
-def get_twostep_setting(params: dict, user: User) -> str | None:
+def get_twostep_setting(token_type: str, user: User) -> str | None:
     """
-    Returns the value of the ``<type>_2step`` policy that matches the enrollment described by the request
-    parameters. The policies are matched for the given user, the token type is taken from the token if ``serial``
-    names an existing token, otherwise from ``type`` (default ``hotp``).
+    Returns the value of the ``<type>_2step`` policy for the given token type. The policies are matched for the
+    given user.
 
-    :param params: The request parameters
+    :param token_type: The type of the token to enroll. It is the type that :func:`check_token_init` sets in the
+        request data, which is the type of the existing token if the request names one.
     :param user: The user the policies are matched for
     :return: "allow", "force" or None if no policy matches
     :raises PolicyError: if the policy value is unknown
     """
-    token_type = get_optional(params, "type", default="hotp")
-    token = _get_single_token(get_optional(params, "serial"))
-    if token:
-        token_type = token.get_tokentype()
     action = f"{token_type.lower()}_2step"
     twostep_enabled_pols = Match.admin_or_user(g, action=action, user_obj=user).action_values(unique=True)
     if not twostep_enabled_pols:
@@ -1040,7 +1037,7 @@ def _get_single_token(serial: str | None) -> TokenClass | None:
     return None
 
 
-def twostep_enrollment_activation(request=None, action=None):
+def init_twostep_activation(request=None, action=None):
     """
     This policy function enables the two-step enrollment process according
     to the configured policies.
@@ -1054,11 +1051,12 @@ def twostep_enrollment_activation(request=None, action=None):
 
     The policies are matched for ``request.User``: for a request that names only the serial of a token, this is the
     owner of the token.
+    The policy value is evaluated by :func:`get_twostep_setting`, which GET /token/init/policies uses as well.
     """
     token = _get_single_token(get_optional(request.all_data, "serial"))
     # The policy's user attribute is matched against the user the token is enrolled for.
     # Tokentypes have separate twostep actions
-    enabled_setting = get_twostep_setting(request.all_data, request.User)
+    enabled_setting = get_twostep_setting(request.all_data["type"], request.User)
     if enabled_setting == "allow":
         # The user is allowed to pass 2stepinit=1
         pass
@@ -2229,9 +2227,10 @@ def get_force_server_generate(token_type: str, user: User) -> bool:
     return Match.admin_or_user(g, action=action, user_obj=user).enforced()
 
 
-def force_server_generate_key(request: Request, action=None):
+def init_force_server_generate(request: Request, action=None):
     """
     Checks if for the given token type a policy to force the server to generate the key is set.
+    The policy value is evaluated by :func:`get_force_server_generate`, which GET /token/init/policies uses as well.
 
     :param request:
     :param action:
@@ -3126,7 +3125,7 @@ def is_description_required(params: dict, user: User) -> bool:
     return True
 
 
-def require_description(request=None, action=None):
+def check_required_description(request=None, action=None):
     """
     Pre Policy
     This checks if a description is required to roll out a specific token.
@@ -3135,6 +3134,7 @@ def require_description(request=None, action=None):
     An exception is raised, if the tokentypes specified in the
     REQUIRE_DESCRIPTION policy match the token to be rolled out,
     but no description is given.
+    The policy value is evaluated by :func:`is_description_required`, which GET /token/init/policies uses as well.
 
     :param request:
     :param action:
