@@ -323,7 +323,7 @@ class WebhookAPITestCase(MyApiTestCase):
         self.assertIn("rename.header.B", response.json["result"]["error"]["message"])
         self.assertEqual({"A": "1"}, get_webhook("hook1")["headers"])
 
-    def test_19h_a_rename_to_a_header_that_is_also_sent_is_refused(self):
+    def test_19h_a_rename_onto_a_header_that_keeps_its_name_is_refused(self):
         # Two rows would claim one name, and which value survived would be an accident.
         self._create("hook1", **{"header.A": "1", "header.B": "2"})
 
@@ -333,6 +333,34 @@ class WebhookAPITestCase(MyApiTestCase):
 
         self.assertEqual(400, response.status_code, response.data)
         self.assertEqual({"A": "1", "B": "2"}, get_webhook("hook1")["headers"])
+
+    def test_19h2_the_editor_may_swap_two_header_names(self):
+        # The editor sends a rename for every renamed row, so a swap names each old name twice.
+        self._create("hook1", **{"header.A": "s3cr3t", "header.B": "plain",
+                                 "secret.header.A": "1", "secret.header.B": "0"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"header.B": CENSORED, "header.A": "plain",
+                                  "secret.header.B": "1", "secret.header.A": "0",
+                                  "rename.header.B": "A", "rename.header.A": "B"})
+
+        self.assertEqual(200, response.status_code, response.data)
+        stored = get_webhook("hook1")
+        self.assertEqual({"A": "plain", "B": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["B"], stored["secret_headers"])
+
+    def test_19h3_a_new_header_may_take_the_old_name_of_a_renamed_one(self):
+        self._create("hook1", **{"header.A": "s3cr3t", "secret.header.A": "1"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"header.C": CENSORED, "header.A": "new",
+                                  "secret.header.C": "1", "secret.header.A": "0",
+                                  "rename.header.C": "A"})
+
+        self.assertEqual(200, response.status_code, response.data)
+        stored = get_webhook("hook1")
+        self.assertEqual({"A": "new", "C": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["C"], stored["secret_headers"])
 
     def test_19i_renaming_a_header_to_itself_is_refused(self):
         self._create("hook1", **{"header.A": "1"})

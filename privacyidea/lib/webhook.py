@@ -248,31 +248,50 @@ def _apply_renames(webhook, renames):
     Applied first, so everything after it finds the row under its new name and the ordinary
     "keep the stored value" path does the rest.
 
-    Re-sending the same rename is a no-op rather than an error: a double submit would otherwise
-    fail a request that has already done exactly what it asked for.
+    All renames are applied in one step, against the names stored before the request. So the
+    editor's natural requests work: swapping the names of two headers, a chain like A to B and
+    B to C, and renaming a header and then adding a new one under its old name. A target name
+    collides only with a stored row that keeps its name.
+
+    Re-sending a plain rename is a no-op rather than an error: a double submit would otherwise
+    fail a request that has already done exactly what it asked for. A swap cannot be told apart
+    from its repetition, so a swap sent twice swaps the names back.
 
     :param webhook: the Webhook database object
     :param renames: dict of new header name -> the name it is stored under
-    :raises ParameterError: if the rename names no stored header, or would overwrite one
+    :raises ParameterError: if a rename names no stored header, if two renames name the same
+        stored header, or if a rename would overwrite a header that keeps its name
     """
     existing = {h.key: h for h in webhook.headers}
+    pending = {}
     for new_key, old_key in (renames or {}).items():
         if new_key == old_key:
             continue
-        old_row, new_row = existing.get(old_key), existing.get(new_key)
-        if old_row is None:
-            if new_row is not None:
+        if old_key not in existing:
+            if new_key in existing:
                 # Already renamed - the same request sent twice.
                 continue
             raise ParameterError(f"Cannot rename the header {old_key!r} to {new_key!r}: no header "
                                  f"named {old_key!r} is stored on this webhook.")
-        if new_row is not None:
+        pending[new_key] = old_key
+
+    sources = set(pending.values())
+    if len(sources) != len(pending):
+        duplicates = sorted({old for old in pending.values() if list(pending.values()).count(old) > 1})
+        raise ParameterError(f"Cannot rename the header(s) {', '.join(map(repr, duplicates))} to "
+                             f"more than one new name.")
+    for new_key, old_key in pending.items():
+        if new_key in existing and new_key not in sources:
             raise ParameterError(f"Cannot rename the header {old_key!r} to {new_key!r}: a header "
                                  f"named {new_key!r} already exists on this webhook.")
-        old_row.key = new_key
-        existing[new_key] = existing.pop(old_key)
-        log.info(f"Renamed header {old_key!r} to {new_key!r} on webhook {webhook.identifier!r}, "
-                 f"keeping its stored value.")
+
+    # Collect the rows first: once one key has changed, a lookup by the stored name would find
+    # the wrong row in a swap or a chain.
+    rows = {new_key: existing[old_key] for new_key, old_key in pending.items()}
+    for new_key, row in rows.items():
+        row.key = new_key
+        log.info(f"Renamed header {pending[new_key]!r} to {new_key!r} on webhook "
+                 f"{webhook.identifier!r}, keeping its stored value.")
 
 
 def _apply_headers(webhook, headers, secret_headers, renames=None):

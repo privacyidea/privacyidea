@@ -86,7 +86,7 @@ def _parse_headers(param):
         "leave them alone". Only a ``header.*`` sets it: a flag or a rename is a property of a
         header, not a header, so neither can express "these are all of them".
     :raises ParameterError: if a ``secret.header.*`` or ``rename.header.*`` has no ``header.*`` of
-        the same name, or if a rename names the header it renames to
+        the same name, or if a header is renamed to itself
     """
     headers = {}
     secret_flags = set()
@@ -118,10 +118,13 @@ def _parse_headers(param):
             f"{', '.join(orphaned)}. Sending any '{HEADER_PREFIX}*' parameter replaces the whole "
             f"header set, so send every header you want to keep, each with its own flag.")
 
-    conflicting = sorted(new for new, old in renames.items() if new == old or old in headers)
+    # The old name of a rename may be sent as a header of its own: the rename frees it, so that
+    # header is a new one (rename A to C, then add a new A), or another renamed row (swap A and B).
+    # Whether the renames fit the stored rows is decided by _apply_renames(), which sees them.
+    conflicting = sorted(new for new, old in renames.items() if new == old)
     if conflicting:
         raise ParameterError(
-            f"Rename(s) naming a header that is also being sent, or renaming a header to itself: "
+            f"Rename(s) renaming a header to itself: "
             f"{', '.join(f'{RENAME_HEADER_PREFIX}{name}' for name in conflicting)}.")
 
     return headers, secret_headers, renames, given

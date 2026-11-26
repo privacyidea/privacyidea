@@ -426,6 +426,48 @@ class WebhookCrudTestCase(MyTestCase):
             set_webhook, "siem", headers={"A": "1", "B": CENSORED},
             header_renames={"B": "A"})
 
+    def test_swapping_two_header_names_keeps_both_values(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "s3cr3t", "B": "plain"},
+                    secret_headers={"A"})
+
+        set_webhook("siem", headers={"B": CENSORED, "A": CENSORED}, secret_headers={"B"},
+                    header_renames={"B": "A", "A": "B"})
+
+        stored = get_webhook("siem", censor=False)
+        self.assertEqual({"A": "plain", "B": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["B"], stored["secret_headers"])
+
+    def test_a_chain_of_renames_is_applied_in_one_step(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "s3cr3t", "B": "plain"},
+                    secret_headers={"A"})
+
+        set_webhook("siem", headers={"B": CENSORED, "C": CENSORED}, secret_headers={"B"},
+                    header_renames={"B": "A", "C": "B"})
+
+        stored = get_webhook("siem", censor=False)
+        self.assertEqual({"B": "s3cr3t", "C": "plain"}, stored["headers"])
+        self.assertEqual(["B"], stored["secret_headers"])
+
+    def test_a_new_header_may_take_the_old_name_of_a_renamed_one(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "s3cr3t"},
+                    secret_headers={"A"})
+
+        set_webhook("siem", headers={"C": CENSORED, "A": "new"}, secret_headers={"C"},
+                    header_renames={"C": "A"})
+
+        stored = get_webhook("siem", censor=False)
+        self.assertEqual({"A": "new", "C": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["C"], stored["secret_headers"])
+
+    def test_renaming_one_header_to_two_names_is_refused(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "1"})
+
+        self.assertRaisesRegex(
+            ParameterError, "'A' to more than one new name",
+            set_webhook, "siem", headers={"C": CENSORED, "D": CENSORED},
+            header_renames={"C": "A", "D": "A"})
+        self.assertEqual({"A": "1"}, get_webhook("siem")["headers"])
+
     def test_a_rename_without_a_header_set_is_refused(self):
         # The header set is replaced wholesale, so a rename on its own describes a state the next
         # write would undo.
