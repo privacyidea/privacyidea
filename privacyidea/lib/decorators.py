@@ -23,7 +23,7 @@ from privacyidea.lib.params import get_optional_one_of, get_optional
 from privacyidea.lib import _
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import TokenAdminError, Error
-from privacyidea.lib.utils import check_serial_valid
+from privacyidea.lib.utils import check_serial_valid, is_true
 
 log = logging.getLogger(__name__)
 
@@ -111,7 +111,8 @@ class check_user_serial_or_cred_id_in_request:
             user = self.request.all_data.get("user", "").strip()
             serial = self.request.all_data.get("serial", "").strip()
             credential_id = get_optional_one_of(self.request.all_data, ["credential_id", "credentialid"])
-            cancel_enrollment = get_optional(self.request.all_data, "cancel_enrollment")
+            # The same check as the view: only a true value makes the request a cancellation
+            cancel_enrollment = is_true(get_optional(self.request.all_data, "cancel_enrollment"))
             if not serial and not user and not credential_id and not cancel_enrollment:
                 raise ParameterError(_("You need to specify a serial, user or credential_id."))
             if "*" in serial:

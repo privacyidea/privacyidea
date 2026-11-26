@@ -280,6 +280,26 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(1, len(get_tokens(serial=serial)))
         remove_token(serial)
 
+    def test_06_cancel_enrollment_keeps_expired_enrollment(self):
+        # An enrollment whose challenge expired is not cancelled: the token remains, as after the cleanup of the
+        # challenge.
+        token = init_token({"type": "hotp", "genkey": 1})
+        serial = token.get_serial()
+        self.addCleanup(remove_token, serial)
+        transaction_id = get_rand_digit_str()
+        # The challenge is written to the database also with the Redis challenge cache, so it is expired there
+        challenge = Challenge(serial=serial, transaction_id=transaction_id,
+                              data={"type": "token",
+                                    PolicyAction.ENROLL_VIA_MULTICHALLENGE: True,
+                                    PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: True})
+        challenge.expiration = utc_now() - timedelta(minutes=1)
+        challenge.save()
+        self.assertFalse(get_challenges(transaction_id=transaction_id)[0].is_valid())
+
+        self.assertFalse(cancel_enrollment_via_multichallenge(transaction_id=transaction_id))
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+        self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
+
 
 class ChallengeDataEncryptionTestCase(MyTestCase):
     """Test that challenge data is encrypted in the database."""

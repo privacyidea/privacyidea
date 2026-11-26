@@ -502,6 +502,7 @@ def check():
     :jsonparam cancel_enrollment: ``1`` together with
         ``transaction_id`` cancels an in-progress
         ``enroll_via_multichallenge`` flow without authenticating.
+        The challenge of the enrollment must not be expired.
 
     The request selects the method it is answered with, in this order:
     ``credential_id`` (FIDO2), then ``serial``, then ``user`` with
