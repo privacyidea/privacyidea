@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { FocusTrap, FocusTrapFactory } from "@angular/cdk/a11y";
+import { FocusTrap, FocusTrapFactory, LiveAnnouncer } from "@angular/cdk/a11y";
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -30,6 +30,10 @@ import {
   signal,
   viewChild
 } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
 
 /** A wall-clock time of day, 24h. */
 export interface ClockTime {
@@ -45,6 +49,9 @@ export const CLOCK_DIAL_SIZE = 256;
 export const CLOCK_OUTER_RADIUS = 104;
 export const CLOCK_INNER_RADIUS = 68;
 const CENTER = CLOCK_DIAL_SIZE / 2;
+// Unique per instance, so the labels and the hint of one clock are not mixed up with those of another.
+let nextId = 0;
+
 const RING_BORDER = (CLOCK_OUTER_RADIUS + CLOCK_INNER_RADIUS) / 2;
 
 interface DialMark {
@@ -98,8 +105,10 @@ function hourPoint(hour: number): { x: number; y: number } {
 /**
  * Clock face time picker: first the hour on a two-ring 24h dial, then (automatically) the minute. Type the time into
  * the hour and minute fields (the focus starts in the hour field), tap or drag on the dial, or use the arrow keys
- * (PageUp/PageDown step 5) and Enter. Picking the minute on the dial, or Enter with both fields valid, emits `selected`.
- * Times before `min` are greyed out and cannot be picked or typed, so a caller can rule out an end before a start.
+ * (PageUp/PageDown step 5) and Enter. Picking the minute on the dial, the check button, or Enter with both fields valid,
+ * emits `selected`. Times before `min` are greyed out and cannot be picked or typed, so a caller can rule out an end
+ * before a start. The minimum is shown as "From HH:mm" and described to the fields and the dial, and a typed digit
+ * that falls before it is announced as "Earliest HH:mm". Enter on the dial in the hour view announces the minute step.
  * The focus is trapped inside while the clock is shown, the caller closes it (Escape) and gives the focus back.
  */
 @Component({
@@ -107,6 +116,7 @@ function hourPoint(hour: number): { x: number; y: number } {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./clock-dial.component.html",
   styleUrl: "./clock-dial.component.scss",
+  imports: [MatFormField, MatLabel, MatInput, MatIconButton, MatIcon],
   host: {
     role: "dialog",
     "aria-modal": "true",
@@ -124,8 +134,8 @@ export class ClockDialComponent {
 
   protected readonly size = CLOCK_DIAL_SIZE;
   protected readonly center = CENTER;
-  protected readonly hourLabel = $localize`:@@clockDial.hour:Hour`;
-  protected readonly minuteLabel = $localize`:@@clockDial.minute:Minute`;
+  protected readonly id = `clock-dial-${nextId++}`;
+  private readonly liveAnnouncer = inject(LiveAnnouncer);
   private readonly face = viewChild.required<ElementRef<HTMLElement>>("face");
   private readonly hourField = viewChild.required<ElementRef<HTMLInputElement>>("hourField");
   private readonly minuteField = viewChild.required<ElementRef<HTMLInputElement>>("minuteField");
@@ -147,6 +157,20 @@ export class ClockDialComponent {
     return minute === null ? "--" : String(minute).padStart(2, "0");
   });
   protected readonly value = computed(() => (this.view() === "hours" ? this.hour() : this.minute()));
+  protected readonly minText = computed(() => {
+    const min = this.min();
+    return min ? formatClockTime(min) : null;
+  });
+  protected readonly hintId = computed(() => (this.minText() === null ? null : `${this.id}-hint`));
+  // The hour view says the unit ("Hour 14", $localize has no plural forms), the minute view the whole time.
+  protected readonly valueText = computed(() => {
+    if (this.value() === null) {
+      return null;
+    }
+    return this.view() === "hours"
+      ? $localize`:@@clockDial.hourValue:Hour ${this.hourText()}:HOUR:`
+      : `${this.hourText()}:${this.minuteText()}`;
+  });
 
   protected readonly marks = computed<DialMark[]>(() => {
     if (this.view() === "hours") {
@@ -204,7 +228,7 @@ export class ClockDialComponent {
   isMinuteDisabled(minute: number): boolean {
     const min = this.min();
     const hour = this.hour();
-    return !!min && (hour === null || hour === min.hour) && minute < min.minute;
+    return !!min && hour === min.hour && minute < min.minute;
   }
 
   showHours(): void {
@@ -251,11 +275,9 @@ export class ClockDialComponent {
       this.step(steps[event.key]);
     } else if (event.key === "Enter") {
       event.preventDefault();
-      const hour = this.hour();
-      const minute = this.minute();
-      if (hour !== null && minute !== null) {
-        this.selected.emit({ hour, minute });
-      } else if (hour !== null) {
+      if (this.hour() !== null && this.minute() !== null) {
+        this.emitTime();
+      } else if (this.hour() !== null) {
         this.view.set("minutes");
         this.minuteField().nativeElement.focus();
       }
@@ -273,18 +295,28 @@ export class ClockDialComponent {
   ): string | null {
     const field = event.target as HTMLInputElement;
     const digits: string = field.value.replace(/\D/g, "");
-    const allowed = (value: number): boolean => value <= max && !disabled(value);
-    const first = Number(digits);
-    const ok: boolean =
-      digits.length === 0 ||
-      (digits.length === 1 && (allowed(first) || Array.from({ length: 10 }, (_, d) => first * 10 + d).some(allowed))) ||
-      (digits.length === 2 && allowed(first));
+    const ok: boolean = this.canBecomeAllowed(digits, max, disabled);
+    const min = this.min();
+    if (!ok && min && this.canBecomeAllowed(digits, max, () => false)) {
+      void this.liveAnnouncer.announce($localize`:@@clockDial.earliest:Earliest ${formatClockTime(min)}:TIME:`);
+    }
     const text: string = ok ? digits : previous;
     if (field.value !== text) {
       field.value = text;
       field.setSelectionRange(text.length, text.length);
     }
     return ok ? text : null;
+  }
+
+  // Whether the digits are empty, an allowed value, or a first digit that some second one makes allowed.
+  private canBecomeAllowed(digits: string, max: number, disabled: (value: number) => boolean): boolean {
+    const allowed = (value: number): boolean => value <= max && !disabled(value);
+    const first = Number(digits);
+    return (
+      digits.length === 0 ||
+      (digits.length === 1 && (allowed(first) || Array.from({ length: 10 }, (_, d) => first * 10 + d).some(allowed))) ||
+      (digits.length === 2 && allowed(first))
+    );
   }
 
   // The value an accepted field text stands for, or null while it is empty or an unfinished first digit.
@@ -333,7 +365,11 @@ export class ClockDialComponent {
       this.step(steps[event.key]);
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
+      const toMinutes = this.view() === "hours" && this.hour() !== null;
       this.confirm();
+      if (toMinutes) {
+        void this.liveAnnouncer.announce($localize`:@@clockDial.pickMinute:Pick the minute`);
+      }
     }
   }
 
@@ -361,11 +397,16 @@ export class ClockDialComponent {
 
   // Ends the current step: a chosen hour moves on to the minutes, a chosen minute emits the time.
   private confirm(): void {
-    const hour = this.hour();
     if (this.view() === "hours") {
       this.showMinutes();
       return;
     }
+    this.emitTime();
+  }
+
+  // Emits the time once hour and minute are both set.
+  protected emitTime(): void {
+    const hour = this.hour();
     const minute = this.minute();
     if (hour !== null && minute !== null) {
       this.selected.emit({ hour, minute });

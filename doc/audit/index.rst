@@ -80,9 +80,12 @@ opens a calendar. If you choose a first and a last day, the range runs from the
 start of the first day to the end of the last day. If you choose one day, the
 range is that day. The days are in the local time of the browser. Check *Time*
 in the calendar to choose a start time and an end time for these days. If only
-one day is chosen, the range ends at 23:59:59 of that day. *Clear Filter* in
-the calendar removes the range. The filter button of a date cell selects the
-local day of that entry.
+one day is chosen, the range ends at 23:59:59 of that day. If you reopen the
+calendar with *Time* checked, it shows the active range with its times, and the
+first day you click starts a new range. If you close the calendar without
+choosing a time for that day, the range is the whole day. *Clear Filter* in the
+calendar removes the range. The filter button of a date cell selects the local
+day of that entry.
 
 The filter text shows the range as one ``startdate`` value with the offset of
 the browser, e.g.
@@ -90,6 +93,13 @@ the browser, e.g.
 you type a bound without an offset in a ``startdate`` or ``date`` interval,
 the WebUI reads it as the local time of the browser. A typed end that is only
 a date includes that whole day.
+
+The WebUI applies a typed interval in ``startdate`` or ``date`` when you press
+Enter. The calendar and the filter button of a date cell apply at once. The
+WebUI sends a bound it cannot read as you typed it, and the API refuses an
+invalid bound with an error. ISO 8601 forms that only the API reads, e.g.
+``2026-11-05T10``, ``20261105`` or ``2026-W45``, are taken as UTC, not as the
+local time of the browser.
 
 Entries written by privacyIDEA 3.15 or later store ``date`` and ``startdate``
 in UTC. The API returns them with the offset ``+00:00``. The current WebUI

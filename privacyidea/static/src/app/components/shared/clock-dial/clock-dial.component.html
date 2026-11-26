@@ -16,58 +16,104 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="clock-dial__title">{{ label() }}</div>
-<div class="clock-dial__readout">
+<div
+  class="clock-dial__title"
+  [id]="id + '-title'">
+  {{ label() }}
+</div>
+<div
+  class="clock-dial__readout"
+  role="group"
+  [attr.aria-labelledby]="id + '-title'">
   <!-- Typed time: two digits each, a keystroke past 0-23 / 0-59 or before the minimum is refused. The dial below picks
        the same values. -->
-  <input
-    #hourField
-    class="clock-dial__part clock-dial__field--hour"
+  <mat-form-field
+    class="input-width-xxs"
     [class.clock-dial__part--active]="view() === 'hours'"
-    type="text"
-    inputmode="numeric"
-    maxlength="2"
-    autocomplete="off"
-    placeholder="--"
-    aria-label="Hour"
-    i18n-aria-label="@@clockDial.hour"
-    [value]="hourDraft()"
-    (focus)="showHours()"
-    (click)="showHours()"
-    (input)="onHourInput($event)"
-    (keydown)="onFieldKeydown($event, 'hours')" />
+    subscriptSizing="dynamic"
+    floatLabel="always">
+    <mat-label
+      [id]="id + '-hour-label'"
+      i18n="@@clockDial.hour"
+      >Hour</mat-label
+    >
+    <input
+      #hourField
+      matInput
+      class="clock-dial__field--hour"
+      type="text"
+      inputmode="numeric"
+      maxlength="2"
+      autocomplete="off"
+      placeholder="--"
+      [attr.aria-describedby]="hintId()"
+      [value]="hourDraft()"
+      (focus)="showHours()"
+      (click)="showHours()"
+      (input)="onHourInput($event)"
+      (keydown)="onFieldKeydown($event, 'hours')" />
+  </mat-form-field>
   <span
     class="clock-dial__colon"
     aria-hidden="true"
     >:</span
   >
-  <input
-    #minuteField
-    class="clock-dial__part clock-dial__field--minute"
+  <mat-form-field
+    class="input-width-xxs"
     [class.clock-dial__part--active]="view() === 'minutes'"
-    type="text"
-    inputmode="numeric"
-    maxlength="2"
-    autocomplete="off"
-    placeholder="--"
-    aria-label="Minute"
-    i18n-aria-label="@@clockDial.minute"
-    [value]="minuteDraft()"
-    (focus)="showMinutes()"
-    (click)="showMinutes()"
-    (input)="onMinuteInput($event)"
-    (keydown)="onFieldKeydown($event, 'minutes')" />
+    subscriptSizing="dynamic"
+    floatLabel="always">
+    <mat-label
+      [id]="id + '-minute-label'"
+      i18n="@@clockDial.minute"
+      >Minute</mat-label
+    >
+    <input
+      #minuteField
+      matInput
+      class="clock-dial__field--minute"
+      type="text"
+      inputmode="numeric"
+      maxlength="2"
+      autocomplete="off"
+      placeholder="--"
+      [attr.aria-describedby]="hintId()"
+      [value]="minuteDraft()"
+      (focus)="showMinutes()"
+      (click)="showMinutes()"
+      (input)="onMinuteInput($event)"
+      (keydown)="onFieldKeydown($event, 'minutes')" />
+  </mat-form-field>
+  <button
+    mat-icon-button
+    color="primary"
+    type="button"
+    aria-label="Confirm time"
+    i18n-aria-label="@@clockDial.confirm"
+    [disabled]="hour() === null || minute() === null"
+    (click)="emitTime()">
+    <mat-icon>check</mat-icon>
+  </button>
 </div>
+@if (minText(); as minText) {
+  <div
+    class="clock-dial__hint"
+    [id]="id + '-hint'"
+    i18n="@@clockDial.from">
+    From {{ minText }}
+  </div>
+}
 <div
   #face
   class="clock-dial__face"
   role="slider"
   tabindex="0"
   aria-valuemin="0"
-  [attr.aria-label]="view() === 'hours' ? hourLabel : minuteLabel"
+  [attr.aria-labelledby]="view() === 'hours' ? id + '-hour-label' : id + '-minute-label'"
+  [attr.aria-describedby]="hintId()"
   [attr.aria-valuemax]="view() === 'hours' ? 23 : 59"
   [attr.aria-valuenow]="value()"
-  [attr.aria-valuetext]="value() === null ? null : view() === 'hours' ? hourText() : minuteText()"
+  [attr.aria-valuetext]="valueText()"
   (pointerdown)="onPointerDown($event)"
   (pointermove)="onPointerMove($event)"
   (pointerup)="onPointerUp($event)"

@@ -88,6 +88,34 @@
           <context context-type="linenumber">460</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="audit.rangeHintStartDay" datatype="html">
+        <source>Pick the start day</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">525</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeHintStartTime" datatype="html">
+        <source>Pick the start time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">528</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeHintEndDay" datatype="html">
+        <source>Pick the end day, or close to filter this day</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">531</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="audit.rangeHintEndTime" datatype="html">
+        <source>Pick the end time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">533</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="audit.selectTime" datatype="html">
         <source>Time</source>
         <context-group purpose="location">

@@ -53,7 +53,7 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuditData, AuditService, AuditServiceInterface, timeInterval } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -325,6 +325,31 @@ export class AuditComponent {
     this.auditService.pageIndex.set(event.pageIndex + 1);
   }
 
+  // The text of the filter input, reset to the applied filter whenever that changes.
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.auditService.activeFilter().filterString,
+    computation: (filterString: string): string => filterString
+  });
+  // True while the typed text holds a date or startdate time interval that differs from the applied one.
+  protected readonly showFilterHint = computed((): boolean => this.defersTypedInterval(this.filterInputValue()));
+
+  // A typed time interval is applied on Enter only, so a half typed bound is not sent to the server on every pause.
+  private defersTypedInterval(text: string): boolean {
+    const applied = this.auditService.activeFilter();
+    const typed = applied.copyWith({ value: text });
+    return ["date", "startdate"].some(
+      (key: string): boolean =>
+        timeInterval(typed.getValueOfKey(key)) !== null && typed.getValueOfKey(key) !== applied.getValueOfKey(key)
+    );
+  }
+
+  onFilterInput($event: Event): void {
+    this.filterInputValue.set(($event.target as HTMLInputElement).value);
+    if (!this.defersTypedInterval(this.filterInputValue())) {
+      this.auditService.handleFilterInput($event);
+    }
+  }
+
   toggleFilter(filterKeyword: string): void {
     this.auditService.updateFilter((current) =>
       filterKeyword === "success"
@@ -413,12 +438,18 @@ export class AuditComponent {
   // to the end of the start day instead of leaving an open-ended range. In time mode, a start day with a picked start
   // time and no end yet runs from that time to the end of its day (rule 1), however the picker was closed. Both rules
   // apply only to a start picked in this picker session, an open-ended range the picker opened with stays open.
+  // A start day clicked in this session whose clock was closed without a time is applied as a whole day and
+  // replaces the previous range. A start only seeded from the active range always has a time, so it is no click.
   onRangePickerClosed(): void {
     const timedStart = this.timedStart();
     const endPicked = !!this.timedEnd()?.time;
     const startPicked = this.startPickedInSession();
     this.startPickedInSession.set(false);
     this.resetTimedSelection();
+    if (timedStart && !timedStart.time) {
+      this.applyTimeRange(startOfLocalDayIso(timedStart.day), endOfLocalDayIso(timedStart.day));
+      return;
+    }
     if (!startPicked) {
       return;
     }
@@ -434,9 +465,11 @@ export class AuditComponent {
     }
   }
 
+  // Opening the picker starts a new pick session. In time mode the summary shows the active range, but the first day
+  // clicked starts a new range, nothing is applied before a click (see onRangePickerClosed).
   onRangePickerOpened(): void {
     this.startPickedInSession.set(false);
-    this.resetTimedSelection();
+    this.seedTimedSelection();
   }
 
   // Time mode (the header's "Time" checkbox): every day click opens a clock dial in a popup at the clicked cell, and the
@@ -453,9 +486,13 @@ export class AuditComponent {
   private readonly viewContainerRef = inject(ViewContainerRef);
   readonly rangeTimeMode = this.auditService.rangeTimeMode;
   readonly clockPopup = viewChild<TemplateRef<unknown>>("clockPopup");
-  // The clicked start and end day, each with its time once picked on the clock.
+  // The start and end day, each with its time once picked on the clock. They start as the active range when the picker
+  // opens or Time is switched on, for display only: the first day click starts a new range (see seededOnly).
   private readonly timedStart = signal<{ day: Date; time: ClockTime | null } | null>(null);
   private readonly timedEnd = signal<{ day: Date; time: ClockTime | null } | null>(null);
+  // True while timedStart and timedEnd only show the active range and nothing was clicked since. Such a start is not
+  // a pick of this session, so the first day click never ends it.
+  private readonly seededOnly = signal<boolean>(false);
   // What the open clock picks, or null when no clock is open.
   readonly clockTarget = signal<AuditClockTarget | null>(null);
   readonly clockLabel = computed(() =>
@@ -479,6 +516,22 @@ export class AuditComponent {
         : `${label}: –`
     )
   );
+  // What to do next, shown below the summary and announced with it. Seeded values are display only, so the start day
+  // is asked for until the first click. Empty once both times are picked, the range is applied then.
+  readonly rangeHint = computed<string>(() => {
+    const start = this.timedStart();
+    const end = this.timedEnd();
+    if (!start || this.seededOnly()) {
+      return $localize`:@@audit.rangeHintStartDay:Pick the start day`;
+    }
+    if (!start.time) {
+      return $localize`:@@audit.rangeHintStartTime:Pick the start time`;
+    }
+    if (!end) {
+      return $localize`:@@audit.rangeHintEndDay:Pick the end day, or close to filter this day`;
+    }
+    return end.time ? "" : $localize`:@@audit.rangeHintEndTime:Pick the end time`;
+  });
   private clockOverlay: OverlayRef | null = null;
   private clockAnchor: HTMLElement | null = null;
 
@@ -490,11 +543,11 @@ export class AuditComponent {
         dayClick: (date, event) => (date ? this.onTimedDayClick(date, event) : this.onTimedSelectionAborted())
       };
     }
-    // Switching time mode while the picker is open swaps its model (pending copy or live), so a half-picked time
-    // selection is dropped.
+    // Switching time mode while the picker is open swaps its model (pending copy or live). Time on starts from the
+    // active range, Time off drops the time selection, so closing the picker in day mode applies no seeded start.
     effect(() => {
-      this.rangeTimeMode();
-      untracked(() => this.resetTimedSelection());
+      const timeMode = this.rangeTimeMode();
+      untracked(() => (timeMode ? this.seedTimedSelection() : this.resetTimedSelection()));
     });
     inject(DestroyRef).onDestroy(() => this.closeClock());
   }
@@ -523,13 +576,15 @@ export class AuditComponent {
     this.rangePicker()?.close();
   }
 
-  // A day click in time mode. After a picked start time, the start day or a later one is the end day, anything else
-  // (no start yet, no start time yet, an earlier day) starts over with that day as the start. Returns the selection
-  // the calendar shows.
+  // A day click in time mode. After a start time picked in this session, the start day or a later one is the end day,
+  // anything else (no start yet, no start time yet, an earlier day, the first click after the picker opened) starts
+  // over with that day as the start. Returns the selection the calendar shows.
   private onTimedDayClick(date: Date, event: Event | undefined): DateRange<Date> {
     const anchor = (event?.target as Element | null | undefined)?.closest<HTMLElement>(".mat-calendar-body-cell") ?? null;
     const timedStart = this.timedStart();
-    if (timedStart?.time && startOfLocalDayIso(date) >= startOfLocalDayIso(timedStart.day)) {
+    const seededOnly = this.seededOnly();
+    this.seededOnly.set(false);
+    if (!seededOnly && timedStart?.time && startOfLocalDayIso(date) >= startOfLocalDayIso(timedStart.day)) {
       const min = sameLocalDay(date, timedStart.day) ? timedStart.time : null;
       this.timedEnd.set({ day: date, time: null });
       this.openClock({ bound: "end", day: date, min }, anchor);
@@ -615,6 +670,29 @@ export class AuditComponent {
     this.closeClock();
     this.timedStart.set(null);
     this.timedEnd.set(null);
+    this.seededOnly.set(false);
+  }
+
+  // Closes the clock and fills the picked start and end from the active range (day and time in local time), an open
+  // bound stays null. Without time mode nothing is picked.
+  private seedTimedSelection(): void {
+    this.resetTimedSelection();
+    if (!this.rangeTimeMode()) {
+      return;
+    }
+    const picked = (iso: string | null) => {
+      if (!iso) {
+        return null;
+      }
+      const at = new Date(iso);
+      return {
+        day: new Date(at.getFullYear(), at.getMonth(), at.getDate()),
+        time: { hour: at.getHours(), minute: at.getMinutes() }
+      };
+    };
+    this.timedStart.set(picked(this.auditService.timestampFrom()));
+    this.timedEnd.set(picked(this.auditService.timestampTo()));
+    this.seededOnly.set(true);
   }
 
   // Inline "filter by this value" action on a cell: replaces whatever the column was filtered by with this value.

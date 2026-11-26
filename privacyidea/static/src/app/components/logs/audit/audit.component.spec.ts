@@ -329,20 +329,47 @@ describe("AuditComponent (unit)", () => {
       expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe(chip);
     });
 
-    it("rule 1 over an open-ended range: a picked day and start time still run to that day's end on close", () => {
+    it("the first day after reopening over an active range starts a new range, the second sets its end", () => {
       mockAuditService.rangeTimeMode.set(true);
-      mockAuditService.timestampFrom.set(startOfLocalDayIso(new Date(2026, 8, 20)));
+      TestBed.tick();
+      mockAuditService.timestampFrom.set(new Date(2026, 8, 20, 8, 30, 0, 0).toISOString());
+      mockAuditService.timestampTo.set(new Date(2026, 8, 22, 18, 45, 0, 0).toISOString());
       component.onRangePickerOpened();
-      clickDay(new Date(2026, 8, 24));
-      component.onClockTimeSelected({ hour: 8, minute: 30 });
+      // The seeded range is shown until the first click.
+      expect(component.rangeSummary()).toEqual(["Start: 2026-09-20 08:30", "End: 2026-09-22 18:45"]);
 
-      component.onRangePickerClosed();
+      const first = clickDay(new Date(2026, 8, 24));
+      expect(first.start).toEqual(new Date(2026, 8, 24));
+      expect(first.end).toBeNull();
+      expect(component.clockTarget()).toEqual({ bound: "start", day: new Date(2026, 8, 24), min: null });
+      expect(component.clockLabel()).toBe("Start time");
+      expect(component.rangeSummary()).toEqual(["Start: 2026-09-24 --:--", "End: –"]);
+      component.onClockTimeSelected({ hour: 9, minute: 0 });
 
-      expect(mockAuditService.timestampFrom()).toBe(new Date(2026, 8, 24, 8, 30, 0, 0).toISOString());
-      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 24, 23, 59, 59, 0).toISOString());
+      const second = clickDay(new Date(2026, 8, 26));
+      expect(second.start).toEqual(new Date(2026, 8, 24));
+      expect(second.end).toEqual(new Date(2026, 8, 26));
+      expect(component.clockTarget()).toEqual({ bound: "end", day: new Date(2026, 8, 26), min: null });
+      expect(component.clockLabel()).toBe("End time");
+      component.onClockTimeSelected({ hour: 17, minute: 15 });
+
+      expect(mockAuditService.timestampFrom()).toBe(new Date(2026, 8, 24, 9, 0, 0, 0).toISOString());
+      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 26, 17, 15, 0, 0).toISOString());
     });
 
-    it("rule 1: closing the picker before a start time was picked applies nothing", () => {
+    it("the first day after reopening over an open-ended range starts a new range", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      mockAuditService.timestampFrom.set(startOfLocalDayIso(new Date(2026, 8, 20)));
+      TestBed.tick();
+      component.onRangePickerOpened();
+
+      const range = clickDay(new Date(2026, 8, 24));
+      expect(range.start).toEqual(new Date(2026, 8, 24));
+      expect(range.end).toBeNull();
+      expect(component.clockLabel()).toBe("Start time");
+    });
+
+    it("closing the picker before a start time was picked applies the clicked day as a whole day", () => {
       mockAuditService.rangeTimeMode.set(true);
       component.onRangePickerOpened();
       clickDay(new Date(2026, 8, 24));
@@ -350,8 +377,37 @@ describe("AuditComponent (unit)", () => {
       component.onRangePickerClosed();
 
       expect(component.clockTarget()).toBeNull();
-      expect(mockAuditService.timestampFrom()).toBeNull();
-      expect(mockAuditService.timestampTo()).toBeNull();
+      expect(mockAuditService.timestampFrom()).toBe(startOfLocalDayIso(new Date(2026, 8, 24)));
+      expect(mockAuditService.timestampTo()).toBe(endOfLocalDayIso(new Date(2026, 8, 24)));
+    });
+
+    it("a new start day without a time replaces the applied range with that whole day when the picker closes", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      TestBed.tick();
+      mockAuditService.timestampFrom.set(new Date(2026, 10, 4, 8, 30, 0, 0).toISOString());
+      mockAuditService.timestampTo.set(new Date(2026, 10, 7, 18, 45, 0, 0).toISOString());
+      component.onRangePickerOpened();
+
+      clickDay(new Date(2026, 10, 11));
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(startOfLocalDayIso(new Date(2026, 10, 11)));
+      expect(mockAuditService.timestampTo()).toBe(endOfLocalDayIso(new Date(2026, 10, 11)));
+    });
+
+    it("opening and closing the picker in time mode without a click keeps the applied range", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      TestBed.tick();
+      const from = new Date(2026, 10, 4, 8, 30, 0, 0).toISOString();
+      const to = new Date(2026, 10, 7, 18, 45, 0, 0).toISOString();
+      mockAuditService.timestampFrom.set(from);
+      mockAuditService.timestampTo.set(to);
+      component.onRangePickerOpened();
+
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(from);
+      expect(mockAuditService.timestampTo()).toBe(to);
     });
 
     it("rule 2: the same day clicked again after the start time opens the end clock on that day", () => {
@@ -431,8 +487,9 @@ describe("AuditComponent (unit)", () => {
       expect(range.end).toBeNull();
       expect(component.clockTarget()).toEqual({ bound: "start", day: new Date(2026, 8, 20), min: null });
       component.onRangePickerClosed();
-      // The earlier start time belonged to the abandoned day, so nothing is applied.
-      expect(mockAuditService.timestampFrom()).toBeNull();
+      // The earlier start time belonged to the abandoned day, the new day without a time is applied as a whole day.
+      expect(mockAuditService.timestampFrom()).toBe(startOfLocalDayIso(new Date(2026, 8, 20)));
+      expect(mockAuditService.timestampTo()).toBe(endOfLocalDayIso(new Date(2026, 8, 20)));
     });
 
     it("a second click before the start time was picked moves the start instead of ending the range", () => {
@@ -465,6 +522,68 @@ describe("AuditComponent (unit)", () => {
       expect(component.rangeSummary()).toEqual(["Start: 2026-09-24 08:30", "End: 2026-09-26 18:45"]);
     });
 
+    it("the hint names the next step: start day, start time, end day or close, end time", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      TestBed.tick();
+      mockAuditService.timestampFrom.set(new Date(2026, 8, 20, 8, 30, 0, 0).toISOString());
+      mockAuditService.timestampTo.set(new Date(2026, 8, 22, 18, 45, 0, 0).toISOString());
+      component.onRangePickerOpened();
+      // The seeded range is display only, so the first step is still the start day.
+      expect(component.rangeHint()).toBe("Pick the start day");
+
+      clickDay(new Date(2026, 8, 24));
+      expect(component.rangeHint()).toBe("Pick the start time");
+
+      component.onClockTimeSelected({ hour: 9, minute: 0 });
+      expect(component.rangeHint()).toBe("Pick the end day, or close to filter this day");
+
+      clickDay(new Date(2026, 8, 26));
+      expect(component.rangeHint()).toBe("Pick the end time");
+
+      component.onClockTimeSelected({ hour: 17, minute: 15 });
+      expect(component.rangeHint()).toBe("");
+    });
+
+    it("reopening the picker on an applied range shows its times in the summary", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      TestBed.tick();
+      mockAuditService.timestampFrom.set(new Date(2026, 8, 24, 8, 30, 0, 0).toISOString());
+      mockAuditService.timestampTo.set(new Date(2026, 8, 26, 18, 45, 0, 0).toISOString());
+
+      component.onRangePickerOpened();
+
+      expect(component.rangeSummary()).toEqual(["Start: 2026-09-24 08:30", "End: 2026-09-26 18:45"]);
+    });
+
+    it("switching Time on in the open picker shows the active range in the summary", () => {
+      mockAuditService.timestampFrom.set(new Date(2026, 8, 24, 8, 30, 0, 0).toISOString());
+      mockAuditService.timestampTo.set(new Date(2026, 8, 26, 18, 45, 0, 0).toISOString());
+      component.onRangePickerOpened();
+
+      mockAuditService.rangeTimeMode.set(true);
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.rangeSummary()).toEqual(["Start: 2026-09-24 08:30", "End: 2026-09-26 18:45"]);
+    });
+
+    it("switching Time off after a seeded open drops the seeded start, so a day pick runs to its own day's end", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      TestBed.tick();
+      mockAuditService.timestampFrom.set(new Date(2026, 8, 24, 8, 30, 0, 0).toISOString());
+      component.onRangePickerOpened();
+      expect(component.rangeSummary()).toEqual(["Start: 2026-09-24 08:30", "End: –"]);
+
+      mockAuditService.rangeTimeMode.set(false);
+      TestBed.tick();
+      expect(component.rangeSummary()).toEqual(["Start: –", "End: –"]);
+      component.onRangeStartDateChange(new Date(2026, 8, 28));
+      component.onRangePickerClosed();
+
+      expect(mockAuditService.timestampFrom()).toBe(new Date(2026, 8, 28, 0, 0, 0, 0).toISOString());
+      expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 28, 23, 59, 59, 0).toISOString());
+    });
+
     it("Escape in the calendar after a start time (null selection) closes the picker instead of opening a new start clock", () => {
       mockAuditService.rangeTimeMode.set(true);
       component.onRangePickerOpened();
@@ -484,7 +603,7 @@ describe("AuditComponent (unit)", () => {
       expect(mockAuditService.timestampTo()).toBe(new Date(2026, 8, 24, 23, 59, 59, 0).toISOString());
     });
 
-    it("Escape in the calendar before a start time (null selection) opens no clock and applies nothing", () => {
+    it("Escape in the calendar before a start time (null selection) opens no clock and applies the day as a whole day", () => {
       mockAuditService.rangeTimeMode.set(true);
       component.onRangePickerOpened();
       clickDay(new Date(2026, 8, 24));
@@ -495,7 +614,7 @@ describe("AuditComponent (unit)", () => {
       expect(component.clockTarget()).toBeNull();
       component.onRangePickerClosed();
 
-      expect(mockAuditService.timestampFrom()).toBeNull();
+      expect(mockAuditService.timestampFrom()).toBe(startOfLocalDayIso(new Date(2026, 8, 20)));
     });
 
     it("the clock opens directly below the picker panel, beside it at the clicked row only when there is no room", () => {
@@ -767,6 +886,19 @@ describe("AuditComponent (template rendering)", () => {
       expect(lines).toEqual(["Start: –", "End: –"]);
     });
 
+    it("time mode announces the summary and the hint as one polite live region", () => {
+      mockAuditService.rangeTimeMode.set(true);
+      fixture.detectChanges();
+      component.rangePicker()!.open();
+      fixture.detectChanges();
+
+      const live = document.querySelector(".audit-range-time-live");
+      expect(live?.getAttribute("aria-live")).toBe("polite");
+      expect(live?.getAttribute("aria-atomic")).toBe("true");
+      expect(live?.querySelector(".audit-range-time-summary")).not.toBeNull();
+      expect(live?.querySelector(".audit-range-time-hint")?.textContent?.trim()).toBe("Pick the start day");
+    });
+
     it("checkbox off renders no summary block and no actions row", () => {
       component.rangePicker()!.open();
       fixture.detectChanges();
@@ -806,8 +938,9 @@ describe("AuditComponent (template rendering)", () => {
       const summary = () => document.querySelector(".audit-range-time-summary")?.textContent ?? "";
       const day = tenth();
       const dayText = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-10`;
-      // No hint, and nothing picked yet: both lines show their placeholder.
-      expect(document.querySelector(".audit-range-time-hint")).toBeNull();
+      // Nothing picked yet: both lines show their placeholder and the hint asks for the start day.
+      const hint = () => document.querySelector(".audit-range-time-hint")?.textContent?.trim();
+      expect(hint()).toBe("Pick the start day");
       expect(summary()).toContain("Start: –");
       expect(summary()).toContain("End: –");
 
@@ -823,8 +956,8 @@ describe("AuditComponent (template rendering)", () => {
       expect(picker.opened).toBe(true);
       expect(closeSpy).not.toHaveBeenCalled();
       expect(mockAuditService.timestampFrom()).toBeNull();
-      // The summary is the only text under the calendar, there is no end hint either.
-      expect(document.querySelector(".audit-range-time-hint")).toBeNull();
+      // The hint now offers the end day, or closing the picker for this day.
+      expect(hint()).toBe("Pick the end day, or close to filter this day");
       expect(summary()).toContain(`Start: ${dayText} 08:30`);
       expect(summary()).toContain("End: –");
 
@@ -837,7 +970,8 @@ describe("AuditComponent (template rendering)", () => {
       expect(markClasses("17")?.contains("clock-dial__mark--disabled")).toBe(false);
 
       tapDial(210, 104); // 7 is disabled, nothing happens
-      expect(dial()!.querySelector("[role=slider]")!.getAttribute("aria-label")).toBe("Hour");
+      const slider = dial()!.querySelector("[role=slider]")!;
+      expect(document.getElementById(slider.getAttribute("aria-labelledby")!)?.textContent?.trim()).toBe("Hour");
       tapDial(150, 68); // 17 on the inner ring
       tapDial(90, 104); // minute 15
       fixture.detectChanges();
@@ -996,8 +1130,82 @@ describe("AuditComponent (template rendering)", () => {
     expect(element.querySelector(`label[for="${input.id}"]`)?.textContent).toContain("Filter Audit Log");
   });
 
+  describe("typed time interval in the filter field", () => {
+    const timeKeys = [
+      ["admin", "date", AuditComponent],
+      ["admin", "startdate", AuditComponent],
+      ["self-service", "date", AuditSelfServiceComponent],
+      ["self-service", "startdate", AuditSelfServiceComponent]
+    ] as const;
+
+    // Renders the component with the filter field and returns the field and a way to type into it.
+    const renderFilterField = (componentType: typeof AuditComponent) => {
+      showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
+      const filterFixture = TestBed.createComponent<AuditComponent>(componentType);
+      filterFixture.detectChanges();
+      const input = filterFixture.nativeElement.querySelector(".mat-mdc-form-field input") as HTMLInputElement;
+      const type = (text: string): void => {
+        input.value = text;
+        input.dispatchEvent(new Event("input"));
+        filterFixture.detectChanges();
+      };
+      const pressEnter = (): void => {
+        input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
+        filterFixture.detectChanges();
+      };
+      const hint = (): HTMLElement | null =>
+        Array.from((filterFixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>("mat-hint")).find((h) =>
+          h.textContent?.includes("Press enter to apply the filter")
+        ) ?? null;
+      return { input, type, pressEnter, hint };
+    };
+
+    it.each(timeKeys)("%s: a typed %s interval is applied on Enter only", (_, key, componentType) => {
+      const { type, pressEnter } = renderFilterField(componentType);
+      const applied = mockAuditService.activeFilter();
+
+      type(`${key}: foo/bar`);
+
+      expect(mockAuditService.handleFilterInput).not.toHaveBeenCalled();
+      expect(mockAuditService.activeFilter()).toBe(applied);
+
+      pressEnter();
+
+      expect(mockAuditService.applyFilterInput).toHaveBeenCalledTimes(1);
+      const event = mockAuditService.applyFilterInput.mock.calls[0][0] as Event;
+      expect((event.target as HTMLInputElement).value).toBe(`${key}: foo/bar`);
+    });
+
+    it.each(timeKeys)("%s: typing next to an unchanged applied %s interval still applies live", (_, key, componentType) => {
+      mockAuditService.activeFilter.set(new FilterValue({ value: `${key}: 2026-11-05/2026-11-06` }));
+      const { type } = renderFilterField(componentType);
+
+      type(`user: x ${key}: 2026-11-05/2026-11-06`);
+
+      expect(mockAuditService.handleFilterInput).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(timeKeys)("%s: shows the press enter hint for a typed %s interval", (_, key, componentType) => {
+      const { type, pressEnter, hint } = renderFilterField(componentType);
+
+      type(`${key}: foo/bar`);
+      expect(hint()).not.toBeNull();
+
+      pressEnter();
+      expect(hint()).toBeNull();
+    });
+
+    it.each(["admin", "self-service"] as const)("%s: shows no press enter hint for a plain text filter", (kind) => {
+      const { type, hint } = renderFilterField(kind === "admin" ? AuditComponent : AuditSelfServiceComponent);
+
+      type("user: x");
+
+      expect(hint()).toBeNull();
+    });
+  });
+
   describe("links", () => {
-    const hrefOf = (element: HTMLElement, text: string) =>
+    const hrefOf =(element: HTMLElement, text: string) =>
       Array.from(element.querySelectorAll<HTMLAnchorElement>("tbody a"))
         .find((a) => a.textContent?.trim() === text)
         ?.getAttribute("href");

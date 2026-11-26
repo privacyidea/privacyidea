@@ -265,10 +265,9 @@ describe("AuditService (signals & helpers)", () => {
       expect(sentInterval(key, "/2026-11-05 13:00:00")).toBe(`/${new Date(2026, 10, 5, 13, 0, 0, 0).toISOString()}`);
     });
 
-    it("date: an unparsable edit keeps the previous bound", () => {
-      const localMidnight: string = new Date(2026, 10, 5, 0, 0, 0, 0).toISOString();
-      expect(sentInterval("date", "2026-11-05/")).toBe(`${localMidnight}/`);
-      expect(sentInterval("date", "2026-11-05 1x/")).toBe(`${localMidnight}/`);
+    it.each(["startdate", "date"])("%s: an unparsable bound is sent as typed", (key) => {
+      expect(sentInterval(key, "foo/bar")).toBe("foo/bar");
+      expect(sentInterval(key, "2026-11-05/foo")).toBe(`${new Date(2026, 10, 5, 0, 0, 0, 0).toISOString()}/foo`);
     });
   });
 

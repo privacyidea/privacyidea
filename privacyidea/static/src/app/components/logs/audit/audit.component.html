@@ -33,7 +33,8 @@
               #filterHTMLInputElement
               [appRefocusAfterReload]="auditService.auditResource.isLoading()"
               [appFilterAutocomplete]="auditService.apiFilterKeys"
-              (input)="auditService.handleFilterInput($event)"
+              (input)="onFilterInput($event)"
+              (keyup.enter)="auditService.applyFilterInput($event)"
               [value]="auditService.filterDraft().value"
               i18n-placeholder="@@audit.exampleQueryAction"
               matInput
@@ -43,6 +44,13 @@
             matSuffix
             [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
+          @if (showFilterHint()) {
+            <mat-hint
+              align="end"
+              i18n="@@common.pressEnterApply"
+              >Press enter to apply the filter</mat-hint
+            >
+          }
         </mat-form-field>
         @if (authService.actionAllowed("auditlog_download")) {
           <button
@@ -137,10 +145,18 @@
                              is picked so far. -->
                         @if (rangeTimeMode()) {
                           <mat-date-range-picker-actions>
-                            <div class="audit-range-time-summary">
-                              @for (line of rangeSummary(); track $index) {
-                                <div>{{ line }}</div>
-                              }
+                            <!-- One polite live region, so a screen reader reads the summary and the next step
+                                 together once per change. -->
+                            <div
+                              class="audit-range-time-live"
+                              aria-live="polite"
+                              aria-atomic="true">
+                              <div class="audit-range-time-summary">
+                                @for (line of rangeSummary(); track $index) {
+                                  <div>{{ line }}</div>
+                                }
+                              </div>
+                              <div class="audit-range-time-hint">{{ rangeHint() }}</div>
                             </div>
                           </mat-date-range-picker-actions>
                         }

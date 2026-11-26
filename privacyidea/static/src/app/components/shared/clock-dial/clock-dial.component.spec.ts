@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { InteractivityChecker } from "@angular/cdk/a11y";
+import { InteractivityChecker, LiveAnnouncer } from "@angular/cdk/a11y";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { axe } from "@testing/axe";
 import {
@@ -156,7 +156,7 @@ describe("ClockDialComponent", () => {
     expect(markClasses("00")?.contains("clock-dial__mark--inner")).toBe(true);
     expect(markClasses("13")?.contains("clock-dial__mark--inner")).toBe(true);
     expect(fixture.nativeElement.querySelector(".clock-dial__title").textContent).toContain("Start time");
-    expect(face().getAttribute("aria-label")).toBe("Hour");
+    expect(document.getElementById(face().getAttribute("aria-labelledby") as string)?.textContent?.trim()).toBe("Hour");
     expect(face().getAttribute("aria-valuemax")).toBe("23");
   });
 
@@ -166,7 +166,9 @@ describe("ClockDialComponent", () => {
 
     expect(component.hour()).toBe(15);
     expect(component.view()).toBe("minutes");
-    expect(face().getAttribute("aria-label")).toBe("Minute");
+    expect(document.getElementById(face().getAttribute("aria-labelledby") as string)?.textContent?.trim()).toBe(
+      "Minute"
+    );
     expect(fixture.nativeElement.querySelectorAll(".clock-dial__mark").length).toBe(12);
     expect(emitted).toEqual([]);
   });
@@ -256,6 +258,50 @@ describe("ClockDialComponent", () => {
       expect(component.isMinuteDisabled(0)).toBe(false);
     });
 
+    it("retyping the hour keeps a minute that the finished hour allows", async () => {
+      await create({ hour: 14, minute: 30 });
+      type(hourField(), "15");
+      type(minuteField(), "20");
+      type(hourField(), "1");
+      expect(minuteField().value).toBe("20");
+      expect(component.minute()).toBe(20);
+
+      type(hourField(), "14");
+      expect(component.minute()).toBeNull();
+      expect(minuteField().value).toBe("");
+    });
+
+    it('shows "From 14:30" and ties it to both fields and the dial', async () => {
+      await create({ hour: 14, minute: 30 });
+      const hint = fixture.nativeElement.querySelector(".clock-dial__hint") as HTMLElement;
+      expect(hint.textContent?.trim()).toBe("From 14:30");
+      expect(hourField().getAttribute("aria-describedby")).toContain(hint.id);
+      expect(minuteField().getAttribute("aria-describedby")).toContain(hint.id);
+      expect(face().getAttribute("aria-describedby")).toContain(hint.id);
+    });
+
+    it("shows no minimum hint without a minimum", async () => {
+      await create();
+      expect(fixture.nativeElement.querySelector(".clock-dial__hint")).toBeNull();
+      expect(face().hasAttribute("aria-describedby")).toBe(false);
+    });
+
+    it("announces the earliest time when a typed digit falls before the minimum", async () => {
+      await create({ hour: 9, minute: 30 });
+      const announce = jest.spyOn(TestBed.inject(LiveAnnouncer), "announce").mockResolvedValue();
+      type(hourField(), "0");
+      type(hourField(), "08");
+      expect(announce).toHaveBeenCalledWith("Earliest 09:30");
+    });
+
+    it("announces nothing when a typed digit is refused only for being past 23 without a minimum", async () => {
+      await create();
+      const announce = jest.spyOn(TestBed.inject(LiveAnnouncer), "announce").mockResolvedValue();
+      type(hourField(), "2");
+      type(hourField(), "25");
+      expect(announce).not.toHaveBeenCalled();
+    });
+
     it("dragging over disabled hours keeps the last allowed one", async () => {
       await create({ hour: 9, minute: 0 });
       pointer("pointerdown", 300, CLOCK_OUTER_RADIUS);
@@ -292,7 +338,7 @@ describe("ClockDialComponent", () => {
       type(hourField(), "25");
       expect(hourField().value).toBe("2");
       expect(component.hour()).toBe(2);
-      expect(hourField().hasAttribute("aria-invalid")).toBe(false);
+      expect(hourField().getAttribute("aria-invalid")).not.toBe("true");
 
       type(hourField(), "");
       type(hourField(), "1");
@@ -367,6 +413,54 @@ describe("ClockDialComponent", () => {
       expect(minuteField().value).toBe("59");
     });
 
+    it("the hour and minute fields form a group named by the title", async () => {
+      await create();
+      const group = fixture.nativeElement.querySelector("[role=group]") as HTMLElement;
+      expect(group.contains(hourField())).toBe(true);
+      expect(group.contains(minuteField())).toBe(true);
+      const title = document.getElementById(group.getAttribute("aria-labelledby") as string);
+      expect(title?.textContent).toContain("Start time");
+    });
+
+    it("the hour and minute fields have visible labels tied to them", async () => {
+      await create();
+      const labelFor = (field: HTMLInputElement) =>
+        fixture.nativeElement.querySelector(`label[for="${field.id}"]`) as HTMLLabelElement;
+      expect(labelFor(hourField()).textContent?.trim()).toBe("Hour");
+      expect(labelFor(minuteField()).textContent?.trim()).toBe("Minute");
+
+      const second = TestBed.createComponent(ClockDialComponent);
+      second.componentRef.setInput("label", "End time");
+      second.detectChanges();
+      const labelIds = (root: HTMLElement) => Array.from(root.querySelectorAll("label")).map((label) => label.id);
+      expect(labelIds(second.nativeElement)).not.toEqual(labelIds(fixture.nativeElement));
+    });
+
+    it("the dial is named by the label of the active field", async () => {
+      await create();
+      const nameOf = () =>
+        document.getElementById(face().getAttribute("aria-labelledby") as string)?.textContent?.trim();
+      expect(nameOf()).toBe("Hour");
+      expect(face().hasAttribute("aria-label")).toBe(false);
+
+      type(hourField(), "09");
+      expect(component.view()).toBe("minutes");
+      expect(nameOf()).toBe("Minute");
+    });
+
+    it("the check button confirms a typed time and stays disabled until hour and minute are set", async () => {
+      await create();
+      const button = () => fixture.nativeElement.querySelector("button") as HTMLButtonElement;
+      type(hourField(), "13");
+      expect(button().disabled).toBe(true);
+
+      type(minuteField(), "30");
+      expect(button().disabled).toBe(false);
+      expect(button().getAttribute("aria-label")).toBe("Confirm time");
+      button().click();
+      expect(emitted).toEqual([{ hour: 13, minute: 30 }]);
+    });
+
     // Checked with a time set: without a value the dial's slider has no aria-valuenow, which axe flags (known, open).
     it("passes the axe accessibility checks with a typed time", async () => {
       await create();
@@ -415,6 +509,34 @@ describe("ClockDialComponent", () => {
 
       key("Enter");
       expect(emitted).toEqual([{ hour: 9, minute: 54 }]);
+    });
+
+    it("the dial value text names the hour in the hour view and the whole time in the minute view", async () => {
+      await create();
+      tap(60, CLOCK_INNER_RADIUS);
+      hourField().click();
+      fixture.detectChanges();
+      expect(component.view()).toBe("hours");
+      expect(face().getAttribute("aria-valuetext")).toBe("Hour 14");
+
+      key("Enter");
+      tap(180, CLOCK_OUTER_RADIUS);
+      expect(component.view()).toBe("minutes");
+      expect(face().getAttribute("aria-valuetext")).toBe("14:30");
+    });
+
+    it("Enter on the dial in the hour view announces the minute step and keeps the focus", async () => {
+      await create();
+      const announce = jest.spyOn(TestBed.inject(LiveAnnouncer), "announce").mockResolvedValue();
+      tap(90, CLOCK_OUTER_RADIUS);
+      expect(announce).not.toHaveBeenCalled();
+
+      component.view.set("hours");
+      fixture.detectChanges();
+      face().focus();
+      key("Enter");
+      expect(announce).toHaveBeenCalledWith("Pick the minute");
+      expect(document.activeElement).toBe(face());
     });
 
     it("Enter without a value does nothing", async () => {

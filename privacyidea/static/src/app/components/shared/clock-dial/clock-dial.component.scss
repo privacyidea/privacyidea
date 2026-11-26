@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+@use "@angular/material" as mat;
+
 // A small card: title, the HH:mm fields (each part switches the dial to it) and the dial. It is shown in a CDK overlay
 // pane below or next to the date picker, whose panel is surface-container-high: the lowest surface (white in light mode, the
 // darkest tone in dark mode), an outline and a raised shadow set it clearly apart from it in both modes.
@@ -40,37 +42,49 @@
 }
 
 .clock-dial__readout {
-  display: flex;
+  display: grid;
+  // The outer 1fr columns keep hour, colon and minute centered above the dial, the confirm button hangs on the right.
+  grid-template-columns: 1fr auto auto auto 1fr;
   align-items: center;
-  gap: 4px;
-  font: var(--mat-sys-display-small);
+  width: 100%;
+  column-gap: 4px;
+
+  > :nth-child(1) {
+    grid-column: 2;
+  }
+
+  > :nth-child(2) {
+    grid-column: 3;
+  }
+
+  > :nth-child(3) {
+    grid-column: 4;
+  }
+
+  > button {
+    grid-column: 5;
+    justify-self: start;
+  }
 }
 
-.clock-dial__part {
-  width: 72px;
-  padding: 4px 8px;
+// The field of the active view gets the primary outline.
+.clock-dial__part--active {
+  @include mat.form-field-overrides(
+    (
+      outlined-outline-color: var(--mat-sys-primary)
+    )
+  );
+}
+
+.clock-dial__field--hour,
+.clock-dial__field--minute {
   text-align: center;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  color: var(--mat-sys-on-surface);
-  background: var(--mat-sys-surface-container-highest);
-  cursor: text;
+}
 
-  &--active {
-    color: var(--mat-sys-on-primary-container);
-    background: var(--mat-sys-primary-container);
-  }
-
-  &::placeholder {
-    color: inherit;
-    opacity: 0.6;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--mat-sys-primary);
-    outline-offset: 2px;
-  }
+.clock-dial__hint {
+  align-self: flex-start;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .clock-dial__face {

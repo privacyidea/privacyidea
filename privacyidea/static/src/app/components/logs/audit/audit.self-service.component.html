@@ -32,7 +32,8 @@
             <input
               #filterHTMLInputElement
               [appFilterAutocomplete]="auditService.apiFilterKeys"
-              (input)="auditService.handleFilterInput($event)"
+              (input)="onFilterInput($event)"
+              (keyup.enter)="auditService.applyFilterInput($event)"
               [value]="auditService.filterDraft().value"
               i18n-placeholder="@@audit.exampleQueryAction"
               matInput
@@ -42,6 +43,13 @@
             matSuffix
             [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
+          @if (showFilterHint()) {
+            <mat-hint
+              align="end"
+              i18n="@@common.pressEnterApply"
+              >Press enter to apply the filter</mat-hint
+            >
+          }
         </mat-form-field>
       </div>
       <mat-paginator

@@ -76,6 +76,18 @@
   }
 }
 
+// The summary and the hint below it form one live region. The hint is always one line high, so the panel does not
+// jump when it changes or goes empty.
+.audit-range-time-live {
+  width: 100%;
+}
+
+.audit-range-time-hint {
+  min-height: var(--mat-sys-body-small-line-height, 1rem);
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .audit-table {
   // The scroll region wraps anywhere, so below this width the date breaks mid-value.
   th.mat-mdc-header-cell.mat-column-startdate,

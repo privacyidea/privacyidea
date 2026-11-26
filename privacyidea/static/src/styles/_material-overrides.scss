@@ -304,6 +304,10 @@
   }
 }
 
+.input-width-xxs .mat-mdc-form-field-infix {
+  width: var(--input-width-xxs);
+}
+
 .input-width-xs .mat-mdc-form-field-infix {
   width: var(--input-width-xs);
 }
