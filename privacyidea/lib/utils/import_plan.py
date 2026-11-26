@@ -650,7 +650,8 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     A failing importer or deletion is rolled back, reported with ``on_error``
     and the type is marked as failed. The remaining types and deletions are
     still applied, but the planned deletions of a type whose importer failed
-    are not.
+    are not. If the deletion of the default realm fails, the realm stays the
+    default realm, also if the plan removes the default realm.
 
     :param plans: the list of ``TypePlan`` objects
     :param name: passed to the importers of types with plain names, the plan data is already filtered by it
@@ -663,6 +664,7 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     """
     failed = []
     import_failed = set()
+    failed_realm_deletes = set()
 
     def fail(typ: str, entry: PlanEntry | None, exx: Exception) -> None:
         db.session.rollback()
@@ -677,6 +679,8 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
         try:
             delete_plan_entry(typ, entry)
         except Exception as exx:  # Any error of a delete function is reported, the others go on
+            if typ == "realm":
+                failed_realm_deletes.add(entry.target_name or entry.key)
             fail(typ, entry, exx)
 
     for plan in plans:
@@ -700,6 +704,8 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
             fail(plan.typ, None, exx)
 
     by_type = {plan.typ: plan for plan in plans}
+    # delete_realm() makes the last realm that is left the default realm, so the default is read before the deletions
+    default_before_deletes = get_default_realm() or None
     for typ in DELETE_ORDER:
         plan = by_type.get(typ)
         if not plan or typ in import_failed:
@@ -713,8 +719,10 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     realm_plan = by_type.get("realm")
     if (realm_plan and realm_plan.default_realm is not NO_DEFAULT_REALM_PLAN
             and "realm" not in import_failed):
+        # The import keeps a default realm whose deletion failed, and the realm stays as it was, also as the default
+        keep_default = realm_plan.default_realm is None and default_before_deletes in failed_realm_deletes
         try:
-            if (get_default_realm() or None) != realm_plan.default_realm:
+            if not keep_default and (get_default_realm() or None) != realm_plan.default_realm:
                 set_default_realm(realm_plan.default_realm)
         except Exception as exx:  # Any error is reported, the other steps are done
             fail("realm", None, exx)

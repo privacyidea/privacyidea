@@ -896,16 +896,18 @@ the object given with ``-n`` limit what is deleted as well::
   missing from the import are kept.
 * If the realms are replaced (without ``-n``) and no realm in the file is marked
   as default, the system has no default realm after the import. The plan warns
-  that a user who logs in without a realm is then not found.
+  that a user who logs in without a realm is then not found. If the import keeps
+  the default realm because it still contains tokens or containers, the realm
+  stays the default realm.
 * If no active admin policy is left after the import, the plan warns that every
   administrator may then do everything.
 
 A realm that is marked as default in the file becomes the default realm, also
 without ``--replace``. If the file does not mark the current default realm as
 default, it stays the default realm. Only ``--replace`` without ``-n`` removes
-the default realm, as described above. On a system without realms, the first
-realm that the import creates becomes the default realm. The plan shows a
-change of the default realm as ``default realm: "old" -> "new"``.
+the default realm, as described above. On a system without realms, an import
+without ``--replace`` makes the first realm that it creates the default realm.
+The plan shows a change of the default realm as ``default realm: "old" -> "new"``.
 
 With ``--interactive`` the plan is printed and you are asked once whether to
 apply it::
