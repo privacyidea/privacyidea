@@ -23,6 +23,7 @@ import { DateRange } from "@angular/material/datepicker";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatPaginator } from "@angular/material/paginator";
+import { MatTooltip } from "@angular/material/tooltip";
 import { MatTableDataSource } from "@angular/material/table";
 import { By } from "@angular/platform-browser";
 import { ActivatedRoute } from "@angular/router";
@@ -820,6 +821,49 @@ describe("AuditComponent (template rendering)", () => {
 
     expect(cellText).toContain("2026-01-15 10:00:00");
     expect(cellText).not.toContain("2026-01-15T10:00:00");
+  });
+
+  describe.each([
+    ["AuditComponent", AuditComponent],
+    ["AuditSelfServiceComponent", AuditSelfServiceComponent]
+  ])("%s time zone marker of the startdate cell", (_name, componentType) => {
+    const TOOLTIP = "Time zone unknown: server local time, written before timestamps were stored in UTC.";
+    const startdateCell = (
+      rowFixture: ComponentFixture<unknown>,
+      rowComponent: AuditComponent | AuditSelfServiceComponent
+    ) => {
+      const index = rowComponent.columnKeysMap.findIndex((c) => c.key === "startdate");
+      return rowFixture.nativeElement.querySelectorAll("tbody td")[index] as HTMLElement;
+    };
+
+    it("shows a focusable public_off icon with tooltip and label for a value without offset", () => {
+      const rowFixture = TestBed.createComponent(componentType);
+      showRows([{ startdate: "2026-11-05T10:00:00.123456" } as AuditData]);
+      rowFixture.detectChanges();
+
+      const cell = startdateCell(rowFixture, rowFixture.componentInstance as AuditComponent);
+      const icon = cell.querySelector<HTMLElement>("mat-icon.audit-time-zone-unknown");
+      expect(icon?.textContent?.trim()).toBe("public_off");
+      expect(icon?.getAttribute("aria-label")).toBe(TOOLTIP);
+      expect(icon?.getAttribute("role")).toBe("img");
+      expect(icon?.getAttribute("aria-hidden")).toBe("false");
+      expect(icon?.getAttribute("tabindex")).toBe("0");
+      const tooltip = rowFixture.debugElement
+        .queryAll(By.directive(MatTooltip))
+        .find((el) => el.nativeElement === icon)
+        ?.injector.get(MatTooltip);
+      expect(tooltip?.message).toBe(TOOLTIP);
+    });
+
+    it("shows no icon for a value with an offset", () => {
+      const rowFixture = TestBed.createComponent(componentType);
+      showRows([{ startdate: "2026-11-05T10:00:00.123456+00:00" } as AuditData]);
+      rowFixture.detectChanges();
+
+      const cell = startdateCell(rowFixture, rowFixture.componentInstance as AuditComponent);
+      expect(cell.textContent).toContain("2026-11-05");
+      expect(cell.querySelector("mat-icon.audit-time-zone-unknown")).toBeNull();
+    });
   });
 
   describe("range picker in the browser DOM", () => {

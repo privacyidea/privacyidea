@@ -21,6 +21,7 @@ import { expectedLocalDateTime } from "@testing/expected-local-date-time";
 import {
   atLocalTimeIso,
   formatLocalDateTime,
+  hasNoTimeZoneOffset,
   parseFilterEndTimestamp,
   parseFilterTimestamp
 } from "./date-format.utils";
@@ -159,5 +160,23 @@ describe("parseFilterEndTimestamp", () => {
     expect(parseFilterEndTimestamp("2026-11-05T10:00:00Z")).toBe("2026-11-05T10:00:00.000Z");
     expect(parseFilterEndTimestamp("2026-13")).toBeNull();
     expect(parseFilterEndTimestamp("")).toBeNull();
+  });
+});
+
+describe("hasNoTimeZoneOffset", () => {
+  it.each(["2026-11-05T10:00:00.123456", "2026-11-05T10:00:00"])("is true for %p, an offset-less timestamp", (value) => {
+    expect(hasNoTimeZoneOffset(value)).toBe(true);
+  });
+
+  it.each([
+    "2026-11-05T10:00:00.123456+00:00",
+    "2026-11-05T10:00:00+01:00",
+    "2026-11-05T10:00:00Z",
+    null,
+    undefined,
+    "",
+    "foo"
+  ])("is false for %p", (value) => {
+    expect(hasNoTimeZoneOffset(value)).toBe(false);
   });
 });

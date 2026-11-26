@@ -193,6 +193,17 @@
                   @case ("date") {
                     <div class="flex ali-center">
                       <span>{{ element[column.key] | date: "yyyy-MM-dd HH:mm:ss" }}</span>
+                      @if (hasNoTimeZoneOffset(element[column.key])) {
+                        <mat-icon
+                          class="audit-time-zone-unknown"
+                          role="img"
+                          aria-hidden="false"
+                          tabindex="0"
+                          [matTooltip]="timeZoneUnknownText"
+                          [attr.aria-label]="timeZoneUnknownText"
+                          >public_off</mat-icon
+                        >
+                      }
                       <app-filter-value-button
                         class="margin-left-8"
                         [column]="column.key"

@@ -88,6 +88,21 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// Marks a startdate without offset, written before timestamps were stored in UTC. Focusable so its tooltip opens.
+.audit-time-zone-unknown {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+  vertical-align: middle;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
 .audit-table {
   // The scroll region wraps anywhere, so below this width the date breaks mid-value.
   th.mat-mdc-header-cell.mat-column-startdate,

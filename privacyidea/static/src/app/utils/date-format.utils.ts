@@ -25,6 +25,12 @@ import { formatDate } from "@angular/common";
 // reliably parsed by new Date() on some engines, so normalize to a spec-conformant ISO
 // string before parsing.
 const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+// True for a timestamp without Z or offset, as audit entries written before UTC storage carry (server local time).
+export function hasNoTimeZoneOffset(value: string | null | undefined): boolean {
+  const match = value ? LOOSE_ISO_DATE_TIME_REGEX.exec(value.trim()) : null;
+  return !!match && !match[4];
+}
+
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 // Normalizes a server timestamp to a spec-conformant ISO string new Date() parses consistently,

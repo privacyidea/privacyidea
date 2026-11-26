@@ -86,6 +86,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   atLocalTimeIso,
   endOfLocalDayIso,
+  hasNoTimeZoneOffset,
   normalizeDateTimeString,
   startOfLocalDayIso,
   toFilterDisplay
@@ -271,6 +272,9 @@ export class AuditComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly hasNoTimeZoneOffset = hasNoTimeZoneOffset;
+  // Tooltip and label of the marker on a startdate without offset (an entry written before UTC storage).
+  protected readonly timeZoneUnknownText = $localize`:@@audit.timeZoneUnknown:Time zone unknown: server local time, written before timestamps were stored in UTC.`;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
   readonly filterHint = inlineFilterHint();

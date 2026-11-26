@@ -116,6 +116,13 @@
           <context context-type="linenumber">533</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="audit.timeZoneUnknown" datatype="html">
+        <source>Time zone unknown: server local time, written before timestamps were stored in UTC.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
+          <context context-type="linenumber">277</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="audit.selectTime" datatype="html">
         <source>Time</source>
         <context-group purpose="location">
