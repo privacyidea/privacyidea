@@ -438,6 +438,28 @@ class FireWebhookTestCase(MyTestCase):
         self.assertIn("200", everything)
 
     @responses.activate
+    def test_a_passed_config_and_payload_are_not_logged(self):
+        """
+        The event handler passes the configuration it has already read. That dict holds the URL
+        and the decrypted secret headers, whose names log_with() cannot recognise as sensitive,
+        and the payload may carry user data.
+        """
+        secret_url = "https://hook.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url, status=200)
+        set_webhook("hook", url=secret_url, auth_type=AuthType.HEADER,
+                    headers={"X-Webhook-Sig": "LEAKME"},
+                    secret_headers={"X-Webhook-Sig"})
+
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as logs:
+            fire_webhook("hook", payload="PAYLOAD-OF-cornelius", config=get_webhook("hook"))
+
+        everything = "\n".join(logs.output)
+        self.assertNotIn("SUPERSECRETTOKEN", everything)
+        self.assertNotIn("LEAKME", everything)
+        self.assertNotIn("PAYLOAD-OF-cornelius", everything)
+        self.assertIn("'hook'", everything)
+
+    @responses.activate
     def test_a_failed_delivery_does_not_leak_the_url_either(self):
         """
         The failure path is where the URL gets out on its own: a transport error quotes the

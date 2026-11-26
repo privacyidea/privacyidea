@@ -1068,7 +1068,7 @@ def _record_webhook_call(identifier, start, success, error=False):
     inc("webhook_send_total", {**labels, "result": result})
 
 
-@log_with(log, log_exit=False)
+@log_with(log, log_exit=False, hide_args=["config", "payload"])
 def fire_webhook(identifier, payload=None, config=None):
     """
     Send the request described by the webhook ``identifier``.
