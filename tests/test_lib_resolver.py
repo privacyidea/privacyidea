@@ -26,6 +26,7 @@ from contextlib import contextmanager
 
 import ldap3
 import mock
+import pytest
 import responses
 import yaml
 from cryptography import x509
@@ -910,6 +911,23 @@ class SQLResolverTestCase(MyTestCase):
                 mock_execute.return_value.mappings.return_value.all.return_value = [
                     {"id": user_id, "username": "cornelius"}]
                 self.assertEqual("", resolver.getUserId("cornelius"), user_id)
+
+    def test_13g_loading_the_configuration_again_closes_the_old_engine(self):
+        # A second loadConfig gives the resolver a new session and a new engine. The finalizer of the resolver only
+        # reaches these, so the old session and the connections of the old engine are closed at once.
+        resolver = SQLResolver().loadConfig(self.parameters)
+        self.assertTrue(resolver.getUserList())
+        old_session = resolver.session
+        old_engine = resolver.engine
+        old_pool = old_engine.pool
+        self.assertTrue(old_session.in_transaction())
+
+        resolver.loadConfig(self.parameters)
+
+        self.assertIsNot(old_engine, resolver.engine)
+        self.assertFalse(old_session.in_transaction())
+        self.assertIsNot(old_pool, old_engine.pool)
+        self.assertTrue(resolver.getUserList())
 
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
@@ -3718,6 +3736,8 @@ class LDAPTLSHandshakeTestCase(unittest.TestCase):
         with self.assertRaises(LDAPSocketOpenError):
             self.connect("2", server_maximum_version=ssl.TLSVersion.TLSv1_2)
 
+    # ldap3 does not close its TLS socket when the host name check fails, and the garbage collector reports it
+    @pytest.mark.filterwarnings("ignore:unclosed <ssl.SSLSocket:ResourceWarning")
     def test_03_wrong_host_name_fails(self):
         with self.assertRaises(LDAPSocketOpenError) as context:
             self.connect("5", host="127.0.0.1")

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, signal } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -55,6 +55,7 @@ import { lastValueFrom } from "rxjs";
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPasskeyComponent) }]
 })
 export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentData> {
+  wizard = input<boolean>(false);
   protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(PasskeyApiPayloadMapper);
   protected readonly finalizeMapper: PasskeyFinalizeApiPayloadMapper = inject(PasskeyFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -163,11 +164,13 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       component: TokenEnrollmentFirstStepDialogComponent,
       data: {
         enrollmentResponse,
+        enrollmentData: enrollmentInitData,
         showCancelButton: canCancel,
-        showCloseButton: !canCancel,
+        wizard: this.wizard(),
         registrationFailed: this.registrationFailed.asReadonly(),
         onRetry: () => void this.attemptRegistration(args)
-      }
+      },
+      configOverride: { disableClose: canCancel }
     });
     return this.currentStepOneRef;
   }

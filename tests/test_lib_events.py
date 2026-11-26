@@ -10,6 +10,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 
 import mock
+import pytest
 import requests.exceptions
 import responses
 from dateutil.parser import parse as parse_date_string
@@ -1760,6 +1761,9 @@ class CounterEventTestCase(MyTestCase):
             self.assertEqual(counter.counter_value, 0)
 
 
+# In the background mode, the script handler starts the script and does not wait for it. Python reports such a
+# process when the garbage collector frees it.
+@pytest.mark.filterwarnings("ignore:subprocess .* is still running:ResourceWarning")
 class ScriptEventTestCase(MyTestCase):
 
     def test_00_instantiate(self):

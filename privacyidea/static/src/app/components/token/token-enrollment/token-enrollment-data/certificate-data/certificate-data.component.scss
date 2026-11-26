@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 650px;
+  max-width: var(--dialog-prose-width);
 }
 
 .certificate-actions {
@@ -13,42 +13,8 @@
   gap: 16px;
 }
 
-.certificate-password {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.certificate-password-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  code {
-    overflow-wrap: anywhere;
-  }
-}
-
-.password-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.password-toggle-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  display: flex !important;
-  justify-content: center;
-  color: var(--status-ink);
-}
-
 .certificate-expansion {
-  max-width: 650px;
+  max-width: var(--dialog-prose-width);
 }
 
 .certificate-pem {

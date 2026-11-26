@@ -1,6 +1,7 @@
 <app-dialog-wrapper
   [title]="title()"
   [actions]="actions()"
+  [cancelButtonLabel]="data.cancelButtonText ?? ''"
   (actionTriggered)="onAction($event)">
   <p>{{ message() }}</p>
 </app-dialog-wrapper>

@@ -1,11 +1,11 @@
 .otpkey-expansion {
   margin-bottom: 16px;
-  max-width: 576px;
+  max-width: var(--dialog-prose-width);
 }
 
 .otpkey-p {
   word-wrap: anywhere;
-  max-width: 650px;
+  max-width: var(--dialog-prose-width);
 }
 
 .otpkey-title {

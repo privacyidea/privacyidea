@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, output } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
   MatAccordion,
@@ -26,8 +26,10 @@ import {
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { EnrollmentSecretComponent } from "@components/token/token-enrollment/token-enrollment-data/enrollment-secret/enrollment-secret.component";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { downloadBlob } from "@utils/download.utils";
+import { SavedValues } from "@components/token/token-enrollment/token-enrollment-data/saved-values";
 
 @Component({
   selector: "app-certificate-data",
@@ -39,7 +41,8 @@ import { downloadBlob } from "@utils/download.utils";
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
     MatIcon,
-    CopyButtonComponent
+    CopyButtonComponent,
+    EnrollmentSecretComponent
   ],
   templateUrl: "./certificate-data.component.html",
   styleUrl: "./certificate-data.component.scss"
@@ -65,31 +68,31 @@ export class CertificateDataComponent {
    * the token details cannot tell a PIN-encrypted container from one whose passphrase is lost.
    */
   fromEnrollment = input<boolean>(false);
+  // Asks to save the passphrase now; the wizard asks only when leaving.
+  saveHint = input<boolean>(true);
 
-  /**
-   * Names what still has to be saved before the dialog may be closed, or an empty string once
-   * nothing is left. The dialog disables its close button while this is set and shows it as
-   * the button's tooltip.
-   */
-  closeBlockedReasonChange = output<string>();
+  // What has not been downloaded or saved yet; the wizard asks before it leaves.
+  unsavedDataChange = output<string>();
+  // What closing would lose for good, so the dialog asks first. Only the passphrase; the files stay in the details.
+  closeConfirmationChange = output<string>();
 
   protected readonly isPending = computed(() => this.rolloutState() === "pending");
   protected readonly isDenied = computed(() => this.rolloutState() === "denied");
   protected readonly isFailed = computed(() => this.rolloutState() === "failed");
 
-  protected readonly passwordVisible = signal(false);
-  // Tracks that the passphrase was actually taken note of, either by revealing or by copying
-  // it. Toggling it hidden again does not undo that.
-  private readonly passwordAcknowledged = signal(false);
-  private readonly certificateDownloaded = signal(false);
-  private readonly pkcs12Downloaded = signal(false);
-  // A container whose base64 does not decode holds nothing to rescue, so it must not be able
-  // to lock the user inside the dialog.
-  private readonly pkcs12Unusable = signal(false);
+  // Downloaded files, the shown certificate and the revealed or copied passphrase; hiding again does not undo that.
+  private readonly saved = new SavedValues();
+  // Containers whose base64 does not decode hold nothing to rescue, so they are not asked for.
+  private readonly unusablePkcs12 = new SavedValues();
+  private readonly passwordAcknowledged = computed(() => this.saved.has(`passphrase:${this.pkcs12Password()}`));
+  private readonly certificateDownloaded = computed(() => this.saved.has(`certificate:${this.certificate()}`));
+  private readonly pkcs12Downloaded = computed(() => this.saved.has(`pkcs12:${this.pkcs12()}`));
+  private readonly pkcs12Unusable = computed(() => this.unusablePkcs12.has(this.pkcs12()));
 
-  protected readonly maskedPassword = computed(() => "\u2022".repeat(this.pkcs12Password().length));
+  protected readonly passphraseLabel = $localize`:@@token.passphrase:Passphrase`;
+  protected readonly passphraseHint = $localize`:@@token.pkcs12PasswordOnce:Save the passphrase of the PKCS#12 container now. It is shown here only once and cannot be retrieved again.`;
 
-  protected readonly closeBlockedReason = computed(() => {
+  protected readonly unsavedData = computed(() => {
     const pending: string[] = [];
     if (this.certificate() && !this.certificateDownloaded()) {
       pending.push($localize`:@@token.pendingCertificateDownload:Download the certificate.`);
@@ -103,35 +106,31 @@ export class CertificateDataComponent {
     if (pending.length === 0) {
       return "";
     }
-    return pending.join("\n");
+    return pending.join(" ");
   });
 
-  constructor() {
-    effect(() => this.closeBlockedReasonChange.emit(this.closeBlockedReason()));
-  }
-
-  /** Accessible name of the icon-only toggle button. */
-  protected readonly passwordToggleLabel = computed(() =>
-    this.passwordVisible()
-      ? $localize`:@@token.hidePassphrase:Hide passphrase`
-      : $localize`:@@token.showPassphrase:Show passphrase`
+  protected readonly closeConfirmation = computed(() =>
+    this.pkcs12Password() && !this.passwordAcknowledged()
+      ? $localize`:@@token.closeLosesPassphrase:The passphrase of the PKCS#12 container is shown only once. If you close this dialog now, it cannot be retrieved again.`
+      : ""
   );
 
-  togglePasswordVisible(): void {
-    const visible = !this.passwordVisible();
-    this.passwordVisible.set(visible);
-    if (visible) {
-      this.acknowledgePassword();
-    }
+  constructor() {
+    effect(() => this.unsavedDataChange.emit(this.unsavedData()));
+    effect(() => this.closeConfirmationChange.emit(this.closeConfirmation()));
   }
 
   acknowledgePassword(): void {
-    this.passwordAcknowledged.set(true);
+    this.saved.add(`passphrase:${this.pkcs12Password()}`);
   }
 
   downloadCertificate(): void {
     downloadBlob(new Blob([this.certificate()], { type: "application/x-pem-file" }), `${this.baseName()}.pem`);
-    this.certificateDownloaded.set(true);
+    this.saved.add(`certificate:${this.certificate()}`);
+  }
+
+  onCertificateShown(): void {
+    this.saved.add(`certificate:${this.certificate()}`);
   }
 
   downloadPkcs12(): void {
@@ -142,11 +141,11 @@ export class CertificateDataComponent {
       this.notificationService.error(
         $localize`:@@token.failedPkcs12Download:The PKCS#12 container of this token is damaged and cannot be downloaded.`
       );
-      this.pkcs12Unusable.set(true);
+      this.unusablePkcs12.add(this.pkcs12());
       return;
     }
     downloadBlob(new Blob([binary], { type: "application/x-pkcs12" }), `${this.baseName()}.p12`);
-    this.pkcs12Downloaded.set(true);
+    this.saved.add(`pkcs12:${this.pkcs12()}`);
   }
 
   private baseName(): string {

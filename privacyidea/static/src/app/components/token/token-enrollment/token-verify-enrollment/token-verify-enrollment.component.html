@@ -22,6 +22,7 @@
   title="Verify Token Enrollment"
   i18n-title="@@token.verifyTokenEnrollment"
   [actions]="dialogActions()"
+  [showCloseButton]="!canCancelEnrollment()"
   (actionTriggered)="onDialogAction($event)"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close">
@@ -32,36 +33,36 @@
     [userRealm]="enrollData?.realm"
     [onlyAddToRealm]="enrollData?.onlyAddToRealm"
     [rollover]="data.rollover ?? false"
-    [verificationPending]="true"
-    (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
+    state="verify"
+    [summaryOnly]="wizard"
+    [confirmLeave]="confirmLeave"></app-token-enrolled-text>
 
-  <span
-    class="margin-bottom-16"
-    i18n="@@token.howeverActivate"
-    >However, to activate your token you still need to verify the enrollment.</span
-  >
+  <app-enrollment-customization-frame
+    [enabled]="wizard"
+    [enrollmentDetail]="responseDetails">
+    @if (data.showEnrollData !== false && data.response) {
+      <app-token-enrollment-data
+        (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
+        [enrolledInputData]="data.response.detail"
+        [compact]="wizard"
+        [tokenType]="tokenType"
+        [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+    }
 
-  @if (data.showEnrollData !== false && data.response) {
-    <app-token-enrollment-data
-      (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
-      [enrolledInputData]="data.response.detail"
-      [tokenType]="tokenType"
-      [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
-  }
-
-  <div class="margin-top-16">
-    <h3 i18n="@@token.verifyEnrollment">Verify Enrollment</h3>
-    <!-- The message comes from the token class and varies in length (the indexed-secret one
+    <div class="margin-top-16">
+      <h3 i18n="@@token.verifyEnrollment">Verify Enrollment</h3>
+      <!-- The message comes from the token class and varies in length (the indexed-secret one
          embeds a list of positions), so it is rendered at full dialog width instead of as a
          mat-hint, which would be capped to the width of the input and wrap. -->
-    @if (verifyMessage) {
-      <div class="margin-bottom-16">{{ verifyMessage }}</div>
-    }
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@token.otp">OTP</mat-label>
-      <input
-        [formField]="verifyOTPForm"
-        matInput />
-    </mat-form-field>
-  </div>
+      @if (verifyMessage) {
+        <div class="margin-bottom-16">{{ verifyMessage }}</div>
+      }
+      <mat-form-field class="input-width-l">
+        <mat-label i18n="@@token.otp">OTP</mat-label>
+        <input
+          [formField]="verifyOTPForm"
+          matInput />
+      </mat-form-field>
+    </div>
+  </app-enrollment-customization-frame>
 </app-dialog-wrapper>

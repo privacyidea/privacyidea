@@ -3,6 +3,7 @@ This test file tests the lib.crypto and lib.security.default
 """
 import base64
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -854,12 +855,12 @@ class SignObjectTestCase(MyTestCase):
         with self.assertRaises(Exception):
             Sign(b'This is not a private key', b'This is not a public key')
         with self.assertRaises(Exception):
-            priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
+            priv_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PRIVATE")).read_bytes()
             Sign(private_key=priv_key,
                  public_key=b'Still not a public key')
         # this should work
-        priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
-        pub_key = open(current_app.config.get("PI_AUDIT_KEY_PUBLIC"), 'rb').read()
+        priv_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PRIVATE")).read_bytes()
+        pub_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PUBLIC")).read_bytes()
         so = Sign(priv_key, pub_key)
         self.assertEqual(so.sig_ver, 'rsa_sha256_pss')
 
@@ -872,8 +873,8 @@ class SignObjectTestCase(MyTestCase):
         self.assertFalse(res)
 
     def test_01_sign_and_verify_data(self):
-        priv_key = open(current_app.config.get("PI_AUDIT_KEY_PRIVATE"), 'rb').read()
-        pub_key = open(current_app.config.get("PI_AUDIT_KEY_PUBLIC"), 'rb').read()
+        priv_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PRIVATE")).read_bytes()
+        pub_key = pathlib.Path(current_app.config.get("PI_AUDIT_KEY_PUBLIC")).read_bytes()
         so = Sign(priv_key, pub_key)
         data = 'short text'
         sig = so.sign(data)
