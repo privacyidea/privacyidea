@@ -151,8 +151,8 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
       expect(toResult(completed)).toBe(completed);
     });
 
-    it("does not finish the step while the rollout state is client_wait", () => {
-      const waiting = { ...completed, detail: { ...completed.detail, rollout_state: "client_wait" } };
+    it("does not finish the step while the rollout state is clientwait", () => {
+      const waiting = { ...completed, detail: { ...completed.detail, rollout_state: "clientwait" } };
 
       expect(toResult(waiting as EnrollmentResponse)).toBeNull();
     });

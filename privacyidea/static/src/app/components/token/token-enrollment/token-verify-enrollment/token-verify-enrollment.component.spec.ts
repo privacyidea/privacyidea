@@ -158,7 +158,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
     component.onAction("verify");
 
     const toResult = host.flow.sendStepRequest.mock.calls[0][1];
-    expect(toResult({ result: { status: true }, detail: { rollout_state: "client_wait", serial: "123" } })).toBeNull();
+    expect(toResult({ result: { status: true }, detail: { rollout_state: "clientwait", serial: "123" } })).toBeNull();
   });
 
   describe("while the flow checks the OTP", () => {

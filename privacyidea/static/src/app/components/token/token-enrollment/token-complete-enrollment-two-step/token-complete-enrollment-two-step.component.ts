@@ -94,7 +94,7 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
     }
     this.flow.sendStepRequest(
       this.tokenService.enrollToken({ ...this.enrollParameters, data }),
-      (response) => (response?.result?.status && response?.detail?.rollout_state !== "client_wait" ? response : null),
+      (response) => (response?.result?.status && response?.detail?.rollout_state !== "clientwait" ? response : null),
       this.clientPart()
     );
   }
