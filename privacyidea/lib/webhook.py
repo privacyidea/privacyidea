@@ -336,8 +336,8 @@ def _apply_headers(webhook, headers, secret_headers, renames=None):
                 # mirrors how a censored password behaves on create (the column
                 # exists and is empty). Silently discarding it would leave a
                 # header-authenticated webhook without any header at all.
-                WebhookHeader(webhook_id=webhook.id, key=key, value="",
-                              encrypted=should_be_secret)
+                db.session.add(WebhookHeader(webhook_id=webhook.id, key=key, value="",
+                                             encrypted=should_be_secret))
                 continue
             # Keep the stored value, but still honor a change of the
             # "encrypted" checkbox.
@@ -366,9 +366,9 @@ def _apply_headers(webhook, headers, secret_headers, renames=None):
             stored_value = encryptPassword(value)
 
         if row is None:
-            # WebhookHeader.__init__ persists the row itself.
-            WebhookHeader(webhook_id=webhook.id, key=key, value=stored_value,
-                          encrypted=should_be_secret)
+            # Added, not saved: the caller commits, so that _stage_webhook() never does.
+            db.session.add(WebhookHeader(webhook_id=webhook.id, key=key, value=stored_value,
+                                         encrypted=should_be_secret))
         else:
             row.value = stored_value
             row.encrypted = should_be_secret

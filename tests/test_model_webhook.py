@@ -162,11 +162,13 @@ class WebhookModelTestCase(MyTestCase):
 
         h1 = WebhookHeader(webhook_id=wh_id, key="X-API-Key",
                            value="secret123", encrypted=False)
+        h1.save()
         self.assertIsNotNone(h1.id)
         self.assertGreater(h1.id, 0)
 
         h2 = WebhookHeader(webhook_id=wh_id, key="X-Custom",
                            value="plain", encrypted=False)
+        h2.save()
         self.assertIsNotNone(h2.id)
 
         # Verify via the parent relationship
@@ -185,7 +187,7 @@ class WebhookModelTestCase(MyTestCase):
         encrypted_secret = encryptPassword(secret)
 
         WebhookHeader(webhook_id=wh_id, key="Authorization",
-                      value=encrypted_secret, encrypted=True)
+                      value=encrypted_secret, encrypted=True).save()
 
         loaded = db.session.get(Webhook, wh_id)
         headers = loaded.header_dict
@@ -201,7 +203,7 @@ class WebhookModelTestCase(MyTestCase):
         wh = Webhook(identifier="stale-key-hook", url="https://e.example.com")
         wh_id = wh.save()
         WebhookHeader(webhook_id=wh_id, key="Authorization",
-                      value="not-something-this-key-can-decrypt", encrypted=True)
+                      value="not-something-this-key-can-decrypt", encrypted=True).save()
 
         loaded = db.session.get(Webhook, wh_id)
 
@@ -212,7 +214,7 @@ class WebhookModelTestCase(MyTestCase):
         wh = Webhook(identifier="get-header-hook", url="https://g.example.com")
         wh_id = wh.save()
 
-        WebhookHeader(webhook_id=wh_id, key="X-Tenant", value="acme")
+        WebhookHeader(webhook_id=wh_id, key="X-Tenant", value="acme").save()
 
         d = wh.get()
         self.assertIn("X-Tenant", d["headers"])
@@ -223,8 +225,8 @@ class WebhookModelTestCase(MyTestCase):
         wh = Webhook(identifier="cascade-hook", url="https://c.example.com")
         wh_id = wh.save()
 
-        h1_id = WebhookHeader(webhook_id=wh_id, key="H1", value="v1").id
-        h2_id = WebhookHeader(webhook_id=wh_id, key="H2", value="v2").id
+        h1_id = WebhookHeader(webhook_id=wh_id, key="H1", value="v1").save()
+        h2_id = WebhookHeader(webhook_id=wh_id, key="H2", value="v2").save()
 
         # Verify headers exist
         self.assertIsNotNone(db.session.get(WebhookHeader, h1_id))
@@ -257,7 +259,7 @@ class WebhookModelTestCase(MyTestCase):
 
         for i in range(5):
             WebhookHeader(webhook_id=wh_id, key=f"X-Header-{i}",
-                          value=f"value-{i}")
+                          value=f"value-{i}").save()
 
         loaded = db.session.get(Webhook, wh_id)
         headers = loaded.header_dict

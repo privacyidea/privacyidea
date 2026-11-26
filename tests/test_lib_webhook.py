@@ -9,9 +9,10 @@ from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.webhook import (
     AuthType, ContentType, HttpMethod, DEFAULT_TIMEOUT,
     delete_webhook, export_webhook, get_webhook, get_webhook_identifiers,
-    get_webhook_object, get_webhooks, import_webhook, set_webhook,
+    get_webhook_object, get_webhooks, import_webhook, set_webhook, _stage_webhook,
 )
-from privacyidea.models.webhook import Webhook
+from privacyidea.models import db
+from privacyidea.models.webhook import Webhook, WebhookHeader
 from .base import MyTestCase
 
 
@@ -467,6 +468,16 @@ class WebhookCrudTestCase(MyTestCase):
             set_webhook, "siem", headers={"C": CENSORED, "D": CENSORED},
             header_renames={"C": "A", "D": "A"})
         self.assertEqual({"A": "1"}, get_webhook("siem")["headers"])
+
+    def test_staging_a_webhook_with_headers_does_not_commit(self):
+        # The configuration import writes webhooks and event handlers in one transaction, so a
+        # header must not commit what is staged before it.
+        _stage_webhook("staged", url="https://siem.example.com/ingest",
+                       headers={"X-A": "1", "X-B": CENSORED})
+        db.session.rollback()
+
+        self.assertIsNone(Webhook.query.filter_by(identifier="staged").first())
+        self.assertEqual(0, WebhookHeader.query.count())
 
     def test_a_rename_without_a_header_set_is_refused(self):
         # The header set is replaced wholesale, so a rename on its own describes a state the next

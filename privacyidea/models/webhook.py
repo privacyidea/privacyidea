@@ -233,9 +233,11 @@ class WebhookHeader(MethodsMixin, db.Model):
     def __init__(self, webhook_id, key, value, encrypted=False):
         """
         Create a new header entry for the given webhook_id.
+
+        It is not saved, like a :class:`Webhook`: the caller adds it to the session, so that it is
+        written in the caller's transaction. Call :meth:`save` to write and commit it on its own.
         """
         self.webhook_id = webhook_id
         self.key = key
         self.value = value
         self.encrypted = encrypted
-        self.save()
