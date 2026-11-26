@@ -94,7 +94,7 @@ from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
-from privacyidea.lib.utils import censor_connect_string
+from privacyidea.lib.utils import censor_connect_string, get_remote_user_header_proxies
 from privacyidea.models import db, NodeName
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
                                      get_accepted_language)
@@ -343,6 +343,19 @@ def _warn_if_base_url_missing(app: Flask):
                     "are left blank. They are never built from the untrusted HTTP "
                     "Host header. Set PI_BASE_URL in pi.cfg to the public URL of "
                     "this privacyIDEA server.")
+
+
+def _warn_if_remote_user_header_has_no_proxies(app: Flask) -> None:
+    """
+    Log a warning if ``PI_REMOTE_USER_HEADER`` is set, but ``PI_REMOTE_USER_HEADER_PROXIES`` names no usable
+    proxy. privacyIDEA then ignores the header for every request, and the warning tells the administrator why the
+    remote user login does not work.
+    """
+    if not app.config.get(ConfigKey.REMOTE_USER_HEADER):
+        return
+    if not get_remote_user_header_proxies(app.config.get(ConfigKey.REMOTE_USER_HEADER_PROXIES)):
+        log.warning(f"'{ConfigKey.REMOTE_USER_HEADER}' is set, but '{ConfigKey.REMOTE_USER_HEADER_PROXIES}' names "
+                    "no valid IP address or network of a proxy. privacyIDEA ignores the remote user header.")
 
 
 def versioned_asset(path: str) -> str:
@@ -658,6 +671,7 @@ def create_app(config_name="development",
     with app.app_context():
         build_pass_context()
     _warn_if_base_url_missing(app)
+    _warn_if_remote_user_header_has_no_proxies(app)
 
     _resolve_ui_folders(app)
     _warn_if_webui_missing(app)
@@ -769,6 +783,7 @@ def create_docker_app():
     with app.app_context():
         build_pass_context()
     _warn_if_base_url_missing(app)
+    _warn_if_remote_user_header_has_no_proxies(app)
 
     _resolve_ui_folders(app)
     _warn_if_webui_missing(app)

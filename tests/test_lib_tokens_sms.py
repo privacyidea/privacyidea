@@ -3,6 +3,7 @@ This test file tests the lib.tokens.smstoken
 """
 import json
 import logging
+import time
 from urllib.parse import parse_qs
 
 from unittest import mock
@@ -10,7 +11,7 @@ import responses
 from testfixtures import log_capture
 
 from privacyidea.lib import _
-from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
+from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin, delete_privacyidea_config
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.realm import set_realm
@@ -660,6 +661,36 @@ class SMSTokenTestCase(MyTestCase):
         with self.assertRaises(ParameterError):
             init_token(param={"serial": "PISM_EMPTY2", "type": "sms", "genkey": 1})
         self.assertEqual([], get_tokens(serial="PISM_EMPTY2"))
+
+    def test_26_no_autoresync(self):
+        # The server generates every value it sends, so a value in the sync window is never one it sent. The
+        # autoresync does not run for the token, and leftovers of older versions are ignored and removed.
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"type": "sms", "serial": "PISM_NORESYNC", "otpkey": self.otpkey,
+                           "phone": "123456"})
+        self.addCleanup(remove_token, "PISM_NORESYNC")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        token.token.save()
+
+        # counter 8 and 9 are in the sync window, but outside the count window
+        self.assertEqual(-1, token.check_otp("399871"))
+        self.assertEqual(-1, token.check_otp("520489"))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        self.assertNotIn("autoresync", token.auth_details)
+        self.assertEqual(0, token.get_otp_count())
+
+        # A leftover of an older version does not make the token wait for a resync
+        token.write_tokeninfo("otp1c", 8)
+        token.write_tokeninfo("dueDate", int(time.time()) + 600)
+        self.assertFalse(token.has_pending_autoresync())
+
+        # A correct value in the count window removes the leftover
+        self.assertEqual(2, token.check_otp("359152"))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
