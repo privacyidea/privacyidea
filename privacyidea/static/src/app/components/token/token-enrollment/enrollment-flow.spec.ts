@@ -479,6 +479,47 @@ describe("EnrollmentFlow", () => {
     expect(closed).toBe(true);
   });
 
+  describe("container", () => {
+    it("keeps the container of the first response when later responses do not repeat it", () => {
+      const first = response({ rollout_state: "clientwait", container_serial: "CONT0001" });
+      const flow = startFlow(first, { kind: "fido2", register: jest.fn() });
+      flow.continue(first);
+
+      flow.finishStep(response({ rollout_state: "verify", verify: { message: "Enter OTP" } }));
+      expect(flow.containerSerial()).toBe("CONT0001");
+
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      expect(flow.containerSerial()).toBe("CONT0001");
+    });
+
+    it("shows no container the server did not add the token to", () => {
+      const first = response({ rollout_state: "enrolled" });
+      const flow = TestBed.runInInjectionContext(() => new EnrollmentFlow(options));
+      flow.start({
+        response: first,
+        enrollParameters: { data: { containerSerial: "CONT0001" } } as unknown as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+
+      expect(flow.containerSerial()).toBe("");
+    });
+
+    it("forgets the container of an earlier enrollment", () => {
+      const flow = startFlow(response({ rollout_state: "enrolled", container_serial: "CONT0001" }));
+
+      flow.reset();
+      expect(flow.containerSerial()).toBe("");
+
+      flow.start({
+        response: response({ rollout_state: "enrolled" }),
+        enrollParameters: {} as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+      expect(flow.containerSerial()).toBe("");
+    });
+  });
+
   it("reads the success step when it opens", () => {
     class OtherSuccessStep extends TokenEnrollmentSuccessComponent {}
     let successStep: typeof TokenEnrollmentSuccessComponent = TokenEnrollmentSuccessComponent;

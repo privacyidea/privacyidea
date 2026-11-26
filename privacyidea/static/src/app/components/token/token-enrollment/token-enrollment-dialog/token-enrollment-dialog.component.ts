@@ -89,10 +89,6 @@ export class TokenEnrollmentDialogComponent
   protected readonly enrollment = computed(() => this.flow.dialogData());
   protected readonly detail = computed(() => this.enrollment()?.response?.detail);
   protected readonly request = computed(() => this.enrollment()?.enrollParameters?.data);
-  // The container the server added the token to, else the one asked for.
-  protected readonly containerSerial = computed(
-    () => (this.detail()?.["container_serial"] as string | undefined) || this.request()?.containerSerial
-  );
   protected readonly wizard = computed(() => this.enrollment()?.wizard ?? false);
   protected readonly finished = computed(() => this.step()?.headerState === "done");
   // Only a user who may delete has a choice when leaving an unfinished enrollment. A rollover never

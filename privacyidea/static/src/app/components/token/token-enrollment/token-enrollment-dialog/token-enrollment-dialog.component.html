@@ -30,7 +30,7 @@
   i18n-cancelButtonLabel="@@common.close">
   <app-token-enrolled-text
     [serial]="detail()?.serial"
-    [containerSerial]="containerSerial()"
+    [containerSerial]="flow.containerSerial()"
     [username]="request()?.user"
     [userRealm]="request()?.realm"
     [onlyAddToRealm]="request()?.onlyAddToRealm"

@@ -113,6 +113,8 @@ export class EnrollmentFlow {
   readonly sentInput = signal<string | null>(null);
   // Set when the request of the current step ended without finishing it.
   readonly stepRequestFailed = signal(false);
+  // The container the server added the token to. Later responses, e.g. of a verification, do not repeat it.
+  readonly containerSerial = signal("");
 
   private dialogRef: MatDialogRef<unknown> | null = null;
   private cancelled = false;
@@ -146,6 +148,9 @@ export class EnrollmentFlow {
       ...data,
       onEnrollmentResponseChange: (response) => this.setResponse(response)
     });
+    if (data.response) {
+      this.keepContainerSerial(data.response);
+    }
   }
 
   reset(): void {
@@ -378,9 +383,20 @@ export class EnrollmentFlow {
     this.step.set(null);
     this.sentInput.set(null);
     this.stepRequestFailed.set(false);
+    this.containerSerial.set("");
   }
 
   private setResponse(response: EnrollmentResponse): void {
     this.dialogData.update((data) => (data ? { ...data, response } : data));
+    if (this.dialogData()) {
+      this.keepContainerSerial(response);
+    }
+  }
+
+  private keepContainerSerial(response: EnrollmentResponse): void {
+    const containerSerial = response.detail?.["container_serial"] as string | undefined;
+    if (containerSerial) {
+      this.containerSerial.set(containerSerial);
+    }
   }
 }
