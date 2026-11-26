@@ -4147,6 +4147,9 @@ def import_policy(data, name=None, skip_invalid=False):
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)
                 continue
+        if "description" in res_data and res_data["description"] is None:
+            # A policy without a description exports None, which set_policy() takes as "keep the stored one"
+            res_data["description"] = ""
         entries.append((policy_name, res_data))
 
     if skipped:

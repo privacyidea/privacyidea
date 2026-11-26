@@ -41,6 +41,7 @@ from sqlalchemy import select
 from privacyidea.lib import config  # noqa: F401 # registers the importer of the type 'config'
 from privacyidea.lib.caconnector import delete_caconnector
 from privacyidea.lib.crypto import is_censored
+from privacyidea.lib.error import UserError
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.machineresolver import delete_resolver as delete_machine_resolver
 from privacyidea.lib.periodictask import delete_periodic_task
@@ -53,8 +54,8 @@ from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway
 from privacyidea.lib.smtpserver import delete_smtpserver
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
-from privacyidea.models import (db, PeriodicTask, Policy, PrivacyIDEAServer, RADIUSServer, SMSGateway,
-                                SMTPServer)
+from privacyidea.models import (db, PeriodicTask, Policy, PrivacyIDEAServer, RADIUSServer, Realm, SMSGateway,
+                                SMTPServer, TokenContainerRealm, TokenRealm)
 from privacyidea.models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
@@ -68,6 +69,8 @@ SKIP = "skip"
 CONFIG_NOTE = "System settings (type 'config') are not replaced: keys missing from the import are kept."
 ADMIN_POLICY_WARNING = ("Warning: after this import no active admin policy is left, "
                         "so every administrator may do everything.")
+NO_DEFAULT_REALM_WARNING = ("Warning: after this import no realm is the default realm, "
+                            "so a user who logs in without a realm is not found.")
 
 _MISSING = object()
 NO_DEFAULT_REALM_PLAN = object()
@@ -162,9 +165,9 @@ def _normalize_resolver(entry: dict) -> dict:
 
 
 def _normalize_realm(entry: dict) -> dict:
-    result = _without(entry, ("id",))
-    if "default" in result:
-        result["default"] = is_true(result["default"])
+    # The default realm is a setting of the system and not of one realm. The plan of the type realm holds it in
+    # TypePlan.default_realm, because import_realms() only sets the default and never takes it away.
+    result = _without(entry, ("id", "default"))
     if isinstance(result.get("resolver"), list):
         # set_realm only uses name, priority and node of each resolver, the order does not matter
         resolvers = [{"name": res.get("name"), "priority": res.get("priority"), "node": str(res.get("node") or "")}
@@ -177,6 +180,9 @@ def _normalize_policy(entry: dict) -> dict:
     result = dict(entry)
     if isinstance(result.get("action"), str):
         result["action"] = parse_action_string(result["action"]) if result["action"] else {}
+    if "description" in result:
+        # import_policy stores None as "", and Oracle reads "" back as None
+        result["description"] = result["description"] or None
     return result
 
 
@@ -245,6 +251,21 @@ def _fold_case(name: str) -> str:
     return name.lower()
 
 
+def _delete_realm(entry: PlanEntry) -> int:
+    """
+    Delete a realm that is missing from the import. delete_realm() only refuses a realm whose users own tokens or
+    containers, and it takes the realm away from all other tokens and containers. The import keeps such a realm.
+    """
+    realm_id = db.session.scalar(select(Realm.id).where(Realm.name == entry.key))
+    if realm_id is not None:
+        if db.session.scalar(select(TokenRealm.id).where(TokenRealm.realm_id == realm_id).limit(1)) is not None:
+            raise UserError(f"Realm '{entry.key}' is not deleted, because it still contains tokens.")
+        container_stmt = select(TokenContainerRealm.container_id).where(TokenContainerRealm.realm_id == realm_id)
+        if db.session.scalar(container_stmt.limit(1)) is not None:
+            raise UserError(f"Realm '{entry.key}' is not deleted, because it still contains containers.")
+    return delete_realm(entry.key, delete_custom_attributes=False, confirm_ca_policies=False)
+
+
 def _stored_name_lookup(column: Any) -> Callable[[str], str | None]:
     """Find a stored name with the comparison of the setter, which follows the collation of the database."""
     def lookup(name: str) -> str | None:
@@ -256,9 +277,7 @@ _ADAPTERS = {
     "resolver": _TypeAdapter(normalize=_normalize_resolver, subset_fields=("data",), fold_name=_fold_case,
                              delete=lambda entry: delete_resolver(entry.target_name or entry.key)),
     "config": _TypeAdapter(normalize=_normalize_config),
-    "realm": _TypeAdapter(normalize=_normalize_realm, fold_name=_fold_realm_name,
-                          delete=lambda entry: delete_realm(entry.key, delete_custom_attributes=False,
-                                                            confirm_ca_policies=False)),
+    "realm": _TypeAdapter(normalize=_normalize_realm, fold_name=_fold_realm_name, delete=_delete_realm),
     "policy": _TypeAdapter(name_field="name", normalize=_normalize_policy,
                            delete=lambda entry: delete_policy(entry.key),
                            stored_name=_stored_name_lookup(Policy.name)),
@@ -291,8 +310,8 @@ DELETE_ORDER = tuple(typ for typ in reversed(_import_order()) if typ != "config"
 def delete_plan_entry(typ: str, entry: PlanEntry) -> Any:
     """
     Delete the entry of a planned ``delete`` from this system with the existing
-    lib function of the type. Nothing is forced: e.g. a realm with assigned
-    tokens or a resolver used by a realm raises the error of the lib function.
+    lib function of the type. Nothing is forced: e.g. a realm that contains
+    tokens or containers or a resolver used by a realm raises an error.
 
     :return: the result of the lib delete function
     """
@@ -432,11 +451,32 @@ def _plan_name_keyed(typ: str, typ_data: dict | list | None, name: str | None, r
                             if key not in import_entries and key not in hits.values())
     if typ == "policy":
         plan.warnings.extend(_admin_policy_warning(import_entries, all_targets, plan.entries, hits))
-    if replace and typ == "realm" and name is None:
-        plan.default_realm = next((key for key, entry in import_entries.items() if is_true(entry.get("default"))),
-                                  None)
+    if typ == "realm":
+        plan.default_realm = _plan_default_realm(import_entries, all_targets, plan.entries,
+                                                 replace_all=replace and name is None)
+        if plan.default_realm is None and get_default_realm():
+            plan.warnings.append(NO_DEFAULT_REALM_WARNING)
     plan.data = _to_importer_format(adapter, to_import)
     return plan
+
+
+def _plan_default_realm(import_entries: dict, stored_realms: dict, entries: list,
+                        replace_all: bool) -> str | None | object:
+    """
+    Return the name of the default realm after the import, None for no default
+    realm, or NO_DEFAULT_REALM_PLAN if the import does not change the default.
+
+    A realm of the import that is marked as default becomes the default realm.
+    If the import replaces all realms, the default realm follows the import, also
+    if no realm of the import is marked as default. Else set_realm() makes the
+    first realm that it creates on a system without realms the default realm.
+    """
+    marked = next((key for key, entry in import_entries.items() if is_true(entry.get("default"))), None)
+    if marked is not None or replace_all:
+        return marked
+    if not stored_realms:
+        return next((entry.key for entry in entries if entry.action == CREATE), NO_DEFAULT_REALM_PLAN)
+    return NO_DEFAULT_REALM_PLAN
 
 
 def _entry_count(count: int) -> str:
@@ -514,13 +554,17 @@ def build_import_plan(data: dict, types: Iterable[str], name: str | None = None,
     :param skip_invalid: Drop policy actions that are not valid for this version
         before comparing, as ``import_policy`` does
     :return: a ``TypePlan`` for each selected type in ``data``, in import order
+    :raises ValueError: if a selected type in ``data`` has no adapter in ``_ADAPTERS``, so that the import does
+        not leave out the type without a message
     """
     types = set(types)
     data = copy.deepcopy(data)
     plans = []
     for typ in _import_order():
-        if typ not in data or ("all" not in types and typ not in types) or typ not in _ADAPTERS:
+        if typ not in data or ("all" not in types and typ not in types):
             continue
+        if typ not in _ADAPTERS:
+            raise ValueError(f"The configuration type '{typ}' can not be compared with this system.")
         if typ == "event":
             plan = _plan_event(data[typ], name, replace)
         else:
@@ -549,6 +593,20 @@ def _quote_or_none(name: str | None) -> str:
     return f'"{name}"' if name else "none"
 
 
+def _default_realm_change(plan: TypePlan) -> tuple | None:
+    """The current and the planned default realm, if the plan changes the default realm, else None."""
+    if plan.default_realm is NO_DEFAULT_REALM_PLAN:
+        return None
+    current = get_default_realm() or None
+    return (current, plan.default_realm) if current != plan.default_realm else None
+
+
+def plan_has_changes(plans: list) -> bool:
+    """Tell whether the plan contains an entry that is not unchanged or a change of the default realm."""
+    return (any(entry.action != UNCHANGED for plan in plans for entry in plan.entries)
+            or any(_default_realm_change(plan) for plan in plans))
+
+
 def format_import_plan(plans: list) -> list:
     """
     Return the plan as text lines, one per entry followed by the notes and
@@ -558,9 +616,9 @@ def format_import_plan(plans: list) -> list:
     lines = []
     for plan in plans:
         lines.extend(_format_entry(plan.typ, entry) for entry in plan.entries)
-        current = get_default_realm() or None if plan.default_realm is not NO_DEFAULT_REALM_PLAN else None
-        if plan.default_realm is not NO_DEFAULT_REALM_PLAN and current != plan.default_realm:
-            lines.append(f"  default realm: {_quote_or_none(current)} -> {_quote_or_none(plan.default_realm)}")
+        change = _default_realm_change(plan)
+        if change:
+            lines.append(f"  default realm: {_quote_or_none(change[0])} -> {_quote_or_none(change[1])}")
         lines.extend(f"  {text}" for text in plan.notes + plan.warnings)
     return lines
 
@@ -568,8 +626,8 @@ def format_import_plan(plans: list) -> list:
 def _surplus_event_deletes(plan: TypePlan) -> list:
     """
     The planned deletions of event handlers of a group that is also in the
-    import: they have to go before import_event, which skips a group with
-    more handlers on this system than in the import.
+    import: import_event deletes them in its own transaction, because it skips
+    a group with more handlers on this system than in the import.
     """
     if plan.typ != "event":
         return []
@@ -587,12 +645,13 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     create and update entries only, so unchanged entries are not written
     again. Afterwards the planned deletions run in ``DELETE_ORDER``. The
     surplus event handlers of a group that is also in the import are deleted
-    right before the event handlers are imported.
+    in the same transaction as the import of the event handlers.
 
     A failing importer or deletion is rolled back, reported with ``on_error``
     and the type is marked as failed. The remaining types and deletions are
     still applied, but the planned deletions of a type whose importer failed
-    are not.
+    are not. If the deletion of the default realm fails, the realm stays the
+    default realm, also if the plan removes the default realm.
 
     :param plans: the list of ``TypePlan`` objects
     :param name: passed to the importers of types with plain names, the plan data is already filtered by it
@@ -605,6 +664,7 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     """
     failed = []
     import_failed = set()
+    failed_realm_deletes = set()
 
     def fail(typ: str, entry: PlanEntry | None, exx: Exception) -> None:
         db.session.rollback()
@@ -618,7 +678,9 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     def delete(typ: str, entry: PlanEntry) -> None:
         try:
             delete_plan_entry(typ, entry)
-        except Exception as exx:  # noqa: Any error of a delete function is reported, the others go on
+        except Exception as exx:  # Any error of a delete function is reported, the others go on
+            if typ == "realm":
+                failed_realm_deletes.add(entry.target_name or entry.key)
             fail(typ, entry, exx)
 
     for plan in plans:
@@ -627,22 +689,23 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
             continue
         if on_import:
             on_import(plan.typ)
-        for entry in surplus:
-            delete(plan.typ, entry)
-        if not plan.data:
-            continue
         func = IMPORT_FUNCTIONS[plan.typ]["func"]
         # the plan data is already filtered by name, the importers of folded types would compare the raw name
         kwargs = {"name": name if _ADAPTERS[plan.typ].fold_name is str else None}
         if "skip_invalid" in inspect.signature(func).parameters:
             kwargs["skip_invalid"] = skip_invalid
+        if surplus:
+            # If the import fails, the rollback also restores the surplus event handlers
+            kwargs["delete_ids"] = [entry.target_id for entry in surplus]
         try:
-            func(plan.data, **kwargs)
-        except Exception as exx:  # noqa: Any error of an importer is reported, the other types go on
+            func(plan.data or [], **kwargs)
+        except Exception as exx:  # Any error of an importer is reported, the other types go on
             import_failed.add(plan.typ)
             fail(plan.typ, None, exx)
 
     by_type = {plan.typ: plan for plan in plans}
+    # delete_realm() makes the last realm that is left the default realm, so the default is read before the deletions
+    default_before_deletes = get_default_realm() or None
     for typ in DELETE_ORDER:
         plan = by_type.get(typ)
         if not plan or typ in import_failed:
@@ -656,9 +719,11 @@ def apply_import_plan(plans: list, name: str | None = None, skip_invalid: bool =
     realm_plan = by_type.get("realm")
     if (realm_plan and realm_plan.default_realm is not NO_DEFAULT_REALM_PLAN
             and "realm" not in import_failed):
+        # The import keeps a default realm whose deletion failed, and the realm stays as it was, also as the default
+        keep_default = realm_plan.default_realm is None and default_before_deletes in failed_realm_deletes
         try:
-            if (get_default_realm() or None) != realm_plan.default_realm:
+            if not keep_default and (get_default_realm() or None) != realm_plan.default_realm:
                 set_default_realm(realm_plan.default_realm)
-        except Exception as exx:  # noqa: Any error is reported, the other steps are done
+        except Exception as exx:  # Any error is reported, the other steps are done
             fail("realm", None, exx)
     return failed
