@@ -10,12 +10,9 @@ Version 3.15
     entry whose name differs only in case is updated instead of being created and deleted (#4945)
 
   Fixes:
-  * WebUI: The token enrollment, the token wizard and the rollover dialog take the hash algorithm, OTP length, time
-    step, 2step, server-generated key, SMS gateways and required description from the enrollment policies of the
-    selected user, realm or token. The new endpoint `GET /token/init/policies` returns them with the same enroll right
-    as `POST /token/init`. Before, the values came from the login and could belong to another realm. A conflict between
-    policies is shown before the token is enrolled, and a note names any value of the enrolled token that differs from
-    the dialog (#6253)
+  * WebUI: The token enrollment, the token wizard and the rollover dialog take the values of the enrollment policies,
+    like the hash algorithm, OTP length or SMS gateways, for the selected user, realm or token instead of the
+    logged-in administrator. The new endpoint `GET /token/init/policies` returns these values (#6253)
 
 Version 3.14.1
 
