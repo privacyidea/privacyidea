@@ -275,13 +275,16 @@ kind of request has, and which actions have special rules.
   to define certain policies to be active throughout working hours.
 
   The days are ``Mon``, ``Tue``, ``Wed``, ``Thu``, ``Fri``, ``Sat`` and ``Sun``. A day
-  range goes from the first day to the second day in this order. For a range over the
-  end of the week, use two ranges, like ``Sat-Sun: 8-18, Mon: 8-18``.
+  range goes from the first day to the second day in this order. It can wrap around the
+  end of the week: ``Sat-Mon: 8-18`` is valid on Saturday, Sunday and Monday.
 
   Times are the local time of the privacyIDEA server, compared at minute precision with
   both ends included: ``8-18`` means from 08:00 up to and including 18:00, and ``0-23``
-  ends at 23:00. For a whole day, use ``0:00-23:59``. A range can not cross midnight
-  (``22-6`` is rejected).
+  ends at 23:00. For a whole day, use ``0:00-23:59``.
+
+  A time range can cross midnight. The hours after midnight belong to the day on which the
+  range starts: ``Fri: 22-6`` is valid from Friday 22:00 to Saturday 06:00, and
+  ``Mon-Fri: 22-6`` covers the nights from Monday evening to Saturday morning.
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before
