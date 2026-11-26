@@ -1172,6 +1172,31 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("cornelius",
                          resolve_remote_user_from_header(r, "X-Forwarded-User", "2001:db8::/32"))
 
+    def test_23u_remote_user_header_trusts_the_same_peers_as_x_forwarded_for(self):
+        # The header is honoured for exactly the peers that may also map the client IP through
+        # X-Forwarded-For: an IPv4 address and its IPv4-mapped IPv6 form are the same proxy, in the
+        # peer and in the entry, and a link-local peer matches without its zone.
+        @dataclass
+        class RemoteUserRequestMock(ClientIpRequestMock):
+            remote_user: str | None = None
+            headers: dict = field(default_factory=lambda: {"X-Forwarded-User": "cornelius"})
+
+        for peer, proxy_settings, trusted in (
+                ("::ffff:10.0.0.1", "::ffff:10.0.0.1 > 0.0.0.0/0", True),
+                ("10.0.0.1", "::ffff:10.0.0.1 > 0.0.0.0/0", True),
+                ("::ffff:10.0.0.1", "10.0.0.1 > 0.0.0.0/0", True),
+                ("::ffff:10.0.0.1", "::/0 > 0.0.0.0/0", True),
+                ("fe80::1%eth0", "fe80::/10 > 0.0.0.0/0", True),
+                ("10.0.0.1", "::/0 > 0.0.0.0/0", False),
+                ("fe80::1%eth0", "10.0.0.0/8 > 0.0.0.0/0", False),
+        ):
+            with self.subTest(peer=peer, proxy_settings=proxy_settings):
+                request = RemoteUserRequestMock(remote_addr=peer, access_route=["192.0.2.43"])
+                client_ip_source = get_client_ip_info(request, proxy_settings).source
+                self.assertEqual(trusted, client_ip_source == "X_FORWARDED_FOR")
+                remote_user = resolve_remote_user_from_header(request, "X-Forwarded-User", proxy_settings)
+                self.assertEqual("cornelius" if trusted else None, remote_user)
+
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
         with self.assertRaisesRegex(Exception, "non conformant characters in the name"):

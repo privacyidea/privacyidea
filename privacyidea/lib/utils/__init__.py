@@ -1011,6 +1011,8 @@ def resolve_remote_user_from_header(request, header_name, proxy_settings):
     ``OverrideAuthorizationClient`` system setting (see :func:`parse_proxy`),
     i.e. the same list of proxies that may already rewrite the client IP via
     ``X-Forwarded-For`` decides which proxy may pass the authenticated user.
+    The peer is read and matched as :func:`get_client_ip_info` reads and
+    matches it, so both checks accept the same proxies.
     A request that arrives with its own ``REMOTE_USER`` (Apache, uWSGI) keeps
     that value - the header never overrides an upstream web server.
 
@@ -1038,9 +1040,9 @@ def resolve_remote_user_from_header(request, header_name, proxy_settings):
     peer_ip = request.remote_addr
     if not peer_ip:
         return None
-    try:
-        peer = IPAddress(peer_ip)
-    except AddrFormatError:
+    # A scoped link-local peer ("fe80::1%eth0") loses its zone, as in the X-Forwarded-For check.
+    peer = _parse_hop_address(peer_ip)
+    if peer is None:
         log.warning(
             f"Cannot check the proxy list for the remote user header: "
             f"the peer address {peer_ip!r} is not an IP address."
@@ -1057,18 +1059,12 @@ def resolve_remote_user_from_header(request, header_name, proxy_settings):
     try:
         proxy_paths = parse_proxy(proxy_settings or "")
     except AddrFormatError:
-        # parse_proxy itself logs the malformed setting in detail.
+        # check_proxy_index logs the malformed setting when it maps the client IP of the request.
         return None
     for proxy_path in proxy_paths:
-        first_network = proxy_path[0]
-        candidate = peer
-        # An IPv4-mapped IPv6 peer ("::ffff:10.1.2.3") is the same host as the
-        # IPv4 address it maps to; compare it in the family the admin wrote.
-        if candidate.version == 6 and candidate.is_ipv4_mapped():
-            candidate = candidate.ipv4()
-        if first_network.version != candidate.version:
-            continue
-        if candidate in first_network:
+        # An IPv4 peer and its IPv4-mapped IPv6 form ("::ffff:10.1.2.3") are the
+        # same host, in the network entry as in the peer address.
+        if _ip_in_network(peer, proxy_path[0]):
             return header_value
     log.info(
         f"Ignoring the remote user header {header_name!r}: the peer "
