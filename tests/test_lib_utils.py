@@ -17,6 +17,7 @@ from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS, MAX_IP_CHAIN_HOP_LENGTH,
+                                   resolve_remote_user_from_header, get_remote_user_header_proxies,
                                    reduce_realms, is_true,
                                    parse_date, get_data_from_params, parse_legacy_time,
                                    int_to_hex, parse_time_offset_from_now, censor_connect_string,
@@ -55,6 +56,13 @@ class ClientIpRequestMock:
     access_route: list[str] = field(default_factory=list)
     blueprint: str | None = "token_blueprint"
     all_data: dict = field(default_factory=dict)
+
+
+@dataclass
+class RemoteUserRequestMock(ClientIpRequestMock):
+    """The request attributes that resolve_remote_user_from_header reads, in addition to the client IP ones."""
+    remote_user: str | None = None
+    headers: dict = field(default_factory=lambda: {"X-Forwarded-User": "cornelius"})
 
 
 class UtilsTestCase(MyTestCase):
@@ -124,6 +132,35 @@ class UtilsTestCase(MyTestCase):
 
         # Nonsense will not match
         self.assertRaises(ParameterError, check_time_in_range, "Mon-Wrong: asd-17:30", t)
+
+    def test_03b_check_time_in_range_wrap_around(self):
+        # Week of April 4th, 2016: Mon 4th, Fri 8th, Sat 9th, Sun 10th, Mon 11th
+        def at(day, hour, minute=0):
+            return datetime(2016, 4, day, hour=hour, minute=minute)
+
+        # A day range over the end of the week
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(9, 12)))
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(10, 12)))
+        self.assertTrue(check_time_in_range("Sat-Mon: 8-18", at(11, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(5, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(8, 12)))
+        self.assertFalse(check_time_in_range("Sat-Mon: 8-18", at(11, 19)))
+        # The other ranges of a policy still match
+        self.assertTrue(check_time_in_range("Sun-Tue: 0-6, Wed-Fri: 9-17", at(8, 10)))
+
+        # A time range over midnight belongs to the day on which it starts
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(8, 22)))
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(8, 23, 59)))
+        self.assertTrue(check_time_in_range("Fri: 22-6", at(9, 0)))
+        self.assertTrue(check_time_in_range("Fri: 22-06:00", at(9, 6)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(9, 6, 1)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(8, 5)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(8, 21, 59)))
+        self.assertFalse(check_time_in_range("Fri: 22-6", at(9, 22)))
+        # Both at once: the night from Sunday to Monday follows the week wrap
+        self.assertTrue(check_time_in_range("Sat-Sun: 22-6", at(11, 3)))
+        self.assertFalse(check_time_in_range("Sat-Sun: 22-6", at(9, 3)))
+        self.assertTrue(check_time_in_range("Sun-Sat: 22-6", at(4, 3)))
 
     def test_04a_parse_proxy(self):
         self.assertEqual(parse_proxy(""), set())
@@ -1066,6 +1103,107 @@ class UtilsTestCase(MyTestCase):
                 self.assertEqual("10.0.0.1", info.ip)
                 self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
                 self.assertNotIn("CLIENT_PARAM", [hop.source for hop in info.chain])
+
+    def test_23r_remote_user_header_trusted_only_from_a_listed_proxy(self):
+        # The header is honoured only from a peer in PI_REMOTE_USER_HEADER_PROXIES. The setting is a list of
+        # addresses and networks, or a string with the entries separated by commas.
+        request = RemoteUserRequestMock(remote_addr="10.0.0.1")
+        for proxies in ("10.0.0.1", "192.0.2.7, 10.0.0.0/24", ["10.0.0.1"], ("192.0.2.7", "10.0.0.0/8")):
+            with self.subTest(proxies=proxies):
+                self.assertEqual("cornelius", resolve_remote_user_from_header(request, "X-Forwarded-User", proxies))
+        # A peer that is not in the list cannot pass a user. Any client can send the header, so the ignored header
+        # is only logged at debug level.
+        request = RemoteUserRequestMock(remote_addr="203.0.113.9")
+        for proxies in ("10.0.0.1", ["10.0.0.0/24", "192.0.2.0/24"]):
+            with self.subTest(proxies=proxies):
+                with self.assertLogs("privacyidea.lib.utils", level="DEBUG") as logs:
+                    self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", proxies))
+                header_records = [record for record in logs.records if "remote user header" in record.getMessage()]
+                self.assertEqual(["DEBUG"], [record.levelname for record in header_records])
+
+    def test_23s_remote_user_header_never_overrides_the_web_server(self):
+        # An upstream web server (Apache mod_wsgi, nginx with uWSGI) authenticated the request and
+        # set REMOTE_USER: a request header does not override it.
+        request = RemoteUserRequestMock(remote_user="admin")
+        self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.1"))
+        # Without a header name or without proxies, the header is off.
+        request = RemoteUserRequestMock()
+        for header_name, proxies in (("", "10.0.0.1"), (None, "10.0.0.1"), ("X-Forwarded-User", ""),
+                                     ("X-Forwarded-User", None), ("X-Forwarded-User", [])):
+            with self.subTest(header_name=header_name, proxies=proxies):
+                self.assertIsNone(resolve_remote_user_from_header(request, header_name, proxies))
+
+    def test_23t_remote_user_header_edge_cases(self):
+        # No header or an empty header value is no user name.
+        for headers in ({}, {"X-Forwarded-User": ""}):
+            with self.subTest(headers=headers):
+                request = RemoteUserRequestMock(headers=headers)
+                self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.1"))
+        # A request without a peer address, for example from a Unix socket, cannot be checked against the list.
+        # The warning names the reason.
+        for remote_addr in ("", None):
+            with self.subTest(remote_addr=remote_addr):
+                request = RemoteUserRequestMock(remote_addr=remote_addr)
+                with self.assertLogs("privacyidea.lib.utils", level="WARNING") as logs:
+                    self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.1"))
+                self.assertEqual(1, len(logs.output))
+                self.assertIn("the request has no peer address", logs.output[0])
+        # A peer address that is not an IP address does not raise.
+        request = RemoteUserRequestMock(remote_addr="not-an-ip-address")
+        with self.assertLogs("privacyidea.lib.utils", level="WARNING") as logs:
+            self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.1"))
+        self.assertIn("is not an IP address", logs.output[0])
+        # A malformed proxy setting does not raise, and the header is ignored.
+        request = RemoteUserRequestMock(remote_addr="10.0.0.1")
+        with self.assertLogs("privacyidea.lib.utils", level="ERROR"):
+            self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.1, no-ip"))
+        # An IPv6 proxy list matches an IPv6 peer, and an IPv4 list does not.
+        request = RemoteUserRequestMock(remote_addr="2001:db8::1")
+        self.assertEqual("cornelius", resolve_remote_user_from_header(request, "X-Forwarded-User", "2001:db8::/32"))
+        self.assertIsNone(resolve_remote_user_from_header(request, "X-Forwarded-User", "10.0.0.0/8"))
+
+    def test_23u_remote_user_header_reads_the_peer_as_the_client_ip_check_does(self):
+        # The peer is read and matched as for X-Forwarded-For: an IPv4 address and its IPv4-mapped IPv6
+        # form are the same proxy, in the peer and in the entry, and a link-local peer matches without its zone.
+        for peer, proxies, trusted in (
+                ("::ffff:10.0.0.1", "::ffff:10.0.0.1", True),
+                ("10.0.0.1", "::ffff:10.0.0.1", True),
+                ("::ffff:10.0.0.1", "10.0.0.1", True),
+                ("::ffff:10.0.0.1", "::/0", True),
+                ("fe80::1%eth0", "fe80::/10", True),
+                ("10.0.0.1", "::/0", False),
+                ("fe80::1%eth0", "10.0.0.0/8", False),
+        ):
+            with self.subTest(peer=peer, proxies=proxies):
+                request = RemoteUserRequestMock(remote_addr=peer, access_route=["192.0.2.43"])
+                # The same entry as the first network of an OverrideAuthorizationClient path gives the same result.
+                client_ip_source = get_client_ip_info(request, f"{proxies} > 0.0.0.0/0").source
+                self.assertEqual(trusted, client_ip_source == "X_FORWARDED_FOR")
+                self.assertEqual("cornelius" if trusted else None,
+                                 resolve_remote_user_from_header(request, "X-Forwarded-User", proxies))
+
+    def test_23v_remote_user_header_proxies_setting(self):
+        privacyidea_utils._parse_remote_user_header_proxies.cache_clear()
+        # The setting is a list, or a string with the entries separated by commas or whitespace. Empty
+        # entries are ignored.
+        for proxies in (" 10.0.0.1 , 192.0.2.0/24, ", "10.0.0.1 192.0.2.0/24", "10.0.0.1,\n192.0.2.0/24"):
+            with self.subTest(proxies=proxies):
+                self.assertEqual((IPNetwork("10.0.0.1/32"), IPNetwork("192.0.2.0/24")),
+                                 get_remote_user_header_proxies(proxies))
+        self.assertEqual((IPNetwork("10.0.0.1/32"), IPNetwork("2001:db8::/32")),
+                         get_remote_user_header_proxies(["10.0.0.1", "2001:db8::/32"]))
+        for empty in (None, "", [], ()):
+            with self.subTest(empty=empty):
+                self.assertEqual((), get_remote_user_header_proxies(empty))
+        # If an entry is not an IP address or network, the whole setting is not used. The error is logged
+        # once for each value of the setting and not again for each request.
+        for malformed in ("10.0.0.1, not-a-network", ["10.0.0.1", "fe80::1%eth0"], 10):
+            with self.subTest(malformed=malformed):
+                with self.assertLogs("privacyidea.lib.utils", level="ERROR") as logs:
+                    self.assertEqual((), get_remote_user_header_proxies(malformed))
+                    self.assertEqual((), get_remote_user_header_proxies(malformed))
+                self.assertEqual(1, len(logs.output))
+                self.assertIn("is not an IP address or network", logs.output[0])
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))

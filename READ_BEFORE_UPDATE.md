@@ -41,6 +41,27 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **Email and SMS tokens are no longer resynchronized automatically.** privacyIDEA sends every value itself and moves
+  the counter on for each, so the counter of these tokens can not fall behind. A value that matches only in the sync
+  window is now refused, and the challenge no longer asks the user to resync the token (`resync_via_multichallenge`).
+  The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
+  successful authentication.
+
+* **The AutoResync of TOTP tokens accepts skipped codes.** The second OTP value no longer has to be the next one. It may
+  be later by as many time steps as the time window of the token and the *Auto resync timeout* allow, whichever is
+  smaller, six with the default time window of 180 seconds and a time step of 30 seconds. A TOTP token with a short
+  time window therefore needs the next value, as before. An OTP value of a TOTP token that was used already no longer
+  starts or completes an AutoResync.
+
+* **Policy time ranges over the end of the week or over midnight now apply.** A day range such as `Sat-Mon: 8-18`
+  now applies on Saturday, Sunday and Monday. A time range such as `Fri: 22-6` now applies from Friday 22:00 to
+  Saturday 06:00: the hours after midnight belong to the day on which the range starts. Before, a day range over the
+  end of the week never matched, and a policy whose time contained a range over midnight applied at no time at all.
+  These policies take effect right after the update. To find them before the update, read the `time` values in the
+  output of `pi-manage config export -t policy`. Start with the `admin` and `authz` scopes. A reversed time range is
+  no longer rejected when you save a policy: `Mon-Fri: 18-8` is the night from 18:00 to 08:00, not the day from 08:00
+  to 18:00.
+
 ## Update from 3.14 to 3.14.1
 
 If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)

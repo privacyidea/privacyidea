@@ -2619,9 +2619,9 @@ class TestPIManageConfigImport:
         finally:
             _cli_imp_cleanup(app)
 
-    def test_11_replace_deletes_surplus_event_handlers_before_import(self, app, tmp_path):
+    def test_11_replace_deletes_surplus_event_handlers(self, app, tmp_path):
         # Two handlers "cli-imp-event"/UserNotification on this system, one in the import: with --replace the
-        # surplus handler is deleted before import_event runs, so the group is not skipped as ambiguous.
+        # surplus handler is deleted in the transaction of import_event, so the group is not skipped as ambiguous.
         from privacyidea.lib.event import EventConfiguration, set_event
         name = "cli-imp-event"
         runner = app.test_cli_runner()

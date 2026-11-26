@@ -42,7 +42,6 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP, Match
-from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -408,70 +407,48 @@ class TotpTokenClass(HotpTokenClass):
         """
         return max(self.get_sync_timeout(), AUTORESYNC_MIN_TIME_STEPS * self.timestep)
 
-    @log_with(log)
-    def _autosync(self, hmac2Otp, anOtpVal):
+    def _check_sync_window(self, hmac2Otp, anOtpVal) -> int:
         """
-        synchronize the token based on two otp values automatically.
-        If the OTP is invalid, that OTP counter is stored until the autoresync timeout is over, see
-        get_autoresync_timeout.
-        If an OTP counter is stored and the timeout is not over, it is checked, if the new
-        OTP value is the next value after this counter. After the timeout the new OTP value starts a new autoresync.
+        Check the OTP value in the sync window, in both directions around the current time counter.
 
-        internal method to realize the _autosync within the
-        checkOtp method
-
-        :param hmac2Otp: the hmac object (with reference to the token secret)
-        :type hmac2Otp: hmac object
-        :param anOtpVal: the actual otp value
-        :type anOtpVal: string
-        :return: counter or -1 if otp does not exist
-        :rtype:  int
+        :param hmac2Otp: The HmacOtp object of the check
+        :param anOtpVal: The OTP value to check
+        :return: The counter of the matching value or -1
         """
-        res = -1
-        autosync = get_from_config("AutoResync", False, return_bool=True)
-        # if _autosync is not enabled: do nothing
-        if autosync is False:
-            return res
-
-        info = self.get_tokeninfo()
-        syncWindow = self.get_sync_window()
-
-        # check if the otpval is valid in the sync scope
-        res = hmac2Otp.checkOtp(anOtpVal, syncWindow, symetric=True)
-        log.debug(f"checked otpval in syncwindow ({syncWindow!r}): {res!r}")
-
-        if res != -1:
-            if self.has_pending_autoresync():
-                # check if this is consecutive
-                otp1c = int(info.get("otp1c"))
-                otp2c = res
-                log.debug(f"otp1c: {otp1c!r}, otp2c: {otp2c!r}")
-                if (otp1c + 1) != otp2c:
-                    log.debug(f"Autoresync failed for token {self.token.serial!s}. OTP values too far apart.")
-                    res = -1
-                elif otp2c <= self.token.count:
-                    # The resync was done with previous (old) OTP values
-                    log.debug(f"Autoresync failed for token {self.token.serial!s}. Previous OTP values used.")
-                    res = -1
-                # check_otp records a success and the new time shift once the counter is stored
-                if res == -1:
-                    self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
-
-                # now clean the resync data
-                self.remove_tokeninfo("otp1c")
-                self.remove_tokeninfo("dueDate")
-
-            else:
-                # A stored counter with a dueDate that is over or missing is expired
-                if "otp1c" in info:
-                    log.debug(f"Autoresync of token {self.token.serial!s} expired. This OTP value starts a new one.")
-                log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
-                self.write_tokeninfo("otp1c", res)
-                self.write_tokeninfo("dueDate", int(time.time()) + self.get_autoresync_timeout())
-                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
-                res = -1
-
+        sync_window = self.get_sync_window()
+        res = hmac2Otp.checkOtp(anOtpVal, sync_window, symetric=True)
+        log.debug(f"checked otpval in syncwindow ({sync_window!r}): {res!r}")
         return res
+
+    def _max_autoresync_gap(self) -> int:
+        """
+        How many time steps the second OTP value of an autoresync may be after the first one. It is bounded by one
+        side of the time window of the token and by the autoresync timeout, so a long AutoResyncTimeout alone does
+        not widen it. The timeout is at least three time steps, so the gap is at least one and, with the default time
+        window of 180 seconds and a time step of 30 seconds, six.
+
+        :return: The largest difference of the two counters
+        """
+        return min(max(1, self.timewindow // self.timestep), self.get_autoresync_timeout() // self.timestep)
+
+    def _is_next_counter(self, first: int, second: int) -> bool:
+        """
+        The second OTP value may skip codes, but must be newer than the first one and within the maximum gap.
+
+        :param first: The counter of the first OTP value
+        :param second: The counter of the second OTP value
+        :return: True if the second value can complete the autoresync
+        """
+        return 1 <= second - first <= self._max_autoresync_gap()
+
+    def _is_used_counter(self, counter: int) -> bool:
+        """
+        Whether the counter was used already, so that the autoresync can not be done with previous OTP values.
+
+        :param counter: The counter of the OTP value
+        :return: True if the counter is not above the token counter
+        """
+        return counter <= self.token.count
 
     @log_with(log)
     def resync(self, otp1, otp2, options=None):

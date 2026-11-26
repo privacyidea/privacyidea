@@ -393,6 +393,29 @@ class EventHandlerImportTestCase(MyTestCase):
         self.assertEqual([("enrollment_audit", "Counter", "token_init"),
                           ("enrollment_audit", "Logging", "token_init")], self._stored_handlers())
 
+    def test_11_import_entry_without_condition(self):
+        entry = self._export_entry("mail_admin")
+        del entry["condition"]
+        import_event([entry])
+        self.assertEqual([("mail_admin", "UserNotification", "token_init")], self._stored_handlers())
+
+    def test_12_deleted_event_handlers_are_part_of_the_import_transaction(self):
+        first_id = set_event("mail_admin", "token_assign", "UserNotification", "sendmail")
+        surplus_id = set_event("mail_admin", "token_revoke", "UserNotification", "sendmail")
+        # Without the deletion the group has more handlers on this system than in the import and is skipped
+        import_event([self._export_entry("mail_admin", event="token_init")], delete_ids=[surplus_id])
+        self.assertEqual([(first_id, "token_init")],
+                         [(e.id, e.event) for e in db.session.scalars(select(EventHandler)).all()])
+
+        # A failed import also restores the deleted event handler
+        surplus_id = set_event("mail_admin", "token_revoke", "UserNotification", "sendmail")
+        with patch("privacyidea.lib.event._stage_event", side_effect=RuntimeError("database connection lost")):
+            with self.assertRaises(RuntimeError):
+                import_event([self._export_entry("mail_admin", event="token_delete")], delete_ids=[surplus_id])
+        db.session.commit()
+        self.assertEqual([("mail_admin", "UserNotification", "token_init"),
+                          ("mail_admin", "UserNotification", "token_revoke")], self._stored_handlers())
+
 
 class BaseEventHandlerTestCase(MyTestCase):
 
