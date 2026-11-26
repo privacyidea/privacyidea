@@ -126,6 +126,11 @@ class ConfigKey:
 
     ALLOWED_SSH_KEY_TYPES = "PI_ALLOWED_SSH_KEY_TYPES"
 
+    # The request header in which an authenticating reverse proxy passes the user name, and the addresses of the
+    # proxies that can send it
+    REMOTE_USER_HEADER = "PI_REMOTE_USER_HEADER"
+    REMOTE_USER_HEADER_PROXIES = "PI_REMOTE_USER_HEADER_PROXIES"
+
 
 class DefaultConfigValues:
     UUID_FILE = "/etc/privacyidea/uuid.txt"

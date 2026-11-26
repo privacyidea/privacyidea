@@ -21,7 +21,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from privacyidea.app import (ENV_KEY, PrivacyIDEARequest, create_app, create_docker_app,
-                             _setup_database_engine_options)
+                             _setup_database_engine_options, _warn_if_remote_user_header_has_no_proxies)
 from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db
@@ -569,3 +569,30 @@ class DockerAppFactoryTestCase(unittest.TestCase):
         self.assertNotIn("TopSecret123", output)
         # The error of the database is the cause of the RuntimeError
         self.assertIsInstance(error.exception.__cause__, FactoryStopped)
+
+
+class RemoteUserHeaderStartupWarningTestCase(unittest.TestCase):
+
+    def test_01_warning_if_the_header_has_no_proxies(self) -> None:
+        # PI_REMOTE_USER_HEADER without a usable PI_REMOTE_USER_HEADER_PROXIES is ignored, and the start of the
+        # app logs a warning that says why.
+        for proxies in (None, "", [], ["no-network"]):
+            with self.subTest(proxies=proxies):
+                app = flask.Flask(__name__)
+                app.config[ConfigKey.REMOTE_USER_HEADER] = "X-Forwarded-User"
+                if proxies is not None:
+                    app.config[ConfigKey.REMOTE_USER_HEADER_PROXIES] = proxies
+                with self.assertLogs("privacyidea.app", level=logging.WARNING) as logs:
+                    _warn_if_remote_user_header_has_no_proxies(app)
+                self.assertEqual(1, len(logs.output))
+                self.assertIn("privacyIDEA ignores the remote user header", logs.output[0])
+
+    def test_02_no_warning_if_the_header_is_off_or_complete(self) -> None:
+        for header_name, proxies in (("", None), ("X-Forwarded-User", ["192.168.255.242"]),
+                                     ("X-Forwarded-User", "10.0.0.1, 10.0.1.0/24")):
+            with self.subTest(header_name=header_name, proxies=proxies):
+                app = flask.Flask(__name__)
+                app.config[ConfigKey.REMOTE_USER_HEADER] = header_name
+                app.config[ConfigKey.REMOTE_USER_HEADER_PROXIES] = proxies
+                with self.assertNoLogs("privacyidea.app", level=logging.WARNING):
+                    _warn_if_remote_user_header_has_no_proxies(app)
