@@ -32,6 +32,12 @@ Default payload
    its ``data`` option empty therefore sends this, which is how one webhook can
    serve several policies with one body.
 
+   It is sent **unchanged**: placeholders such as ``{username}`` are replaced
+   only in the body of the call site, the ``data`` option of the
+   :ref:`webhookhandler` or the payload of a conditional access ``WEBHOOK``
+   action. The call sites know different placeholders, so a body that is to
+   carry them belongs there.
+
 Authentication
    ``none`` (default), ``basic`` (username and password), ``header`` (the
    credential is one of the static headers below, marked as secret) or ``mtls``

@@ -47,7 +47,8 @@ without :ref:`policy_webhook_read`.
 **data**
 
 The body posted to the endpoint. Leave it empty to send the webhook's own ``default_payload``, which is how
-one webhook can serve several handlers with one body.
+one webhook can serve several handlers with one body. The placeholders of **replace** are replaced only in this
+option; the ``default_payload`` is sent unchanged.
 
 **replace**
 

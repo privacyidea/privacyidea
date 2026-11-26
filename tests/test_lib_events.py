@@ -5650,6 +5650,18 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(responses.calls[0].request.body, '{"from": "webhook"}')
 
     @responses.activate
+    def test_07b_the_default_payload_is_sent_unchanged(self):
+        # Placeholders are replaced only in the handler's own data. The default payload is shared
+        # with conditional access policies, which know other placeholders.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"user": "{username}"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": "", "replace": True})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, '{"user": "{username}"}')
+
+    @responses.activate
     def test_08_the_url_is_never_logged(self):
         """The webhook object may embed a token in its URL; log the name instead."""
         responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)

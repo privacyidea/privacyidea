@@ -283,7 +283,9 @@ Actions
     headers and the credentials. An optional **payload** overrides the webhook's
     own default payload and may contain ``{username}``, ``{realm}``,
     ``{resolver}``, ``{client_ip}``, ``{count}``, ``{threshold}``,
-    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``.
+    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``. The
+    placeholders are replaced only in this payload; the default payload of the
+    webhook is sent unchanged.
 
     ``{email}``, ``{givenname}`` and ``{surname}`` are **not** available here:
     they are read from the resolver and are fetched only for an email action.

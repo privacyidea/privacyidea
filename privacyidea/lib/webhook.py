@@ -764,6 +764,10 @@ def _resolve_body(config, payload):
     Precedence: an explicit ``payload`` from the call site beats the webhook's
     ``default_payload``; if neither is set, no body is sent.
 
+    The ``default_payload`` is sent unchanged. Placeholders are the business of the call site, which
+    replaces them in its own payload: the event handler and a conditional access policy know
+    different ones, so one default payload could not be rendered the same for both.
+
     A dict payload is serialised according to the configured content type:
     JSON is dumped, anything else is handed to ``requests`` which form-encodes
     it.
