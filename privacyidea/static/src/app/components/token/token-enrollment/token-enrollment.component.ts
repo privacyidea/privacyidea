@@ -322,7 +322,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.pendingChangesService.registerValidChanges(
       () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
     );
-    this.pendingChangesService.registerSave(() => this.enrollToken());
+    // Leaving the page waits until the enrollment dialog is closed, so it does not stay open over the next page.
+    this.pendingChangesService.registerSave(async () => {
+      const enrolled = await this.enrollToken();
+      await this.enrollmentFlow.whenClosed();
+      return enrolled;
+    });
   }
 
   ngOnDestroy(): void {

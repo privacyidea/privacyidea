@@ -31,7 +31,7 @@ import {
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
-import { defer, finalize, Observable, Subject, tap } from "rxjs";
+import { defer, finalize, firstValueFrom, Observable, Subject, tap } from "rxjs";
 
 export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "success";
 
@@ -282,6 +282,13 @@ export class EnrollmentFlow {
   // Closes the dialog without asking. Before the success step, the enrollment stays unfinished.
   close(): void {
     this.dialogRef?.close();
+  }
+
+  // Resolves once the dialog is closed, at once if it is not open.
+  async whenClosed(): Promise<void> {
+    if (this.dialogRef) {
+      await firstValueFrom(this.dialogRef.afterClosed());
+    }
   }
 
   /**

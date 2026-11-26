@@ -462,6 +462,23 @@ describe("EnrollmentFlow", () => {
     });
   });
 
+  it("tells when the dialog is closed, at any step", async () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first);
+    await expect(flow.whenClosed()).resolves.toBeUndefined();
+
+    flow.continue(first);
+    let closed = false;
+    void flow.whenClosed().then(() => (closed = true));
+    flow.finishStep(response({ rollout_state: "enrolled" }));
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(closed).toBe(false);
+
+    flow.close();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(closed).toBe(true);
+  });
+
   it("reads the success step when it opens", () => {
     class OtherSuccessStep extends TokenEnrollmentSuccessComponent {}
     let successStep: typeof TokenEnrollmentSuccessComponent = TokenEnrollmentSuccessComponent;
