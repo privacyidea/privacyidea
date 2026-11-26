@@ -24,25 +24,31 @@ import {
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { axe } from "@testing/axe";
 import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollment-step-host";
+import { Observable, of } from "rxjs";
 import { TokenCompleteEnrollmentFido2Component } from "./token-complete-enrollment-fido2.component";
+
+type FinalRequest = Observable<EnrollmentStepResult>;
 
 const response = { result: { status: true }, detail: { serial: "WAN0001" } } as unknown as EnrollmentResponse;
 const registered = { result: { status: true }, detail: { serial: "WAN0001" } } as unknown as EnrollmentResponse;
 
 describe("TokenCompleteEnrollmentFido2Component", () => {
   let host: MockEnrollmentStepHost;
-  let register: jest.Mock<Promise<EnrollmentStepResult>, [AbortSignal]>;
+  let register: jest.Mock<Promise<FinalRequest | null>, [AbortSignal]>;
 
-  const setup = async (...results: (EnrollmentStepResult | Error)[]) => {
+  const setup = async (results: (FinalRequest | null | Error)[] = [], state: { sentInput?: string } = {}) => {
     TestBed.resetTestingModule();
-    // Without a result, the registration is still running.
-    register = jest.fn<Promise<EnrollmentStepResult>, [AbortSignal]>(() => new Promise(() => undefined));
+    // Without a result, the browser registration is still running.
+    register = jest.fn<Promise<FinalRequest | null>, [AbortSignal]>(() => new Promise(() => undefined));
     for (const result of results) {
       register.mockImplementationOnce(() =>
         result instanceof Error ? Promise.reject(result) : Promise.resolve(result)
       );
     }
-    host = mockEnrollmentStepHost({ tokenType: "webauthn", response }, { firstStep: { kind: "fido2", register } });
+    host = mockEnrollmentStepHost(
+      { tokenType: "webauthn", response },
+      { firstStep: { kind: "fido2", register }, ...state }
+    );
     TestBed.configureTestingModule({ imports: [TokenCompleteEnrollmentFido2Component], providers: [host.provider] });
     const fixture = TestBed.createComponent(TokenCompleteEnrollmentFido2Component);
     fixture.detectChanges();
@@ -67,24 +73,24 @@ describe("TokenCompleteEnrollmentFido2Component", () => {
     expect(step.actions()).toEqual([]);
   });
 
-  it("finishes the step with the registered token", async () => {
-    await setup(registered);
+  it("lets the flow send the final request and passes its result on", async () => {
+    const finalRequest = of(registered);
+    await setup([finalRequest]);
 
     expect(register).toHaveBeenCalledTimes(1);
-    expect(host.flow.finishStep).toHaveBeenCalledWith(registered);
-  });
-
-  it("ends the enrollment once the registration deleted the token", async () => {
-    await setup(ENROLLMENT_CANCELLED);
-
-    expect(host.flow.finishStep).toHaveBeenCalledWith(ENROLLMENT_CANCELLED);
+    const [request, toResult] = host.flow.sendStepRequest.mock.calls[0];
+    expect(request).toBe(finalRequest);
+    expect(toResult(registered)).toBe(registered);
+    expect(toResult(ENROLLMENT_CANCELLED)).toBe(ENROLLMENT_CANCELLED);
+    expect(toResult(null)).toBeNull();
   });
 
   it("offers Retry after a failed attempt and registers again", async () => {
-    const fixture = await setup(null, registered);
+    const finalRequest = of(registered);
+    const fixture = await setup([null, finalRequest]);
     const step = fixture.componentInstance;
 
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
+    expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
     expect(text(fixture)).toContain("The registration was not completed. Please try again.");
     expect(step.actions().map((action) => action.value)).toEqual(["retry"]);
 
@@ -92,18 +98,36 @@ describe("TokenCompleteEnrollmentFido2Component", () => {
     await settle();
 
     expect(register).toHaveBeenCalledTimes(2);
-    expect(host.flow.finishStep).toHaveBeenCalledWith(registered);
+    expect(host.flow.sendStepRequest).toHaveBeenCalledWith(finalRequest, expect.any(Function));
   });
 
   it("treats an unexpected error like a failed attempt", async () => {
-    const fixture = await setup(new Error("boom"));
+    const fixture = await setup([new Error("boom")]);
 
     expect(fixture.componentInstance.actions().map((action) => action.value)).toEqual(["retry"]);
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
+    expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
+  });
+
+  it("offers Retry once the final WebAuthn request failed", async () => {
+    const fixture = await setup([of(null)]);
+
+    host.flow.stepRequestFailed.set(true);
+    fixture.detectChanges();
+
+    expect(text(fixture)).toContain("The registration was not completed. Please try again.");
+    expect(fixture.componentInstance.actions().map((action) => action.value)).toEqual(["retry"]);
+  });
+
+  it("waits for the final request instead of registering again when it is reopened while the request runs", async () => {
+    const fixture = await setup([], { sentInput: "" });
+
+    expect(register).not.toHaveBeenCalled();
+    expect(text(fixture)).toContain("The registration is being completed. Please wait.");
+    expect(fixture.componentInstance.actions()).toEqual([]);
   });
 
   it("announces the failure to screen readers", async () => {
-    const fixture = await setup(null);
+    const fixture = await setup([null]);
     const failure = Array.from(fixture.nativeElement.querySelectorAll("p") as NodeListOf<HTMLElement>).find(
       (paragraph) => paragraph.textContent?.includes("not completed")
     );
@@ -111,11 +135,11 @@ describe("TokenCompleteEnrollmentFido2Component", () => {
     expect(failure?.closest("[aria-live='polite']")).toBeTruthy();
   });
 
-  it("aborts the registration and ignores its result once the step is left", async () => {
-    let resolve!: (result: EnrollmentStepResult) => void;
+  it("aborts the browser registration and sends no final request once the step is left", async () => {
+    let resolve!: (result: FinalRequest | null) => void;
     TestBed.resetTestingModule();
-    register = jest.fn<Promise<EnrollmentStepResult>, [AbortSignal]>(
-      () => new Promise<EnrollmentStepResult>((done) => (resolve = done))
+    register = jest.fn<Promise<FinalRequest | null>, [AbortSignal]>(
+      () => new Promise<FinalRequest | null>((done) => (resolve = done))
     );
     host = mockEnrollmentStepHost({ tokenType: "passkey", response }, { firstStep: { kind: "fido2", register } });
     TestBed.configureTestingModule({ imports: [TokenCompleteEnrollmentFido2Component], providers: [host.provider] });
@@ -124,16 +148,16 @@ describe("TokenCompleteEnrollmentFido2Component", () => {
     const signal = register.mock.calls[0][0];
 
     fixture.destroy();
-    resolve(registered);
+    resolve(of(registered));
     await Promise.resolve();
     await Promise.resolve();
 
     expect(signal.aborted).toBe(true);
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
+    expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
   });
 
   it("passes the axe accessibility checks", async () => {
-    const fixture = await setup(null);
+    const fixture = await setup([null]);
 
     expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });

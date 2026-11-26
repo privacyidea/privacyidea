@@ -31,7 +31,7 @@ import { EnrollmentStepResult } from "@components/token/token-enrollment/token-e
 import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { firstValueFrom, lastValueFrom, of, throwError } from "rxjs";
 import { axe } from "@testing/axe";
 
 const makeEnrollInitResponse = (): WebauthnEnrollmentResponse =>
@@ -126,7 +126,8 @@ describe("EnrollWebauthnComponent", () => {
   };
 
   // Runs the registration the strategy hands to the enrollment dialog.
-  const register = (
+  // Runs the browser registration and then its final request, as the FIDO2 step and the flow do.
+  const register = async (
     response: EnrollmentResponse,
     data: TokenEnrollmentData,
     signal: AbortSignal = new AbortController().signal
@@ -135,7 +136,8 @@ describe("EnrollWebauthnComponent", () => {
     if (firstStep.kind !== "fido2") {
       throw new Error("WebAuthn hands over a FIDO2 registration");
     }
-    return firstStep.register(signal);
+    const finalRequest = await firstStep.register(signal);
+    return finalRequest ? firstValueFrom(finalRequest) : null;
   };
 
   it("should create", async () => {
@@ -288,6 +290,20 @@ describe("EnrollWebauthnComponent", () => {
     expect(base64.base64URLToBytes).toHaveBeenCalled();
     expect(base64.bytesToBase64).toHaveBeenCalled();
     expect(finalResponse).toEqual({ detail: { serial: "SER123" }, type: "webauthn" });
+  });
+
+  it("sends the final request only when it is subscribed to, so it can outlive the step", async () => {
+    setNavigatorCreate(async () => makePublicKeyCredential());
+    tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse()));
+
+    await detectChangesStable();
+    const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
+    const firstStep = component.firstStep(initResponse as EnrollmentResponse, enrollmentArgs!.data);
+    const finalRequest = firstStep.kind === "fido2" ? await firstStep.register(new AbortController().signal) : null;
+
+    expect(finalRequest).not.toBeNull();
+    expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
   });
 
   it("should notify when finalization fails", async () => {

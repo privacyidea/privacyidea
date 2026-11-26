@@ -28,6 +28,7 @@ export interface MockEnrollmentStepHost {
     finishStep: jest.Mock;
     sendStepRequest: jest.Mock;
     sentInput: WritableSignal<string | null>;
+    stepRequestFailed: WritableSignal<boolean>;
     close: jest.Mock;
     firstStep: EnrollmentFirstStep | null;
     reopened: boolean;
@@ -46,6 +47,7 @@ export function mockEnrollmentStepHost(
     finishStep: jest.fn(),
     sendStepRequest: jest.fn(),
     sentInput: signal<string | null>(state.sentInput ?? null),
+    stepRequestFailed: signal(false),
     close: jest.fn(),
     stepFinished: NEVER,
     firstStep: state.firstStep ?? null,

@@ -38,7 +38,7 @@ import {
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { lastValueFrom } from "rxjs";
+import { defer, lastValueFrom, Observable } from "rxjs";
 
 @Component({
   selector: "app-enroll-passkey",
@@ -83,7 +83,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     enrollmentResponse: EnrollmentResponse,
     enrollmentInitData: TokenEnrollmentData,
     signal: AbortSignal
-  ): Promise<EnrollmentStepResult> {
+  ): Promise<Observable<EnrollmentStepResult> | null> {
     if (enrollmentInitData.type !== "passkey") {
       console.warn("Received enrollment data is not of type 'passkey'. Cannot proceed with Passkey enrollment.");
       return null;
@@ -93,12 +93,15 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       return null;
     }
     // A failed finalization deletes the token.
-    const finalResponse = await this.finalizeEnrollment({
-      enrollmentInitData: enrollmentInitData as PasskeyEnrollmentData,
-      enrollmentResponse,
-      publicKeyCred
-    }).catch(() => null);
-    return finalResponse ?? ENROLLMENT_CANCELLED;
+    return defer(() =>
+      this.finalizeEnrollment({
+        enrollmentInitData: enrollmentInitData as PasskeyEnrollmentData,
+        enrollmentResponse,
+        publicKeyCred
+      })
+        .catch(() => null)
+        .then((finalResponse): EnrollmentStepResult => finalResponse ?? ENROLLMENT_CANCELLED)
+    );
   }
 
   private async readPublicKeyCred(

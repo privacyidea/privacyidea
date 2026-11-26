@@ -29,7 +29,7 @@ import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockBase64Service, MockNotificationService, MockTokenService } from "@testing/mock-services";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { firstValueFrom, lastValueFrom, of, throwError } from "rxjs";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
 import { axe } from "@testing/axe";
 
@@ -75,7 +75,8 @@ describe("EnrollPasskeyComponent", () => {
   });
 
   // Runs the registration the strategy hands to the enrollment dialog.
-  const register = (
+  // Runs the browser registration and then its final request, as the FIDO2 step and the flow do.
+  const register = async (
     response: EnrollmentResponse,
     data: TokenEnrollmentData,
     signal: AbortSignal = new AbortController().signal
@@ -84,7 +85,8 @@ describe("EnrollPasskeyComponent", () => {
     if (firstStep.kind !== "fido2") {
       throw new Error("Passkey hands over a FIDO2 registration");
     }
-    return firstStep.register(signal);
+    const finalRequest = await firstStep.register(signal);
+    return finalRequest ? firstValueFrom(finalRequest) : null;
   };
 
   afterAll(() => {
@@ -152,7 +154,11 @@ describe("EnrollPasskeyComponent", () => {
     expect(args).not.toBeNull();
     tokenService.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
     const initResponse = await tokenService.enrollToken(args);
-    const res = await register(initResponse, args!.data);
+    const firstStep = component.firstStep(initResponse, args!.data);
+    const finalRequest = firstStep.kind === "fido2" ? await firstStep.register(new AbortController().signal) : null;
+    // The final request is sent only when it is subscribed to, so it can outlive the step.
+    expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+    const res = await firstValueFrom(finalRequest!);
 
     expect(tokenService.enrollToken).toHaveBeenCalledTimes(2);
 

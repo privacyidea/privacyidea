@@ -21,6 +21,8 @@
     <p i18n="@@token.registrationNotCompletedRetry">
       The registration was not completed. Please try again.
     </p>
+  } @else if (finalizing()) {
+    <p i18n="@@token.registrationCompleting">The registration is being completed. Please wait.</p>
   } @else {
     <p i18n="@@token.youNeedConfirmRegistration"
       >You need to confirm the registration with your authenticator. For an external authenticator, this usually means

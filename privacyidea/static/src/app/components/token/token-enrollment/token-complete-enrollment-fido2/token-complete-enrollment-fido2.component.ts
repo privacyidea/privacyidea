@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, DestroyRef, inject, signal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from "@angular/core";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { DialogAction } from "@models/dialog";
 
-// The browser registration of a WebAuthn or passkey token. A failed attempt can be retried.
+// The browser registration of a WebAuthn or passkey token. A failed attempt can be retried. The final request outlives
+// the step, so a step reopened while it runs waits for it.
 @Component({
   selector: "app-token-complete-enrollment-fido2",
   templateUrl: "./token-complete-enrollment-fido2.component.html"
@@ -29,7 +30,8 @@ export class TokenCompleteEnrollmentFido2Component extends EnrollmentStep {
   readonly title = signal($localize`:@@token.takeActionYour:Take Action on Your Authenticator`).asReadonly();
   readonly headerState = "incomplete";
 
-  protected readonly registrationFailed = signal(false);
+  protected readonly finalizing = computed(() => this.flow.sentInput() !== null);
+  protected readonly registrationFailed = linkedSignal(() => this.flow.stepRequestFailed());
   override readonly actions = computed<DialogAction<string>[]>(() =>
     this.registrationFailed()
       ? [{ type: "confirm", label: $localize`:@@token.retry:Retry`, value: "retry", primary: true }]
@@ -37,13 +39,15 @@ export class TokenCompleteEnrollmentFido2Component extends EnrollmentStep {
   );
 
   private readonly firstStep = this.flow.firstStep;
-  // Leaving the step drops a registration still running.
+  // Leaving the step aborts the browser registration, but not its final request.
   private readonly left = new AbortController();
 
   constructor() {
     super();
     inject(DestroyRef).onDestroy(() => this.left.abort());
-    void this.register();
+    if (!this.finalizing()) {
+      void this.register();
+    }
   }
 
   override onAction(value: string): void {
@@ -57,14 +61,14 @@ export class TokenCompleteEnrollmentFido2Component extends EnrollmentStep {
       return;
     }
     this.registrationFailed.set(false);
-    const result = await this.firstStep.register(this.left.signal).catch(() => null);
+    const finalRequest = await this.firstStep.register(this.left.signal).catch(() => null);
     if (this.left.signal.aborted) {
       return;
     }
-    if (result === null) {
+    if (finalRequest === null) {
       this.registrationFailed.set(true);
       return;
     }
-    this.flow.finishStep(result);
+    this.flow.sendStepRequest(finalRequest, (result) => result);
   }
 }

@@ -38,15 +38,16 @@ export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "suc
 /**
  * The step a token type needs right after its first response. Push waits for the app to register and starts again
  * when the dialog is reopened. WebAuthn and passkey run the browser registration, which cannot be reopened: it shows
- * nothing the user keeps, and its challenge expires.
+ * nothing the user keeps, and its challenge expires. Only their final request can be waited for after a reopen.
  */
 export type EnrollmentFirstStep =
   | { kind: "push" }
   | {
       kind: "fido2";
-      // Ends with the response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null when the
-      // registration failed and can be retried. The signal aborts once the step is left.
-      register: (signal: AbortSignal) => Promise<EnrollmentStepResult>;
+      // Runs the browser registration, which the signal aborts once the step is left. Ends with the final request, or
+      // with null when the registration failed and can be retried. The final request emits the response to continue
+      // with, ENROLLMENT_CANCELLED once the token was deleted, or null when the registration failed.
+      register: (signal: AbortSignal) => Promise<Observable<EnrollmentStepResult> | null>;
     };
 
 export interface EnrollmentFlowOptions {
@@ -95,8 +96,9 @@ export class EnrollmentFlow {
   // that opens at the success step shows only that and fits its content.
   readonly fixedSize = signal(false);
 
-  // Whether resume() can finish the enrollment once the dialog is closed in the current step.
-  readonly resumable = computed(() => this.step() !== "fido2");
+  // Whether resume() can finish the enrollment once the dialog is closed in the current step. A FIDO2 registration
+  // can only be waited for while its final request runs.
+  readonly resumable = computed(() => this.step() !== "fido2" || this.sentInput() !== null);
 
   private readonly stepFinishedSubject = new Subject<void>();
   // Emits when the current step is left: for the next step, or because the dialog closed.
@@ -109,6 +111,8 @@ export class EnrollmentFlow {
   // The input of the request that finishes the current step, while it runs. It outlives the step, so a reopened
   // step shows what was sent and does not send it again.
   readonly sentInput = signal<string | null>(null);
+  // Set when the request of the current step ended without finishing it.
+  readonly stepRequestFailed = signal(false);
 
   private dialogRef: MatDialogRef<unknown> | null = null;
   private cancelled = false;
@@ -197,6 +201,11 @@ export class EnrollmentFlow {
       return;
     }
     if (result === ENROLLMENT_CANCELLED) {
+      if (!this.dialogRef) {
+        // The token was deleted after the dialog closed.
+        this.options.onCancelled?.();
+        return;
+      }
       this.cancelled = true;
       this.close();
       return;
@@ -226,20 +235,32 @@ export class EnrollmentFlow {
    * the dialog closed moves the enrollment on without opening the dialog, and the reopen shows the next step.
    *
    * @param request The request. It has notified about its failure itself.
-   * @param toResult The response to continue with, or null if the step is not finished.
+   * @param toResult The response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null if the
+   *   step is not finished.
    * @param input What the user entered for the request, shown again if the step is reopened while it runs.
    */
-  sendStepRequest<T>(request: Observable<T>, toResult: (response: T) => EnrollmentResponse | null, input = ""): void {
+  sendStepRequest<T>(request: Observable<T>, toResult: (response: T) => EnrollmentStepResult, input = ""): void {
     if (this.sentInput() !== null) {
       return;
     }
     const run = this.run;
+    let finished = false;
+    this.stepRequestFailed.set(false);
     this.sentInput.set(input);
     request
       .pipe(
         finalize(() => {
-          if (run === this.run) {
-            this.sentInput.set(null);
+          if (run !== this.run) {
+            return;
+          }
+          this.sentInput.set(null);
+          if (finished) {
+            return;
+          }
+          this.stepRequestFailed.set(true);
+          // The close kept a step that cannot be resumed while its request ran.
+          if (!this.dialogRef && !this.resumable()) {
+            this.reset();
           }
         })
       )
@@ -249,6 +270,7 @@ export class EnrollmentFlow {
           if (!result || run !== this.run) {
             return;
           }
+          finished = true;
           this.keepClosed = !this.dialogRef;
           this.finishStep(result);
           this.keepClosed = false;
@@ -348,6 +370,7 @@ export class EnrollmentFlow {
     this.run++;
     this.step.set(null);
     this.sentInput.set(null);
+    this.stepRequestFailed.set(false);
   }
 
   private setResponse(response: EnrollmentResponse): void {

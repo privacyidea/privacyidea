@@ -32,7 +32,7 @@ import { EnrollmentStepResult } from "@components/token/token-enrollment/token-e
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { firstValueFrom } from "rxjs";
+import { defer, firstValueFrom, Observable } from "rxjs";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -74,7 +74,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData,
     signal: AbortSignal
-  ): Promise<EnrollmentStepResult> {
+  ): Promise<Observable<EnrollmentStepResult> | null> {
     if (!enrollmentResponse?.detail) {
       this.notificationService.error(
         $localize`:@@token.failedInitiateWebauthn:Failed to initiate WebAuthn registration: Invalid server response or missing details.`
@@ -103,11 +103,13 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     if (!publicKeyCred || signal.aborted) {
       return null;
     }
-    return this.finalizeEnrollment({
-      webauthnEnrollmentData: enrollmentData as WebAuthnEnrollmentData,
-      webauthnEnrollmentResponse,
-      publicKeyCred
-    });
+    return defer(() =>
+      this.finalizeEnrollment({
+        webauthnEnrollmentData: enrollmentData as WebAuthnEnrollmentData,
+        webauthnEnrollmentResponse,
+        publicKeyCred
+      })
+    );
   }
 
   readPublicKeyCred = async (
