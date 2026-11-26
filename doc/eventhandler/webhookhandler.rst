@@ -27,8 +27,10 @@ remaining options are optional, each with a meaningful empty state.
 
 **webhook**
 
-The webhook to post to, selected from the configured ones. Listing them requires
-:ref:`policy_webhook_read`; without it the select has nothing to offer.
+The webhook to post to, selected from the configured ones. The select lists the identifiers of all webhooks
+to every administrator who may read the event handlers (:ref:`policy_eventhandling_read`), as the handlers
+list the SMTP servers and SMS gateways. An identifier is only a name; the configuration of a webhook needs
+:ref:`policy_webhook_read`.
 
 Delivery is synchronous and there are no retries, so a slow endpoint delays the request that triggered the
 event; see :ref:`webhook_synchronous`. By default, a webhook that fails does not fail the request: the failure
@@ -39,7 +41,8 @@ is logged and audited, and the remaining handlers still run. See :ref:`event_abo
 
 Where the handler posts and which MIME type it sends, taken from the webhook selected above. Both are shown
 so that the endpoint is visible while editing the handler; neither can be changed here, because both belong
-to the webhook.
+to the webhook. They are read from the webhook configuration, so they stay empty for an administrator
+without :ref:`policy_webhook_read`.
 
 **data**
 
