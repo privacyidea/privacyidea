@@ -83,6 +83,27 @@ class GuardTargetTestCase(MyTestCase):
                                      "no_proxy": "public.example"}, clear=True):
             self.assertEqual(self.DEST, guard_target(self.DEST))
 
+    def test_an_all_proxy_is_the_target(self):
+        # requests falls back from the scheme to the "all" entry, which ALL_PROXY sets.
+        with patch.dict(os.environ, {"ALL_PROXY": "http://proxy.internal:3128"}, clear=True):
+            self.assertEqual("http://proxy.internal:3128", guard_target(self.DEST))
+
+    def test_no_proxy_also_excludes_the_all_proxy(self):
+        with patch.dict(os.environ, {"ALL_PROXY": "http://proxy.internal:3128",
+                                     "no_proxy": "public.example"}, clear=True):
+            self.assertEqual(self.DEST, guard_target(self.DEST))
+
+    def test_the_proxy_of_the_scheme_wins_over_the_all_proxy(self):
+        with patch.dict(os.environ, {"ALL_PROXY": "http://all.internal:3128",
+                                     "https_proxy": "https://scheme.internal:3128"}, clear=True):
+            self.assertEqual("https://scheme.internal:3128", guard_target(self.DEST))
+
+    def test_a_passed_proxy_wins_over_the_all_proxy(self):
+        with patch.dict(os.environ, {"ALL_PROXY": "http://all.internal:3128"}, clear=True):
+            self.assertEqual("https://passed.internal:3128",
+                             guard_target(self.DEST,
+                                          {"https": "https://passed.internal:3128"}))
+
 
 class CheckOutboundTargetTestCase(MyTestCase):
     """Direct tests of check_outbound_target(), independent of fire_webhook()."""

@@ -1053,10 +1053,14 @@ def guard_target(url, proxies=None):
     protect against nothing.
 
     That holds for a proxy out of the environment too. ``requests`` runs with ``trust_env=True``,
-    so ``http_proxy`` / ``https_proxy`` in the server's environment are used even by a caller that
-    passes no proxies at all; the guard would otherwise resolve and approve a destination the
-    connection never goes to. ``get_environ_proxies()`` applies ``no_proxy`` as well, so a
-    destination excluded there is correctly checked as itself.
+    so ``http_proxy`` / ``https_proxy`` / ``all_proxy`` in the server's environment are used even
+    by a caller that passes no proxies at all; the guard would otherwise resolve and approve a
+    destination the connection never goes to. ``get_environ_proxies()`` applies ``no_proxy`` as
+    well, so a destination excluded there is correctly checked as itself.
+
+    The proxy is chosen as requests chooses it: the passed proxies override those of the
+    environment, and ``select_proxy()`` picks the entry for the URL, falling back from the scheme
+    to ``all``.
 
     Every caller that is about to send a request has to go through this, not just the ones that
     can configure a proxy: the environment applies to all of them.
@@ -1065,10 +1069,10 @@ def guard_target(url, proxies=None):
     :param proxies: the ``proxies`` dict the request will be sent with, if any
     :return: the proxy URL where one applies, else *url* unchanged
     """
-    scheme = urlsplit(url).scheme
+    effective = dict(requests.utils.get_environ_proxies(url))
     # A proxy passed by the caller wins, exactly as it does for the request itself.
-    proxy = (proxies or {}).get(scheme) or requests.utils.get_environ_proxies(url).get(scheme)
-    return proxy or url
+    effective.update(proxies or {})
+    return requests.utils.select_proxy(url, effective) or url
 
 
 def _guard_target(config):
