@@ -1106,7 +1106,8 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertNotIn("otp1c", token.get_tokeninfo())
         self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
-        # A used first value, stored by an older version, and a used second value fail
+        # A used first value, stored by an older version, fails the autoresync. A used second value
+        # can not be tested on its own: since otp2c > otp1c, a used otp2c always implies a used otp1c.
         token.write_tokeninfo("otp1c", self.COUNT - 1)
         token.write_tokeninfo("dueDate", int(time.time()) + 600)
         self.assertEqual(-1, self._present(token, self.COUNT + 1))
