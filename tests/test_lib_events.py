@@ -31,7 +31,8 @@ from privacyidea.lib.counter import increase as counter_increase
 from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
-                                   enable_event, import_event, _stage_event, IMPORT_MARKER)
+                                   enable_event, import_event, _stage_event, IMPORT_MARKER,
+                                   MIGRATION_MARKER)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
@@ -6209,6 +6210,26 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         self.assertEqual(1, Webhook.query.count())
         identifier = EventConfiguration().events[0]["options"]["webhook"]
         self.assertEqual(self.URL, get_webhook(identifier)["url"])
+
+    def test_the_import_of_an_old_export_reuses_the_migrated_webhook(self):
+        """
+        The migration names the webhook of a handler by the same rule as the import. Without
+        accepting its marker, the import of a 3.14 export would link the handler to a new webhook
+        and leave the migrated one unused.
+        """
+        import_event(self._exported())
+        migrated = EventConfiguration().events[0]["options"]["webhook"]
+        description = f"{MIGRATION_MARKER} - created from the inline options of WebHook event handler 1 (#5751)"
+        set_webhook(migrated, url="https://migrated.example.com/hook", description=description)
+
+        import_event(self._exported())
+
+        self.assertEqual(migrated, EventConfiguration().events[0]["options"]["webhook"])
+        self.assertEqual(1, Webhook.query.count())
+        webhook = get_webhook(migrated)
+        self.assertEqual(self.URL, webhook["url"])
+        # restore_snapshot() of the migration removes the webhooks by this marker.
+        self.assertEqual(description, webhook["description"])
 
     def test_a_handler_without_a_name_is_reported_and_gets_no_webhook(self):
         # The import matches the event handlers by their name, so it reports one without a name

@@ -495,6 +495,10 @@ def export_event(name=None):
 
 
 IMPORT_MARKER = "pi-import:webhook-from-inline-handler"
+#: The marker the e1f2a3b4c5d6 migration writes into the description of each webhook it creates.
+#: Mirrored here because library code does not import migration modules; a test checks that both
+#: agree.
+MIGRATION_MARKER = "pi-migration:e1f2a3b4c5d6"
 
 
 def _free_webhook_identifier(base, handler_id):
@@ -510,14 +514,18 @@ def _free_webhook_identifier(base, handler_id):
     suffix = 1
     while candidate in existing:
         description = get_webhook(candidate).get("description") or ""
-        if description.startswith(IMPORT_MARKER):
+        # The migration names its webhooks by the same rule, so a webhook it created for this
+        # handler is ours too. Otherwise the import of an old export would link the handler to a
+        # new webhook and leave the migrated one unused.
+        if description.startswith((IMPORT_MARKER, MIGRATION_MARKER)):
             return candidate
         suffix += 1
         candidate = f"{base}_{suffix}"
 
     if candidate != base:
         log.info(f"The webhook {base!r} already exists and was not created by a configuration "
-                 f"import, so imported WebHook handler {handler_id} gets {candidate!r} instead.")
+                 f"import or the migration, so imported WebHook handler {handler_id} gets "
+                 f"{candidate!r} instead.")
     return candidate
 
 
@@ -568,13 +576,18 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
 
     base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
     identifier = _free_webhook_identifier(base, handler_id)
+    # A reused webhook keeps its description: a migrated one has to keep its marker, because
+    # restore_snapshot() of the migration removes the webhooks by that marker.
+    description = None
+    if identifier not in get_webhook_identifiers():
+        description = (f"{IMPORT_MARKER} - created from the inline options of WebHook event "
+                       f"handler {handler_id} (#5751)")
 
     # timeout=10 is the inline shape's fixed TIMEOUT, kept so the imported handler behaves
     # exactly as it did (a webhook created by hand defaults to 3).
     _stage_webhook(identifier,
                    url=options["URL"],
-                   description=f"{IMPORT_MARKER} - created from the inline options of WebHook "
-                               f"event handler {handler_id} (#5751)",
+                   description=description,
                    http_method="POST",
                    content_type=content_type,
                    auth_type="none",

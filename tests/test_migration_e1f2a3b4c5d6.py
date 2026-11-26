@@ -515,6 +515,42 @@ class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
         # The link row carries provenance for whoever reads it later, but nothing matches on it.
         assert "webhook migration" in self._webhook_option(eh.id).Description
 
+    def test_the_import_marker_mirrors_the_migration_marker(self):
+        from privacyidea.lib.event import MIGRATION_MARKER as mirrored
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            MIGRATION_MARKER
+        )
+        assert mirrored == MIGRATION_MARKER
+
+    def test_the_import_of_an_old_export_reuses_the_migrated_webhook(self):
+        """
+        The import names the webhook of an inline handler by the same rule as this migration. A
+        3.14 export imported after the upgrade must link the handler to the migrated webhook,
+        not to a new one next to it.
+        """
+        from privacyidea.lib.event import import_event
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            MIGRATION_MARKER
+        )
+        eh = _create_webhook_handler(name="Foo", url="https://siem.example.com")
+        db.session.commit()
+        assert self._run_migration() == 1
+        migrated = self._webhook_option(eh.id).Value
+
+        import_event([{"name": "Foo", "active": True, "ordering": 0, "position": "post",
+                       "abort_on_error": False, "event": ["validate_check"],
+                       "handlermodule": "WebHook", "action": "post_webhook", "condition": None,
+                       "conditions": {},
+                       "options": {"URL": "https://siem.example.com/new",
+                                   "content_type": "application/json", "data": '{"a": 1}'}}])
+
+        assert self._webhook_option(eh.id).Value == migrated
+        assert Webhook.query.count() == 1
+        webhook = get_webhook(migrated)
+        assert webhook["url"] == "https://siem.example.com/new"
+        # restore_snapshot() removes the migrated webhooks by this marker.
+        assert webhook["description"].startswith(MIGRATION_MARKER)
+
     # ------------------------------------------------------------------
     # Resume after a partial failure
     # ------------------------------------------------------------------
