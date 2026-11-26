@@ -5814,6 +5814,28 @@ class WebhookObjectHandlerTestCase(MyTestCase):
             self.app.config.pop("PI_OUTBOUND_GUARD", None)
 
     @responses.activate
+    def test_16b_a_rejection_of_the_inline_path_does_not_log_the_url(self):
+        # The guard quotes a URL it cannot parse in full, so the path with its token reaches the
+        # warning unless it is redacted, as fire_webhook() does.
+        secret_url = "https://hooks.example:abc/t/SUPERSECRETTOKEN"
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            with self.assertLogs("privacyidea.lib.eventhandler.webhookeventhandler",
+                                 level="WARNING") as logs:
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": secret_url,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            everything = "\n".join(logs.output)
+            self.assertIn("could not determine a port", everything)
+            self.assertNotIn("SUPERSECRETTOKEN", everything)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
     def test_17_the_inline_path_still_sends_while_the_guard_is_off(self):
         # The default, and the upgrade-safety case: an installation that has not opted in must see
         # the behaviour of privacyIDEA 3.14 and older.

@@ -785,7 +785,7 @@ def _resolve_body(config, payload):
 REDACTED = "<redacted>"
 
 
-def _redact_url(text, url):
+def redact_url(text, url):
     """
     Remove the sensitive part of a webhook's URL from a message about it.
 
@@ -1156,7 +1156,7 @@ def fire_webhook(identifier, payload=None, config=None):
         mode, rejection = outbound_guard_check(_guard_target(config))
         follow_redirects = mode != GuardMode.ENFORCE
         if rejection:
-            rejection = _redact_url(rejection, config["url"])
+            rejection = redact_url(rejection, config["url"])
             log.warning(f"Webhook {identifier!r}: outbound request guard "
                         f"({mode}) rejected the target: {rejection}")
             if mode == GuardMode.ENFORCE:
@@ -1231,7 +1231,7 @@ def fire_webhook(identifier, payload=None, config=None):
         return {"success": success, "status_code": response.status_code,
                 "response": body_text, "error": error}
     except Exception as ex:
-        message = _redact_url(f"{ex.__class__.__name__}: {ex}", config["url"])
+        message = redact_url(f"{ex.__class__.__name__}: {ex}", config["url"])
         log.warning(f"Webhook {identifier!r} could not be delivered: {message}")
         _record_webhook_call(identifier, start, False, error=True)
         return {"success": False, "status_code": None, "response": "",

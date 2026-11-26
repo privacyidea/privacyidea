@@ -33,7 +33,7 @@ from privacyidea.lib.error import UserError, ResourceNotFoundError
 from privacyidea.lib.log import get_url_origin
 from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
                                      get_webhook_identifiers, guard_target,
-                                     media_type, outbound_guard_check)
+                                     media_type, outbound_guard_check, redact_url)
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -370,8 +370,9 @@ class WebHookHandler(BaseEventHandler):
             log.warning(f"Could not apply the outbound request guard: {ex!r}")
             mode, rejection = GuardMode.OFF, None
         if rejection:
+            # A target the guard cannot parse is quoted in full, path and token included.
             log.warning(f"Inline webhook: outbound request guard ({mode}) rejected the target: "
-                        f"{rejection}")
+                        f"{redact_url(rejection, webhook_url)}")
             if mode == GuardMode.ENFORCE:
                 self.run_details = f"blocked by the outbound request guard ({mode})"
                 return False
