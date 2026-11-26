@@ -993,83 +993,117 @@ def get_client_ip(request, proxy_settings):
     return get_client_ip_info(request, proxy_settings).ip
 
 
-def resolve_remote_user_from_header(request, header_name, proxy_settings):
+def get_remote_user_header_proxies(proxies: Any) -> tuple[IPNetwork, ...]:
+    """
+    The networks of the proxies that can pass the authenticated user in the header that
+    ``PI_REMOTE_USER_HEADER`` names. They come from ``PI_REMOTE_USER_HEADER_PROXIES``: a list of IP addresses and
+    networks, or a string with the entries separated by commas or whitespace, as for
+    ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``. An environment variable gives a list in JSON, for example
+    ``PRIVACYIDEA_PI_REMOTE_USER_HEADER_PROXIES=["192.168.255.242"]``.
+
+    If an entry is not an IP address or network, the whole setting is not used and the result is empty, so
+    privacyIDEA ignores the header. The error is logged once for each value of the setting.
+
+    :param proxies: the value of ``PI_REMOTE_USER_HEADER_PROXIES``
+    :return: the networks, or an empty tuple
+    """
+    if not proxies:
+        return ()
+    if isinstance(proxies, str):
+        entries = tuple(re.split(r"[,\s]+", proxies.strip()))
+    elif isinstance(proxies, (list, tuple)):
+        entries = tuple(str(entry).strip() for entry in proxies)
+    else:
+        # For example a number from a JSON environment variable, which is no network spelling
+        entries = (str(proxies),)
+    return _parse_remote_user_header_proxies(entries)
+
+
+@functools.lru_cache(maxsize=8)
+def _parse_remote_user_header_proxies(entries: tuple[str, ...]) -> tuple[IPNetwork, ...]:
+    """
+    Parse the entries of ``PI_REMOTE_USER_HEADER_PROXIES``. The result is cached, so a malformed setting is logged
+    once and not for every request.
+
+    :param entries: the IP addresses and networks, as strings
+    :return: the networks, or an empty tuple if an entry is not an IP address or network
+    """
+    networks = []
+    for entry in entries:
+        if not entry:
+            continue
+        try:
+            networks.append(IPNetwork(entry))
+        except (AddrFormatError, ValueError, TypeError):
+            log.error(f"The entry {entry!r} of {ConfigKey.REMOTE_USER_HEADER_PROXIES} is not an IP address or "
+                      f"network. privacyIDEA ignores the header from {ConfigKey.REMOTE_USER_HEADER} until the "
+                      "setting is fixed.")
+            return ()
+    return tuple(networks)
+
+
+def resolve_remote_user_from_header(request, header_name: str | None, proxies: Any) -> str | None:
     """
     Determine the REMOTE_USER for *request* from a configurable HTTP header,
-    the way a reverse proxy in front of privacyIDEA passes it.
+    the way an authenticating reverse proxy in front of privacyIDEA passes it.
 
     gunicorn (and thus the Docker image, which runs Caddy in front of gunicorn)
     never populates the WSGI ``REMOTE_USER`` variable, so the ``remote_user``
     login has no effect behind an HTTP reverse proxy: only Apache ``mod_wsgi``
-    and nginx with uWSGI (``uwsgi_param REMOTE_USER $remote_user;``) currently
-    work. An authenticated proxy can instead pass the verified user name in a
-    request header; this turns such a header into the REMOTE_USER the
+    and nginx with uWSGI (``uwsgi_param REMOTE_USER $remote_user;``) work. An
+    authenticating proxy can instead pass the verified user name in a request
+    header. This function turns such a header into the REMOTE_USER that the
     ``remote_user`` policy already evaluates.
 
-    The header is only trusted from a configured proxy. The TCP peer must
-    appear as the first network of a proxy path in the
-    ``OverrideAuthorizationClient`` system setting (see :func:`parse_proxy`),
-    i.e. the same list of proxies that may already rewrite the client IP via
-    ``X-Forwarded-For`` decides which proxy may pass the authenticated user.
-    The peer is read and matched as :func:`get_client_ip_info` reads and
-    matches it, so both checks accept the same proxies.
-    A request that arrives with its own ``REMOTE_USER`` (Apache, uWSGI) keeps
-    that value - the header never overrides an upstream web server.
+    The header is only trusted from a proxy in ``PI_REMOTE_USER_HEADER_PROXIES``
+    (see :func:`get_remote_user_header_proxies`). The ``OverrideAuthorizationClient``
+    system setting is not used: it lists the hosts that can map the client IP, for
+    example RADIUS servers, and such a host must not be able to log in as any user.
+    The TCP peer is read and matched as :func:`get_client_ip_info` reads and matches
+    it: an IPv4 address and its IPv4-mapped IPv6 form are the same host, and a
+    link-local peer is matched without its zone.
 
-    The caller is expected to only pass a non-empty *header_name* (the
-    ``PI_REMOTE_USER_HEADER`` configuration), which keeps the feature off
-    unless an administrator opts in.
+    A request that arrives with its own ``REMOTE_USER`` (Apache, uWSGI) keeps
+    that value: the header never overrides an upstream web server.
 
     :param request: the Flask request
-    :param header_name: the name of the HTTP header carrying the authenticated
-        user, as configured in ``PI_REMOTE_USER_HEADER``
-    :param proxy_settings: the ``OverrideAuthorizationClient`` system setting
-    :return: the user name from the header, or None when the request has no
-        usable header value or the peer is not a configured proxy
+    :param header_name: the name of the HTTP header with the authenticated user, from ``PI_REMOTE_USER_HEADER``
+    :param proxies: the value of ``PI_REMOTE_USER_HEADER_PROXIES``
+    :return: the user name from the header, or None if the request has no usable header value or the peer is not
+        a listed proxy
     """
-    if not header_name:
+    if not header_name or not proxies:
         return None
     if request.remote_user:
         # An upstream web server (Apache mod_wsgi, nginx with uWSGI) already
-        # authenticated this request. Its REMOTE_USER is authoritative; a
+        # authenticated this request. Its REMOTE_USER is authoritative, and a
         # request header must never override it.
         return None
     header_value = request.headers.get(header_name)
     if not header_value:
         return None
+    networks = get_remote_user_header_proxies(proxies)
+    if not networks:
+        return None
     peer_ip = request.remote_addr
     if not peer_ip:
+        log.warning(f"Ignoring the remote user header {header_name!r}: the request has no peer address, for "
+                    "example because it arrived on a Unix socket. The header needs a TCP connection from a proxy "
+                    f"in {ConfigKey.REMOTE_USER_HEADER_PROXIES}.")
         return None
     # A scoped link-local peer ("fe80::1%eth0") loses its zone, as in the X-Forwarded-For check.
     peer = _parse_hop_address(peer_ip)
     if peer is None:
-        log.warning(
-            f"Cannot check the proxy list for the remote user header: "
-            f"the peer address {peer_ip!r} is not an IP address."
-        )
+        log.warning(f"Ignoring the remote user header {header_name!r}: the peer address {peer_ip!r} is not an IP "
+                    "address.")
         return None
-    # The proxy paths are (IPNetwork, IPNetwork[, IPNetwork...]) tuples. The
-    # first network of a path is the proxy that privacyIDEA is talking to, and
-    # only such a directly connected proxy can set the authenticated-user
-    # header: everything further down the chain forwards a header value that
-    # the directly connected proxy is responsible for having validated (or
-    # stripped). Requiring the peer to be the *first* network keeps an IP
-    # listed further down a chain (e.g. a trusted backend in
-    # "10.0.0.0/24 > 192.168.0.0/16") from qualifying.
-    try:
-        proxy_paths = parse_proxy(proxy_settings or "")
-    except AddrFormatError:
-        # check_proxy_index logs the malformed setting when it maps the client IP of the request.
-        return None
-    for proxy_path in proxy_paths:
-        # An IPv4 peer and its IPv4-mapped IPv6 form ("::ffff:10.1.2.3") are the
-        # same host, in the network entry as in the peer address.
-        if _ip_in_network(peer, proxy_path[0]):
-            return header_value
-    log.info(
-        f"Ignoring the remote user header {header_name!r}: the peer "
-        f"{peer_ip} is not listed in OverrideAuthorizationClient."
-    )
+    # An IPv4 peer and its IPv4-mapped IPv6 form ("::ffff:10.1.2.3") are the
+    # same host, in the network entry as in the peer address.
+    if any(_ip_in_network(peer, network) for network in networks):
+        return header_value
+    # DEBUG and not INFO: any client can send the header, and a line for each request would flood the log.
+    log.debug(f"Ignoring the remote user header {header_name!r}: the peer {peer_ip} is not in "
+              f"{ConfigKey.REMOTE_USER_HEADER_PROXIES}.")
     return None
 
 

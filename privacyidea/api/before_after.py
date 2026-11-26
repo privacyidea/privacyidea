@@ -47,7 +47,8 @@ from flask import request, g, Request, Response
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
-from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node, get_from_config, SYSCONF
+from privacyidea.config import ConfigKey
+from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.token import get_token_type
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
@@ -194,28 +195,32 @@ def identify_api_client():
 @token_blueprint.before_app_request
 def apply_remote_user_header():
     """
-    Turn the configured authenticated-user header of a reverse proxy into the
+    Turn the user name in the header of an authenticating reverse proxy into the
     WSGI ``REMOTE_USER``, for every request of the app.
 
     gunicorn (and with it the Docker image, which runs Caddy in front of
     gunicorn) never sets ``REMOTE_USER``, so the ``remote_user`` login does not
-    work behind an HTTP reverse proxy. An administrator who terminates
-    authentication in the proxy instead configures ``PI_REMOTE_USER_HEADER``
-    with the header the proxy sets (the proxy must remove that header from
-    incoming client requests). :func:`resolve_remote_user_from_header` only
-    honours the header when the TCP peer is listed in the
-    ``OverrideAuthorizationClient`` proxy setting, so a client cannot
-    authenticate itself by sending the header.
+    work behind an HTTP reverse proxy. Instead, an administrator configures the
+    header that the proxy sets in ``PI_REMOTE_USER_HEADER`` and the addresses of
+    the proxies in ``PI_REMOTE_USER_HEADER_PROXIES``. The proxy must remove that
+    header from incoming client requests. :func:`resolve_remote_user_from_header`
+    only honours the header from a listed proxy, so a client cannot authenticate
+    itself by sending the header.
+
+    Both settings come from the app configuration and not from the database. Thus
+    the hook keeps working while the database is unavailable, for example for the
+    health probes, and it does not create the request-local config object before
+    the blueprints' own ``before_request`` functions run.
 
     Registered before any blueprint's own ``before_request`` runs, so the
     login page, the ``/config`` endpoint and the ``/auth`` endpoint all see
     the same REMOTE_USER.
     """
-    header_name = get_app_config_value("PI_REMOTE_USER_HEADER", "")
-    if not header_name:
+    header_name = get_app_config_value(ConfigKey.REMOTE_USER_HEADER)
+    proxies = get_app_config_value(ConfigKey.REMOTE_USER_HEADER_PROXIES)
+    if not header_name or not proxies:
         return
-    remote_user = resolve_remote_user_from_header(request, header_name,
-                                                 get_from_config(SYSCONF.OVERRIDECLIENT))
+    remote_user = resolve_remote_user_from_header(request, header_name, proxies)
     if remote_user:
         request.environ["REMOTE_USER"] = remote_user
 
