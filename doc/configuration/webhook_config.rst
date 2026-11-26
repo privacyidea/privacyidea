@@ -149,7 +149,9 @@ webhooks became configuration objects, just as it does to a webhook object.
    it resolves to. An entry is either a CIDR network (``10.1.2.0/24``) or a host
    or address with an optional port (``siem.corp:8443``, ``10.1.2.3``, ``::1``).
    Bracket an IPv6 address only to give it a port (``[::1]:8443``). An entry that
-   cannot be parsed matches nothing.
+   cannot be parsed matches nothing. Give a list, or a string of comma separated
+   entries, as an environment variable sets it
+   (``PRIVACYIDEA_PI_OUTBOUND_GUARD_ALLOW=10.1.2.0/24,siem.corp:8443``).
 
 .. note:: The guard resolves the host and then connects, so a name that resolves
    differently between those two moments is not covered (*DNS rebinding*). It

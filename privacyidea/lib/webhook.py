@@ -1025,7 +1025,12 @@ def _guard_config():
         log.warning(f"Invalid PI_OUTBOUND_GUARD value {mode!r}, treating as "
                     f"{GuardMode.OFF!r}.")
         mode = GuardMode.OFF
-    allowlist = current_app.config.get("PI_OUTBOUND_GUARD_ALLOW", [])
+    allowlist = current_app.config.get("PI_OUTBOUND_GUARD_ALLOW") or []
+    # A string would be read character by character, and no character matches an entry. One
+    # arrives from the environment (PRIVACYIDEA_PI_OUTBOUND_GUARD_ALLOW=10.1.2.0/24), whose value
+    # is taken as a string unless it is valid JSON, so read it as a comma separated list.
+    if isinstance(allowlist, str):
+        allowlist = [entry.strip() for entry in allowlist.split(",") if entry.strip()]
     return mode, allowlist
 
 

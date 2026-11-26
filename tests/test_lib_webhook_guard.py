@@ -10,7 +10,8 @@ from unittest.mock import patch
 import responses
 
 from privacyidea.lib.webhook import (
-    GuardMode, check_outbound_target, fire_webhook, guard_target, set_webhook,
+    GuardMode, check_outbound_target, fire_webhook, guard_target, outbound_guard_check,
+    set_webhook,
 )
 from privacyidea.models.webhook import Webhook
 from .base import MyTestCase
@@ -290,6 +291,47 @@ class CheckOutboundTargetTestCase(MyTestCase):
         result = check_outbound_target("http://siem.corp:abc/hook", mode=GuardMode.ENFORCE)
         self.assertIsNotNone(result)
         self.assertIn("port", result)
+
+
+class GuardAllowlistConfigTestCase(MyTestCase):
+    """How outbound_guard_check() reads PI_OUTBOUND_GUARD_ALLOW from the app config."""
+
+    URL = "https://siem.corp:8443/hook"
+    RESOLVES = {"siem.corp": ["10.1.2.5"]}
+
+    def setUp(self):
+        super().setUp()
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+
+    def tearDown(self):
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        self.app.config.pop("PI_OUTBOUND_GUARD_ALLOW", None)
+        super().tearDown()
+
+    def _rejection(self, allowlist):
+        self.app.config["PI_OUTBOUND_GUARD_ALLOW"] = allowlist
+        with patch("socket.getaddrinfo", _fake_getaddrinfo(self.RESOLVES)):
+            return outbound_guard_check(self.URL)[1]
+
+    def test_a_list_is_used_as_it_is(self):
+        self.assertIsNone(self._rejection(["10.1.2.0/24"]))
+
+    def test_a_string_is_one_entry_not_a_list_of_characters(self):
+        # The environment gives PRIVACYIDEA_PI_OUTBOUND_GUARD_ALLOW=10.1.2.0/24 as a string.
+        self.assertIsNone(self._rejection("10.1.2.0/24"))
+
+    def test_a_string_is_split_at_commas(self):
+        for allowlist in ("10.1.2.0/24, 192.0.2.0/24", "192.0.2.0/24,siem.corp:8443,"):
+            with self.subTest(allowlist=allowlist):
+                self.assertIsNone(self._rejection(allowlist))
+
+    def test_a_string_without_a_matching_entry_still_blocks(self):
+        self.assertIsNotNone(self._rejection("192.0.2.0/24"))
+
+    def test_an_empty_value_allows_no_exception(self):
+        for allowlist in (None, ""):
+            with self.subTest(allowlist=allowlist):
+                self.assertIsNotNone(self._rejection(allowlist))
 
 
 class FireWebhookGuardTestCase(MyTestCase):

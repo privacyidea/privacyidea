@@ -1213,7 +1213,8 @@ refuse, without refusing it yet.
 
 ``PI_OUTBOUND_GUARD_ALLOW`` lists the exceptions - CIDR networks, or a host or
 address with an optional port. It is checked against both the configured host
-name and every address it resolves to.
+name and every address it resolves to. A string of comma separated entries works
+too, which is what an environment variable gives.
 
 The blocked ranges, the allowlist syntax and the guard's limits are described in
 full under :ref:`webhook_outbound_guard`.
