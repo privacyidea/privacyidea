@@ -1340,6 +1340,33 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
         self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
 
+    def test_16_autoresync_totp_skipped_code(self):
+        """
+        A TOTP token completes the autoresync with a later value than the next one, so a user who missed a code is
+        authenticated with the second value.
+        """
+        user = User("cornelius", self.realm2)
+        totp = init_token({"type": "totp", "serial": "resync_skip_totp", "otpkey": self.otpkey, "pin": "skip",
+                           "timeStep": 30}, user)
+        self.addCleanup(remove_token, "resync_skip_totp")
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        login = {"user": user.login, "realm": user.realm}
+
+        # Ten minutes behind is out of the window, but in the sync window
+        first = time.time() - 600
+        res = self._validate_check({**login, "pass": "skip" + totp.get_otp(time_seconds=first)[2]})
+        self.assertFalse(res["result"]["value"], res)
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertIn("autoresync started", audit_entry.get("info"))
+
+        # Two time steps later, so the value of the next time step is skipped
+        res = self._validate_check({**login, "pass": "skip" + totp.get_otp(time_seconds=first + 60)[2]})
+        self.assertTrue(res["result"]["value"], res)
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertIn("autoresync successful", audit_entry.get("info"))
+        self.assertNotIn("otp1c", get_one_token(serial="resync_skip_totp").get_tokeninfo())
+
     @smtpmock.activate
     def test_16_autoresync_not_run_for_email_token(self):
         """

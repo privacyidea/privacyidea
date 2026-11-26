@@ -420,6 +420,27 @@ class TotpTokenClass(HotpTokenClass):
         log.debug(f"checked otpval in syncwindow ({sync_window!r}): {res!r}")
         return res
 
+    def _max_autoresync_gap(self) -> int:
+        """
+        How many time steps the second OTP value of an autoresync may be after the first one. It is bounded by one
+        side of the time window of the token and by the autoresync timeout, so a long AutoResyncTimeout alone does
+        not widen it. The timeout is at least three time steps, so the gap is at least one and, with the default time
+        window of 180 seconds and a time step of 30 seconds, six.
+
+        :return: The largest difference of the two counters
+        """
+        return min(max(1, self.timewindow // self.timestep), self.get_autoresync_timeout() // self.timestep)
+
+    def _is_next_counter(self, first: int, second: int) -> bool:
+        """
+        The second OTP value may skip codes, but must be newer than the first one and within the maximum gap.
+
+        :param first: The counter of the first OTP value
+        :param second: The counter of the second OTP value
+        :return: True if the second value can complete the autoresync
+        """
+        return 1 <= second - first <= self._max_autoresync_gap()
+
     def _is_used_counter(self, counter: int) -> bool:
         """
         Whether the counter was used already, so that the autoresync can not be done with previous OTP values.

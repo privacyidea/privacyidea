@@ -47,6 +47,12 @@
   The entries `otp1c` and `dueDate` that an earlier version left in the token info are ignored and removed at the next
   successful authentication.
 
+* **The AutoResync of TOTP tokens accepts skipped codes.** The second OTP value no longer has to be the next one. It may
+  be later by as many time steps as the time window of the token and the *Auto resync timeout* allow, whichever is
+  smaller, six with the default time window of 180 seconds and a time step of 30 seconds. A TOTP token with a short
+  time window therefore needs the next value, as before. An OTP value of a TOTP token that was used already no longer
+  starts or completes an AutoResync.
+
 * **Policy time ranges over the end of the week or over midnight now apply.** A day range such as `Sat-Mon: 8-18`
   now applies on Saturday, Sunday and Monday. A time range such as `Fri: 22-6` now applies from Friday 22:00 to
   Saturday 06:00: the hours after midnight belong to the day on which the range starts. Before, a day range over the
