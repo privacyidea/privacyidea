@@ -44,7 +44,8 @@ export interface ContainerRegistrationInitDialogData {
   templateUrl: "./container-registration-init-dialog.component.html",
   imports: [ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
-export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {
+export class ContainerRegistrationInitDialogComponent
+  extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {
   readonly registration = signal(emptyRegistration());
   readonly form = form(this.registration, (f) =>
     registrationRules(f, { value: this.registration, hasOwner: () => this.data.containerHasOwner })

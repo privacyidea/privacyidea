@@ -3,6 +3,7 @@ const eslint = require("@eslint/js");
 const { defineConfig } = require("eslint/config");
 const tseslint = require("typescript-eslint");
 const angular = require("angular-eslint");
+const stylistic = require("@stylistic/eslint-plugin");
 
 module.exports = defineConfig([
   {
@@ -13,6 +14,7 @@ module.exports = defineConfig([
       tseslint.configs.stylistic,
       angular.configs.tsRecommended
     ],
+    plugins: { "@stylistic": stylistic },
     processor: angular.processInlineTemplates,
     rules: {
       "@angular-eslint/directive-selector": [
@@ -40,7 +42,7 @@ module.exports = defineConfig([
           destructuredArrayIgnorePattern: "^_+$"
         }
       ],
-      "max-len": [
+      "@stylistic/max-len": [
         "error",
         {
           code: 120,

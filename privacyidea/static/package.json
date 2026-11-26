@@ -46,6 +46,7 @@
     "@axe-core/playwright": "4.12.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
+    "@stylistic/eslint-plugin": "5.10.0",
     "@types/crypto-js": "^4.2.2",
     "@types/jest": "^30.0.0",
     "@types/jest-axe": "^3.5.9",
