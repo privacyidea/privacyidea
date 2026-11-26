@@ -61,6 +61,8 @@ from unittest import mock
 
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
+from privacyidea.lib.container import (init_container, set_container_realms, delete_container_by_serial,
+                                       find_container_by_serial)
 from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.machineresolver import (save_resolver as save_machine_resolver,
@@ -74,9 +76,10 @@ from privacyidea.lib.realm import set_realm, delete_realm, get_default_realm, ge
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+from privacyidea.lib.token import init_token, remove_token, get_realms_of_token
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.lib.utils.import_plan import (build_import_plan, format_import_plan, apply_import_plan,
-                                               DELETE_ORDER, _ADAPTERS)
+                                               plan_has_changes, DELETE_ORDER, _ADAPTERS)
 from privacyidea.models import Config, db
 from .base import MyTestCase, PWFILE, PWFILE2
 
@@ -86,6 +89,8 @@ REALM_RESOLVER = "imp-realmres"
 CONFIG_NOTE = "System settings (type 'config') are not replaced: keys missing from the import are kept."
 ADMIN_WARNING = ("Warning: after this import no active admin policy is left, "
                  "so every administrator may do everything.")
+NO_DEFAULT_REALM_WARNING = ("Warning: after this import no realm is the default realm, "
+                            "so a user who logs in without a realm is not found.")
 
 # Exporters returning a list name their entries in this field, the others return a dict keyed by name.
 LIST_NAME_FIELD = {"policy": "name", "event": "name", "periodictask": "name", "caconnector": "connectorname"}
@@ -603,9 +608,15 @@ class ImportPlanTestCase(MyTestCase):
         for run in (1, 2):
             with self.subTest(run=run):
                 plans = build_import_plan(data, ["realm"], replace=True)
+                lines = format_import_plan(plans)
+                if run == 1:
+                    self.assertIn('  default realm: "imp-default-a" -> none', lines)
+                    self.assertIn(f"  {NO_DEFAULT_REALM_WARNING}", lines)
                 if run == 2:
                     self.assertEqual({"imp-default-b": "unchanged"},
                                      {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+                    # there is no default realm to lose any more
+                    self.assertNotIn(f"  {NO_DEFAULT_REALM_WARNING}", lines)
                 self.assertEqual([], apply_import_plan(plans))
                 self.assertNotIn("imp-default-a", get_realms())
                 self.assertIn("imp-default-b", get_realms())
@@ -763,3 +774,173 @@ class ImportPlanTestCase(MyTestCase):
                 stored_entry = entry_of(typ, export(typ, on_system), next(iter(on_system)))
                 self.assertEqual(changed_value[typ](imported), changed_value[typ](stored_entry))
                 delete_object(typ, next(iter(on_system)))
+
+    def test_19_realm_not_marked_as_default_keeps_its_default(self):
+        # Only --replace without -n removes the default realm. A plain import, or one limited with -n, of the
+        # default realm marked as not default must not leave the system without a default realm.
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        _set_realm("imp-default-a")
+        _set_realm("imp-default-b")
+        set_default_realm("imp-default-a")
+        data = {"realm": export("realm", {"imp-default-a"})}
+        entry = entry_of("realm", data["realm"], "imp-default-a")
+        entry["default"] = False
+        cases = [(None, False), ("imp-default-a", False), ("IMP-Default-A", False), ("imp-default-a", True)]
+        for priority, (name, replace) in enumerate(cases, start=3):
+            with self.subTest(name=name, replace=replace):
+                # a changed resolver priority makes the importer of the realm run
+                entry["resolver"][0]["priority"] = priority
+
+                plans = build_import_plan(data, ["realm"], name=name, replace=replace)
+                type_plan = self._type_plan(plans, "realm")
+                self.assertEqual([("imp-default-a", "update", ["resolver"])],
+                                 [(e.key, e.action, e.changed_fields) for e in type_plan.entries])
+                lines = format_import_plan(plans)
+                self.assertEqual([], [line for line in lines if "default realm" in line], lines)
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                self.assertEqual("imp-default-a", get_default_realm())
+
+    def test_20_realm_marked_as_default_becomes_the_default_realm(self):
+        # Also without --replace and with -n. The importer does not run for the unchanged realm, so the plan sets
+        # the default realm itself.
+        data = self._default_realm_scenario(import_default=True)
+        for name in (None, "imp-default-b"):
+            with self.subTest(name=name):
+                set_default_realm("imp-default-a")
+
+                plans = build_import_plan(data, ["realm"], name=name)
+                self.assertEqual({"imp-default-b": "unchanged"},
+                                 {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+                self.assertIn('  default realm: "imp-default-a" -> "imp-default-b"', format_import_plan(plans))
+                self.assertTrue(plan_has_changes(plans))
+                self.assertEqual([], apply_import_plan(plans, name=name))
+                self.assertEqual("imp-default-b", get_default_realm())
+                self.assertIn("imp-default-a", get_realms())
+
+                # the same import again changes nothing
+                self.assertFalse(plan_has_changes(build_import_plan(data, ["realm"], name=name)))
+
+    def test_21_default_realm_on_a_system_without_realms(self):
+        # set_realm() makes the first realm the default realm, so the plan shows it, also if the file marks no
+        # realm as default. With --replace the default realm follows the file, so no realm is the default realm.
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        resolvers = [{"name": REALM_RESOLVER, "priority": None, "node": ""}]
+        data = {"realm": {"imp-first-a": {"default": False, "resolver": resolvers},
+                          "imp-first-b": {"default": False, "resolver": resolvers}}}
+
+        for replace, default_realm in ((False, "imp-first-a"), (True, None)):
+            with self.subTest(replace=replace):
+                self.assertEqual({}, get_realms())
+                plans = build_import_plan(data, ["realm"], replace=replace)
+                lines = format_import_plan(plans)
+                if default_realm:
+                    self.assertIn(f'  default realm: none -> "{default_realm}"', lines)
+                else:
+                    # The system has no default realm before and after the import, so the plan has no line and no
+                    # warning about it.
+                    self.assertEqual([], [line for line in lines if "default realm" in line], lines)
+                self.assertEqual([], apply_import_plan(plans))
+                self.assertEqual(default_realm, get_default_realm() or None)
+                self.assertFalse(plan_has_changes(build_import_plan(data, ["realm"], replace=replace)))
+                for name in data["realm"]:
+                    delete_realm(name)
+
+    def test_22_replace_keeps_a_realm_that_contains_tokens_or_containers(self):
+        # delete_realm() only refuses a realm whose users own tokens or containers. The import keeps a realm that
+        # contains other tokens or containers as well, they would lose the realm.
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        for name in ("imp-tok-realm", "imp-cont-realm", "imp-keep-realm"):
+            _set_realm(name)
+        init_token({"type": "spass", "serial": "IMP-TOK-1"}, tokenrealms=["imp-tok-realm"])
+        self.addCleanup(remove_token, "IMP-TOK-1")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        self.addCleanup(delete_container_by_serial, container_serial)
+        set_container_realms(container_serial, ["imp-cont-realm"])
+        data = {"realm": export("realm", {"imp-keep-realm"})}
+
+        plans = build_import_plan(data, ["realm"], replace=True)
+        self.assertEqual({"imp-keep-realm": "unchanged", "imp-tok-realm": "delete", "imp-cont-realm": "delete"},
+                         {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+        errors = {}
+        failed = apply_import_plan(plans, on_error=lambda typ, entry, exx: errors.update({entry.key: str(exx)}))
+
+        self.assertEqual(["realm"], failed)
+        self.assertIn("still contains tokens", errors["imp-tok-realm"])
+        self.assertIn("still contains containers", errors["imp-cont-realm"])
+        self.assertEqual(["imp-tok-realm"], get_realms_of_token("IMP-TOK-1"))
+        container_realms = find_container_by_serial(container_serial).realms
+        self.assertEqual(["imp-cont-realm"], [realm.name for realm in container_realms])
+
+    def test_23_failed_event_import_keeps_the_surplus_event_handlers(self):
+        # With --replace the surplus handler of a group is deleted in the transaction of the event import, so a
+        # failed import does not leave the group with fewer handlers and without the update.
+        for event in ("token_assign", "token_revoke"):
+            set_event("imp-ev-surplus", [event], "UserNotification", "sendmail", conditions={})
+        exported = export("event", {"imp-ev-surplus"})
+        first = copy.deepcopy(min(exported, key=lambda e: e["id"]))
+        first["ordering"] = 4
+        data = {"event": [first]}
+
+        plans = build_import_plan(data, ["event"], replace=True)
+        self.assertEqual(["delete", "update"], sorted(e.action for e in self._type_plan(plans, "event").entries))
+        with mock.patch("privacyidea.lib.event._stage_event", side_effect=RuntimeError("database connection lost")):
+            self.assertEqual(["event"], apply_import_plan(plans))
+        self.assertEqual(sorted((e["id"], e["ordering"]) for e in exported),
+                         sorted((e["id"], e["ordering"]) for e in export("event", {"imp-ev-surplus"})))
+
+        # without the failure the first handler is updated and the surplus one deleted
+        self.assertEqual([], apply_import_plan(build_import_plan(data, ["event"], replace=True)))
+        self.assertEqual([(first["id"], 4)],
+                         [(e["id"], e["ordering"]) for e in export("event", {"imp-ev-surplus"})])
+
+    def test_24_policy_without_description_removes_the_stored_one(self):
+        # A policy without a description exports None. The import must remove a stored description, else the plan
+        # reports the same update on every run.
+        set_policy("imp-desc-pol", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU, description="old description")
+        data = {"policy": export("policy", {"imp-desc-pol"})}
+        entry_of("policy", data["policy"], "imp-desc-pol")["description"] = None
+
+        plans = build_import_plan(data, ["policy"])
+        entry = self._by_key(self._type_plan(plans, "policy"))["imp-desc-pol"]
+        self.assertEqual(("update", ["description"]), (entry.action, entry.changed_fields))
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertFalse(entry_of("policy", export("policy", {"imp-desc-pol"}), "imp-desc-pol")["description"])
+        plans = build_import_plan(data, ["policy"])
+        self.assertEqual("unchanged", self._by_key(self._type_plan(plans, "policy"))["imp-desc-pol"].action)
+
+    def test_25_every_import_type_has_an_adapter(self):
+        self.assertEqual(set(IMPORT_FUNCTIONS), set(_ADAPTERS))
+        # A selected type without an adapter stops the plan instead of being left out without a message
+        new_type = {"imp-newtype": {"prio": 99, "func": lambda data, name=None: None}}
+        with mock.patch.dict(IMPORT_FUNCTIONS, new_type):
+            with self.assertRaises(ValueError):
+                build_import_plan({"imp-newtype": {}}, ["all"])
+            self.assertEqual([], build_import_plan({"imp-newtype": {}}, ["policy"]))
+
+    def test_26_kept_default_realm_stays_the_default_realm(self):
+        # With --replace and a file that marks no realm as default, the import keeps a default realm that still
+        # contains tokens. The realm stays as it was, so it also stays the default realm. A realm that was not the
+        # default realm does not become the default realm, also if delete_realm() makes the last realm that is
+        # left the default realm.
+        save_resolver({"resolver": REALM_RESOLVER, "type": "passwdresolver", "fileName": PWFILE})
+        _set_realm("imp-default-a")
+        _set_realm("imp-default-b")
+        init_token({"type": "spass", "serial": "IMP-TOK-DEFAULT"}, tokenrealms=["imp-default-a"])
+        self.addCleanup(remove_token, "IMP-TOK-DEFAULT")
+        file_with_b = {"realm": export("realm", {"imp-default-b"})}
+        entry_of("realm", file_with_b["realm"], "imp-default-b")["default"] = False
+        cases = [("imp-default-a", file_with_b, {"imp-default-a": "delete", "imp-default-b": "unchanged"}),
+                 (None, {"realm": {}}, {"imp-default-a": "delete", "imp-default-b": "delete"})]
+
+        for default_before, data, actions in cases:
+            with self.subTest(default_before=default_before):
+                set_default_realm(default_before)
+                plans = build_import_plan(data, ["realm"], replace=True)
+                self.assertEqual(actions, {e.key: e.action for e in self._type_plan(plans, "realm").entries})
+                errors = {}
+                failed = apply_import_plan(plans,
+                                           on_error=lambda typ, entry, exx: errors.update({entry.key: str(exx)}))
+                self.assertEqual(["realm"], failed)
+                self.assertEqual(["imp-default-a"], list(errors))
+                self.assertIn("imp-default-a", get_realms())
+                self.assertEqual(default_before, get_default_realm() or None)

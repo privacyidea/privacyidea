@@ -425,12 +425,11 @@ def import_realms(data: dict, name: str | None = None) -> None:
         if name and name != realm:
             continue
         added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
+        # The default realm stays the default realm if the import does not mark it as default, because the import
+        # of one realm must not leave the system without a default realm. Only "pi-manage config import --replace"
+        # removes the default realm.
         if is_true(r_config.get('default')):
             set_default_realm(realm)
-        elif get_default_realm() == realm:
-            # The imported realm is not the default realm, so it loses its default, which set_realm() may also
-            # have given it as the first realm. A repeated import of the same data thus gives the same result.
-            set_default_realm(None)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
 
