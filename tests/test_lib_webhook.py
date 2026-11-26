@@ -418,14 +418,27 @@ class WebhookCrudTestCase(MyTestCase):
             set_webhook, "siem", headers={"X-New": CENSORED},
             header_renames={"X-New": "X-Nothing"})
 
-    def test_a_rename_onto_an_existing_header_is_refused(self):
-        # Two rows would claim one name, and which value survived would be an accident.
+    def test_a_rename_onto_a_deleted_header_takes_its_name(self):
+        # The editor deletes X-Old and renames Authorization to X-Old in one save. The request has
+        # one X-Old, and the rename says it is the renamed row, so the stored X-Old leaves the set.
+        set_webhook("siem", url="https://siem.example.com/ingest",
+                    headers={"Authorization": "s3cr3t", "X-Old": "plain"},
+                    secret_headers={"Authorization"})
+
+        set_webhook("siem", headers={"X-Old": CENSORED}, secret_headers={"X-Old"},
+                    header_renames={"X-Old": "Authorization"})
+
+        stored = get_webhook("siem", censor=False)
+        self.assertEqual({"X-Old": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["X-Old"], stored["secret_headers"])
+
+    def test_a_rename_onto_a_header_whose_old_name_is_reused(self):
+        # Rename A onto B, whose row is dropped, and add a new header under the freed name A.
         set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "1", "B": "2"})
 
-        self.assertRaisesRegex(
-            ParameterError, "a header named 'B' already exists",
-            set_webhook, "siem", headers={"A": "1", "B": CENSORED},
-            header_renames={"B": "A"})
+        set_webhook("siem", headers={"A": "new", "B": CENSORED}, header_renames={"B": "A"})
+
+        self.assertEqual({"A": "new", "B": "1"}, get_webhook("siem")["headers"])
 
     def test_swapping_two_header_names_keeps_both_values(self):
         set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "s3cr3t", "B": "plain"},

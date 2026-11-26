@@ -250,8 +250,12 @@ def _apply_renames(webhook, renames):
 
     All renames are applied in one step, against the names stored before the request. So the
     editor's natural requests work: swapping the names of two headers, a chain like A to B and
-    B to C, and renaming a header and then adding a new one under its old name. A target name
-    collides only with a stored row that keeps its name.
+    B to C, and renaming a header and then adding a new one under its old name.
+
+    A rename onto the name of a stored row that is not renamed itself replaces that row: the
+    header set of the request has one header of that name, and the rename says it is the renamed
+    row, so the stored one is no longer part of the set. That is how the editor deletes header B
+    and renames header A to B in one save.
 
     Re-sending a plain rename is a no-op rather than an error: a double submit would otherwise
     fail a request that has already done exactly what it asked for. A swap cannot be told apart
@@ -259,8 +263,8 @@ def _apply_renames(webhook, renames):
 
     :param webhook: the Webhook database object
     :param renames: dict of new header name -> the name it is stored under
-    :raises ParameterError: if a rename names no stored header, if two renames name the same
-        stored header, or if a rename would overwrite a header that keeps its name
+    :raises ParameterError: if a rename names no stored header, or if two renames name the same
+        stored header
     """
     existing = {h.key: h for h in webhook.headers}
     pending = {}
@@ -282,8 +286,11 @@ def _apply_renames(webhook, renames):
                              f"more than one new name.")
     for new_key, old_key in pending.items():
         if new_key in existing and new_key not in sources:
-            raise ParameterError(f"Cannot rename the header {old_key!r} to {new_key!r}: a header "
-                                 f"named {new_key!r} already exists on this webhook.")
+            # The renamed row takes the name, so the stored row of that name leaves the set. The
+            # relationship is dynamic, so _apply_headers() no longer finds it once it is deleted.
+            db.session.delete(existing[new_key])
+            log.info(f"Header {new_key!r} on webhook {webhook.identifier!r} is replaced by the "
+                     f"header renamed from {old_key!r}.")
 
     # Collect the rows first: once one key has changed, a lookup by the stored name would find
     # the wrong row in a swap or a chain.
