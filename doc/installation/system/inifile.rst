@@ -531,6 +531,96 @@ A JWT can be created like this::
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
 
+.. _picfg_remote_user_header:
+
+REMOTE_USER from a reverse proxy
+--------------------------------
+
+.. index:: remote user, reverse proxy, gunicorn, Docker, X-Forwarded-User
+
+The ``remote_user`` login (see :ref:`policy_remote_user`) uses the ``REMOTE_USER`` that the web server
+authenticated. Apache ``mod_wsgi`` and nginx with uWSGI set ``REMOTE_USER``. gunicorn does not set it, so the login
+has no effect behind an HTTP reverse proxy in front of gunicorn. The Docker image uses this setup, with Caddy in
+front of gunicorn.
+
+If the proxy authenticates the user, it can pass the user name to privacyIDEA in a request header. Set the name of
+the header and the addresses of the proxies that can send it::
+
+   PI_REMOTE_USER_HEADER = "X-Forwarded-User"
+   PI_REMOTE_USER_HEADER_PROXIES = ["10.0.0.5"]
+
+``PI_REMOTE_USER_HEADER_PROXIES`` is a list of IP addresses and networks, or a string with the entries separated by
+commas or whitespace. privacyIDEA uses the header only if the TCP connection comes from one of these addresses. The
+header value is then the ``REMOTE_USER`` of the request, for the login page, ``/config`` and ``/auth``. An IPv4
+entry also covers the IPv4-mapped form of the same address (``::ffff:10.0.0.5`` for ``10.0.0.5``).
+
+The header is off if one of the two settings is empty. If an entry of ``PI_REMOTE_USER_HEADER_PROXIES`` is not an
+IP address or network, privacyIDEA ignores the header and writes an error to the log. If ``PI_REMOTE_USER_HEADER``
+is set but no proxy is usable, privacyIDEA writes a warning to the log when it starts.
+
+The system setting ``OverrideAuthorizationClient`` (see :ref:`override_client`) has no effect on the header. A host
+that this setting lists, for example a RADIUS server, cannot send the header.
+
+.. warning:: A host in ``PI_REMOTE_USER_HEADER_PROXIES`` can use the header to log in as any user without a
+   password, also as an administrator. List only the proxies that authenticate the users, as narrowly as possible.
+   The proxy must remove the header from the request of the client and then set it to the authenticated user. If
+   the proxy passes the header of the client on, any client can log in as any user.
+
+A request that has a ``REMOTE_USER`` from the web server (Apache, uWSGI) keeps that value. The header does not
+change it.
+
+Both settings are only in the server configuration and not in the database, and there is no WebUI or API for them.
+Changes take effect after a restart of the web server. In a container, set them as environment variables with the
+prefix ``PRIVACYIDEA_``. privacyIDEA reads a list from an environment variable in JSON. In the Docker setup, Caddy
+has the fixed address ``192.168.255.242``::
+
+   PRIVACYIDEA_PI_REMOTE_USER_HEADER=X-Forwarded-User
+   PRIVACYIDEA_PI_REMOTE_USER_HEADER_PROXIES=["192.168.255.242"]
+
+Caddy can authenticate the user with ``forward_auth`` and an authentication service, for example Authelia. In a
+``route`` block, Caddy runs the directives in the given order. The example first removes the header that the client
+sent. Then it copies the user name from the response of the authentication service into the header::
+
+   {$PI_SITE_ADDRESS:localhost} {
+       {$PI_CADDY_TLS}
+       route {
+           request_header -X-Forwarded-User
+           forward_auth authelia:9091 {
+               uri /api/authz/forward-auth
+               copy_headers Remote-User>X-Forwarded-User
+           }
+           reverse_proxy pi:8080
+       }
+   }
+
+Keep the ``route`` block. Without it, Caddy runs ``request_header`` after ``forward_auth`` and removes the user name
+again.
+
+nginx in front of gunicorn can authenticate the user with ``auth_request`` and an authentication service. Then it
+sets the header with ``proxy_set_header``, which replaces a header of the same name that the client sent. If the
+user name is empty, nginx does not pass the header::
+
+   location / {
+       auth_request /auth;
+       auth_request_set $authenticated_user $upstream_http_remote_user;
+       proxy_set_header X-Forwarded-User $authenticated_user;
+       ...
+   }
+
+``$upstream_http_remote_user`` is the ``Remote-User`` header of the response of the authentication service. The
+``/auth`` location and the header name depend on the service. Put the ``proxy_set_header`` line in the same block as
+the other ``proxy_set_header`` lines. A block with its own ``proxy_set_header`` lines does not get the lines of an
+outer block.
+
+With nginx in front of uWSGI, the header is not necessary. nginx passes ``REMOTE_USER`` to uWSGI directly::
+
+   location / {
+       include uwsgi_params;
+       uwsgi_param REMOTE_USER $remote_user;
+       ...
+   }
+
+
 Token parameters
 ----------------
 

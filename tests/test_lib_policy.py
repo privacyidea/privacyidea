@@ -983,8 +983,12 @@ class PolicyTestCase(MyTestCase):
                           action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Mon-Fri: 12:26")
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
                           action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Mon:")
-        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
-                          action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Mon-Fri: 12-08")
+
+        # A time range over midnight and a day range over the end of the week are valid
+        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp",
+                   time="Mon-Fri: 22-06, Sat-Mon: 8-18")
+        policy = Policy.query.filter_by(name="test").first()
+        self.assertEqual("Mon-Fri: 22-06, Sat-Mon: 8-18", policy.time)
 
         delete_policy("test")
 

@@ -563,6 +563,7 @@ their token during authentication via challenge response.
 If privacyIDEA realizes that the first given OTP value is within the syncwindow,
 a challenge will be presented to the user saying "To resync your token, please enter the next OTP value".
 In contrast to the generic AutoResync a user has to enter the token PIN only once.
+Email and SMS tokens never get this challenge.
 
 .. note:: The application must support several consecutive challenge response requests.
 

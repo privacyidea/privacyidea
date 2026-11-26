@@ -17,6 +17,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.models import Token, Config, Challenge
@@ -986,3 +987,19 @@ class TOTPTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(totptoken.token.serial)
+
+    def test_30_autoresync_hooks(self):
+        # TOTP checks the sync window in both directions, a counter up to the token counter is used already and
+        # the autoresync is not implemented a second time
+        token = init_token({"type": "totp", "serial": "TOTPHOOKS", "otpkey": self.otpkey})
+        self.addCleanup(remove_token, "TOTPHOOKS")
+        token.set_sync_window(10)
+        hmac2otp = HmacOtp(token.token.get_otpkey(), 5, 6, token.get_hashlib(token.hashlib))
+        # counter 8 is ahead, counter 2 is behind the counter 5
+        self.assertEqual(8, token._check_sync_window(hmac2otp, "399871"))
+        self.assertEqual(2, token._check_sync_window(hmac2otp, "359152"))
+        token.token.count = 7
+        self.assertTrue(token._is_used_counter(6))
+        self.assertTrue(token._is_used_counter(7))
+        self.assertFalse(token._is_used_counter(8))
+        self.assertNotIn("_autosync", TotpTokenClass.__dict__)

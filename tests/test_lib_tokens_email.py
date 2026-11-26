@@ -5,6 +5,7 @@ import datetime
 from email import message_from_string
 import logging
 import re
+import time
 
 from unittest import mock
 from dateutil.tz import tzlocal
@@ -655,3 +656,33 @@ class EmailTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token("PIEM_DYN_TEST1")
+
+    def test_26_no_autoresync(self):
+        # The server generates every value it sends, so a value in the sync window is never one it sent. The
+        # autoresync does not run for the token, and leftovers of older versions are ignored and removed.
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"type": "email", "serial": "PIEM_NORESYNC", "otpkey": self.otpkey,
+                           "email": "hans@dampf.com"})
+        self.addCleanup(remove_token, "PIEM_NORESYNC")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        token.token.save()
+
+        # counter 8 and 9 are in the sync window, but outside the count window
+        self.assertEqual(-1, token.check_otp("399871"))
+        self.assertEqual(-1, token.check_otp("520489"))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        self.assertNotIn("autoresync", token.auth_details)
+        self.assertEqual(0, token.get_otp_count())
+
+        # A leftover of an older version does not make the token wait for a resync
+        token.write_tokeninfo("otp1c", 8)
+        token.write_tokeninfo("dueDate", int(time.time()) + 600)
+        self.assertFalse(token.has_pending_autoresync())
+
+        # A correct value in the count window removes the leftover
+        self.assertEqual(2, token.check_otp("359152"))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
