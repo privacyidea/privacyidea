@@ -239,9 +239,13 @@
   padding-top: var(--form-field-label-room);
 }
 
-// The sticky controls centre their items, and a field's box includes the room above its outline. The other items take
-// the same room, so they centre on the outline. A field can sit in a component of its own (the policy action search).
-.sticky-controls:has(> .mat-form-field-appearance-outline, > * > .mat-form-field-appearance-outline)
+// The sticky controls and the roomy table actions centre their items, and a field's box includes the room above its
+// outline. The other items take the same room, so they centre on the outline. A field can sit in a component of its own
+// (the policy action search).
+:is(.sticky-controls, .table-actions-roomy):has(
+    > .mat-form-field-appearance-outline,
+    > * > .mat-form-field-appearance-outline
+  )
   > :not(.mat-form-field-appearance-outline, :has(> .mat-form-field-appearance-outline)) {
   margin-top: var(--form-field-label-room);
 }
