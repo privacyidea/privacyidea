@@ -11,47 +11,48 @@ For example, you may have a machine or service with a webhook API, like an IoT c
 Assume you want your coffee maker to start when the first person logs in in the morning. The event of
 the authentication request can trigger the webhook to the coffee maker, turning on the coffee machine.
 
+The endpoint is not configured in the handler. It is a :ref:`webhook_config` object, which owns the URL, the
+HTTP method, the authentication, the static headers and the TLS, proxy and timeout settings. This handler
+picks one of them and contributes the payload. Several handlers can therefore share one endpoint, and a URL
+that changes or a credential that is rotated is edited in one place.
+
 Possible Actions
 ~~~~~~~~~~~~~~~~
 
 post_webhook
 ............
 
-Currently the webhook event handler has just one action, ``post_webhook``. You can post a webhook to
-a URL. There is no predefined setting for webhook, because of the missing standard.
-You can choose between HTTP encoding and JSON for your webhook and you can write
-whatever your other application understands as data.
+The handler has a single action, ``post_webhook``. It needs a **webhook** -- that is where it posts. The
+remaining options are optional, each with a meaningful empty state.
 
-The action takes the following options:
+**webhook**
 
-**URL**
+The webhook to post to, selected from the configured ones. The select lists the identifiers of all webhooks
+to every administrator who may read the event handlers (:ref:`policy_eventhandling_read`), as the handlers
+list the SMTP servers and SMS gateways. An identifier is only a name; the configuration of a webhook needs
+:ref:`policy_webhook_read`.
 
-  * *required* Option
+Delivery is synchronous and there are no retries, so a slow endpoint delays the request that triggered the
+event; see :ref:`webhook_synchronous`. By default, a webhook that fails does not fail the request: the failure
+is logged and audited, and the remaining handlers still run. See :ref:`event_abort_on_error`. The
+:ref:`webhook_outbound_guard` applies to what the handler sends, as it does to every webhook.
 
-The URL the webhook is posted to.
+**URL** and **content_type** (shown only)
 
-For an ``https`` URL the server certificate is always verified against the CA bundle of the Python ``requests``
-library (certifi, or the file named in ``REQUESTS_CA_BUNDLE``); it can not be switched off per webhook.
-privacyIDEA waits up to 10 seconds for the webhook, also in the pre position. A connection error is only logged and
-an HTTP error status of the webhook is ignored; neither fails the request. With
-``application/x-www-form-urlencoded``, replaced tag values are not URL-encoded.
+Where the handler posts and which MIME type it sends, taken from the webhook selected above. Both are shown
+so that the endpoint is visible while editing the handler; neither can be changed here, because both belong
+to the webhook. They are read from the webhook configuration, so they stay empty for an administrator
+without :ref:`policy_webhook_read`.
 
-**content_type**
+**data**
 
-  * *required* Option
-
-The MIME type (Content-Type) used for the webhook payload, either ``application/json`` or
-``application/x-www-form-urlencoded``.
+The body posted to the endpoint. Leave it empty to send the webhook's own ``default_payload``, which is how
+one webhook can serve several handlers with one body. The placeholders of **replace** are replaced only in this
+option; the ``default_payload`` is sent unchanged.
 
 **replace**
 
 If enabled, the placeholders in the data are replaced.
-
-**data**
-
-  * *required* Option
-
-The data posted in the webhook.
 
 .. note:: You can use placeholders for more flexibility of the webhook, if the option **replace** is enabled.
     For example: If the user John authenticates and the webhook handler text is "This webhook is triggered by
@@ -73,6 +74,60 @@ The data posted in the webhook.
     not reported) or on ``/token/init`` without a serial (the new serial only appears within this list).
 
     ``{url}`` is the URL set in ``PI_BASE_URL`` (see :ref:`cfgfile`) and empty if it is not set.
+
+    A payload that is a JSON object or array is substituted value by value, so a placeholder carrying a quote
+    cannot break the document. Anything else -- including a plain sentence sent to a webhook whose content type
+    is ``application/json`` -- is substituted as plain text. In plain text, write a brace that is not part of a
+    placeholder twice: ``{{`` or ``}}``. If the setting **Encode placeholder values** of the webhook is on, the
+    replaced values are encoded for the content type: URL-encoded for ``application/x-www-form-urlencoded``, and
+    escaped as JSON string content for ``application/json``. See :ref:`webhook_config`. A handler with an inline
+    ``URL`` sends the values unencoded.
+
+    If the placeholders can not be replaced, for example because of a single brace, the handler sends the data as
+    it is configured. The run then counts as failed, and the audit entry says "Unable to replace the placeholders
+    in the data."
+
+.. deprecated:: 3.15
+    Before privacyIDEA 3.15 the handler carried the endpoint itself, in its own ``URL`` and ``content_type``
+    options. Such a handler keeps working and shows its stored values in the two fields above, but it always
+    verifies TLS, waits a fixed 10 seconds and can not carry authentication. The options will be removed in
+    privacyIDEA 3.16, after which it sends nothing.
+
+    Convert it before that release by selecting a webhook above. The upgrade to 3.15 does it automatically,
+    and ``pi-manage config import`` converts an export taken before 3.15 on the way in. The webhook that the
+    conversion creates sends a ``POST`` request to the same URL with the same content type. Like the handler,
+    it does not encode the replaced values. It differs from the handler in two points:
+
+    * If the handler has no ``data``, the handler sends an empty body with a ``Content-Type`` header. The
+      webhook sends no body and no ``Content-Type`` header.
+    * The handler applies its timeout of 10 seconds to each wait for data. The timeout of 10 seconds of the
+      webhook limits the connection, the wait for the answer and the read of the response body together.
+
+    If the upgrade or an earlier import already created the webhook of the handler, the import links the
+    handler to it and does not change the webhook. The webhook holds the endpoint after the conversion, so a
+    different ``URL`` in the export is not used. To use it, edit the webhook. With ``--replace``, the import
+    keeps the webhook of a converted handler, also if the export has no webhooks.
+
+    The conversion leaves a handler alone that sends nothing as it stands, so that the handler does not start
+    to send. Such a handler has one of these options:
+
+    * no ``URL``, or a ``URL`` that does not start with ``http://`` or ``https://``
+    * no ``content_type``, or a ``content_type`` other than ``json``, ``urlencoded``, ``application/json`` and
+      ``application/x-www-form-urlencoded``
+
+    The upgrade names such a handler in its output and in the log. To repair it, select a webhook in it. The
+    import plan shows such a handler as ``skip`` with the reason, and the import does not write it. The import
+    writes the other event handlers. Without ``--skip-invalid``, the command then ends with an error. The
+    handlers of the export replace the stored handlers of their name and handler module one by one, in the
+    order of the IDs. Such a handler also counts, so the stored handler at its place stays as it is. Correct
+    the handler in the export and import it again.
+
+Auditing
+~~~~~~~~
+
+Each run writes an audit entry naming the webhook and what the endpoint answered, for example
+``My Hook (webhook 'siem': HTTP 200)``, or the reason on a failure. The URL never appears there: it belongs
+to the webhook and may embed a token.
 
 Code
 ~~~~

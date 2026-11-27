@@ -57,7 +57,7 @@
 }
 
 <div class="flex-column gap-16">
-  @for (optionName of optionNames(); track optionName) {
+  @for (optionName of orderedOptionNames(); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
         @if (actionOptions()[optionName].type === "bool") {
@@ -75,7 +75,13 @@
             <mat-label>
               {{ optionName }}
             </mat-label>
-            @if (actionOptions()[optionName].value) {
+            @if (actionOptions()[optionName].readonly) {
+              <input
+                [value]="readonlyDisplayValue(optionName)"
+                disabled
+                matInput
+                type="text" />
+            } @else if (actionOptions()[optionName].value) {
               <mat-select [formField]="optionsForm[optionName]">
                 @for (valueOption of optionValueOptions()[optionName]; track valueOption.value) {
                   <mat-option [value]="valueOption.value">

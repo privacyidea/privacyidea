@@ -74,6 +74,7 @@ from .recover import recover_blueprint
 from .register import register_blueprint
 from .event import eventhandling_blueprint
 from .smsgateway import smsgateway_blueprint
+from .webhook import webhook_blueprint
 from .clienttype import client_blueprint
 from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
@@ -351,6 +352,7 @@ def before_userendpoint_request():
 @eventhandling_blueprint.before_request
 @periodictask_blueprint.before_request
 @smsgateway_blueprint.before_request
+@webhook_blueprint.before_request
 @radiusserver_blueprint.before_request
 @caconnector_blueprint.before_request
 @privacyideaserver_blueprint.before_request
@@ -612,6 +614,7 @@ def before_request():
 @eventhandling_blueprint.after_request
 @radiusserver_blueprint.after_request
 @smsgateway_blueprint.after_request
+@webhook_blueprint.after_request
 @periodictask_blueprint.after_request
 @privacyideaserver_blueprint.after_request
 @client_blueprint.after_request
@@ -810,6 +813,7 @@ def shape_radius_response(request, response):
 @audit_blueprint.app_errorhandler(AuthError)
 @application_blueprint.app_errorhandler(AuthError)
 @smtpserver_blueprint.app_errorhandler(AuthError)
+@webhook_blueprint.app_errorhandler(AuthError)
 @eventhandling_blueprint.app_errorhandler(AuthError)
 @subscriptions_blueprint.app_errorhandler(AuthError)
 @monitoring_blueprint.app_errorhandler(AuthError)
@@ -858,6 +862,7 @@ def auth_error(error):
 @audit_blueprint.app_errorhandler(PolicyError)
 @application_blueprint.app_errorhandler(PolicyError)
 @smtpserver_blueprint.app_errorhandler(PolicyError)
+@webhook_blueprint.app_errorhandler(PolicyError)
 @eventhandling_blueprint.app_errorhandler(PolicyError)
 @register_blueprint.app_errorhandler(PolicyError)
 @recover_blueprint.app_errorhandler(PolicyError)
@@ -884,6 +889,7 @@ def policy_error(error):
 @audit_blueprint.app_errorhandler(ResourceNotFoundError)
 @application_blueprint.app_errorhandler(ResourceNotFoundError)
 @smtpserver_blueprint.app_errorhandler(ResourceNotFoundError)
+@webhook_blueprint.app_errorhandler(ResourceNotFoundError)
 @eventhandling_blueprint.app_errorhandler(ResourceNotFoundError)
 @register_blueprint.app_errorhandler(ResourceNotFoundError)
 @recover_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -913,6 +919,7 @@ def resource_not_found_error(error):
 @audit_blueprint.app_errorhandler(PrivacyIDEAError)
 @application_blueprint.app_errorhandler(PrivacyIDEAError)
 @smtpserver_blueprint.app_errorhandler(PrivacyIDEAError)
+@webhook_blueprint.app_errorhandler(PrivacyIDEAError)
 @eventhandling_blueprint.app_errorhandler(PrivacyIDEAError)
 @register_blueprint.app_errorhandler(PrivacyIDEAError)
 @recover_blueprint.app_errorhandler(PrivacyIDEAError)
@@ -974,6 +981,7 @@ def _log_unclassified_user_store_failure() -> None:
 @audit_blueprint.app_errorhandler(NotImplementedError)
 @application_blueprint.app_errorhandler(NotImplementedError)
 @smtpserver_blueprint.app_errorhandler(NotImplementedError)
+@webhook_blueprint.app_errorhandler(NotImplementedError)
 @eventhandling_blueprint.app_errorhandler(NotImplementedError)
 @register_blueprint.app_errorhandler(NotImplementedError)
 @recover_blueprint.app_errorhandler(NotImplementedError)
@@ -1004,6 +1012,7 @@ def not_implemented_error(error):
 @audit_blueprint.app_errorhandler(500)
 @application_blueprint.app_errorhandler(500)
 @smtpserver_blueprint.app_errorhandler(500)
+@webhook_blueprint.app_errorhandler(500)
 @eventhandling_blueprint.app_errorhandler(500)
 @register_blueprint.app_errorhandler(500)
 @recover_blueprint.app_errorhandler(500)

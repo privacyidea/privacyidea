@@ -50,6 +50,7 @@ from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.lib.utils.import_plan import (PlanEntry, apply_import_plan, build_import_plan, format_import_plan,
                                                plan_has_changes)
+import privacyidea.lib.webhook  # noqa: F401
 from privacyidea.cli.pimanage.challenge import challenge_cli
 from privacyidea.cli.pimanage.metrics import metrics_cli
 from privacyidea.cli.pimanage.remembered_device import remembered_device_cli

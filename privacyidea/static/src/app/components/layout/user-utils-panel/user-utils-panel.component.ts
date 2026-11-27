@@ -80,6 +80,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { WebhookService, WebhookServiceInterface } from "@services/webhook/webhook.service";
 import { from } from "rxjs";
 import { SessionTimerComponent } from "@components/layout/user-utils-panel/session-timer/session-timer.component";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
@@ -124,6 +125,7 @@ export class UserUtilsPanelComponent {
   private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
   private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
+  private readonly webhookService: WebhookServiceInterface = inject(WebhookService);
   private readonly apiClientService: ApiClientServiceInterface = inject(ApiClientService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
@@ -284,6 +286,9 @@ export class UserUtilsPanelComponent {
         break;
       case ROUTE_PATHS.EXTERNAL_SERVICES_SMTP:
         this.smtpService.smtpServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS:
+        this.webhookService.webhookResource.reload();
         break;
       case ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS:
         this.radiusService.radiusServerResource.reload();

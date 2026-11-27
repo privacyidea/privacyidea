@@ -251,6 +251,27 @@ and columns with their data. A relative revision has to follow ``--``, e.g.
    or change migration scripts. They are meant for the development of
    privacyIDEA and must not be used on an installation.
 
+The upgrade to privacyIDEA 3.15 converts the WebHook event handlers with an
+inline URL to webhooks, see :ref:`webhookhandler`. Before it changes them, it
+writes a snapshot of their options to a file. The file goes to
+``/var/lib/privacyidea/backup`` if this directory exists and is writable, else
+to the temporary directory of the system. The environment variable
+``PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR`` sets another directory, and
+``PRIVACYIDEA_MIGRATION_NO_SNAPSHOT=1`` turns the snapshot off.
+
+If the conversion fails, run ``pi-manage db upgrade`` again. It continues where
+it stopped. To undo the conversion instead, start ``pi-manage shell`` and enter
+these statements, with the path of the snapshot file that the upgrade printed::
+
+   from privacyidea.models import db
+   from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import restore_snapshot
+   with db.engine.begin() as conn:
+       restore_snapshot(conn, '/var/lib/privacyidea/backup/privacyidea-e1f2a3b4c5d6-<timestamp>.json')
+
+The statements delete the webhooks that the conversion created and restore the
+options of the WebHook event handlers. The ``with`` block commits the changes
+at its end. The next ``pi-manage db upgrade`` converts the handlers again.
+
 .. _pimanage_backup:
 
 Backup and Restore
@@ -746,7 +767,7 @@ Exporting and Importing the Configuration
 Using ``pi-manage config export`` and ``pi-manage config import`` you can export
 and import these parts of the server configuration: policies, resolvers, machine
 resolvers, realms, events, periodic tasks, CA connectors, SMS gateways, SMTP,
-RADIUS and privacyIDEA server definitions and the global configuration. Run
+RADIUS and privacyIDEA server definitions, webhooks and the global configuration. Run
 ``pi-manage config export -h`` to see the list of available configuration types
 on your installation.
 
@@ -788,10 +809,12 @@ restrict the import to certain types or to a single object.
 Events and periodic tasks are also found by their name, not by their ID. For
 events, the handler module must match as well. Several events can have the same
 name and handler module. Then the file must contain at least as many of them as
-the instance has, and they replace all of them. Otherwise these events are not
-imported, and neither is an event without a name. The other events are
-imported, and the command ends with an error. A periodic task keeps its nodes
-from the export.
+the instance has, and they replace all of them. The first event of the file
+replaces the event of the instance with the lowest ID, the second event the next
+one, and so on. The import creates the remaining events of the file. If the file
+contains fewer of them, these events are not imported, and neither is an event
+without a name. The other events are imported, and the command ends with an
+error. A periodic task keeps its nodes from the export.
 Check them if the target instance uses other node names.
 
 .. note:: In contrast to ``pi-manage backup``, the configuration export does not
@@ -858,8 +881,13 @@ remaining configuration::
 
    pi-manage config import -i backup.json --skip-invalid
 
-``--skip-invalid`` currently only works for policies. It removes actions that this version
-does not know. If no action is left, the policy is not imported.
+``--skip-invalid`` works for policies and event handlers. For a policy, it removes actions
+that this version does not know. If no action is left, the policy is not imported. For the
+event handlers, it skips a WebHook event handler in the format before privacyIDEA 3.15 that
+the import does not convert to a webhook, see :ref:`webhookhandler`. The other event
+handlers are imported with or without ``--skip-invalid``. Such an event handler still
+counts for the number of events with its name and handler module. The event of the
+instance at its place stays as it is.
 
 The import plan
 ~~~~~~~~~~~~~~~
@@ -876,6 +904,18 @@ database compares names without regard to case (as MySQL and MariaDB do by
 default), an imported name that differs only in case from a stored one updates
 that entry and the stored entry is not deleted with ``--replace``.
 
+After the entries, the plan shows notes and warnings:
+
+* For a WebHook event handler in the format before privacyIDEA 3.15, the plan
+  notes the webhook that the import creates for it, see :ref:`webhookhandler`.
+  For a new event handler, the note does not name the webhook. The name contains
+  the ID of the event handler, and this ID exists only after the import. If the
+  import links the event handler to an existing webhook, the plan shows no note.
+* An event handler that the import creates or updates can name a webhook that is
+  neither on the system nor in the import. The plan then shows a warning, because
+  the event handler sends nothing until the webhook exists. With ``-t event``,
+  the import does not import the webhooks of the file.
+
 With ``--dry-run`` only the plan is printed and nothing is changed::
 
    pi-manage config import -i backup.json --dry-run
@@ -889,9 +929,19 @@ the object given with ``-n`` limit what is deleted as well::
 * Deleting runs after the import, in the reverse order of the import, so that
   for example policies and event handlers are removed before realms and realms
   before resolvers.
+* The instance can have more events with a name and handler module than the
+  file. Then the import deletes the events of the instance after the last one of
+  the file. A WebHook event handler that the import does not convert counts for
+  this, so the event of the instance at its place stays.
 * Nothing is forced. A realm that still contains tokens or containers, or a
   resolver that is used by a realm, is kept and reported as an error. The other
   deletions go on.
+* A webhook that an event handler or a conditional access policy uses after the
+  import is not deleted. The import does not carry conditional access policies,
+  so all of them stay. The plan shows a note for such a webhook instead of a
+  ``delete`` line. This includes the webhook that the import links a WebHook
+  event handler in the format before privacyIDEA 3.15 to, see
+  :ref:`webhookhandler`.
 * The type ``config`` is never replaced. Global configuration keys that are
   missing from the import are kept.
 * If the realms are replaced (without ``-n``) and no realm in the file is marked

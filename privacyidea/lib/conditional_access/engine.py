@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import ipaddress
+import json
 import logging
 import re
 from collections.abc import Callable, Sequence
@@ -44,6 +45,9 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
+from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.utils import SafeFormatDict
+from privacyidea.lib.utils import safe_format as _safe_format
 from privacyidea.lib.utils import canonical_client_ip
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
                                 ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
@@ -94,8 +98,9 @@ class ConditionalAccessAction(StrEnum):
     can execute when its failure threshold is met.
 
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
-    post-response side effects executed by :func:`evaluate_conditional_access_policies`.
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP`, :attr:`PERMANENT_BLOCK_IP` and
+    :attr:`WEBHOOK` are post-response side effects executed by
+    :func:`evaluate_conditional_access_policies`.
     :attr:`DENY` decides the *current* request and is therefore handled by the
     pre-auth decision step (:func:`evaluate_access_decision`) instead. The action
     table stores the string value, so the enum can grow without a schema change.
@@ -118,6 +123,7 @@ class ConditionalAccessAction(StrEnum):
     BLOCK_IP = "BLOCK_IP"
     PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
     DENY = "DENY"
+    WEBHOOK = "WEBHOOK"
 
 
 #: Every action, most severe first - the one severity ordering there is, so an action reads the same wherever it
@@ -134,6 +140,7 @@ ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
     ConditionalAccessAction.DENY,
     ConditionalAccessAction.EMAIL_USER,
     ConditionalAccessAction.EMAIL_ADMIN,
+    ConditionalAccessAction.WEBHOOK,
 )
 
 #: Severity rank of each action, mirroring
@@ -582,7 +589,7 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
         if last_success is not None:
             lower_bound = AuthenticationLog.timestamp > last_success
     conditions = [*subject, AuthenticationLog.event_type.in_(type_values), lower_bound,
-                 AuthenticationLog.timestamp <= window_end]
+                  AuthenticationLog.timestamp <= window_end]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     stmt = select(func.count()).select_from(AuthenticationLog).where(*conditions)
@@ -836,9 +843,9 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     conditions = [*subject,
-                 AuthenticationLog.timestamp >= window_start,
-                 AuthenticationLog.timestamp <= window_end,
-                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_REPRESENTATIVE_EVENT_TYPES))]
+                  AuthenticationLog.timestamp >= window_start,
+                  AuthenticationLog.timestamp <= window_end,
+                  AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_REPRESENTATIVE_EVENT_TYPES))]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     rows = get_ca_session().scalars(select(AuthenticationLog).where(*conditions)).all()
@@ -1952,27 +1959,6 @@ def parse_lock_duration_seconds(action_value: Any) -> int | None:
     return seconds if 0 < seconds <= MAX_LOCK_DURATION_SECONDS else None
 
 
-class _SafeFormatDict(dict):
-    """A ``str.format_map`` mapping that leaves unknown ``{placeholders}`` as-is
-    instead of raising ``KeyError``, so an admin's typo in a template never turns
-    a notification into an exception."""
-
-    def __missing__(self, key: str) -> str:
-        return "{" + key + "}"
-
-
-def _safe_format(template: str, tags: dict) -> str:
-    """
-    Substitute ``{tag}`` placeholders in *template* from *tags*. Unknown
-    placeholders are left untouched and malformed templates are returned verbatim
-    — rendering an admin-supplied string must never raise.
-    """
-    try:
-        return template.format_map(_SafeFormatDict(tags))
-    except Exception:
-        return template
-
-
 def _base_action_tags(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage, context: CAContext,
                       event_type: str, count: int, now: datetime) -> dict:
     """
@@ -2094,6 +2080,121 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
     return False
 
 
+def _render_webhook_payload(payload: str, tags: dict, content_type: str | None = None,
+                            encode_values: bool = False) -> str:
+    """
+    Render the ``{tag}`` placeholders of a WEBHOOK action's payload template.
+
+    A payload that parses as a JSON object or array is substituted key by key and
+    value by value and dumped again, so a tag carrying a quote cannot break the
+    document — the same treatment the WebHookHandler gives a JSON payload
+    (:meth:`~privacyidea.lib.eventhandler.webhookeventhandler.WebHookHandler._replace_tags`).
+    Anything else is substituted as plain text. The distinction is made on the
+    payload itself rather than on the webhook's ``content_type``.
+
+    In a plain-text payload, the values are encoded for the content type of the webhook if the
+    webhook says so (:func:`~privacyidea.lib.webhook.placeholder_values`): URL-encoded for a form,
+    escaped as JSON string content for JSON. Some values come from the client: ``{username}`` is
+    the login name the client tried. Without the encoding, a login name with ``&`` adds fields to a
+    form body, and one with ``"`` adds keys or elements to a JSON body.
+
+    An unknown placeholder is left as written rather than dropping the notification, which matters
+    more here than elsewhere, because the payload is what the receiving system reads. A plain-text
+    payload that can not be parsed as a template is sent as it is, with a warning in the log. The
+    policy validation refuses such a payload when it is saved.
+
+    :param payload: the payload template of the action
+    :param tags: the values of the placeholders
+    :param content_type: the content type of the webhook
+    :param encode_values: the setting ``encode_values`` of the webhook
+    :return: the payload with the placeholders replaced
+    """
+    from privacyidea.lib.webhook import placeholder_values
+    text_tags = placeholder_values(tags, content_type, encode_values)
+
+    def substitute_text() -> str:
+        try:
+            return payload.format_map(SafeFormatDict(text_tags))
+        except Exception as error:  # Any error of the template: the notification still goes out
+            log.warning(f"The placeholders of a WEBHOOK payload can not be replaced ({error}). The payload is "
+                        f"sent as it is.")
+            return payload
+
+    try:
+        document = json.loads(payload)
+    except (ValueError, TypeError):
+        return substitute_text()
+    if not isinstance(document, (dict, list)):
+        # A bare JSON scalar ("5", "true", a quoted string) is a plain payload
+        # that happens to parse; it is substituted as text.
+        return substitute_text()
+
+    def substitute(value):
+        if isinstance(value, dict):
+            return {_safe_format(key, tags): substitute(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [substitute(item) for item in value]
+        if isinstance(value, str):
+            return _safe_format(value, tags)
+        # Numbers, booleans and None carry no placeholders and pass through.
+        return value
+
+    return json.dumps(substitute(document))
+
+
+def _fire_action_webhook(stage_action: ConditionalAccessStageAction, tags: dict) -> bool:
+    """
+    Fire the WEBHOOK notification for a triggered stage action.
+
+    The stage action's ``action_value`` is a JSON object carrying ``webhook``
+    (the identifier of the webhook definition that owns the endpoint, the HTTP
+    method, the headers and the credentials) and an optional ``payload``
+    template rendered with ``{tag}`` substitution. Without a payload the
+    webhook's own ``default_payload`` applies, which is what lets one webhook
+    serve several policies with one body.
+
+    Nothing about the endpoint is configured here: which URL is called, whether
+    it is reachable at all and whether the outbound request guard permits it are
+    all properties of the webhook definition
+    (:func:`~privacyidea.lib.webhook.fire_webhook`), which never raises — a dead
+    webhook can neither fail the authentication nor skip the stage's remaining
+    actions.
+
+    :return: whether the endpoint answered with a 2xx status; ``False`` for a
+        misconfiguration or a delivery failure.
+    """
+    webhook_config = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
+    identifier = webhook_config.get("webhook")
+    if not identifier:
+        log.warning(f"WEBHOOK action {stage_action.id}: needs a 'webhook' identifier in action_value; skipping.")
+        return False
+
+    # Imported lazily, mirroring the SMTP import in _send_action_email: the engine's hot path is evaluated on
+    # every request and must not carry the webhook module's requests/TLS imports for the sake of an action that
+    # fires rarely.
+    from privacyidea.lib.webhook import fire_webhook, get_webhook
+    try:
+        # Read once: the payload needs the content type, and fire_webhook() takes the configuration.
+        config = get_webhook(identifier)
+    except ResourceNotFoundError:
+        # fire_webhook() reads the webhook again and reports that it does not exist.
+        config = None
+
+    payload = webhook_config.get("payload")
+    if payload and config is not None:
+        payload = _render_webhook_payload(str(payload), tags, config["content_type"], config["encode_values"])
+
+    # The identifier is logged, never the URL: it is a property of the webhook definition and may embed a token.
+    result = fire_webhook(identifier, payload=payload or None, config=config)
+    if result["success"]:
+        log.info(f"WEBHOOK action {stage_action.id} fired webhook {identifier!r} "
+                 f"(status {result['status_code']}).")
+        return True
+    log.warning(f"WEBHOOK action {stage_action.id}: webhook {identifier!r} failed "
+                f"(status {result['status_code']}): {result['error']}")
+    return False
+
+
 def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage,
                            actions: Sequence[ConditionalAccessStageAction], context: CAContext,
                            subject: "LockSubject | None", now: datetime, count: int,
@@ -2147,6 +2248,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
         if target is not None:
             enforced.add(target)
 
+    # The locks and blocks run before the notifications (EMAIL_*, WEBHOOK). A notification waits for its endpoint,
+    # up to the timeout of the webhook or the SMTP server, and each lock or block commits on its own: a lock after a
+    # slow notification would let further guesses through in that time. Within each group the stored order applies.
+    actions = sorted(actions, key=lambda stage_action: stage_action.action_type not in RESTRICTED_TARGET_BY_ACTION)
     for action in actions:
         try:
             action_type = ConditionalAccessAction(action.action_type)
@@ -2175,6 +2280,9 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     record(action_type, expires_at=lock_expires_at)
             elif action_type in (ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER):
                 if _send_action_email(action_type, action, user, tags):
+                    record(action_type)
+            elif action_type == ConditionalAccessAction.WEBHOOK:
+                if _fire_action_webhook(action, tags):
                     record(action_type)
             elif action_type in (ConditionalAccessAction.BLOCK_IP, ConditionalAccessAction.PERMANENT_BLOCK_IP):
                 # BLOCK_IP on a per-user policy blocks only the source IP of the request that tripped it; it is not

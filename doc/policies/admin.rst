@@ -876,6 +876,52 @@ Allow the administrator to read the :ref:`sms_gateway_config`.
 
 .. versionadded:: 3.1
 
+.. _policy_webhook_write:
+
+webhook_write
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+To be able to define new webhooks or delete existing ones, the administrator
+needs the right ``webhook_write``.
+
+.. note:: This is a sensitive right. A webhook definition contains a freely
+   choosable URL, which the privacyIDEA server will request whenever the
+   webhook fires. An administrator holding this right can therefore make the
+   privacyIDEA server issue requests to any host it can reach, including hosts
+   on internal networks that are not reachable from the outside. Grant it only
+   to administrators you would also trust with network access to those hosts.
+
+   The :ref:`webhook_outbound_guard` narrows what such a request can reach. It
+   is off by default and has to be switched on. It raises the cost of reaching
+   an internal host; it does not turn this into an ordinary right.
+
+A webhook definition also carries credentials - a basic authentication password,
+a client key password, header values marked as secret. These are encrypted at
+rest and are never returned in clear text, so this right does not disclose the
+credentials of webhooks that already exist. It does allow replacing them.
+A stored credential goes only to the endpoint that it was saved for: a change of
+the URL, a proxy, the CA bundle or the certificate verification needs the
+credential again. A secret header is stored as not secret only if its value is
+entered again. See :ref:`webhook_config`.
+
+.. versionadded:: 3.15
+
+.. _policy_webhook_read:
+
+webhook_read
+~~~~~~~~~~~~
+
+type: ``bool``
+
+Allow the administrator to read the webhook definitions. Secrets such as the
+basic authentication password, the client key password and the values of
+headers marked as encrypted are never returned in clear text, they are
+replaced by ``__CENSORED__``. See :ref:`webhook_config`.
+
+.. versionadded:: 3.15
+
 .. _policy_periodictask_write:
 
 periodictask_write

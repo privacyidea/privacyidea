@@ -32,7 +32,17 @@ import {
   untracked,
   viewChild
 } from "@angular/core";
-import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
+import {
+  applyEach,
+  disabled,
+  FieldTree,
+  form,
+  FormField,
+  metadata,
+  REQUIRED,
+  required,
+  validate
+} from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -40,6 +50,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ActionOptionDetails, CONFIG_ADMIN_ERROR_CODE, EventService } from "@services/event/event.service";
+import { WebhookService, WebhookServiceInterface } from "@services/webhook/webhook.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { valueDisplayLabel } from "@utils/value-label.utils";
@@ -98,6 +109,8 @@ export class EventActionTabComponent {
   selectedOptions = signal<EventActionOptionValues>({});
   optionsForm = form(this.selectedOptions, (f) => {
     applyEach(f, (option) => {
+      // A read-only option shows a value that belongs elsewhere, e.g. the URL of the webhook a WebHook handler names
+      disabled(option, (ctx) => !!this.actionOptions()[ctx.key()]?.readonly);
       metadata(option, REQUIRED, (ctx) => this.isOptionRequired(ctx.key()));
       validate(option, (ctx) =>
         this.isOptionRequired(ctx.key()) && this.isEmpty(ctx.value()) ? { kind: ERR.required } : undefined
@@ -137,6 +150,7 @@ export class EventActionTabComponent {
     }
     return {};
   });
+  private readonly webhookService: WebhookServiceInterface = inject(WebhookService);
 
   optionValueOptions = computed<Record<string, { value: string; label: string }[]>>(() => {
     const optionMap: Record<string, { value: string; label: string }[]> = {};
@@ -149,6 +163,23 @@ export class EventActionTabComponent {
   });
 
   optionNames = computed(() => Object.keys(this.selectedOptions()).filter((name) => name in this.actionOptions()));
+
+  /**
+   * The option names in the order they are shown. A handler module states it per option (`order`);
+   * the ones that do not come after, in the order the response carries them. `sort` is stable, so
+   * that order is preserved rather than reshuffled.
+   */
+  orderedOptionNames = computed<string[]>(() => {
+    const definitions = this.actionOptions();
+    return [...this.optionNames()].sort((left, right) => {
+      const leftOrder = definitions[left]?.order;
+      const rightOrder = definitions[right]?.order;
+      if (leftOrder != null && rightOrder != null) return leftOrder - rightOrder;
+      if (leftOrder != null) return -1;
+      if (rightOrder != null) return 1;
+      return 0;
+    });
+  });
 
   constructor() {
     effect(() => {
@@ -211,6 +242,31 @@ export class EventActionTabComponent {
     this.newAction.emit(value);
   }
 
+  /**
+   * What a read-only option displays.
+   *
+   * An option carrying `fromWebhook` mirrors a field of the webhook the `webhook` option names,
+   * so the field shows where the handler actually posts rather than a value it no longer uses:
+   * selecting a webhook replaces the stored inline URL and content type, and both have to follow
+   * the selection as it changes. Without a selection the stored value is shown, which is what a
+   * handler still on the inline shape has.
+   *
+   * Empty when a webhook is selected but cannot be resolved - /webhook/ needs webhook_read, and
+   * an identifier may name a webhook that has since been deleted. Showing the stored inline value
+   * there would name an endpoint this handler does not post to.
+   */
+  readonlyDisplayValue(optionName: string): string {
+    const stored = this.selectedOptions()[optionName];
+    const field = this.actionOptions()[optionName]?.fromWebhook;
+    const identifier = field ? this.selectedOptions()["webhook"] : null;
+    if (field && identifier) {
+      const selected = this.webhookService.webhooks().find((webhook) => webhook.identifier === identifier);
+      const value = selected ? (selected as unknown as Record<string, unknown>)[field] : null;
+      return value == null ? "" : String(value);
+    }
+    return stored == null ? "" : String(stored);
+  }
+
   reloadScripts(): void {
     if (this.eventService.moduleActionsResource.isLoading()) {
       return;
@@ -246,10 +302,18 @@ export class EventActionTabComponent {
   }
 
   private optionsToDict(values: EventActionOptionValues): EventActionOptionValues {
+    const definitions = this.actionOptions();
     const result: EventActionOptionValues = {};
     for (const key of Object.keys(values)) {
       const value = values[key];
       if (value === null || value === undefined) continue;
+      // An *empty* read-only option is dropped: nobody can set it here, so a blank row carries no
+      // intent. One that holds a value is passed through, because the save replaces the whole
+      // option set and that value is the inline endpoint of a handler the 3.15 upgrade converted.
+      // The migration promises not to delete it, and that promise is what keeps
+      // `pi-manage db downgrade` safe: the downgrade strips the `webhook` option from every
+      // handler, so one that lost its URL here would come back with no endpoint at all.
+      if (definitions[key]?.readonly && value === "") continue;
       result[key] = value;
     }
     return result;

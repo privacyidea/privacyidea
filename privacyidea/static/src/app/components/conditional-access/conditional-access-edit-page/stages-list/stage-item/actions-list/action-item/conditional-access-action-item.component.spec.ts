@@ -28,9 +28,11 @@ import {
   ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpServer, SmtpService } from "@services/smtp/smtp.service";
+import { Webhook, WebhookService } from "@services/webhook/webhook.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
+import { MockWebhookService } from "@testing/mock-services/mock-webhook-service";
 import { ConditionalAccessActionItemComponent } from "./conditional-access-action-item.component";
 import { axe } from "@testing/axe";
 
@@ -39,6 +41,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   let fixture: ComponentFixture<ConditionalAccessActionItemComponent>;
   let authService: MockAuthService;
   let smtpService: MockSmtpService;
+  let webhookService: MockWebhookService;
   let model: WritableSignal<{ target: ConditionalAccessTarget; actions: ConditionalAccessStageAction[] }>;
   let actionFields: FieldTree<ConditionalAccessStageAction[]>;
 
@@ -72,6 +75,21 @@ describe("ConditionalAccessActionItemComponent", () => {
     fixture.detectChanges();
   }
 
+  function webhook(identifier: string): Webhook {
+    return {
+      identifier,
+      url: "https://siem.example.com/hook",
+      http_method: "POST",
+      content_type: "application/json",
+      auth_type: "none",
+      verify_tls: true,
+      timeout: 3,
+      encode_values: true,
+      headers: {},
+      secret_headers: []
+    };
+  }
+
   function smtpServer(identifier: string): SmtpServer {
     return {
       identifier,
@@ -91,7 +109,8 @@ describe("ConditionalAccessActionItemComponent", () => {
       providers: [
         { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: SmtpService, useClass: MockSmtpService }
+        { provide: SmtpService, useClass: MockSmtpService },
+        { provide: WebhookService, useClass: MockWebhookService }
       ]
     }).compileComponents();
 
@@ -109,9 +128,10 @@ describe("ConditionalAccessActionItemComponent", () => {
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+    webhookService = TestBed.inject(WebhookService) as unknown as MockWebhookService;
     setAction({ action_type: "LOCK_USER", action_value: 600 });
     // The rights of a default install, where no admin policy narrows them.
-    setRights(["smtpserver_read"]);
+    setRights(["smtpserver_read", "webhook_read"]);
   });
 
   it("should create", () => {
@@ -119,7 +139,7 @@ describe("ConditionalAccessActionItemComponent", () => {
   });
 
   it("should describe every action type", () => {
-    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "DENY", "EMAIL_USER"] as const) {
+    for (const type of ["LOCK_USER", "PERMANENT_LOCK_USER", "BLOCK_IP", "DENY", "EMAIL_USER", "WEBHOOK"] as const) {
       setAction({ action_type: type, action_value: null });
       expect(component.actionDescription().length).toBeGreaterThan(0);
     }
@@ -130,6 +150,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     expect(component.valueMode()).toBe("duration");
     setAction({ action_type: "EMAIL_ADMIN", action_value: {} });
     expect(component.valueMode()).toBe("email");
+    setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+    expect(component.valueMode()).toBe("webhook");
     setAction({ action_type: "DENY", action_value: null });
     expect(component.valueMode()).toBe("none");
   });
@@ -470,6 +492,105 @@ describe("ConditionalAccessActionItemComponent", () => {
         // Flagged in the error colour: it reports a missing right, not a description of the field.
         expect(field?.hintWarn).toBe(true);
       });
+    });
+  });
+
+  describe("webhook", () => {
+    it("offers the configured identifiers as a select", () => {
+      webhookService.webhooks.set([webhook("siem"), webhook("chat")]);
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "chat" } });
+      expect(component.webhooksListable()).toBe(true);
+      expect(component.webhookOptions()).toEqual(["siem", "chat"]);
+      expect(component.staleWebhookIdentifier()).toBe("");
+    });
+
+    it("keeps and flags an identifier that is no longer configured", () => {
+      webhookService.webhooks.set([webhook("siem")]);
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "retired" } });
+      // Listed, or the select would show a blank trigger for the value the action carries.
+      expect(component.webhookOptions()).toEqual(["siem", "retired"]);
+      expect(component.staleWebhookIdentifier()).toBe("retired");
+    });
+
+    it("flags nothing while no webhook has been listed yet", () => {
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+      expect(component.webhookOptions()).toEqual(["siem"]);
+      expect(component.staleWebhookIdentifier()).toBe("");
+    });
+
+    describe("identifier field", () => {
+      // The form field of the webhook identifier, found by its label: the action type is a mat-select as well.
+      const webhookField = (): HTMLElement | undefined =>
+        Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-form-field")).find(
+          (field) => field.querySelector("mat-label")?.textContent?.trim() === "Webhook"
+        );
+
+      it("falls back to a typed identifier without webhook_read", () => {
+        webhookService.webhooks.set([webhook("siem")]);
+        setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+        setRights([]);
+        fixture.detectChanges();
+
+        expect(component.webhooksListable()).toBe(false);
+        const field = webhookField();
+        expect(field).toBeTruthy();
+        expect(field!.querySelector("mat-select")).toBeNull();
+        const input = field!.querySelector("input") as HTMLInputElement;
+        expect(input).toBeTruthy();
+        expect(input.value).toBe("siem");
+        expect(field!.querySelector("mat-hint")?.textContent).toContain("webhook_read");
+      });
+
+      it("offers a select and no typed identifier with webhook_read", () => {
+        webhookService.webhooks.set([webhook("siem")]);
+        setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+        setRights(["webhook_read"]);
+        fixture.detectChanges();
+
+        expect(component.webhooksListable()).toBe(true);
+        const field = webhookField();
+        expect(field).toBeTruthy();
+        expect(field!.querySelector("mat-select")).toBeTruthy();
+        expect(field!.querySelector("input")).toBeNull();
+        expect(field!.textContent).not.toContain("webhook_read");
+      });
+    });
+
+    it("merges the payload into the value object and drops it when emptied", () => {
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+      component.onWebhookFieldInput("payload", '{"user": "{username}"}');
+      expect(stored().action_value).toEqual({ webhook: "siem", payload: '{"user": "{username}"}' });
+
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem", payload: "x" } });
+      component.onWebhookFieldInput("payload", "");
+      expect(stored().action_value).toEqual({ webhook: "siem" });
+    });
+
+    it("stores no value once the identifier and the payload are emptied", () => {
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+      component.onWebhookFieldInput("webhook", "");
+      expect(stored().action_value).toBeNull();
+    });
+
+    it("reports a missing identifier and accepts one without a payload", () => {
+      setAction({ action_type: "WEBHOOK", action_value: {} });
+      expect(component.actionValueError()).not.toBeNull();
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "   " } });
+      expect(component.actionValueError()).not.toBeNull();
+      // The payload is optional: without one the webhook's own default_payload is sent.
+      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+      expect(component.actionValueError()).toBeNull();
+    });
+
+    it("offers only the tags the engine renders for a webhook payload", () => {
+      // {email}/{givenname}/{surname} are resolver-backed and fetched lazily by the email action alone,
+      // so a webhook payload referencing them would render them unsubstituted.
+      const tags = component.webhookPlaceholders.map((placeholder) => placeholder.tag);
+      expect(tags).toContain("{username}");
+      expect(tags).toContain("{policy}");
+      expect(tags).not.toContain("{email}");
+      expect(tags).not.toContain("{givenname}");
+      expect(tags).not.toContain("{surname}");
     });
   });
 

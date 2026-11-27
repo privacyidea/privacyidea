@@ -52,6 +52,8 @@ import { NewSmsGatewayComponent } from "@components/external-services/sms-gatewa
 import { SmsGatewaysComponent } from "@components/external-services/sms-gateways/sms-gateways.component";
 import { NewSmtpServerComponent } from "@components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component";
 import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
+import { NewWebhookComponent } from "@components/external-services/webhooks/new-webhook/new-webhook.component";
+import { WebhooksComponent } from "@components/external-services/webhooks/webhooks.component";
 import { NewTokengroupComponent } from "@components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
 import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
 import { MachineResolverDetailsComponent } from "@components/machine-resolver/machine-resolver-details/machine-resolver-details.component";
@@ -362,6 +364,24 @@ export const routes: Routes = [
             path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
             title: detailsTitle(PAGE_NAMES.smtp),
             component: NewSmtpServerComponent,
+            canDeactivate: [pendingChangesGuard]
+          }
+        ]
+      },
+      {
+        path: "webhooks",
+        children: [
+          { path: "", title: PAGE_NAMES.webhooks, component: WebhooksComponent },
+          {
+            path: "new",
+            title: newTitle(PAGE_NAMES.webhooks),
+            component: NewWebhookComponent,
+            canDeactivate: [pendingChangesGuard]
+          },
+          {
+            path: `details/:${ROUTE_PARAMS.IDENTIFIER}`,
+            title: detailsTitle(PAGE_NAMES.webhooks),
+            component: NewWebhookComponent,
             canDeactivate: [pendingChangesGuard]
           }
         ]

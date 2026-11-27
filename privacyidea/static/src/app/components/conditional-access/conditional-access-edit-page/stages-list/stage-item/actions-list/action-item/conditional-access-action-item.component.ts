@@ -27,11 +27,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import {
-  DURATION_UNIT_FACTORS,
-  DurationUnit,
-  largestWholeDurationUnit
-} from "@utils/duration-unit.utils";
+import { DURATION_UNIT_FACTORS, DurationUnit, largestWholeDurationUnit } from "@utils/duration-unit.utils";
 import { CA_ERR } from "@services/conditional-access/conditional-access-policy-form";
 import {
   ConditionalAccessPolicyService,
@@ -42,6 +38,7 @@ import {
   parseActionDurationSeconds
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { WebhookService, WebhookServiceInterface } from "@services/webhook/webhook.service";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 
 // One-line explanation of what each action does, shown under the action select.
@@ -52,15 +49,17 @@ const ACTION_DESCRIPTIONS: Record<ConditionalAccessActionType, string> = {
   PERMANENT_BLOCK_IP: $localize`:@@conditionalAccess.blockRequestSSource:Block the request's source IP until an administrator unblocks it.`,
   EMAIL_ADMIN: $localize`:@@conditionalAccess.sendNotificationEmailAdmin:Send a notification email to an admin recipient group.`,
   EMAIL_USER: $localize`:@@conditionalAccess.sendNotificationEmailAffected:Send a notification email to the affected user.`,
-  DENY: $localize`:@@conditionalAccess.rejectRequestClearsItself:Reject the request; it clears itself as failures age out of the window.`
+  DENY: $localize`:@@conditionalAccess.rejectRequestClearsItself:Reject the request; it clears itself as failures age out of the window.`,
+  WEBHOOK: $localize`:@@conditionalAccess.fireConfiguredWebhook:Fire a configured webhook, to notify another system such as a SIEM.`
 };
 
 // How a given action type's action_value is edited:
 // - "duration": a single integer (seconds), written as a plain number. The object form carrying
 //   duration_seconds is also accepted on read, because a policy written through the API may use it.
 // - "email": a JSON object with the fields listed in EMAIL_FIELDS.
+// - "webhook": a JSON object naming the webhook definition to fire, plus an optional payload template.
 // - "none": the action takes no value (stored as null).
-type ActionValueMode = "duration" | "email" | "none";
+type ActionValueMode = "duration" | "email" | "webhook" | "none";
 
 interface EmailField {
   key: string;
@@ -79,6 +78,9 @@ interface EmailField {
 // Shown for the identifier when it must stay a free-text input because this admin lacks the right
 // to list configured servers (see emailFields).
 const SMTP_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingServers:Type the name: listing the servers needs the smtpserver_read right.`;
+
+// The same fallback for the webhook identifier; /webhook/ requires webhook_read.
+const WEBHOOK_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingWebhooks:Type the name: listing the webhooks needs the webhook_read right.`;
 
 // Order matters for layout: the three short fields come first to share one wrapping row, then the
 // wide subject/body textareas flow onto their own rows.
@@ -156,6 +158,13 @@ const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
   { tag: "{surname}", description: $localize`:@@conditionalAccess.surnameUser:Surname of the user` }
 ];
 
+// What a WEBHOOK payload can substitute: the base tags only. {email}, {givenname} and {surname} are
+// resolver-backed and fetched lazily by the email action alone (_send_action_email), so a webhook
+// payload referencing them would render them unsubstituted.
+const WEBHOOK_PLACEHOLDERS: readonly EmailPlaceholder[] = EMAIL_PLACEHOLDERS.filter(
+  (placeholder) => !["{email}", "{givenname}", "{surname}"].includes(placeholder.tag)
+);
+
 @Component({
   selector: "app-conditional-access-action-item",
   standalone: true,
@@ -176,6 +185,7 @@ export class ConditionalAccessActionItemComponent {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  readonly webhookPlaceholders = WEBHOOK_PLACEHOLDERS;
 
   // The fields of this action in the policy form. The rules that judge it (allowed for the target, in conflict with
   // another action, a value it can act on) live in the form and show here as its errors.
@@ -188,6 +198,10 @@ export class ConditionalAccessActionItemComponent {
   readonly removeAction = output<void>();
 
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
+  // Whether the configured webhooks can be listed: /webhook/ requires webhook_read, so without it
+  // the list is never fetched (see WebhookService) and the identifier falls back to a free-text input
+  // carrying WEBHOOK_TEXT_HINT - the same treatment the SMTP identifier gets.
+  readonly webhooksListable = computed<boolean>(() => this.authService.actionAllowed("webhook_read"));
 
   // The action as stored; its edits go through patch(), which writes the same model the form rules read.
   protected readonly current = computed(() => this.action()().value());
@@ -291,6 +305,29 @@ export class ConditionalAccessActionItemComponent {
     const current = this.emailFieldValue("smtp_identifier");
     return identifiers.length > 0 && !identifiers.includes(current) ? current : "";
   });
+  // Options of the webhook select: the configured identifiers plus the one the action already carries
+  // when not among them, so mat-select does not render a blank trigger for a value the admin needs to see.
+  readonly webhookOptions = computed<string[]>(() => {
+    const identifiers = this.webhookIdentifiers();
+    const current = this.webhookFieldValue("webhook");
+    return current && !identifiers.includes(current) ? [...identifiers, current] : identifiers;
+  });
+
+  // Stored identifier naming a webhook that is no longer configured, in which case fire_webhook() finds
+  // nothing and the action is skipped with a log line; judged only against a non-empty list, since until
+  // /webhook/ has answered, calling the stored one gone would be a guess.
+  readonly staleWebhookIdentifier = computed<string>(() => {
+    const identifiers = this.webhookIdentifiers();
+    const current = this.webhookFieldValue("webhook");
+    return identifiers.length > 0 && !identifiers.includes(current) ? current : "";
+  });
+  readonly webhookTextHint = WEBHOOK_TEXT_HINT;
+  private readonly webhookService: WebhookServiceInterface = inject(WebhookService);
+
+  readonly webhookIdentifiers = computed<string[]>(() => this.webhookService.webhookIdentifiers());
+
+  // Nothing can be said about the webhooks while the request is in flight.
+  readonly webhooksLoading = computed<boolean>(() => this.webhookService.webhookResource.isLoading());
 
   private static modeFor(actionType: ConditionalAccessActionType): ActionValueMode {
     if (actionType === "LOCK_USER" || actionType === "BLOCK_IP") {
@@ -298,6 +335,9 @@ export class ConditionalAccessActionItemComponent {
     }
     if (actionType === "EMAIL_ADMIN" || actionType === "EMAIL_USER") {
       return "email";
+    }
+    if (actionType === "WEBHOOK") {
+      return "webhook";
     }
     return "none";
   }
@@ -386,6 +426,23 @@ export class ConditionalAccessActionItemComponent {
   private emitDuration(seconds: number | null): void {
     this.emittedDurationSeconds = seconds;
     this.patch({ action_value: seconds });
+  }
+
+  webhookFieldValue(key: string): string {
+    const value = this.emailValue()[key];
+    return value == null ? "" : String(value);
+  }
+
+  onWebhookFieldInput(key: string, value: string): void {
+    const next = { ...this.emailValue() };
+    // An emptied field is dropped so the stored object stays minimal; an absent payload means
+    // "send the webhook's own default_payload".
+    if (value === "") {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+    this.patch({ action_value: Object.keys(next).length > 0 ? next : null });
   }
 
   onEmailFieldInput(key: string, value: string): void {

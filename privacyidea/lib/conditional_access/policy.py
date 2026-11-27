@@ -73,8 +73,9 @@ values must be
 must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires). Within one stage an action may appear only once - except
-``EMAIL_ADMIN``/``EMAIL_USER`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage notifies a
-second set of recipients - and no stage may hold two actions of the same mutually exclusive group
+``EMAIL_ADMIN``/``EMAIL_USER``/``WEBHOOK`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage
+notifies a second set of recipients resp. a second system - and no stage may hold two actions of the same
+mutually exclusive group
 (``_EXCLUSIVE_ACTION_GROUPS``: timed vs permanent lock, timed vs permanent block).
 
 ``action_value`` is validated under that same rule, against what the engine actually reads (see
@@ -87,6 +88,8 @@ second set of recipients - and no stage may hold two actions of the same mutuall
   ``mimetype`` (``plain``/``html``) and - for ``EMAIL_ADMIN`` - ``recipient_group``.
   ``smtp_identifier`` names the SMTP server that sends it and may be left blank until one is configured, which
   is the one thing the engine needs that the write path does not insist on.
+* ``WEBHOOK`` - an object with a non-empty ``webhook`` (the identifier of the webhook definition that owns the
+  endpoint) and an optional ``payload`` template. Without a payload the webhook's own ``default_payload`` is sent.
 * ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
   one, so a duration on them would only describe an expiry that does not happen.
 
@@ -108,8 +111,11 @@ conditions applies to every request - and is validated against the registries in
 unknown realm or a misspelled role would otherwise silently never match.
 """
 
+import json
 import logging
+import re
 from contextlib import contextmanager
+from string import Formatter
 from dataclasses import dataclass, field
 
 from sqlalchemy import func, select
@@ -164,11 +170,13 @@ DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 # different recipient_group (or a different subject and body) is the one case where a second copy of an
 # action does something the first cannot - see
 # :func:`~privacyidea.lib.conditional_access.engine._send_action_email`, which resolves its recipients per
-# action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
-# or silently overwrites the first.
+# action. WEBHOOK is the same case with a different transport: each copy names its own webhook definition, so a
+# stage that has to tell both a SIEM and a chat channel needs two of them. Every other action writes one piece
+# of state or one verdict, so a second copy either does nothing or silently overwrites the first.
 #: The actions a stage may carry more than once - the notifications, where a second copy reaches a
-#: different set of recipients.
-REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER})
+#: different set of recipients resp. a different system.
+REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER,
+                                ConditionalAccessAction.WEBHOOK})
 
 # Actions that contradict each other within one stage: the timed and permanent variants write the same
 # lock resp. block row, and the upsert refuses to downgrade a permanent restriction to a timed one, so
@@ -376,19 +384,23 @@ def validate_error_message(error_message: str | None) -> str | None:
 
 
 # The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
-# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY.
+# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY, and
+# both may notify a machine via WEBHOOK - it reports what tripped rather than acting on a subject, so unlike the
+# email pair it needs nothing from the target to be meaningful.
 _ACTIONS_BY_TARGET = {
     ConditionalAccessTarget.USER: {
         ConditionalAccessAction.LOCK_USER,
         ConditionalAccessAction.PERMANENT_LOCK_USER,
         ConditionalAccessAction.EMAIL_USER,
         ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.WEBHOOK,
         ConditionalAccessAction.DENY,
     },
     ConditionalAccessTarget.SOURCE_IP: {
         ConditionalAccessAction.BLOCK_IP,
         ConditionalAccessAction.PERMANENT_BLOCK_IP,
         ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.WEBHOOK,
         ConditionalAccessAction.DENY,
     },
 }
@@ -617,6 +629,11 @@ _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "su
 # The email fields with no sensible default: without them the engine has nothing to send and skips.
 _EMAIL_REQUIRED_TEXT = ("subject", "body")
 _EMAIL_MIMETYPES = frozenset({"plain", "html"})
+_WEBHOOK_KEYS = frozenset({"webhook", "payload"})
+#: A placeholder of a payload template: a tag name with an optional conversion and format specification.
+_PLACEHOLDER = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*(?:![rsa])?(?::[^{}]*)?\}")
+#: The tags of a WEBHOOK payload whose values are numbers. Every other tag is text.
+_NUMBER_TAGS = frozenset({"count", "threshold", "stage_id"})
 
 
 def _validate_duration_action_value(action_type: str, action_value) -> None:
@@ -689,6 +706,118 @@ def _validate_email_action_value(action_type: str, action_value) -> None:
                              f"addresses.")
 
 
+def _validate_webhook_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of a ``WEBHOOK`` action: the object
+    :func:`~privacyidea.lib.conditional_access.engine._fire_action_webhook` reads, with a non-empty ``webhook``
+    identifier and an optional ``payload`` template.
+
+    Unlike ``smtp_identifier`` on the ``EMAIL_*`` actions, the identifier is **required**: an email action without
+    one still describes a message that an admin can complete later, while a webhook without one describes nothing
+    at all - there is no endpoint, no method and no credentials, so the action could only ever be skipped.
+
+    Whether that identifier still names an existing webhook is deliberately *not* checked, which mirrors the email
+    validator: a webhook may be deleted long after the policy was written, and refusing to save an unrelated edit
+    to such a policy would be a worse failure than the log line the engine writes when it fires. The editor flags a
+    stale identifier inline instead.
+
+    ``payload`` is optional because a webhook carries its own ``default_payload``; an empty one is accepted as
+    "send the webhook's default", which is what the engine does with it.
+    """
+    if not isinstance(action_value, dict):
+        raise ParameterError(f"The action_value of '{action_type}' must be an object with the webhook settings "
+                             f"(webhook, payload).")
+    unknown = set(action_value) - _WEBHOOK_KEYS
+    if unknown:
+        raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                             f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_WEBHOOK_KEYS))}.")
+    for key, value in action_value.items():
+        if value is not None and not isinstance(value, str):
+            raise ParameterError(f"'{key}' in the action_value of '{action_type}' must be a string.")
+    if not (action_value.get("webhook") or "").strip():
+        raise ParameterError(f"Action '{action_type}' needs a non-empty 'webhook' in its action_value: the "
+                             f"identifier of the webhook definition that owns the endpoint.")
+    _check_webhook_payload(action_type, action_value.get("payload"))
+
+
+def _is_json_document(text: str) -> bool:
+    """Return True if *text* is a JSON object or array."""
+    try:
+        return isinstance(json.loads(text), (dict, list))
+    except ValueError:
+        return False
+
+
+def _numbers_in(document: object) -> list:
+    """Return the numbers of a parsed JSON document, keys excluded."""
+    if isinstance(document, dict):
+        return [number for value in document.values() for number in _numbers_in(value)]
+    if isinstance(document, list):
+        return [number for value in document for number in _numbers_in(value)]
+    if isinstance(document, (int, float)) and not isinstance(document, bool):
+        return [document]
+    return []
+
+
+def _check_webhook_payload(action_type: str, payload: str | None) -> None:
+    """
+    Refuse a payload whose placeholders the engine can not replace safely.
+
+    The engine substitutes a JSON object or array value by value. It substitutes any other payload as plain text,
+    with ``str.format()``. Three kinds of payload are refused:
+
+    * A plain-text payload that ``str.format()`` can not parse, for example ``user={username}&x={``. A brace that is
+      not part of a placeholder is written twice: ``{{`` or ``}}``. The engine would send such a payload unchanged.
+    * A JSON payload with a placeholder outside quotes and braces of the document outside the placeholders, such as
+      ``{"count": {count}}``. ``str.format()`` reads the braces of the document as placeholders, and the engine would
+      send the payload unchanged.
+    * A JSON payload with a placeholder of a text value outside quotes, such as ``[{count}, {username}]``. The value
+      would end up in the document without quotes. Only ``{count}``, ``{threshold}`` and ``{stage_id}`` are numbers
+      and can stand outside quotes, for example ``[{count}, "{username}"]``.
+
+    A payload is a JSON payload with placeholders outside quotes if it is no JSON document as written, but becomes
+    one when each placeholder is replaced by a number. A text payload such as ``{username} logged in`` does not.
+
+    :param action_type: the action type, for the error message
+    :param payload: the payload template of the action
+    :raises ParameterError: if the engine can not replace the placeholders of the payload safely
+    """
+    if not payload or _is_json_document(payload):
+        return
+    try:
+        list(Formatter().parse(payload))
+    except ValueError as error:
+        raise ParameterError(f"The payload of '{action_type}' is no valid template ({error}). Write a brace that is "
+                             f"not part of a placeholder twice: {{{{ or }}}}.")
+
+    # Each placeholder becomes a number that the payload does not contain, so that it can be found again after json.
+    placeholders = {}
+
+    def number_for(match: re.Match) -> str:
+        number = f"7{len(placeholders):09d}1"
+        placeholders[number] = match.group(0)
+        return number
+
+    try:
+        document = json.loads(_PLACEHOLDER.sub(number_for, payload))
+    except ValueError:
+        # A text payload
+        return
+    if not isinstance(document, (dict, list)):
+        return
+    without_placeholders = _PLACEHOLDER.sub("", payload)
+    if "{" in without_placeholders or "}" in without_placeholders:
+        raise ParameterError(f"The payload of '{action_type}' is JSON with a placeholder outside quotes, so the "
+                             f"placeholders can not be replaced. Put each placeholder in quotes, for example "
+                             f"\"count\": \"{{count}}\".")
+    unquoted_text = [placeholders[str(number)] for number in _numbers_in(document)
+                     if str(number) in placeholders
+                     and placeholders[str(number)].strip("{}").split(":")[0].split("!")[0] not in _NUMBER_TAGS]
+    if unquoted_text:
+        raise ParameterError(f"The payload of '{action_type}' has the placeholder {unquoted_text[0]} outside quotes. "
+                             f"Its value is text, so put it in quotes, for example \"{unquoted_text[0]}\".")
+
+
 def _validate_no_action_value(action_type: str, action_value) -> None:
     """
     Validate the ``action_value`` of an action that takes none: the ``PERMANENT_*`` restrictions and the
@@ -711,6 +840,7 @@ _ACTION_VALUE_VALIDATORS = {
     str(ConditionalAccessAction.BLOCK_IP): _validate_duration_action_value,
     str(ConditionalAccessAction.EMAIL_ADMIN): _validate_email_action_value,
     str(ConditionalAccessAction.EMAIL_USER): _validate_email_action_value,
+    str(ConditionalAccessAction.WEBHOOK): _validate_webhook_action_value,
     str(ConditionalAccessAction.PERMANENT_LOCK_USER): _validate_no_action_value,
     str(ConditionalAccessAction.PERMANENT_BLOCK_IP): _validate_no_action_value,
     str(ConditionalAccessAction.DENY): _validate_no_action_value,
@@ -724,7 +854,7 @@ def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDef
     A threshold counts failures, so 1 is the lowest meaningful value for anything
     that reacts to a count. "Lock the user after 0 failures" is not a rule, it is
     a typo, so :attr:`ConditionalAccessAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
-    variants and the ``EMAIL_*`` actions all require at least 1.
+    variants and the reporting ``EMAIL_*`` / ``WEBHOOK`` actions all require at least 1.
 
     ``DENY`` is the exception, because it does not react to a count at all - it
     states a standing verdict, and re-triggers by default, so at threshold 0 it

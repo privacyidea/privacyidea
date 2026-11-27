@@ -28,11 +28,13 @@ import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { WebhookService } from "@services/webhook/webhook.service";
 import {
   MockAuthService,
   MockNotificationService,
   MockPendingChangesService,
-  MockRouter
+  MockRouter,
+  MockWebhookService
 } from "@testing/mock-services";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject, of, throwError } from "rxjs";
@@ -83,6 +85,7 @@ describe("EventEditPageComponent — edit mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: Router, useClass: MockRouter },
+        { provide: WebhookService, useClass: MockWebhookService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -647,6 +650,7 @@ describe("EventEditPageComponent — create new mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: Router, useClass: MockRouter },
+        { provide: WebhookService, useClass: MockWebhookService },
         {
           provide: ActivatedRoute,
           useValue: {

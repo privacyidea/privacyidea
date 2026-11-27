@@ -41,8 +41,8 @@ from sqlalchemy import select
 from privacyidea.lib import config  # noqa: F401 # registers the importer of the type 'config'
 from privacyidea.lib.caconnector import delete_caconnector
 from privacyidea.lib.crypto import is_censored
-from privacyidea.lib.error import UserError
-from privacyidea.lib.event import delete_event
+from privacyidea.lib.error import ConfigAdminError, UserError
+from privacyidea.lib.event import delete_event, inline_webhook_defect, inline_webhook_link, is_inline_webhook
 from privacyidea.lib.machineresolver import delete_resolver as delete_machine_resolver
 from privacyidea.lib.periodictask import delete_periodic_task
 from privacyidea.lib.policy import delete_policy, filter_invalid_actions, SCOPE
@@ -54,8 +54,11 @@ from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway
 from privacyidea.lib.smtpserver import delete_smtpserver
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
-from privacyidea.models import (db, PeriodicTask, Policy, PrivacyIDEAServer, RADIUSServer, Realm, SMSGateway,
-                                SMTPServer, TokenContainerRealm, TokenRealm)
+from privacyidea.lib.webhook import delete_webhook, get_webhook_identifiers
+from privacyidea.models import (db, ConditionalAccessPolicy, ConditionalAccessPolicyStage,
+                                ConditionalAccessStageAction, EventHandler, EventHandlerOption, PeriodicTask, Policy,
+                                PrivacyIDEAServer, RADIUSServer, Realm, SMSGateway, SMTPServer, TokenContainerRealm,
+                                TokenRealm, Webhook)
 from privacyidea.models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
@@ -71,6 +74,8 @@ ADMIN_POLICY_WARNING = ("Warning: after this import no active admin policy is le
                         "so every administrator may do everything.")
 NO_DEFAULT_REALM_WARNING = ("Warning: after this import no realm is the default realm, "
                             "so a user who logs in without a realm is not found.")
+MISSING_WEBHOOK_WARNING = ('Event handler "{handler_name}" names the webhook "{identifier}", which is neither on this '
+                           'system nor in the import. The handler sends nothing until the webhook exists.')
 
 _MISSING = object()
 NO_DEFAULT_REALM_PLAN = object()
@@ -102,6 +107,13 @@ class TypePlan:
     ``data`` holds the import data of the create and update entries (and of the
     skipped event handlers, so that the importer still reports them) in the
     format the importer of the type takes.
+
+    ``webhooks_in_use`` holds, for the type ``event``, the identifiers of the
+    webhooks that the event handlers use after the import.
+
+    ``named_webhooks`` holds, for the type ``event``, the pairs (handler name,
+    webhook identifier) of the WebHook handlers that the import writes and whose
+    ``webhook`` option names a webhook.
     """
     typ: str
     entries: list = field(default_factory=list)
@@ -110,6 +122,8 @@ class TypePlan:
     data: dict | list | None = None
     # name of the realm that is the default after the import (None: no default), NO_DEFAULT_REALM_PLAN: not planned
     default_realm: str | None | object = NO_DEFAULT_REALM_PLAN
+    webhooks_in_use: set = field(default_factory=set)
+    named_webhooks: list = field(default_factory=list)
 
 
 def _import_order() -> list:
@@ -216,6 +230,24 @@ def _normalize_event(entry: dict) -> dict:
     return _without(entry, ("id", "condition"))
 
 
+# The text parameters of set_webhook()
+_WEBHOOK_TEXT_FIELDS = ("url", "description", "http_method", "content_type", "default_payload", "auth_type",
+                        "username", "password", "tls_ca_bundle", "client_certificate", "client_key",
+                        "client_key_password", "http_proxy", "https_proxy")
+
+
+def _normalize_webhook(entry: dict) -> dict:
+    result = dict(entry)
+    # set_webhook only checks whether a header is in the list, and the export lists them in no fixed order
+    if isinstance(result.get("secret_headers"), (list, tuple)):
+        result["secret_headers"] = sorted(result["secret_headers"])
+    # The export writes None for an empty text, import_webhook stores it as "", and Oracle reads "" back as None
+    for name in _WEBHOOK_TEXT_FIELDS:
+        if name in result and result[name] is None:
+            result[name] = ""
+    return result
+
+
 @dataclass
 class _TypeAdapter:
     """
@@ -266,6 +298,58 @@ def _delete_realm(entry: PlanEntry) -> int:
     return delete_realm(entry.key, delete_custom_attributes=False, confirm_ca_policies=False)
 
 
+def _ca_policies_by_webhook() -> dict:
+    """
+    Return the names of the conditional access policies whose ``WEBHOOK`` actions name a webhook, by webhook.
+
+    The configuration import does not carry conditional access policies, so all of them stay after an import.
+
+    :return: dict of webhook identifier -> sorted list of policy names
+    """
+    rows = db.session.execute(
+        select(ConditionalAccessPolicy.name, ConditionalAccessStageAction.action_value)
+        .join(ConditionalAccessPolicyStage, ConditionalAccessPolicyStage.policy_id == ConditionalAccessPolicy.id)
+        .join(ConditionalAccessStageAction, ConditionalAccessStageAction.stage_id == ConditionalAccessPolicyStage.id)
+        .where(ConditionalAccessStageAction.action_type == "WEBHOOK")).all()
+    policies = defaultdict(set)
+    for policy_name, action_value in rows:
+        if isinstance(action_value, dict) and action_value.get("webhook"):
+            policies[action_value["webhook"]].add(policy_name)
+    return {identifier: sorted(names) for identifier, names in policies.items()}
+
+
+def _ca_policy_use(policy_names: list) -> str:
+    """Say which conditional access policies use a webhook, for a note or an error."""
+    if len(policy_names) > 1:
+        return f"the conditional access policies {policy_names} use it"
+    return f"the conditional access policy {policy_names[0]!r} uses it"
+
+
+def _delete_unused_webhook(entry: PlanEntry) -> int:
+    """
+    Delete the webhook of a planned delete, unless an event handler or a conditional access policy uses it.
+
+    The plan keeps the webhooks that the event handlers and the conditional access policies use after the import.
+    This check covers a handler that the import creates: its id, and with it the webhook that an inline handler is
+    linked to, is known only when it is written.
+
+    :raises ConfigAdminError: if an event handler or a conditional access policy uses the webhook
+    """
+    identifier = entry.target_name or entry.key
+    users = db.session.scalars(
+        select(EventHandler.name)
+        .join(EventHandlerOption, EventHandlerOption.eventhandler_id == EventHandler.id)
+        .where(EventHandler.handlermodule == "WebHook", EventHandlerOption.Key == "webhook",
+               EventHandlerOption.Value == identifier)).all()
+    if users:
+        raise ConfigAdminError(f"The webhook is not deleted, because the event handlers "
+                               f"{sorted(name or '' for name in users)} use it.")
+    policy_names = _ca_policies_by_webhook().get(identifier)
+    if policy_names:
+        raise ConfigAdminError(f"The webhook is not deleted, because {_ca_policy_use(policy_names)}.")
+    return delete_webhook(identifier)
+
+
 def _stored_name_lookup(column: Any) -> Callable[[str], str | None]:
     """Find a stored name with the comparison of the setter, which follows the collation of the database."""
     def lookup(name: str) -> str | None:
@@ -300,6 +384,8 @@ _ADAPTERS = {
                                stored_name=_stored_name_lookup(SMTPServer.identifier)),
     "smsgateway": _TypeAdapter(delete=lambda entry: delete_smsgateway(entry.key),
                                stored_name=_stored_name_lookup(SMSGateway.identifier)),
+    "webhook": _TypeAdapter(normalize=_normalize_webhook, delete=_delete_unused_webhook,
+                            stored_name=_stored_name_lookup(Webhook.identifier)),
 }
 
 # Deleting runs in the reverse import order, so that dependent entries (policies,
@@ -483,51 +569,184 @@ def _entry_count(count: int) -> str:
     return f"{count} entry" if count == 1 else f"{count} entries"
 
 
+def _stored_event_handlers() -> list:
+    """The event handlers of this system in the order of their ids, as a deep copy."""
+    return sorted(copy.deepcopy(EXPORT_FUNCTIONS["event"]()), key=lambda handler: handler["id"])
+
+
+def _as_imported(entry: dict, target_id: int) -> dict:
+    """
+    Return an event handler definition as import_event writes it over the stored handler with this id: a WebHook
+    handler in the pre-3.15 inline shape gets the ``webhook`` option that links it to its webhook.
+    """
+    identifier = inline_webhook_link(entry, target_id)
+    if identifier is None:
+        return entry
+    return {**entry, "options": {**entry["options"], "webhook": identifier}}
+
+
+def _webhook_in_use(handler: dict, target_id: int | None = None) -> str | None:
+    """
+    Return the identifier of the webhook that an event handler uses, or None.
+
+    :param handler: a stored event handler, or an imported definition
+    :param target_id: for an imported definition, the id of the stored handler that import_event writes it over. None
+        for a stored handler and for a new one: a new handler gets its id, and an inline one with it the name of its
+        webhook, only when it is written.
+    """
+    if handler.get("handlermodule") != "WebHook":
+        return None
+    identifier = (handler.get("options") or {}).get("webhook")
+    if identifier or target_id is None:
+        return identifier or None
+    return inline_webhook_link(handler, target_id)
+
+
+def _webhooks_in_use(stored: list, replaced_ids: set, written: list) -> set:
+    """
+    Return the identifiers of the webhooks that the event handlers use after the import.
+
+    :param stored: the event handlers of this system
+    :param replaced_ids: the ids of the stored handlers that the import writes over or deletes
+    :param written: the imported definitions that the import writes, each with the id of the stored handler that it
+        is written over (None for a new handler)
+    """
+    in_use = {_webhook_in_use(handler) for handler in stored if handler["id"] not in replaced_ids}
+    in_use.update(_webhook_in_use(entry, target_id) for entry, target_id in written)
+    in_use.discard(None)
+    return in_use
+
+
+def _keep_webhooks_in_use(plan: TypePlan, in_use: dict) -> None:
+    """
+    Remove the planned deletions of the webhooks that are in use after the import, and add a note for each.
+
+    :param plan: the plan of the type ``webhook``
+    :param in_use: dict of webhook identifier -> what uses it, for the note (for example "an event handler uses it")
+    """
+    kept = [entry for entry in plan.entries if entry.action == DELETE and (entry.target_name or entry.key) in in_use]
+    if not kept:
+        return
+    plan.entries = [entry for entry in plan.entries if not any(entry is kept_entry for kept_entry in kept)]
+    plan.notes.extend(f'Webhook "{entry.target_name or entry.key}" is not deleted: '
+                      f'{in_use[entry.target_name or entry.key]}.' for entry in kept)
+
+
+def _created_webhook_notes(written: list) -> list:
+    """
+    Return a note for each webhook that import_event creates for a WebHook handler in the pre-3.15 inline shape. A
+    handler that import_event links to an existing webhook gets no note.
+
+    :param written: the definitions that the import writes, each with the id of the stored handler that it is written
+        over (None for a new handler)
+    """
+    stored_webhooks = set(get_webhook_identifiers())
+    notes = []
+    for entry, target_id in written:
+        if not is_inline_webhook(entry):
+            continue
+        if target_id is None:
+            # A new handler gets its id, and with it the identifier of its webhook, only when it is written
+            notes.append(f'A webhook is created for the event handler "{entry["name"]}" from its inline URL.')
+            continue
+        identifier = inline_webhook_link(entry, target_id)
+        if identifier not in stored_webhooks:
+            notes.append(f'Webhook "{identifier}" is created for the event handler "{entry["name"]}".')
+    return notes
+
+
+def _named_webhooks(written: list) -> list:
+    """
+    Return the name of each WebHook handler that the import writes, with the identifier that its ``webhook`` option
+    names. A handler in the pre-3.15 inline shape names none, because import_event creates its webhook.
+
+    :param written: the definitions that the import writes, each with the id of the stored handler that it is written
+        over (None for a new handler)
+    :return: list of (handler name, webhook identifier)
+    """
+    named = []
+    for entry, _ in written:
+        identifier = (entry.get("options") or {}).get("webhook")
+        if entry.get("handlermodule") == "WebHook" and identifier:
+            named.append((entry["name"], str(identifier)))
+    return named
+
+
 def _plan_event(typ_data: list | None, name: str | None, replace: bool) -> TypePlan:
     """
     Plan the event handlers grouped by (name, handlermodule) like import_event:
-    the n handlers of a group in the import replace the m handlers of this
-    system in the order of their ids. With n < m the group is skipped, with
-    ``replace`` the first n are updated and the other m - n deleted.
+    the n definitions of a group in the import are matched with the m handlers
+    of this system in the order of their ids, by position. With n < m the group
+    is skipped, with ``replace`` the handlers after the last definition are
+    deleted. The definitions after the last handler create new handlers.
+
+    A WebHook handler in the pre-3.15 inline shape is compared in the form that
+    import_event writes, that is with the link to its webhook, and the plan notes
+    each webhook that the import creates for it. One that import_event does not
+    convert to a webhook is skipped. It counts for its group, and the handler of
+    this system at its position stays as it is.
     """
     adapter = _ADAPTERS["event"]
+    # The definitions of each group in the order of the import, each with the reason why import_event does not write
+    # it, or None
     imported = defaultdict(list)
     without_name = []
     for entry in typ_data or []:
         if name is not None and entry.get("name") != name:
             continue
-        if entry.get("name"):
-            imported[(entry["name"], entry.get("handlermodule"))].append(entry)
-        else:
+        if not entry.get("name"):
             without_name.append(entry)
+            continue
+        imported[(entry["name"], entry.get("handlermodule"))].append((entry, inline_webhook_defect(entry)))
+    stored = _stored_event_handlers()
     existing = defaultdict(list)
-    for target in sorted(copy.deepcopy(EXPORT_FUNCTIONS["event"]()), key=lambda target: target["id"]):
+    for target in stored:
         if name is None or target.get("name") == name:
             existing[(target.get("name"), target.get("handlermodule"))].append(target)
 
     plan = TypePlan(typ="event")
     to_import = []
-    for key, entries in imported.items():
+    # The ids of the stored handlers that the import writes over or deletes, and the definitions that it writes, each
+    # with the id of the stored handler that it is written over (None for a new handler)
+    replaced_ids = set()
+    written = []
+    for key, definitions in imported.items():
         targets = existing.get(key, [])
-        if not targets:
-            plan.entries.append(PlanEntry(CREATE, key))
-            to_import.extend(entries)
-            continue
-        if len(entries) < len(targets) and not replace:
-            plan.entries.append(PlanEntry(SKIP, key, reason=f"{_entry_count(len(entries))} in the import, "
+        # import_event reports a definition that it does not convert, or skips it with skip_invalid
+        skipped = [PlanEntry(SKIP, key, reason=defect) for _, defect in definitions if defect]
+        if len(definitions) < len(targets) and not replace:
+            plan.entries.append(PlanEntry(SKIP, key, reason=f"{_entry_count(len(definitions))} in the import, "
                                                             f"{len(targets)} on this system, use --replace"))
-            # import_event reports the skipped group, so it gets the entries as well
-            to_import.extend(entries)
+            plan.entries.extend(skipped)
+            # import_event reports the skipped group, so it gets the definitions as well
+            to_import.extend(entry for entry, _ in definitions)
             continue
+        # The definitions that import_event writes, each with the stored handler at its position (None for a new one)
+        group_writes = [(entry, targets[position] if position < len(targets) else None)
+                        for position, (entry, defect) in enumerate(definitions) if not defect]
         changed = set()
-        for entry, target in zip(entries, targets):
-            changed.update(_changed_fields(_plain(adapter.normalize(entry)), _plain(adapter.normalize(target))))
-        if changed or len(entries) > len(targets):
-            plan.entries.append(PlanEntry(UPDATE, key, changed_fields=sorted(changed)))
-            to_import.extend(entries)
-        else:
-            plan.entries.append(PlanEntry(UNCHANGED, key))
-        plan.entries.extend(PlanEntry(DELETE, key, target_id=target["id"]) for target in targets[len(entries):])
+        for entry, target in group_writes:
+            if target is not None:
+                changed.update(_changed_fields(_plain(adapter.normalize(_as_imported(entry, target["id"]))),
+                                               _plain(adapter.normalize(target))))
+        creates = any(target is None for _, target in group_writes)
+        if group_writes:
+            if not targets:
+                plan.entries.append(PlanEntry(CREATE, key))
+            elif changed or creates:
+                plan.entries.append(PlanEntry(UPDATE, key, changed_fields=sorted(changed)))
+            else:
+                plan.entries.append(PlanEntry(UNCHANGED, key))
+        plan.entries.extend(skipped)
+        if changed or creates or skipped:
+            # import_event matches the definitions of a group by their position, so it gets all of them. With a
+            # skipped definition it writes the unchanged ones of the group again.
+            to_import.extend(entry for entry, _ in definitions)
+            written.extend((entry, None if target is None else target["id"]) for entry, target in group_writes)
+            replaced_ids.update(target["id"] for _, target in group_writes if target is not None)
+        surplus = targets[len(definitions):]
+        plan.entries.extend(PlanEntry(DELETE, key, target_id=target["id"]) for target in surplus)
+        replaced_ids.update(target["id"] for target in surplus)
     for entry in without_name:
         plan.entries.append(PlanEntry(SKIP, (entry.get("name") or "", entry.get("handlermodule")),
                                       reason="the event handler has no name"))
@@ -536,8 +755,37 @@ def _plan_event(typ_data: list | None, name: str | None, replace: bool) -> TypeP
         for key, targets in existing.items():
             if key not in imported:
                 plan.entries.extend(PlanEntry(DELETE, key, target_id=target["id"]) for target in targets)
+                replaced_ids.update(target["id"] for target in targets)
     plan.data = to_import
+    plan.webhooks_in_use = _webhooks_in_use(stored, replaced_ids, written)
+    plan.notes.extend(_created_webhook_notes(written))
+    plan.named_webhooks = _named_webhooks(written)
     return plan
+
+
+def _missing_webhook_warnings(named_webhooks: list, webhook_plan: TypePlan | None) -> list:
+    """
+    Warn for each event handler that the import writes with a webhook that does not exist after the import.
+
+    :param named_webhooks: the pairs (handler name, webhook identifier) of ``TypePlan.named_webhooks``
+    :param webhook_plan: the plan of the type ``webhook``, None if the import does not import webhooks
+    """
+    webhook_entries = webhook_plan.entries if webhook_plan else []
+    deleted = {entry.target_name or entry.key for entry in webhook_entries if entry.action == DELETE}
+    imported = {entry.key for entry in webhook_entries if entry.action != DELETE}
+    # The event handler reads its webhook with the comparison of the database, which follows its collation
+    find_stored = _stored_name_lookup(Webhook.identifier)
+    warnings = []
+    for handler_name, identifier in named_webhooks:
+        if identifier in imported:
+            continue
+        stored_identifier = find_stored(identifier)
+        if stored_identifier is not None and stored_identifier not in deleted:
+            continue
+        warning = MISSING_WEBHOOK_WARNING.format(handler_name=handler_name, identifier=identifier)
+        if warning not in warnings:
+            warnings.append(warning)
+    return warnings
 
 
 def build_import_plan(data: dict, types: Iterable[str], name: str | None = None, replace: bool = False,
@@ -550,10 +798,13 @@ def build_import_plan(data: dict, types: Iterable[str], name: str | None = None,
     :param types: The type names to plan, ``"all"`` selects every type
     :param name: Only plan the entries with this name
     :param replace: Plan to delete the entries of a planned type that are
-        missing from the import (never for ``config``)
+        missing from the import (never for ``config``, and never a webhook that
+        an event handler or a conditional access policy uses after the import)
     :param skip_invalid: Drop policy actions that are not valid for this version
         before comparing, as ``import_policy`` does
-    :return: a ``TypePlan`` for each selected type in ``data``, in import order
+    :return: a ``TypePlan`` for each selected type in ``data``, in import order. The plan of the type ``event``
+        warns for each WebHook handler that the import writes with a webhook that is neither on this system after
+        the import nor in the planned webhooks.
     :raises ValueError: if a selected type in ``data`` has no adapter in ``_ADAPTERS``, so that the import does
         not leave out the type without a message
     """
@@ -566,14 +817,31 @@ def build_import_plan(data: dict, types: Iterable[str], name: str | None = None,
         if typ not in _ADAPTERS:
             raise ValueError(f"The configuration type '{typ}' can not be compared with this system.")
         if typ == "event":
-            plan = _plan_event(data[typ], name, replace)
+            plans.append(_plan_event(data[typ], name, replace))
         else:
-            plan = _plan_name_keyed(typ, data[typ], name, replace, skip_invalid)
+            plans.append(_plan_name_keyed(typ, data[typ], name, replace, skip_invalid))
+
+    by_type = {plan.typ: plan for plan in plans}
+    webhook_plan = by_type.get("webhook")
+    if webhook_plan and any(entry.action == DELETE for entry in webhook_plan.entries):
+        # The webhooks are planned before the event handlers, which decide which webhooks are still in use
+        event_plan = by_type.get("event")
+        used_by_event_handlers = (event_plan.webhooks_in_use if event_plan
+                                  else _webhooks_in_use(_stored_event_handlers(), set(), []))
+        in_use = {identifier: "an event handler uses it" for identifier in used_by_event_handlers}
+        for identifier, policy_names in _ca_policies_by_webhook().items():
+            in_use.setdefault(identifier, _ca_policy_use(policy_names))
+        _keep_webhooks_in_use(webhook_plan, in_use)
+    event_plan = by_type.get("event")
+    if event_plan and event_plan.named_webhooks:
+        # After the planned deletions of the webhooks, which keep the webhooks that the event handlers use
+        event_plan.warnings.extend(_missing_webhook_warnings(event_plan.named_webhooks, webhook_plan))
+
+    for plan in plans:
         counts = defaultdict(int)
         for entry in plan.entries:
             counts[entry.action] += 1
-        log.debug(f"Import plan for type '{typ}': {dict(counts)}")
-        plans.append(plan)
+        log.debug(f"Import plan for type '{plan.typ}': {dict(counts)}")
     return plans
 
 

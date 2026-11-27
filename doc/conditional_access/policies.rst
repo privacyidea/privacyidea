@@ -273,6 +273,58 @@ Actions
     ``EMAIL_ADMIN`` on a ``source_ip`` policy is not guaranteed to have,
     since that target also applies where no user could be resolved at all.
 
+**WEBHOOK**
+    Fire a configured :ref:`webhook_config`, to notify another system - a SIEM,
+    a ticket queue, a chat channel. Like the email actions it reports rather
+    than restricts, so it never turns a request away and is never shown to a
+    user.
+
+    The action names the webhook; the webhook owns the URL, the method, the
+    headers and the credentials. An optional **payload** overrides the webhook's
+    own default payload and may contain ``{username}``, ``{realm}``,
+    ``{resolver}``, ``{client_ip}``, ``{count}``, ``{threshold}``,
+    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``. The
+    placeholders are replaced only in this payload; the default payload of the
+    webhook is sent unchanged.
+
+    A payload that is a JSON object or array is substituted value by value. Put
+    each placeholder of a JSON payload in quotes, for example
+    ``{"count": "{count}"}``.
+
+    Any other payload is substituted as plain text. If the setting **Encode
+    placeholder values** of the webhook is on, the values are encoded for the
+    content type of the webhook: URL-encoded for
+    ``application/x-www-form-urlencoded``, and escaped as JSON string content for
+    ``application/json``. Keep the setting on: ``{username}`` is the login name
+    that the client sent, so it can contain ``&``, ``=`` or ``"``.
+
+    These payloads are refused when the policy is saved:
+
+    - A JSON payload with a placeholder outside quotes and other braces, such as
+      ``{"count": {count}}``. The placeholders of such a payload can not be
+      replaced.
+    - A JSON payload with a text placeholder outside quotes, such as
+      ``[{count}, {username}]``. Only ``{count}``, ``{threshold}`` and
+      ``{stage_id}`` are numbers and can stand outside quotes, for example
+      ``[{count}, "{username}"]``.
+    - A plain-text payload with a brace that is not part of a placeholder, such
+      as ``user={username}&x={``. Write such a brace twice: ``{{`` or ``}}``.
+
+    ``{email}``, ``{givenname}`` and ``{surname}`` are **not** available here:
+    they are read from the resolver and are fetched only for an email action.
+
+    A stage may carry more than one ``WEBHOOK``, the way it may carry more than
+    one email action - a second one reaches a system the first cannot.
+
+    In a stage, the locks and blocks run before the notifications
+    (``EMAIL_ADMIN``, ``EMAIL_USER`` and ``WEBHOOK``), whatever their order in
+    the stage. A notification waits for its server, and a lock after it would
+    let further requests through in that time.
+
+    .. warning:: Delivery is synchronous, so the webhook's timeout is added to
+       the authentication request that tripped the stage. See
+       :ref:`webhook_synchronous`. A dry-run policy never fires it.
+
 Which actions a policy may use depends on its target:
 
 .. list-table::
@@ -283,10 +335,10 @@ Which actions a policy may use depends on its target:
      - Actions
      - Count modes
    * - ``user``
-     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
+     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, WEBHOOK, DENY
      - PER_REQUEST, PER_ATTEMPT
    * - ``source_ip``
-     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
+     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, WEBHOOK, DENY
      - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
 
 .. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy

@@ -56,6 +56,7 @@ export const PAGE_NAMES = {
   tokenTypes: $localize`:@@pageTitle.tokenTypes:Token Type Configuration`,
   subscription: $localize`:@@common.subscription:Subscription`,
   smtp: $localize`:@@common.smtpServers:SMTP Servers`,
+  webhooks: $localize`:@@common.webhooks:Webhooks`,
   radius: $localize`:@@common.radiusServers:RADIUS Servers`,
   sms: $localize`:@@common.smsGateways:SMS Gateways`,
   privacyideaServers: $localize`:@@common.privacyideaServers:privacyIDEA Servers`,

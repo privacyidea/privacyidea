@@ -41,6 +41,7 @@ Read about the structure of the responses at :ref:`rest_api_response_format`.
    api/ttype
    api/smtpserver
    api/smsgateway
+   api/webhook
    api/radiusserver
    api/subscriptions
    api/client
