@@ -200,6 +200,9 @@ body {
   // Width of a config form body: one input-width-xl field plus its leading inset.
   --config-form-width: calc(var(--input-width-xl) + 16px);
 
+  // Room above an outlined field's box for its floated label (Material puts the label's top 6.75px above the outline).
+  --form-field-label-room: 8px;
+
   --button-width-xs: 40px;
   --button-width-s: 120px;
   --button-width-m: 180px;

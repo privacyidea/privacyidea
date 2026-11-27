@@ -226,6 +226,13 @@
 
 // --- Form fields and inputs -------------------------------------------------------------------
 
+// The floated label of an outlined field sits on the top border and reaches above it. The field keeps that room inside
+// its own box, so no sticky header, clipping container or scrolling dialog body can cover or cut off the label.
+// Padding, not margin: a margin collapses with its parent's and reserves nothing inside a clipping container.
+.mat-mdc-form-field.mat-form-field-appearance-outline {
+  padding-top: var(--form-field-label-room);
+}
+
 // The outline of a field keeps the two tones of the flat depth border and follows the light source the same way: the
 // shadow tone on the sides the light falls away from, the light tone on the two it reaches. Material draws the outline
 // as three pieces, each with its own borders, so every side takes its tone from the sign of the light direction: a
