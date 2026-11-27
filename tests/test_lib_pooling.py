@@ -12,7 +12,7 @@ import shutil
 import tempfile
 from unittest import mock
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, literal_column, select
 
 from privacyidea.app import create_app
 from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit
@@ -186,7 +186,8 @@ class NullPoolingTestCase(MyTestCase, EngineHolders):
             for holder in holders:
                 self.assertFalse(holder.session.in_transaction())
             for holder in holders:
-                holder.session.execute(text("SELECT 1"))
+                # Compiled per dialect: Oracle has no bare "SELECT 1" and gets "SELECT 1 FROM DUAL"
+                holder.session.execute(select(literal_column("1")))
                 self.assertTrue(holder.session.in_transaction())
             pools = [holder.engine.pool for holder in holders]
         for holder, pool in zip(holders, pools):
