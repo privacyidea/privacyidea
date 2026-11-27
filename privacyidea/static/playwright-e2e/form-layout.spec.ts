@@ -19,12 +19,16 @@
 
 import { expect, Page } from "@playwright/test";
 import { test } from "./support/test";
-import { SCREEN, ZOOMS } from "./support/routes";
-import { openPage, settle } from "./support/helpers";
+import { SELF_PASS, SELF_USER, selfTest } from "./support/self-service";
+import { ALL_PAGES, SCREEN, SELF_PAGES, ZOOMS } from "./support/routes";
+import { DETAIL_PAGES, openFirstRecord } from "./support/records";
+import { openPage, settle, settleContent } from "./support/helpers";
 
-// Controls that belong together stay together: a form field in a table cell fills its row like its neighbours, and
-// the info icon that explains a checkbox stays on the checkbox's row. Nothing is saved: a resolver type is chosen and
-// a stage and an action are added to a policy that is then left.
+// Controls that belong together stay together: a form field in a table cell fills its row like its neighbours, the
+// info icon that explains a checkbox stays on the checkbox's row, the label of an outlined field stays inside the
+// field, and the controls beside a field sit on the middle of its outline. Nothing is saved: a resolver type is
+// chosen, a stage and an action are added to a policy that is then left, the copy dialog of a policy is closed with
+// Escape, and expansion panels are opened.
 
 // The resolver types whose form starts with a filled attribute mapping table.
 const MAPPING_RESOLVERS = ["EntraID", "Keycloak"];
@@ -104,4 +108,186 @@ test.describe("conditional access action", () => {
         .toBeLessThan(field.y + field.height);
     }
   });
+});
+
+// Material floats the label of an outlined field 6.75px above the top of its outline (the translateY of
+// .mdc-floating-label--float-above). A label that has not floated yet is checked where it goes on focus.
+const FLOAT_ABOVE_OUTLINE = 6.75;
+
+// The labels of outlined fields that reach above their field's own box, where a sticky header, a clipping container
+// or a scrolling dialog body can cover or cut them off. A field without a label has nothing to float.
+async function labelsOutsideTheirField(page: Page, root = "body"): Promise<string[]> {
+  return page.evaluate(
+    ({ root, floatAbove }) =>
+      [...document.querySelectorAll<HTMLElement>(`${root} .mat-form-field-appearance-outline`)].flatMap((field) => {
+        const label = field.querySelector<HTMLElement>(".mdc-floating-label");
+        const outline = field.querySelector<HTMLElement>(".mat-mdc-text-field-wrapper");
+        const box = field.getBoundingClientRect();
+        if (!label || !outline || box.height === 0) {
+          return [];
+        }
+        const labelTop = label.classList.contains("mdc-floating-label--float-above")
+          ? label.getBoundingClientRect().top
+          : outline.getBoundingClientRect().top - floatAbove;
+        const above = box.top - labelTop;
+        return above > 0.5 ? [`${label.textContent?.trim()}: ${above.toFixed(1)}px above its field`] : [];
+      }),
+    { root, floatAbove: FLOAT_ABOVE_OUTLINE }
+  );
+}
+
+test.describe("outlined field labels stay inside their field", () => {
+  for (const route of ALL_PAGES) {
+    test(route.name, async ({ page }) => {
+      await openPage(page, route.path);
+      expect(await labelsOutsideTheirField(page)).toEqual([]);
+    });
+  }
+
+  for (const detail of DETAIL_PAGES) {
+    test(detail.name, async ({ page }) => {
+      const notOpened = await openFirstRecord(page, detail);
+      test.skip(!!notOpened, notOpened);
+      expect(await labelsOutsideTheirField(page)).toEqual([]);
+    });
+  }
+
+  // The dialog opens with the new name's field at the top of its scrolling body.
+  test("copy policy dialog", async ({ page }) => {
+    await openPage(page, "policies");
+    const checkbox = page.locator("tr.mat-mdc-row mat-checkbox input").first();
+    test.skip((await checkbox.count()) === 0, "no policy to copy");
+    await checkbox.check({ force: true });
+    await page.getByRole("button", { name: "Copy" }).first().click();
+    const dialog = page.locator("mat-dialog-container");
+    await expect(dialog.locator(".mat-form-field-appearance-outline").first()).toBeVisible();
+    await settle(page);
+    expect(await labelsOutsideTheirField(page, "mat-dialog-container")).toEqual([]);
+    await page.keyboard.press("Escape");
+  });
+});
+
+selfTest.describe("self-service: outlined field labels stay inside their field", () => {
+  selfTest.skip(!SELF_USER || !SELF_PASS, "E2E_SELF_USER and E2E_SELF_PASS are not set");
+
+  for (const route of SELF_PAGES) {
+    selfTest(route.name, async ({ page }) => {
+      await page.goto(route.path, { waitUntil: "networkidle" });
+      await settleContent(page);
+      expect(await labelsOutsideTheirField(page)).toEqual([]);
+    });
+  }
+});
+
+// The small controls in the row of a labelled outlined field whose middle is more than 2px off the middle of the
+// field's outline: buttons, checkboxes, switches, button toggle groups and the outline of another field. The field
+// must be the only labelled field of the row's item that holds it; a control beside a group of stacked fields is not
+// beside any one of them. Controls taller than the outline, and those on another line of a wrapped row, are left out.
+// 2px is what the hand-set offsets for a hint line leave: they take a step of the spacing scale for its height.
+async function controlsOffTheOutline(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const OUTLINE = ".mat-mdc-text-field-wrapper";
+    const LABELLED =
+      ".mat-form-field-appearance-outline:has(> .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label))";
+    const CONTROLS = `.mat-mdc-button-base, .mdc-checkbox, .mdc-switch, .mat-button-toggle-group, ${OUTLINE}`;
+    const shown = (element: Element, rect: DOMRect) =>
+      rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== "hidden";
+    const isRow = (element: Element) => {
+      const style = getComputedStyle(element);
+      if (style.display.includes("flex")) {
+        return !style.flexDirection.startsWith("column");
+      }
+      return style.display.includes("grid") && style.gridTemplateColumns.split(" ").length > 1;
+    };
+    const named = (element: Element) =>
+      (element.closest("mat-checkbox, mat-slide-toggle, .mat-mdc-form-field, button")?.textContent ?? "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 40);
+    const problems: string[] = [];
+    for (const field of document.querySelectorAll(LABELLED)) {
+      const outlineElement = field.querySelector(OUTLINE)!;
+      const outline = outlineElement.getBoundingClientRect();
+      if (!shown(outlineElement, outline)) {
+        continue;
+      }
+      const middle = (outline.top + outline.bottom) / 2;
+      const label = field.querySelector(".mdc-floating-label")?.textContent?.trim();
+      const seen = new Set<Element>();
+      let item = field;
+      for (let level = 0; level < 3 && item.parentElement; level++, item = item.parentElement) {
+        const row = item.parentElement;
+        if (!isRow(row)) {
+          continue;
+        }
+        if (item !== field && item.querySelectorAll(LABELLED).length > 1) {
+          break;
+        }
+        for (const neighbour of row.children) {
+          if (neighbour === item) {
+            continue;
+          }
+          for (const control of [neighbour, ...neighbour.querySelectorAll(CONTROLS)]) {
+            if (!control.matches(CONTROLS) || seen.has(control)) {
+              continue;
+            }
+            seen.add(control);
+            // A button inside a field (a suffix, a clear button) belongs to that field.
+            if (!control.matches(OUTLINE) && control.closest(".mat-mdc-form-field")) {
+              continue;
+            }
+            const rect = control.getBoundingClientRect();
+            const besideOutline = rect.bottom > outline.top && rect.top < outline.bottom;
+            if (!shown(control, rect) || rect.height > outline.height + 1 || !besideOutline) {
+              continue;
+            }
+            const offset = (rect.top + rect.bottom) / 2 - middle;
+            if (Math.abs(offset) > 2) {
+              problems.push(`${label} ~ "${named(control)}": ${offset.toFixed(1)}px`);
+            }
+          }
+        }
+      }
+    }
+    return problems;
+  });
+}
+
+// Opens every closed expansion panel, so the fields in conditional access stages, token types and the like are
+// checked too. Panels can hold panels, so it goes round until no closed panel is left, five rounds at most.
+async function openAllPanels(page: Page): Promise<void> {
+  for (let round = 0; round < 5; round++) {
+    const opened = await page.evaluate(() => {
+      const headers = [
+        ...document.querySelectorAll<HTMLElement>(
+          "mat-expansion-panel:not(.mat-expanded):not([disabled]) > mat-expansion-panel-header"
+        )
+      ].filter((header) => header.getBoundingClientRect().height > 0);
+      headers.forEach((header) => header.click());
+      return headers.length;
+    });
+    await settle(page);
+    if (opened === 0) {
+      break;
+    }
+  }
+}
+
+test.describe("controls beside an outlined field sit on the middle of its outline", () => {
+  for (const route of ALL_PAGES) {
+    test(route.name, async ({ page }) => {
+      await openPage(page, route.path);
+      await openAllPanels(page);
+      expect(await controlsOffTheOutline(page)).toEqual([]);
+    });
+  }
+
+  for (const detail of DETAIL_PAGES) {
+    test(detail.name, async ({ page }) => {
+      const notOpened = await openFirstRecord(page, detail);
+      test.skip(!!notOpened, notOpened);
+      await openAllPanels(page);
+      expect(await controlsOffTheOutline(page)).toEqual([]);
+    });
+  }
 });
