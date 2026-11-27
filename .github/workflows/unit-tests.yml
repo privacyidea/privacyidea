@@ -226,6 +226,16 @@ jobs:
           python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration and not backup" tests/
         fi
 
+    - name: Test the new suite with pytest
+      # tests_new (#6368): every test runs on its own, so the tests are shuffled (-p randomly) and spread over the
+      # workers one by one instead of file by file. It reuses the per-worker databases created above and runs even
+      # when the old suite failed.
+      if: ${{ !cancelled() }}
+      env:
+        TEST_DATABASE_URL: ${{ inputs.test-database-url }}
+        PYTHONWARNINGS: "once::DeprecationWarning"
+      run: python -b -m pytest -v -n "$WORKERS" -p randomly tests_new/
+
     - name: Codecov upload
       if: ${{ inputs.coverage && steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.max }}
       uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1

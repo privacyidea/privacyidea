@@ -81,9 +81,13 @@ test = [
     "pyparsing",
     "pytest",
     "pytest-cov",
+    "pytest-mock",
+    "pytest-randomly",
+    "pytest-socket",
     "pytest-xdist",
     "responses",
-    "testfixtures"
+    "testfixtures",
+    "time-machine"
 ]
 doc = [
     "Pallets-Sphinx-Themes",
@@ -188,9 +192,14 @@ select = ["E", "W", "F", "UP"]
 "privacyidea/migrations/versions/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
+# pytest-randomly shuffles every run it is installed for. The old tests in tests/ rely on their order, so it is off by
+# default; the new suite turns it on with -p randomly (see tests_new/README.md). --allow-unix-socket only matters for
+# the network guard of tests_new, which blocks connections to other hosts.
+addopts = ["-p", "no:randomly", "--strict-markers", "--allow-unix-socket"]
 markers = [
     "migration: marks tests as database migration tests (run separately with -m migration)",
     "backup: marks backup/restore round-trip tests needing a live DB and client tools (run separately with -m backup)",
+    "integration: tests_new only: talks to real servers, so the network guard lets it connect anywhere",
 ]
 filterwarnings = [
     "once::DeprecationWarning",
