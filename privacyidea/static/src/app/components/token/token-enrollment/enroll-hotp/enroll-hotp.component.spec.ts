@@ -33,7 +33,8 @@ import {
   clickCheckbox,
   flushFixture,
   matSelectAt,
-  pickOption
+  pickOption,
+  typeInto
 } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
 
@@ -381,7 +382,7 @@ describe("EnrollHotpComponent", () => {
       createAndInit();
       expect(component.generateOnServerForm().dirty()).toBe(false);
 
-      await clickCheckbox(fixture, "mat-checkbox.server-checkbox");
+      await clickCheckbox(fixture, "mat-checkbox:last-of-type");
 
       expect(component.generateOnServer()).toBe(false);
       expect(component.generateOnServerForm().dirty()).toBe(true);
@@ -391,7 +392,7 @@ describe("EnrollHotpComponent", () => {
       (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
       createAndInit();
 
-      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+      await clickCheckbox(fixture, "mat-checkbox:not(:last-of-type)");
 
       expect(component.twoStepEnabled()).toBe(true);
       expect(component.twoStepEnabledForm().dirty()).toBe(true);
@@ -403,8 +404,8 @@ describe("EnrollHotpComponent", () => {
       auth.checkForceServerGenerateOTPKey.mockReturnValue(true);
       createAndInit();
 
-      expect(checkboxInput(fixture, "mat-checkbox.server-checkbox").disabled).toBe(true);
-      expect(checkboxInput(fixture, "mat-checkbox:not(.server-checkbox)").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:last-of-type").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:not(:last-of-type)").disabled).toBe(true);
     });
 
     it("writes the picked OTP length and hash algorithm to the model", async () => {
@@ -439,7 +440,7 @@ describe("EnrollHotpComponent", () => {
       expect(component.hashAlgorithm()).toBe("sha1");
     });
 
-    it("renders the OTP key errors once the field was touched", async () => {
+    it("renders only the required error for an empty OTP key once the field was touched", async () => {
       createAndInit();
       component.generateOnServer.set(false);
       await flushFixture(fixture);
@@ -448,9 +449,23 @@ describe("EnrollHotpComponent", () => {
       fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
       await flushFixture(fixture);
 
-      const text = fixture.nativeElement.textContent;
-      expect(text).toContain("OTP key is required");
-      expect(text).toContain("OTP key must be at least 16 characters long.");
+      expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).not.toContain("at least 16 characters");
+    });
+
+    it("renders only the length error for an OTP key shorter than 16 characters", async () => {
+      createAndInit();
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      const input = fixture.nativeElement.querySelector("input[matInput]");
+      await typeInto(fixture, input, "0123456789");
+      input.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
+      expect(fixture.nativeElement.textContent).not.toContain("OTP key is required");
     });
   });
 

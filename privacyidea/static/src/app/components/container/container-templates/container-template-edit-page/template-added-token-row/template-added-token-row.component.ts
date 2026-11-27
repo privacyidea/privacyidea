@@ -26,6 +26,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { TokenEnrollmentData, TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { ENROLL_FORM_FIELD_OPTIONS } from "@components/token/token-enrollment/token-enrollment.constants";
 import { tokenTypes } from "@utils/token.utils";
 
 @Component({
@@ -40,7 +41,8 @@ import { tokenTypes } from "@utils/token.utils";
     EnrollTokenTypeSwitchComponent
   ],
   templateUrl: "./template-added-token-row.component.html",
-  styleUrls: ["./template-added-token-row.component.scss"]
+  styleUrls: ["./template-added-token-row.component.scss"],
+  providers: [ENROLL_FORM_FIELD_OPTIONS]
 })
 export class TemplateAddedTokenRowComponent {
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();

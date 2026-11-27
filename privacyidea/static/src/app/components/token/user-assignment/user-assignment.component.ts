@@ -32,7 +32,6 @@ import { blurErrorStateMatcher, clearField, hasError } from "@utils/form-state.u
 @Component({
   selector: "app-user-assignment",
   templateUrl: "./user-assignment.component.html",
-  styleUrls: ["./user-assignment.component.scss"],
   standalone: true,
   imports: [
     ClearableInputComponent,

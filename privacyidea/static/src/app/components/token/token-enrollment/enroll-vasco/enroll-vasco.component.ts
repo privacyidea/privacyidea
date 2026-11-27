@@ -16,12 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, forwardRef, inject, input, signal } from "@angular/core";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { Component, computed, forwardRef, inject, input, signal } from "@angular/core";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -33,9 +35,21 @@ import {
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
 
+// A VASCO token blob: 248 bytes as hex.
+const BLOB_PATTERN = /^[0-9a-fA-F]{496}$/;
+
+// The VASCO serial: the first ten bytes of the blob.
+function vascoSerialFromBlob(blob: string): string {
+  let serial = "";
+  for (let i = 0; i < 20; i += 2) {
+    serial += String.fromCharCode(parseInt(blob.slice(i, i + 2), 16));
+  }
+  return serial;
+}
+
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: "vasco";
-  otpKey?: string;
+  otpKey: string;
   useVascoSerial: boolean;
   vascoSerial?: string;
 }
@@ -45,6 +59,7 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
   templateUrl: "./enroll-vasco.component.html",
+  styleUrl: "./enroll-vasco.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollVascoComponent) }
   ]
@@ -52,55 +67,39 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollVascoComponent extends EnrollTokenBase<VascoEnrollmentData> {
   protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(VascoApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
   disabled = input<boolean>(false);
+  // A rolled over token keeps its serial, so the serial from the blob is neither offered nor sent.
+  rollover = input<boolean>(false);
 
   useVascoSerial = signal<boolean>(false);
   otpKey = signal<string>("");
-  vascoSerial = signal<string>("");
+  // The serial is the start of the blob; the checkbox only decides whether the token gets it.
+  vascoSerial = computed(() => (BLOB_PATTERN.test(this.otpKey()) ? vascoSerialFromBlob(this.otpKey()) : ""));
 
   useVascoSerialForm = form(this.useVascoSerial);
 
   otpKeyForm = form(this.otpKey, (f) => {
-    validate(f, (ctx) => (ctx.value().length !== 496 ? [{ kind: "invalidLength" }] : []));
-    disabled(f, () => this.disabled() || this.useVascoSerial());
-  });
-
-  vascoSerialForm = form(this.vascoSerial, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !this.useVascoSerial());
+    pattern(f, BLOB_PATTERN);
+    disabled(f, () => this.disabled());
   });
-
-  static convertOtpKeyToVascoSerial(otpHex: string): string {
-    let vascoOtpStr = "";
-    if (!otpHex || otpHex.length !== 496) {
-      return "";
-    }
-    for (let i = 0; i < otpHex.length; i += 2) {
-      vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));
-    }
-    return vascoOtpStr.slice(0, 10);
-  }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<VascoEnrollmentData> | null {
-    if (!this.useVascoSerial() && !this.otpKeyForm().valid()) {
+    if (!this.otpKeyForm().valid()) {
       this.otpKeyForm().markAsTouched();
-      return null;
-    }
-    if (this.useVascoSerial() && !this.vascoSerialForm().valid()) {
-      this.vascoSerialForm().markAsTouched();
       return null;
     }
 
     const enrollmentData: VascoEnrollmentOptions = {
       ...basicOptions,
       type: "vasco",
-      useVascoSerial: this.useVascoSerial()
+      otpKey: this.otpKey(),
+      useVascoSerial: this.useVascoSerial() && !basicOptions.rollover
     };
-
     if (enrollmentData.useVascoSerial) {
       enrollmentData.vascoSerial = this.vascoSerial();
-    } else {
-      enrollmentData.otpKey = this.otpKey();
     }
     return {
       data: enrollmentData,

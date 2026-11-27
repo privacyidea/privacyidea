@@ -99,7 +99,7 @@
     <app-enroll-u2f />
   }
   @case ("vasco") {
-    <app-enroll-vasco />
+    <app-enroll-vasco [rollover]="rollover()" />
   }
   @case ("webauthn") {
     <app-enroll-webauthn />

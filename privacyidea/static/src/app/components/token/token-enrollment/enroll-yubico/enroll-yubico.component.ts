@@ -21,7 +21,7 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, maxLength, minLength, required } from "@angular/forms/signals";
 
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -36,6 +36,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -58,12 +60,15 @@ export class EnrollYubicoComponent extends EnrollTokenBase<YubicoEnrollmentData>
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
   disabled = input<boolean>(false);
 
   yubicoIdentifier = signal<string>("");
   yubicoIdentifierForm = form(this.yubicoIdentifier, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length !== 12 ? [{ kind: "invalidLength" }] : []));
+    minLength(f, 12);
+    maxLength(f, 12);
     disabled(f, () => this.disabled());
   });
 

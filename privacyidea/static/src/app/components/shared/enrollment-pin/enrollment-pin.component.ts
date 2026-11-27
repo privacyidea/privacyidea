@@ -28,7 +28,9 @@ import { MaskedInputComponent } from "../masked-input/masked-input.component";
   selector: "app-enrollment-pin",
   standalone: true,
   imports: [MaskedInputComponent],
-  templateUrl: "./enrollment-pin.component.html"
+  templateUrl: "./enrollment-pin.component.html",
+  // The heading and the fields take part in the layout of the parent form.
+  host: { class: "enroll-contents" }
 })
 export class EnrollmentPinComponent {
   setPinControl = input.required<FieldTree<string>>();

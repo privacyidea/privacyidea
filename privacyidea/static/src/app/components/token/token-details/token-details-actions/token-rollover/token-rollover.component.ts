@@ -24,6 +24,7 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentFlow } from "@components/token/token-enrollment/enrollment-flow";
+import { ENROLL_FORM_FIELD_OPTIONS } from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -36,7 +37,8 @@ import { Observable, lastValueFrom } from "rxjs";
   selector: "app-token-rollover",
   imports: [DialogWrapperComponent, EnrollTokenTypeSwitchComponent],
   standalone: true,
-  templateUrl: "./token-rollover.component.html"
+  templateUrl: "./token-rollover.component.html",
+  providers: [ENROLL_FORM_FIELD_OPTIONS]
 })
 export class TokenRolloverComponent extends AbstractDialogComponent<
   {
