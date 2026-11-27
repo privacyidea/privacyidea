@@ -680,7 +680,8 @@ If this policy is set, the user can skip the enrollment that the policy
 ``enroll_via_multichallenge_optional`` in the ``detail`` object, and the client can cancel
 the enrollment by sending ``cancel_enrollment=1`` together with the ``transaction_id`` to
 ``/validate/check``. The token or container that was created for the enrollment is removed
-and the authentication succeeds.
+and the authentication succeeds. The client must send the cancellation before the challenge
+expires. After that, the server refuses the cancellation, and the token or container stays.
 
 If this policy is not set, the user has to enroll the token or container. This is the default.
 

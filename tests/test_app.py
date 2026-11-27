@@ -39,6 +39,27 @@ def isolated_config_file():
             yield
 
 
+def restore_handlers(logger: logging.Logger, handlers: list[logging.Handler]) -> None:
+    """
+    Give the logger its earlier handlers again, and close the handlers that the test added.
+
+    A handler that no logger holds is freed by the next logging configuration without being closed, and its log file
+    stays open. An earlier handler that the logging configuration of the test closed is not given back, because a
+    closed file handler opens its file again on the next message.
+    """
+    for handler in logger.handlers:
+        if handler not in handlers:
+            handler.close()
+    kept_handlers = []
+    for handler in handlers:
+        if handler._closed:
+            # It can have opened its file again since then
+            handler.close()
+        else:
+            kept_handlers.append(handler)
+    logger.handlers = kept_handlers
+
+
 class FactoryStopped(Exception):
     """Raised by a patched step of an app factory, so that a test stops the factory at that step."""
 
@@ -66,7 +87,7 @@ class AppTestCase(unittest.TestCase):
         self.level = self.logger.level
 
     def tearDown(self):
-        self.logger.handlers = self.orig_handlers
+        restore_handlers(self.logger, self.orig_handlers)
         self.logger.level = self.level
 
     def test_01_create_default_app(self):
@@ -253,9 +274,10 @@ class HashConfigTestCase(unittest.TestCase):
         self.logging_configs = (copy.deepcopy(DEFAULT_LOGGING_CONFIG), copy.deepcopy(DOCKER_LOGGING_CONFIG))
 
     def tearDown(self):
-        self.logger.handlers = self.orig_handlers
+        restore_handlers(self.logger, self.orig_handlers)
         self.logger.level = self.level
-        self.pi_logger.handlers, self.pi_logger.level, self.pi_logger.propagate = self.pi_state
+        pi_handlers, self.pi_logger.level, self.pi_logger.propagate = self.pi_state
+        restore_handlers(self.pi_logger, pi_handlers)
         for logging_config, saved in zip((DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG), self.logging_configs):
             logging_config.clear()
             logging_config.update(saved)

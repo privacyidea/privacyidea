@@ -22,9 +22,8 @@ __doc__ = """This module writes statistics data to the SQL database table "monit
 import logging
 from privacyidea.lib.monitoringmodules.base import Monitoring as MonitoringBase
 from privacyidea.lib.pooling import get_engine, engines_are_shared
-from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string, convert_timestamp_to_utc
-from privacyidea.lib.lifecycle import register_finalizer
+from privacyidea.lib.lifecycle import register_session_finalizer
 from sqlalchemy import MetaData, delete, select, distinct
 from sqlalchemy import and_
 from privacyidea.models import MonitoringStats
@@ -54,12 +53,10 @@ class Monitoring(MonitoringBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        # Outside a request (pi-manage, a cron job, a background thread) nothing tears the
-        # application context down, so a finalizer registered there would never run and would
-        # only keep this object - and with it an open database connection - alive for the
-        # lifetime of the process.
-        if is_request_context():
-            register_finalizer(self._finalize_session)
+        # Outside a request, for example in pi-manage or privacyidea-cron, the finalizer runs when
+        # the application context ends. Without it, the process would exit with the connection
+        # still open.
+        register_session_finalizer(self.session, self._finalize_session)
         self.session._model_changes = {}
 
     def _finalize_session(self) -> None:

@@ -115,10 +115,11 @@ class UserNotificationEventHandler(BaseEventHandler):
         :return: body with the attached QR-Code image
         """
         # get the image part of the url
-        url = urlopen(url_img)  # nosec B310   # no user input
+        with urlopen(url_img) as url:  # nosec B310   # no user input
+            image = url.read()
         mail_body = MIMEMultipart('related')
         mail_body.attach(MIMEText(body, mimetype))
-        mail_img = MIMEImage(url.read())
+        mail_img = MIMEImage(image)
         mail_img.add_header('Content-ID', '<token_image>')
         mail_img.add_header('Content-Disposition',
                             f'inline; filename="{serial}.png"')
