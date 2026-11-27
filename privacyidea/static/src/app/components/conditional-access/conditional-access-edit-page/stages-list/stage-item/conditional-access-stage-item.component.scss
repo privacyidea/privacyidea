@@ -82,10 +82,17 @@
 
 // The checkbox and its info icon stay glued together as one control, so the parent's 16px gap
 // separates them from the field rather than pushing the icon away from the label it explains.
+// Starts below the room for the field's label and is centred on the field's outline.
 .ca-stage-error-message-toggle {
   align-items: center;
   display: flex;
   flex: 0 0 auto;
+  padding-top: calc(var(--form-field-label-room) + 8px);
+}
+
+// Centred on the field's outline, below the room for its label.
+.ca-stage-error-message-reset {
+  margin-top: calc(var(--form-field-label-room) + 8px);
 }
 
 // The reset button sits beside the field, aligned to the input rather than centred on the
