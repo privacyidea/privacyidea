@@ -62,8 +62,9 @@
         <mat-icon>open_in_new</mat-icon>
       </button>
     </div>
+    <app-enrollment-policy-error [error]="enrollmentPoliciesError()" />
     <app-enroll-token-type-switch
-      [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
+      [tokenTypeKey]="tokenType().key"
       [wizard]="wizard"
       [enrollmentPolicies]="enrollmentPolicyState()" />
     @if (descriptionRequired()) {

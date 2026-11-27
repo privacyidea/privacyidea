@@ -60,6 +60,7 @@ import {
 } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
@@ -174,6 +175,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     ClearableInputComponent,
     ScrollToTopDirective,
     UserAssignmentComponent,
+    EnrollmentPolicyErrorComponent,
     EnrollTokenTypeSwitchComponent,
     EnrollmentPinComponent,
     MatError,
@@ -204,14 +206,16 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
+  /** The token type that is shown, its policies are requested for and that is enrolled. */
+  protected readonly tokenType = computed<TokenType>(() => this.tokenService.selectedTokenType());
   enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
-    source: this.tokenService.selectedTokenType,
+    source: () => this.tokenType(),
     computation: () => null
   });
   tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
-      return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
+      return tokenTypes.find((type) => type.key === this.tokenType().key)?.text;
     }
   });
   serial = signal<string | null>(null);
@@ -241,7 +245,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   /** The target the enrollment policies are evaluated for, as POST /token/init would see it. */
   readonly enrollmentTarget = computed<EnrollmentPolicyTarget | undefined>(
     () => {
-      const type = this.tokenService.selectedTokenType()?.key;
+      const type = this.tokenType()?.key;
       if (!type) {
         return undefined;
       }
@@ -307,12 +311,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     return state.state === "loaded" && state.policies.require_description;
   });
 
-  isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? ""));
+  isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenType()?.key ?? ""));
   protected readonly showOnlyAddToRealm = computed(
-    () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
+    () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenType()?.key ?? "")
   );
   protected readonly showPinFields = computed(
-    () => !NO_PIN_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
+    () => !NO_PIN_TOKEN_TYPES.includes(this.tokenType()?.key ?? "")
   );
 
   description = signal<string>("");
@@ -393,7 +397,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return null;
     }
     const strategy = sw.currentStrategy();
-    if (strategy === undefined && !!this.tokenService.selectedTokenType()?.key) {
+    if (strategy === undefined && !!this.tokenType()?.key) {
       return $localize`:@@token.enrollmentUnsupportedType:Enrollment is not available for this token type.`;
     }
     return strategy?.enrollmentBlockedReason() ?? null;
@@ -408,7 +412,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   );
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
+    source: () => this.tokenType(),
     computation: () => null
   });
   canReopenEnrollmentDialog = computed(
@@ -447,7 +451,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private registerPendingChanges(): void {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(
-      () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
+      () => !!this.tokenType()?.key && !this.isFormInvalid()
     );
     this.pendingChangesService.registerSave(() => this.enrollToken());
   }
@@ -505,7 +509,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.touchFields();
     this.enrollSwitch()
       ?.currentStrategy()
-      ?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenService.selectedTokenType().key));
+      ?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenType().key));
   }
 
   private basicEnrollmentOptions(tokenTypeKey: TokenTypeKey): TokenEnrollmentData {
@@ -553,7 +557,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       }
       await firstValueFrom(merge(this.policiesSettled, this.policyUsernameApplied));
     }
-    const currentTokenType = this.tokenService.selectedTokenType();
+    const currentTokenType = this.tokenType();
     if (!currentTokenType) {
       this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;

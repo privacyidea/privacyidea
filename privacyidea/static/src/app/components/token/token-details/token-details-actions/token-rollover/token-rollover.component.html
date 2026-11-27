@@ -22,9 +22,7 @@
   [title]="title()"
   [actions]="dialogActions()">
   <div>
-    @if (enrollmentPoliciesError(); as policyError) {
-      <p class="inline-warning">{{ policyError }}</p>
-    }
+    <app-enrollment-policy-error [error]="enrollmentPoliciesError()" />
     <app-enroll-token-type-switch
       [tokenTypeKey]="token()?.type ?? ''"
       [enrollmentData]="token()"

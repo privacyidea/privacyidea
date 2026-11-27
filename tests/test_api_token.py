@@ -7402,3 +7402,50 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
             delete_policy("init_policies_user_r1")
             delete_policy("init_policies_user_r2")
             delete_policy(self.enroll_policy)
+
+    def test_10_serial_only_uses_owner_realm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self._set_enroll_policy()
+        set_policy("init_policies_owner_2step", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
+        set_policy("init_policies_owner_genkey", scope=SCOPE.ADMIN,
+                   action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", realm=self.realm1)
+        set_policy("init_policies_owner_desc", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp", realm=self.realm1)
+        set_policy("init_policies_owner_sms", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS}=gw1 gw2",
+                   realm=self.realm1)
+        otpkey = "31323334353637383930313233343536373839dd"
+        serials = {self.realm1: {"hotp": "INITPOLOWNH1", "sms": "INITPOLOWNS1"},
+                   self.realm2: {"hotp": "INITPOLOWNH2", "sms": "INITPOLOWNS2"}}
+        for realm, realm_serials in serials.items():
+            user = User("cornelius", realm)
+            init_token({"serial": realm_serials["hotp"], "type": "hotp", "otpkey": otpkey}, user=user)
+            init_token({"serial": realm_serials["sms"], "type": "sms", "phone": "123456", "otpkey": otpkey},
+                       user=user)
+        try:
+            # Like the rollover dialog, the request names only the serial and the type, so the policies are matched
+            # for the realm of the owner of the token
+            value = self._get_value({"serial": serials[self.realm1]["hotp"], "type": "hotp"})
+            self.assertEqual("force", value["2step"])
+            self.assertIs(True, value["force_server_generate"])
+            self.assertIs(True, value["require_description"])
+
+            value = self._get_value({"serial": serials[self.realm1]["sms"], "type": "sms"})
+            self.assertEqual(["gw1", "gw2"], sorted(value["sms_gateways"]))
+
+            value = self._get_value({"serial": serials[self.realm2]["hotp"], "type": "hotp"})
+            self.assertIsNone(value["2step"])
+            self.assertIs(False, value["force_server_generate"])
+            self.assertIs(False, value["require_description"])
+
+            value = self._get_value({"serial": serials[self.realm2]["sms"], "type": "sms"})
+            self.assertEqual([], value["sms_gateways"])
+        finally:
+            for realm_serials in serials.values():
+                for serial in realm_serials.values():
+                    remove_token(serial)
+            delete_policy("init_policies_owner_2step")
+            delete_policy("init_policies_owner_genkey")
+            delete_policy("init_policies_owner_desc")
+            delete_policy("init_policies_owner_sms")
+            delete_policy(self.enroll_policy)

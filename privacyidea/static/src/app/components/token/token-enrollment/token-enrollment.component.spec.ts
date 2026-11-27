@@ -1351,6 +1351,19 @@ describe("TokenEnrollmentComponent", () => {
       req2.flush("");
     });
 
+    it("requests the policies of the type it enrolls, not of the selected one", () => {
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, default_tokentype: "totp" });
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.getEnrollmentPolicies.mockClear();
+
+      wizardFixture.detectChanges();
+      TestBed.tick();
+      httpTestingController.match(() => true).forEach((req) => req.flush(""));
+
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenCalledWith(expect.objectContaining({ type: "totp" }));
+      expect(tokenService.getEnrollmentPolicies).not.toHaveBeenCalledWith(expect.objectContaining({ type: "hotp" }));
+    });
+
     it("disables the enroll button and shows the blocking reason on it", () => {
       // Set before the first render so isFormInvalid picks it up.
       wizardComponent.enrollmentBlockedReason = signal("no right");
@@ -1753,6 +1766,46 @@ describe("TokenEnrollmentComponent", () => {
       expect(fresh.enrollmentBlockedReason()).toContain(message);
       expect(fresh.isFormInvalid()).toBe(true);
       expect(freshFixture.nativeElement.textContent).toContain(message);
+    });
+
+    describe("policy error as alert", () => {
+      const message = "There are policies with conflicting actions: ['a', 'b']";
+      const failPolicies = () =>
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          throwError(
+            () =>
+              new HttpErrorResponse({
+                status: 403,
+                error: { result: { status: false, error: { code: 303, message } } }
+              })
+          )
+        );
+      const alertOf = (element: HTMLElement) => element.querySelector("p.inline-warning[role=alert]");
+
+      it("announces the error on the admin page", () => {
+        failPolicies();
+        const adminFixture = TestBed.createComponent(TokenEnrollmentComponent);
+        adminFixture.detectChanges();
+
+        expect(alertOf(adminFixture.nativeElement)?.textContent).toContain(message);
+      });
+
+      it("announces the error in self service", () => {
+        failPolicies();
+        const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+        selfFixture.detectChanges();
+
+        expect(alertOf(selfFixture.nativeElement)?.textContent).toContain(message);
+      });
+
+      it("shows and announces the error in the wizard", () => {
+        failPolicies();
+        const wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+        wizardFixture.detectChanges();
+        httpTestingController.match(() => true).forEach((req) => req.flush(""));
+
+        expect(alertOf(wizardFixture.nativeElement)?.textContent).toContain(message);
+      });
     });
 
     it("passes the blocked reason to the type selector", () => {

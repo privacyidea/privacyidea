@@ -25,6 +25,7 @@ import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
@@ -57,6 +58,7 @@ import { Observable, lastValueFrom, of, switchMap } from "rxjs";
   selector: "app-token-rollover",
   imports: [
     DialogWrapperComponent,
+    EnrollmentPolicyErrorComponent,
     EnrollTokenTypeSwitchComponent,
     FormField,
     MatError,

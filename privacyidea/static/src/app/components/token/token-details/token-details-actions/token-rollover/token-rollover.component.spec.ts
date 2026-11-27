@@ -280,6 +280,7 @@ describe("TokenRolloverComponent", () => {
       const failed = createRollover();
       expect(rolloverDisabled(failed)).toBe(true);
       expect(failed.nativeElement.textContent).toContain(message);
+      expect(failed.nativeElement.querySelector("p.inline-warning[role=alert]")?.textContent).toContain(message);
 
       tokenService.getEnrollmentPolicies.mockReturnValue(of(MockPiResponse.fromValue<EnrollmentPolicies>(policies)));
       expect(rolloverDisabled(createRollover())).toBe(false);

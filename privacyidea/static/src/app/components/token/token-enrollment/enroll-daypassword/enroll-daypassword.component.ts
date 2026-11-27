@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, forwardRef, inject, input, linkedSignal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -30,8 +30,11 @@ import {
 } from "@app/mappers/token-api-payload/daypassword-token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
+  FieldPreset,
   loadedEnrollmentPolicies,
-  numericPolicyValue
+  numericPolicyValue,
+  presetOrChoice,
+  samePreset
 } from "@components/token/token-enrollment/enrollment-policy-values";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -93,14 +96,50 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
     () => this.forceServerGenerate() || (this.enrollmentData()?.generateOnServer ?? true)
   );
   otpKey = linkedSignal(() => this.enrollmentData()?.otpKey ?? "");
-  otpLength = linkedSignal(() => this.otpLengthPolicy() ?? this.enrollmentData()?.otpLength ?? 6);
-  hashAlgorithm = linkedSignal<string>(() => {
-    const data = this.enrollmentData();
-    return this.hashlibPolicy() ?? (data ? (data.hashAlgorithm ?? "sha256") : this.defaultHashlib());
+  private readonly otpLengthPreset = computed<FieldPreset<number>>(
+    () => {
+      const policy = this.otpLengthPolicy();
+      return { value: policy ?? this.enrollmentData()?.otpLength ?? 6, locked: policy !== undefined };
+    },
+    { equal: samePreset }
+  );
+  private readonly hashAlgorithmPreset = computed<FieldPreset<string>>(
+    () => {
+      const policy = this.hashlibPolicy();
+      const data = this.enrollmentData();
+      return {
+        value: policy ?? (data ? (data.hashAlgorithm ?? "sha256") : this.defaultHashlib()),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  private readonly timeStepPreset = computed<FieldPreset<string>>(
+    () => {
+      const policy = this.timeStepPolicy();
+      const data = this.enrollmentData();
+      return {
+        value: policy ?? (data ? (data.timeStep ?? "24h") : this.defaultTimeStep()),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  // A value the user picked is kept when the preset changes later, even one that equals the preset.
+  private readonly otpLengthChosen = signal(false);
+  private readonly hashAlgorithmChosen = signal(false);
+  private readonly timeStepChosen = signal(false);
+  otpLength = linkedSignal<FieldPreset<number>, number>({
+    source: this.otpLengthPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.otpLengthChosen))
   });
-  timeStep = linkedSignal<string>(() => {
-    const data = this.enrollmentData();
-    return this.timeStepPolicy() ?? (data ? (data.timeStep ?? "24h") : this.defaultTimeStep());
+  hashAlgorithm = linkedSignal<FieldPreset<string>, string>({
+    source: this.hashAlgorithmPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.hashAlgorithmChosen))
+  });
+  timeStep = linkedSignal<FieldPreset<string>, string>({
+    source: this.timeStepPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.timeStepChosen))
   });
 
   override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
@@ -134,6 +173,17 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
     required(f);
     disabled(f, () => this.disabled() || this.policiesPending() || this.timeStepPolicy() !== undefined);
   });
+
+  constructor() {
+    super();
+
+    // A pick in the field marks it dirty, which keeps its value over a later preset.
+    effect(() => {
+      if (this.otpLengthForm().dirty()) this.otpLengthChosen.set(true);
+      if (this.hashAlgorithmForm().dirty()) this.hashAlgorithmChosen.set(true);
+      if (this.timeStepForm().dirty()) this.timeStepChosen.set(true);
+    });
+  }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<DaypasswordEnrollmentData> | null {
     if (!this.generateOnServer() && !this.otpKeyForm().valid()) {

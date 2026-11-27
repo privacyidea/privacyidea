@@ -273,6 +273,50 @@ describe("EnrollDaypasswordComponent", () => {
     expect(component.timeStep()).toBe("2h");
   });
 
+  describe("a value the user picked", () => {
+    beforeEach(() => {
+      component.otpLength.set(8);
+      component.hashAlgorithm.set("sha512");
+      component.timeStep.set("1h");
+    });
+
+    it("stays when the system config changes later", () => {
+      systemService.systemConfig.set({ [DAYPASSWORD_HASHLIB]: "sha256", [DAYPASSWORD_TIME_STEP]: "12h" });
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.timeStep()).toBe("1h");
+    });
+
+    it("stays when a policy without these values loads", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.timeStep()).toBe("1h");
+    });
+
+    it("is overridden and locked by a policy value", () => {
+      fixture.componentRef.setInput(
+        "enrollmentPolicies",
+        loadedPolicies({ defaults: { hashlib: "sha256", otplen: "6", timeStep: "2h" } })
+      );
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(6);
+      expect(component.otpLengthForm().disabled()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha256");
+      expect(component.hashAlgorithmForm().disabled()).toBe(true);
+      expect(component.timeStep()).toBe("2h");
+      expect(component.timeStepForm().disabled()).toBe(true);
+    });
+  });
+
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {
