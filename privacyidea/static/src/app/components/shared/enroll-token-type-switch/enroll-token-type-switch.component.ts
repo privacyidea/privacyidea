@@ -49,6 +49,8 @@ import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enrol
 @Component({
   selector: "app-enroll-token-type-switch",
   standalone: true,
+  // The fields of the token type take part in the layout of the parent form.
+  host: { class: "enroll-contents enroll-type-switch" },
   imports: [
     EnrollHotpComponent,
     EnrollTotpComponent,
@@ -83,6 +85,8 @@ export class EnrollTokenTypeSwitchComponent {
   readonly tokenTypeKey = input.required<string>();
   readonly wizard = input(false);
   readonly enrollmentData = input<TokenEnrollmentData | null>(null);
+  // Set by the rollover dialog, where the token keeps its serial.
+  readonly rollover = input(false);
 
   // The active child enrollment component, resolved via DI. Children register themselves as `EnrollTokenBase` via
   // `providers: [{ provide, useExisting }]`.

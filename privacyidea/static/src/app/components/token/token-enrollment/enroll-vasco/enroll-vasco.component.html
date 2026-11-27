@@ -16,38 +16,35 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  <mat-form-field class="input-width-xl">
-    <mat-label i18n="@@token.vascoTokenBlob">VASCO Token Blob</mat-label>
-    <textarea
-      [formField]="otpKeyForm"
-      i18n-placeholder="@@token.enterBlob"
-      matInput
-      placeholder="Enter blob"
-      rows="6">
-    </textarea>
+<mat-form-field class="input-width-xl">
+  <mat-label i18n="@@token.vascoTokenBlob">VASCO Token Blob</mat-label>
+  <textarea
+    [formField]="otpKeyForm"
+    i18n-placeholder="@@token.enterBlob"
+    matInput
+    placeholder="Enter blob"
+    rows="6">
+  </textarea>
+  @if (hasError(otpKeyForm, ERR.required)) {
+    <mat-error i18n="@@token.vascoBlobRequired">VASCO Token blob is <strong>required</strong>.</mat-error>
+  }
+  @if (hasError(otpKeyForm, ERR.pattern)) {
     <mat-error i18n="@@token.expectedVasco"
       >Expected VASCO Token blob as <strong>496-character hex string</strong>.</mat-error
     >
-  </mat-form-field>
-  <div class="flex-row gap-16">
-    <mat-checkbox
-      [formField]="useVascoSerialForm"
-      class="flex ali-center margin-bottom-16"
-      i18n="@@token.useVascoSerial"
-      >Use VASCO Serial</mat-checkbox
-    >
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@token.vascoSerial">Vasco Serial</mat-label>
-      <input
-        [formField]="vascoSerialForm"
-        matInput />
-    </mat-form-field>
-  </div>
+  }
+</mat-form-field>
+@if (!rollover()) {
   <span
-    class="margin-bottom-16 enroll-content-width"
+    class="enroll-content-width"
     i18n="@@token.vascoSerialRead"
     >The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
     activate the checkbox. Otherwise, privacyIDEA will create a new unique serial number.</span
   >
-</div>
+  <mat-checkbox [formField]="useVascoSerialForm">
+    <span i18n="@@token.useVascoSerialFromBlob">Use VASCO serial from the blob</span>
+    @if (vascoSerial()) {
+      <code class="margin-left-8">{{ vascoSerial() }}</code>
+    }
+  </mat-checkbox>
+}

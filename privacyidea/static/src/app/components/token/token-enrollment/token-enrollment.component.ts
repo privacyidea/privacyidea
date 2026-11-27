@@ -82,6 +82,7 @@ import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import {
   CUSTOM_TOOLTIP_OPTIONS,
+  ENROLL_FORM_FIELD_OPTIONS,
   NO_PIN_TOKEN_TYPES,
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
@@ -167,7 +168,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
+    ENROLL_FORM_FIELD_OPTIONS
   ],
   templateUrl: "./token-enrollment.component.html",
   styleUrls: ["./token-enrollment.component.scss"],

@@ -1593,6 +1593,11 @@ describe("token-enrollment constants", () => {
     expect(regenerateLabel("indexedsecret")).toBe("QR Code");
   });
 
+  it("vasco → no QR and cannot regenerate, as the blob comes from the hardware token", () => {
+    expect(hasQr("vasco")).toBe(false);
+    expect(canRegenerate("vasco")).toBe(false);
+  });
+
   it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
     expect(hasQr("webauthn")).toBe(false);
     expect(canRegenerate("webauthn")).toBe(false);

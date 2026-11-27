@@ -20,7 +20,7 @@ import { Component, effect, forwardRef, inject, input, signal } from "@angular/c
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, minLength, required } from "@angular/forms/signals";
 
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -28,6 +28,8 @@ import {
   IndexedSecretEnrollmentData
 } from "@app/mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   type: "indexedsecret";
@@ -48,10 +50,13 @@ export class EnrollIndexedsecretComponent extends EnrollTokenBase<IndexedSecretE
   enrollmentData = input<IndexedSecretEnrollmentData | null>();
   disabled = input<boolean>(false);
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
   otpKey = signal<string>("");
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    minLength(f, 16);
     disabled(f, () => this.disabled());
   });
 

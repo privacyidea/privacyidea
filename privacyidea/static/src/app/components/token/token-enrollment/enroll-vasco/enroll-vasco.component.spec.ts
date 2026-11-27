@@ -23,8 +23,15 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollVascoComponent } from "./enroll-vasco.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
-import { clickCheckbox } from "@testing/enroll-form-dom";
+import { clickCheckbox, flushFixture, typeInto } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { VascoEnrollmentData } from "@app/mappers/token-api-payload/vasco-token-api-payload.mapper";
+
+// A blob whose first ten characters, hex-decoded, are the VASCO serial "VAS1234567".
+const BLOB = Array.from("VAS1234567", (char) => char.charCodeAt(0).toString(16))
+  .join("")
+  .padEnd(496, "0");
 
 describe("EnrollVascoComponent", () => {
   let component: EnrollVascoComponent;
@@ -49,16 +56,91 @@ describe("EnrollVascoComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("writes a click on the checkbox to the model and swaps the enabled field", async () => {
-    expect(component.vascoSerialForm().disabled()).toBe(true);
-    expect(component.otpKeyForm().disabled()).toBe(false);
+  const blobInput = () => fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+  const serialInLabel = () => fixture.nativeElement.querySelector("mat-checkbox code") as HTMLElement | null;
+  const build = () => component.buildEnrollmentArgs({ type: "vasco" } as TokenEnrollmentData);
 
+  it("shows the serial read from the blob in the checkbox label", async () => {
+    expect(serialInLabel()).toBeNull();
+
+    await typeInto(fixture, blobInput(), BLOB);
+
+    expect(serialInLabel()?.textContent).toBe("VAS1234567");
+  });
+
+  it("shows no serial for a blob of the right length with characters that are not hex", async () => {
+    await typeInto(fixture, blobInput(), BLOB.slice(1) + "g");
+
+    expect(serialInLabel()).toBeNull();
+  });
+
+  it("writes a click on the checkbox to the model and keeps the blob enabled", async () => {
     await clickCheckbox(fixture);
 
     expect(component.useVascoSerial()).toBe(true);
     expect(component.useVascoSerialForm().dirty()).toBe(true);
-    expect(component.vascoSerialForm().disabled()).toBe(false);
-    expect(component.otpKeyForm().disabled()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
+  });
+
+  it("sends the blob and the serial read from it when the checkbox is set", async () => {
+    await typeInto(fixture, blobInput(), BLOB);
+    await clickCheckbox(fixture);
+
+    const data = build()!.data as VascoEnrollmentData;
+    expect(data.otpKey).toBe(BLOB);
+    expect(data.vascoSerial).toBe("VAS1234567");
+  });
+
+  it("sends only the blob when the checkbox is not set", async () => {
+    await typeInto(fixture, blobInput(), BLOB);
+
+    const data = build()!.data as VascoEnrollmentData;
+    expect(data.otpKey).toBe(BLOB);
+    expect(data.vascoSerial).toBeUndefined();
+  });
+
+  it("renders only the required error for an empty blob on enrollment", async () => {
+    expect(build()).toBeNull();
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("VASCO Token blob is required");
+    expect(fixture.nativeElement.textContent).not.toContain("496-character hex string");
+  });
+
+  it.each([
+    ["too short", BLOB.slice(1)],
+    ["not hex", BLOB.slice(1) + "g"]
+  ])("renders only the format error for a blob that is %s on enrollment", async (_, blob) => {
+    await typeInto(fixture, blobInput(), blob);
+    expect(build()).toBeNull();
+    await flushFixture(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain("496-character hex string");
+    expect(fixture.nativeElement.textContent).not.toContain("VASCO Token blob is required");
+  });
+
+  describe("in a rollover", () => {
+    const rolloverOptions = { type: "vasco", serial: "VASC0001234", rollover: true } as TokenEnrollmentData;
+
+    beforeEach(async () => {
+      fixture.componentRef.setInput("rollover", true);
+      await flushFixture(fixture);
+    });
+
+    it("offers no serial from the blob", () => {
+      expect(fixture.nativeElement.querySelector("mat-checkbox")).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain("The VASCO serial is read from the VASCO blob");
+    });
+
+    it("keeps the serial of the rolled over token even if the serial from the blob was chosen", async () => {
+      await typeInto(fixture, blobInput(), BLOB);
+      component.useVascoSerial.set(true);
+
+      const args = component.buildEnrollmentArgs(rolloverOptions)!;
+
+      expect((args.data as VascoEnrollmentData).vascoSerial).toBeUndefined();
+      expect(args.mapper.toApiPayload(args.data).serial).toBe("VASC0001234");
+    });
   });
 
   it("passes the axe accessibility checks", async () => {

@@ -44,7 +44,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
+import { CUSTOM_TOOLTIP_OPTIONS, ENROLL_FORM_FIELD_OPTIONS } from "./token-enrollment.constants";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 
 @Component({
@@ -74,7 +74,8 @@ import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-se
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
     { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS },
+    ENROLL_FORM_FIELD_OPTIONS
   ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal, untracked } from "@angular/core";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, minLength, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -157,7 +157,7 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: ERR.minLength }] : []));
+    minLength(f, 16);
     disabled(f, () => this.disabled() || this.generateOnServer() || this.twoStepEnabled());
   });
 

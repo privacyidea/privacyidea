@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
-import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -38,6 +38,12 @@ import { SystemService, SystemServiceInterface } from "@services/system/system.s
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
+
+/**
+ * Digits with an optional leading + and spaces, dashes or slashes between digits. Loose on purpose: the API stores the
+ * number as given and an SMS gateway can rewrite it for its provider with its REGEXP option.
+ */
+const PHONE_NUMBER_PATTERN = /^\+?\d([\d /-]*\d)?$/;
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -93,12 +99,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
 
   phoneNumberForm = form(this.phoneNumber, (f) => {
     required(f);
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" }];
-      return [];
-    });
+    pattern(f, PHONE_NUMBER_PATTERN);
     disabled(f, () => this.disabled() || this.readNumberDynamically());
   });
 

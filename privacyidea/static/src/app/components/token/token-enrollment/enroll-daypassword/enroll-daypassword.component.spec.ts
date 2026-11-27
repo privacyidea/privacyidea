@@ -222,7 +222,7 @@ describe("EnrollDaypasswordComponent", () => {
       expect(component.hashAlgorithmForm().dirty()).toBe(true);
     });
 
-    it("renders the OTP key errors once the field was touched", async () => {
+    it("renders only the required error for an empty OTP key once the field was touched", async () => {
       component.generateOnServer.set(false);
       await flushFixture(fixture);
 
@@ -230,7 +230,20 @@ describe("EnrollDaypasswordComponent", () => {
       await flushFixture(fixture);
 
       expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).not.toContain("at least 16 characters");
+    });
+
+    it("renders only the length error for an OTP key shorter than 16 characters", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      const input = fixture.nativeElement.querySelector("input[matInput]");
+      await typeInto(fixture, input, "0123456789");
+      input.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
       expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
+      expect(fixture.nativeElement.textContent).not.toContain("OTP key is required");
     });
 
     it("accepts a typed OTP key of at least 16 characters", async () => {

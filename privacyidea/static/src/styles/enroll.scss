@@ -6,6 +6,72 @@
   margin-bottom: 16px;
 }
 
+// The form fields of an enrollment form have dynamic message sizing (ENROLL_FORM_FIELD_OPTIONS). Each one holds one
+// message line from the start, so the spacing is the same without messages and a one-line message moves nothing.
+// A field keeps its own height in a row with a taller neighbour instead of stretching its box.
+.enroll-sections .mat-mdc-form-field {
+  align-self: flex-start;
+
+  .mat-mdc-form-field-subscript-wrapper {
+    min-height: 20px;
+  }
+}
+
+// Spacing of the token enrollment forms: 16px between all fields, groups, headings and callouts. Each field keeps its
+// reserved message area and the gap comes on top of it.
+.enroll-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h4,
+  .inline-hint,
+  .inline-warning,
+  .inline-success,
+  .inline-callout {
+    margin: 0;
+  }
+}
+
+// Fields that set one thing together, side by side and wrapping onto further lines at the same distance.
+.enroll-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+// Checkboxes directly below each other or directly below a row of fields, without a gap: each checkbox brings its own
+// space around the box.
+.enroll-checkbox-group {
+  display: flex;
+  flex-direction: column;
+}
+
+// Lets the children of a wrapper element take part in the layout of its parent, e.g. a component host.
+.enroll-contents {
+  display: contents;
+}
+
+// The host of the token type component in the switch, so that the fields of the type take part in the layout of the
+// form, and a type without fields adds nothing to it.
+.enroll-type-switch > * {
+  display: contents;
+}
+
+// Running text in the colour of a form field error, e.g. a requirement the form does not meet yet.
+.enroll-text-error {
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
+// A checkbox in a row of form fields: centred on the input box of the fields, not on the box plus its message line.
+.checkbox-beside-field {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: var(--mat-form-field-container-height, 56px);
+}
+
 .inline-hint {
   margin-bottom: 16px;
   background: var(--inline-hint-bg);

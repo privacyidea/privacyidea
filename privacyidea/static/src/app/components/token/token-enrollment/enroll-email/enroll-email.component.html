@@ -16,47 +16,48 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
-  @if (!defaultSmtpIsSet()) {
-    @if (authService.role() === "admin") {
-      <span
-        i18n="@@token.eMailTokensWork"
-        class="inline-warning"
-        >For E-Mail tokens to work properly you need to set the
-        <a
-          role="button"
-          tabindex="0"
-          aria-label="Go to Email token configuration"
-          i18n-aria-label="@@token.goEmailTokenConfiguration"
-          (click)="goToEmailConfig()"
-          (keydown)="onEmailConfigKeydown($event)">
-          Email Token Configuration </a
-        >!</span
-      >
-    } @else {
-      <span
-        i18n="@@token.eMailTokenEnrollment"
-        class="inline-warning"
-        >The E-Mail token enrollment is not completely configured. Please contact your administrator.</span
-      >
-    }
+@if (!defaultSmtpIsSet()) {
+  @if (authService.role() === "admin") {
+    <span
+      i18n="@@token.eMailTokensWork"
+      class="inline-warning"
+      >For E-Mail tokens to work properly you need to set the
+      <a
+        role="button"
+        tabindex="0"
+        aria-label="Go to Email token configuration"
+        i18n-aria-label="@@token.goEmailTokenConfiguration"
+        (click)="goToEmailConfig()"
+        (keydown)="onEmailConfigKeydown($event)">
+        Email Token Configuration </a
+      >!</span
+    >
+  } @else {
+    <span
+      i18n="@@token.eMailTokenEnrollment"
+      class="inline-warning"
+      >The E-Mail token enrollment is not completely configured. Please contact your administrator.</span
+    >
   }
-  <mat-checkbox
-    [formField]="readEmailDynamicallyForm"
-    i18n="@@token.readEmailDynamically"
-    >Read email dynamically from user source on each request</mat-checkbox
-  >
-  <div class="flex-row gap-16">
-    @if (!readEmailDynamically()) {
-      <mat-form-field class="input-width-l">
-        <mat-label i18n="@@token.emailAddress">Email Address</mat-label>
-        <input
-          [formField]="emailAddressForm"
-          matInput />
-        <mat-error i18n="@@token.emailAddressRequired">Email Address is <strong>required</strong>.</mat-error>
-      </mat-form-field>
-    } @else {
-      <span class="input-width-l"></span>
+}
+<div class="enroll-group">
+  <mat-form-field class="input-width-l">
+    <mat-label i18n="@@token.emailAddress">Email Address</mat-label>
+    <input
+      [formField]="emailAddressForm"
+      matInput />
+    @if (hasError(emailAddressForm, ERR.required)) {
+      <mat-error i18n="@@token.emailAddressRequired">Email Address is <strong>required</strong>.</mat-error>
     }
+    @if (hasError(emailAddressForm, ERR.pattern)) {
+      <mat-error i18n="@@token.emailAddressFormat">Enter an email address like name&#64;example.com.</mat-error>
+    }
+  </mat-form-field>
+  <div class="checkbox-beside-field">
+    <mat-checkbox
+      [formField]="readEmailDynamicallyForm"
+      i18n="@@token.readEmailDynamically"
+      >Read email dynamically from user source on each request</mat-checkbox
+    >
   </div>
 </div>

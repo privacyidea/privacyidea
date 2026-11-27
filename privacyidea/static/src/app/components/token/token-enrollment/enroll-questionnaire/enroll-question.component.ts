@@ -23,10 +23,11 @@ import {
   forwardRef,
   inject,
   linkedSignal,
+  signal,
   Signal
 } from "@angular/core";
 import { form, FormField, validate } from "@angular/forms/signals";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -51,6 +52,9 @@ export interface QuestionAnswer {
   answer: string;
 }
 
+// Unique per instance, so the answers of each questionnaire point at its own requirement text.
+let nextId = 0;
+
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
   answers: Record<string, string>;
@@ -59,7 +63,7 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-question",
   standalone: true,
-  imports: [FormField, MatFormField, MatInput, MatLabel, MatError],
+  imports: [FormField, MatFormField, MatInput, MatLabel],
   templateUrl: "./enroll-question.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
@@ -72,6 +76,7 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly requirementId = `questionnaire-requirement-${nextId++}`;
 
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const defaultQuestions = 5;
@@ -98,16 +103,19 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
   });
 
   answeredCount = computed(() => this.answers().filter((row) => row.answer.trim() !== "").length);
+  missingCount = computed(() => Math.max(0, this.configMinNumberOfAnswers() - this.answeredCount()));
 
   answersForm = form(this.answers, (f) => {
     validate(f, () => (this.answeredCount() < this.configMinNumberOfAnswers() ? [{ kind: ERR.required }] : []));
   });
 
-  protected readonly hasError = hasError;
-  protected readonly ERR = ERR;
+  // Set by a refused enrollment, so the requirement text turns into an error only after "Enroll", not while typing.
+  private readonly enrollmentRefused = signal(false);
+  tooFewAnswers = computed(() => this.enrollmentRefused() && hasError(this.answersForm, ERR.required));
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<QuestionEnrollmentData> | null {
     if (!this.answersForm().valid()) {
+      this.enrollmentRefused.set(true);
       void touchAll(this.answersForm);
       return null;
     }
