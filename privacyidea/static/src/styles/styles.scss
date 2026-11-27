@@ -784,17 +784,6 @@ $status-colors: (
   box-shadow: var(--elevation-3);
 }
 
-// The label of an outlined field sits on the field's top border and reaches above the field's box, where the header
-// would cover it, so content that starts with a field keeps that much room below the header.
-.sticky-header
-  + :has(
-    > .mat-mdc-form-field:first-child,
-    > :first-child > .mat-mdc-form-field:first-child,
-    > :first-child > :first-child > .mat-mdc-form-field:first-child
-  ) {
-  padding-top: 8px;
-}
-
 .sticky-controls {
   display: flex;
   align-items: center;
