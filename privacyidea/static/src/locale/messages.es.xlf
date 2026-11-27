@@ -483,7 +483,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">57</context>
+          <context context-type="linenumber">67</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -503,7 +503,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">104</context>
+          <context context-type="linenumber">114</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-remembered-devices/user-details-remembered-devices.component.html</context>
@@ -8005,7 +8005,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">39</context>
+          <context context-type="linenumber">40</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.monFri918Sat" datatype="html">
@@ -8013,7 +8013,7 @@
         <target>Lun-Vie: 9-18, Sáb: 10-15</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">44</context>
+          <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValidTime" datatype="html">
@@ -8021,7 +8021,7 @@
         <target state="new">Enter a valid time format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">46</context>
+          <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValid" datatype="html">
@@ -8029,7 +8029,7 @@
         <target state="new">Enter a valid client format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">91</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.clearUserAgents" datatype="html">
@@ -8037,7 +8037,7 @@
         <target>Borrar agentes de usuario</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">145</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.noAgentsFound" datatype="html">
@@ -8045,7 +8045,7 @@
         <target>No se encontraron agentes</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">123</context>
+          <context context-type="linenumber">133</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.addCustomUser" datatype="html">
@@ -8053,7 +8053,7 @@
         <target>Añadir agente de usuario personalizado</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">141</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.usersConditions" datatype="html">
@@ -25455,7 +25455,7 @@
         <target state="new">User agents</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.usersGrid" datatype="html">
@@ -26410,6 +26410,14 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter.utils.ts</context>
           <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="policy.validTimeEndsNextDay" datatype="html">
+        <source><x id="INTERPOLATION" equiv-text="{{ timeRange.days }}"/>: <x id="INTERPOLATION_1" equiv-text="{{ timeRange.start }}"/> to <x id="INTERPOLATION_2" equiv-text="{{ timeRange.end }}"/> of the next day</source>
+        <target state="new"><x id="INTERPOLATION" equiv-text="{{ timeRange.days }}"/>: <x id="INTERPOLATION_1" equiv-text="{{ timeRange.start }}"/> to <x id="INTERPOLATION_2" equiv-text="{{ timeRange.end }}"/> of the next day</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
+          <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
     </body>
