@@ -222,20 +222,30 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
+  /** A self-service user enrolls for the login, taken at once, the user list resource loads later. */
+  private readonly loginOwner = computed(() =>
+    this.authService.role() === "user"
+      ? { user: this.authService.username(), realm: this.authService.realm(), onlyAddToRealm: false }
+      : undefined
+  );
   /** The owner the token is enrolled for, read once for the policy request and for the enrollment itself. */
-  private readonly enrollmentOwner = computed(() => ({
-    user: this.userService.selectedUser()?.username ?? "",
-    realm: this.userService.selectedUserRealm() ?? "",
-    onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false
-  }));
+  private readonly enrollmentOwner = computed(
+    () =>
+      this.loginOwner() ?? {
+        user: this.userService.selectedUser()?.username ?? "",
+        realm: this.userService.selectedUserRealm() ?? "",
+        onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false
+      }
+  );
 
   /**
    * The username the policy target is built from. A typed name is applied after the debounce delay, so that
-   * not every keystroke requests the policies. A user found in the user list and a cleared user apply at once.
+   * not every keystroke requests the policies. A user found in the user list, a cleared user and the login of a
+   * self-service user apply at once.
    */
-  private readonly policyUsername = signal("");
+  private readonly policyUsername = linkedSignal(() => this.loginOwner()?.user ?? "");
   private readonly policyUsernameDebouncer = new Debouncer(this.policyUsername);
-  private readonly selectedUsername = computed(() => this.userService.selectedUser()?.username ?? "");
+  private readonly selectedUsername = computed(() => this.enrollmentOwner().user);
   /** True while the typed name is not yet part of the policy target, the policies are then outdated. */
   private readonly policyUsernamePending = computed(() => this.selectedUsername() !== this.policyUsername());
   private readonly policyUsernamePending$ = toObservable(this.policyUsernamePending);

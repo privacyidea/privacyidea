@@ -1657,6 +1657,23 @@ describe("TokenEnrollmentComponent", () => {
     };
     const lastPolicyTarget = () => tokenService.getEnrollmentPolicies.mock.calls.at(-1)![0] as EnrollmentPolicyTarget;
 
+    it("a self-service user targets the login user at once, before the user list is loaded", () => {
+      authServiceMock.authData.set({
+        ...authServiceMock.authData()!,
+        role: "user",
+        username: "selfuser",
+        realm: "selfrealm"
+      });
+      userService.selectedUser.set(null);
+      userService.selectedUserRealm.set("");
+      tokenService.getEnrollmentPolicies.mockClear();
+      fixture.detectChanges();
+
+      expect(component.enrollmentTarget()).toEqual(expect.objectContaining({ user: "selfuser", realm: "selfrealm" }));
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenCalledTimes(1);
+      expect(lastPolicyTarget()).toEqual(expect.objectContaining({ user: "selfuser", realm: "selfrealm" }));
+    });
+
     it("requests the enrollment policies without a realm when no user is selected", async () => {
       userService.selectedUserRealm.set("passwd");
       userService.selectedUser.set(null);
