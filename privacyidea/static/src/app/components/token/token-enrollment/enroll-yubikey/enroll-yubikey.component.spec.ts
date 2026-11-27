@@ -132,6 +132,31 @@ describe("EnrollYubikeyComponent", () => {
     });
   });
 
+  describe("OTP length errors", () => {
+    const otpLengthInput = () => fixture.nativeElement.querySelector("input[type=number]") as HTMLInputElement;
+    const typeUnparsable = async (value: string) => {
+      jest.spyOn(otpLengthInput(), "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+      await typeInto(fixture, otpLengthInput(), value);
+      otpLengthInput().dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+    };
+
+    it("renders the number error for text the browser cannot read as a number", async () => {
+      await typeUnparsable("");
+
+      expect(fixture.nativeElement.textContent).toContain("Enter a valid number.");
+      expect(component.otpLengthForm().valid()).toBe(false);
+    });
+
+    it("renders only the number error, not the required error, for an emptied field with such text", async () => {
+      await typeInto(fixture, otpLengthInput(), "");
+      await typeUnparsable("");
+
+      expect(fixture.nativeElement.textContent).toContain("Enter a valid number.");
+      expect(fixture.nativeElement.textContent).not.toContain("OTP length is required");
+    });
+  });
+
   it("passes the axe accessibility checks", async () => {
     fixture.detectChanges();
 

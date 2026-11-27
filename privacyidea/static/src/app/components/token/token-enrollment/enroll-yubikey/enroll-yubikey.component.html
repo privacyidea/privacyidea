@@ -31,8 +31,11 @@
       [formField]="otpLengthForm"
       matInput
       type="number" />
-    @if (hasError(otpLengthForm, ERR.required)) {
+    @if (hasError(otpLengthForm, ERR.required) && !hasError(otpLengthForm, ERR.parse)) {
       <mat-error i18n="@@token.otpLengthRequired">OTP length is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(otpLengthForm, ERR.parse)) {
+      <mat-error i18n="@@token.otpLengthNotNumber">Enter a <strong>valid number</strong>.</mat-error>
     }
     @if (hasError(otpLengthForm, ERR.min)) {
       <mat-error i18n="@@token.otpLengthMinimum32">OTP length must be at least 32.</mat-error>
