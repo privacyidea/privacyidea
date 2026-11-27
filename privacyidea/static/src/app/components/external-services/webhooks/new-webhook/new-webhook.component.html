@@ -91,6 +91,11 @@
                 >Cannot be named "{{ webhookForm.identifier().value() }}".
               </mat-error>
             }
+            @if (hasError(webhookForm.identifier, ERR.nameTaken)) {
+              <mat-error i18n="@@webhook.identifierTaken"
+                >A webhook with the identifier "{{ identifierConflict()?.identifier }}" already exists.
+              </mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field
@@ -196,23 +201,28 @@
               }
             </datalist>
             <mat-hint i18n="@@webhook.contentTypeHint">Any valid MIME type; a JSON body is dumped as JSON.</mat-hint>
+            @if (hasError(webhookForm.content_type, WEBHOOK_ERR.notMimeType)) {
+              <mat-error i18n="@@webhook.contentTypeNotMimeType"
+                >The content type must be a MIME type, for example application/json.
+              </mat-error>
+            }
           </mat-form-field>
         </div>
 
-        @if (showUrlencodeValues()) {
+        @if (showEncodeValues()) {
           <div class="margin-bottom-16">
             <mat-checkbox
-              [formField]="webhookForm.urlencode_values"
-              aria-describedby="webhook-urlencode-values-hint">
-              <span i18n="@@webhook.urlencodeValues">URL-Encode Placeholder Values</span>
+              [formField]="webhookForm.encode_values"
+              aria-describedby="webhook-encode-values-hint">
+              <span i18n="@@webhook.encodeValues">Encode Placeholder Values</span>
             </mat-checkbox>
             <p
               class="checkbox-hint below-checkbox"
-              i18n="@@webhook.urlencodeValuesHint"
-              id="webhook-urlencode-values-hint"
-              >Encode the values that replace the placeholders, so that a value with &amp; or = stays one field.
-              Webhooks converted from an old WebHook handler have this off, because the handler sent the values
-              unencoded.
+              i18n="@@webhook.encodeValuesHint"
+              id="webhook-encode-values-hint"
+              >Encode the values that replace the placeholders, so that a value with &amp; or = stays one form field and
+              a value with a quote stays one JSON string. Webhooks converted from an old WebHook handler have this off,
+              because the handler sent the values unencoded.
             </p>
           </div>
         }
@@ -251,6 +261,9 @@
               <mat-option [value]="type">{{ type }}</mat-option>
             }
           </mat-select>
+          <mat-hint i18n="@@webhook.authTypeHint"
+            >Saving clears a stored password that this type does not use.
+          </mat-hint>
         </mat-form-field>
 
         @if (showBasicAuth()) {
@@ -365,6 +378,7 @@
 
         @for (header of headers(); track $index) {
           @let headerError = headerNameErrors()[$index];
+          @let headerValueInvalid = headerValueErrors()[$index];
           <div class="margin-bottom-16">
             <div class="header-row">
               <mat-form-field
@@ -387,6 +401,7 @@
                 <mat-label i18n="@@webhook.headerValue">Value</mat-label>
                 <input
                   (input)="updateHeader($index, { value: $any($event.target).value })"
+                  [attr.aria-describedby]="headerValueInvalid ? 'webhook-header-value-error-' + $index : null"
                   [value]="header.value"
                   matInput />
               </mat-form-field>
@@ -428,6 +443,15 @@
                     >
                   }
                 }
+              </div>
+            }
+            @if (headerValueInvalid) {
+              <div
+                [id]="'webhook-header-value-error-' + $index"
+                class="checkbox-error"
+                i18n="@@webhook.headerValueInvalid"
+                role="alert">
+                A header value must not start with whitespace or contain a line break.
               </div>
             }
           </div>

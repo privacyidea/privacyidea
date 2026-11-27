@@ -27,7 +27,7 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { isFormUrlencoded, Webhook, WEBHOOK_CENSORED, WebhookService } from "./webhook.service";
+import { encodesPlaceholderValues, Webhook, WEBHOOK_CENSORED, WebhookService } from "./webhook.service";
 
 describe("WebhookService", () => {
   let service: WebhookService;
@@ -48,7 +48,7 @@ describe("WebhookService", () => {
     auth_type: "none",
     verify_tls: true,
     timeout: 3,
-    urlencode_values: true,
+    encode_values: true,
     headers: {},
     secret_headers: []
   });
@@ -208,14 +208,61 @@ describe("WebhookService", () => {
     await promise;
   });
 
-  it("sends urlencode_values as a JSON boolean", async () => {
-    const promise = service.postWebhook({ ...buildWebhook(), urlencode_values: false });
+  it("sends encode_values as a JSON boolean", async () => {
+    const promise = service.postWebhook({ ...buildWebhook(), encode_values: false });
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/webhook/siem`);
-    expect(req.request.body["urlencode_values"]).toBe(false);
+    expect(req.request.body["encode_values"]).toBe(false);
     req.flush(MockPiResponse.fromValue(1));
 
     await promise;
+  });
+
+  describe("passwords of the authentication types", () => {
+    // The editor shows the password for basic authentication only and the client key password for mTLS only, and
+    // it loads both as the placeholder of a stored secret. The server reads the placeholder as "keep the stored
+    // password", and a kept password blocks a change of the URL.
+    const postedBody = async (webhook: Partial<Webhook>): Promise<Record<string, unknown>> => {
+      const promise = service.postWebhook({
+        ...buildWebhook(),
+        password: WEBHOOK_CENSORED,
+        client_key_password: WEBHOOK_CENSORED,
+        ...webhook
+      });
+      const req = httpMock.expectOne(`${environment.proxyUrl}/webhook/siem`);
+      const body = req.request.body as Record<string, unknown>;
+      req.flush(MockPiResponse.fromValue(1));
+      await promise;
+      return body;
+    };
+
+    it.each(["none", "header"] as const)("clears both passwords for the authentication type %p", async (authType) => {
+      const body = await postedBody({ auth_type: authType, url: "https://new.example.com/hook" });
+
+      expect(body["password"]).toBe("");
+      expect(body["client_key_password"]).toBe("");
+      expect(body["url"]).toBe("https://new.example.com/hook");
+    });
+
+    it("keeps the password and clears the client key password for basic authentication", async () => {
+      const body = await postedBody({ auth_type: "basic", username: "pi" });
+
+      expect(body["password"]).toBe(WEBHOOK_CENSORED);
+      expect(body["client_key_password"]).toBe("");
+    });
+
+    it("keeps the client key password and clears the password for mTLS", async () => {
+      const body = await postedBody({ auth_type: "mtls", client_certificate: "/etc/privacyidea/client.pem" });
+
+      expect(body["password"]).toBe("");
+      expect(body["client_key_password"]).toBe(WEBHOOK_CENSORED);
+    });
+
+    it("sends a new password for the type that uses it", async () => {
+      const body = await postedBody({ auth_type: "basic", username: "pi", password: "s3cr3t" });
+
+      expect(body["password"]).toBe("s3cr3t");
+    });
   });
 
   describe("header renames", () => {
@@ -274,16 +321,19 @@ describe("WebhookService", () => {
     });
   });
 
-  describe("isFormUrlencoded", () => {
+  describe("encodesPlaceholderValues", () => {
     it.each([
       ["application/x-www-form-urlencoded", true],
       ["Application/X-WWW-Form-Urlencoded", true],
       [" application/x-www-form-urlencoded ; charset=utf-8", true],
-      ["application/json", false],
+      ["application/json", true],
+      ["Application/JSON; charset=utf-8", true],
       ["application/x-www-form-urlencoded-extra", false],
+      ["application/json-patch+json", false],
+      ["text/plain", false],
       ["", false]
-    ])("reads %p as form-urlencoded: %p", (contentType, expected) => {
-      expect(isFormUrlencoded(contentType)).toBe(expected);
+    ])("decides for %p that encode_values applies: %p", (contentType, expected) => {
+      expect(encodesPlaceholderValues(contentType)).toBe(expected);
     });
   });
 });

@@ -26,7 +26,6 @@ import re
 import traceback
 from collections import defaultdict
 from collections.abc import Iterable
-from itertools import zip_longest
 
 from sqlalchemy import select, delete
 
@@ -560,7 +559,7 @@ def _inline_webhook_settings(options: dict) -> dict:
             # The fixed timeout of the inline handler. A webhook created by hand gets 3 seconds.
             "timeout": TIMEOUT,
             # The inline handler puts the values of the placeholders into a form-encoded payload as they are.
-            "urlencode_values": False}
+            "encode_values": False}
 
 
 def _inline_webhook_defect(handler_name: str, options: dict) -> str | None:
@@ -639,7 +638,7 @@ def _convert_inline_webhook_handler(handler_id: int, handler_name: str, options:
     return identifier
 
 
-def _is_inline_webhook(res_data: dict) -> bool:
+def is_inline_webhook(res_data: dict) -> bool:
     """
     Return whether an imported event handler is a WebHook handler in the pre-3.15 inline shape. An empty ``webhook``
     option names no webhook, so the inline handler also sends for such a definition.
@@ -656,7 +655,7 @@ def inline_webhook_defect(res_data: dict) -> str | None:
     :param res_data: the event handler definition as exported
     :return: a short reason, or None if the definition is no such handler
     """
-    if not _is_inline_webhook(res_data):
+    if not is_inline_webhook(res_data):
         return None
     return _inline_webhook_defect(res_data.get("name") or "", res_data.get("options") or {})
 
@@ -670,7 +669,7 @@ def inline_webhook_link(res_data: dict, handler_id: int) -> str | None:
     :param handler_id: the id of the stored handler
     :return: the identifier, or None if the definition is no WebHook handler in the inline shape that is converted
     """
-    if not _is_inline_webhook(res_data) or inline_webhook_defect(res_data):
+    if not is_inline_webhook(res_data) or inline_webhook_defect(res_data):
         return None
     return _free_webhook_identifier(_webhook_identifier_base(res_data["name"], handler_id))
 
@@ -701,12 +700,18 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
     """
     Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
     by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
-    handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
-    these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
+    handler module as this system, they replace all of them: the definitions of such a group are written over the
+    stored handlers in the order of their ids, by position, and the definitions after the last stored handler create
+    new handlers. Otherwise, or if an imported event handler has no name, these event handlers are not imported and
+    reported in a ConfigAdminError after the others were imported.
 
     A WebHook definition still in the pre-3.15 inline shape is converted to a webhook object on the way in - the
     migration that does this at upgrade time has already run on this installation and will not run again, so an
     export taken from an older release would otherwise bring the shape back past the release that removes it.
+
+    A WebHook definition in the inline shape that is not converted (see :func:`inline_webhook_defect`) is not
+    written, but it counts for its group and keeps its position in it. The stored handler at its position stays as
+    it is.
 
     :param data: the exported event handler definitions
     :param name: import only the definitions of this name (default: import all)
@@ -748,8 +753,9 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
                 skipped.append(res_data["name"])
             else:
                 failed[res_data["name"]] = defect
-            continue
-        imported[(res_data['name'], res_data.get('handlermodule'))].append(res_data)
+        # A definition that is not written keeps its position in its group. The stored handler at this position stays
+        # as it is.
+        imported[(res_data['name'], res_data.get('handlermodule'))].append((res_data, defect))
 
     conflicts = []
     writes = []
@@ -759,7 +765,8 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
             count = f"{len(entries)} " if len(entries) > 1 else ""
             conflicts.append(f'{count}"{event_name}" with handler module "{handlermodule}"')
             continue
-        writes.extend(zip_longest(targets, entries))
+        writes.extend((targets[position] if position < len(targets) else None, res_data)
+                      for position, (res_data, defect) in enumerate(entries) if not defect)
     if without_name:
         conflicts.append(f'{without_name} handlers without a name' if without_name > 1
                          else 'one handler without a name')
@@ -769,7 +776,7 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
             db.session.delete(fetch_one_resource(EventHandler, id=handler_id))
             log.info(f"Deleting event handler with id {handler_id}")
         for target_id, res_data in writes:
-            if _is_inline_webhook(res_data):
+            if is_inline_webhook(res_data):
                 rid = _stage_inline_webhook_handler(target_id, res_data)
             else:
                 rid = _stage_event(id=target_id, **res_data)

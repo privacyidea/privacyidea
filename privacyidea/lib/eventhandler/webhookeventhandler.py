@@ -23,7 +23,7 @@ api requests and reduce your traffic this way.
 
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
-from privacyidea.lib.utils import create_tag_dict, is_true, safe_format
+from privacyidea.lib.utils import SafeFormatDict, create_tag_dict, is_true, safe_format
 import json
 import logging
 import requests
@@ -165,7 +165,7 @@ class WebHookHandler(BaseEventHandler):
         }}
         return actions
 
-    def _replace_tags(self, webhook_text, content_type, g, request, response=None, urlencode_values=False):
+    def _replace_tags(self, webhook_text, content_type, g, request, response=None, encode_values=False):
         """
         Substitute the placeholders in the payload.
 
@@ -186,7 +186,7 @@ class WebHookHandler(BaseEventHandler):
         :param g: the flask g object
         :param request: the request that triggered the event
         :param response: the response of the request, for a post handler
-        :param urlencode_values: the setting ``urlencode_values`` of the webhook. The inline URL of an old handler
+        :param encode_values: the setting ``encode_values`` of the webhook. The inline URL of an old handler
             has no such setting, and its values stay unencoded, as before.
         :return: the payload with the placeholders replaced, and None. If the placeholders can not be replaced, the
             payload as it is configured and the reason for the audit entry.
@@ -252,7 +252,9 @@ class WebHookHandler(BaseEventHandler):
 
             if isinstance(document, (dict, list)):
                 return json.dumps(replace_recursive(document)), None
-            return safe_format(webhook_text, placeholder_values(tags, content_type, urlencode_values)), None
+            # Not safe_format(): a malformed template raises here, and the audit entry then names the problem. The
+            # data is still sent as it is configured.
+            return webhook_text.format_map(SafeFormatDict(placeholder_values(tags, content_type, encode_values))), None
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
         except (ValueError, TypeError) as err:
@@ -312,7 +314,7 @@ class WebHookHandler(BaseEventHandler):
         replace_problem = None
         if replace and webhook_text:
             webhook_text, replace_problem = self._replace_tags(webhook_text, content_type, g, request, response,
-                                                               urlencode_values=config["urlencode_values"])
+                                                               encode_values=config["encode_values"])
 
         log.info(f"Posting to the webhook {identifier!r}")
         result = fire_webhook(identifier, payload=webhook_text or None, config=config)

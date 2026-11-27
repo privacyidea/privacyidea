@@ -84,7 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
       auth_type: "none",
       verify_tls: true,
       timeout: 3,
-      urlencode_values: true,
+      encode_values: true,
       headers: {},
       secret_headers: []
     };
@@ -518,11 +518,42 @@ describe("ConditionalAccessActionItemComponent", () => {
       expect(component.staleWebhookIdentifier()).toBe("");
     });
 
-    it("falls back to a typed identifier without webhook_read", () => {
-      setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
-      setRights([]);
-      expect(component.webhooksListable()).toBe(false);
-      expect(component.webhookTextHint).toContain("webhook_read");
+    describe("identifier field", () => {
+      // The form field of the webhook identifier, found by its label: the action type is a mat-select as well.
+      const webhookField = (): HTMLElement | undefined =>
+        Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-form-field")).find(
+          (field) => field.querySelector("mat-label")?.textContent?.trim() === "Webhook"
+        );
+
+      it("falls back to a typed identifier without webhook_read", () => {
+        webhookService.webhooks.set([webhook("siem")]);
+        setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+        setRights([]);
+        fixture.detectChanges();
+
+        expect(component.webhooksListable()).toBe(false);
+        const field = webhookField();
+        expect(field).toBeTruthy();
+        expect(field!.querySelector("mat-select")).toBeNull();
+        const input = field!.querySelector("input") as HTMLInputElement;
+        expect(input).toBeTruthy();
+        expect(input.value).toBe("siem");
+        expect(field!.querySelector("mat-hint")?.textContent).toContain("webhook_read");
+      });
+
+      it("offers a select and no typed identifier with webhook_read", () => {
+        webhookService.webhooks.set([webhook("siem")]);
+        setAction({ action_type: "WEBHOOK", action_value: { webhook: "siem" } });
+        setRights(["webhook_read"]);
+        fixture.detectChanges();
+
+        expect(component.webhooksListable()).toBe(true);
+        const field = webhookField();
+        expect(field).toBeTruthy();
+        expect(field!.querySelector("mat-select")).toBeTruthy();
+        expect(field!.querySelector("input")).toBeNull();
+        expect(field!.textContent).not.toContain("webhook_read");
+      });
     });
 
     it("merges the payload into the value object and drops it when emptied", () => {

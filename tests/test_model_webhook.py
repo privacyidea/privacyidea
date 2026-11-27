@@ -259,10 +259,10 @@ class WebhookModelTestCase(MyTestCase):
 
         self.assertEqual({"X-Empty": ""}, db.session.get(Webhook, wh_id).header_dict)
 
-    def test_urlencode_values_is_on_by_default(self):
+    def test_encode_values_is_on_by_default(self):
         wh_id = Webhook(identifier="encoded", url="https://e.example.com").save()
 
-        self.assertTrue(db.session.get(Webhook, wh_id).get()["urlencode_values"])
+        self.assertTrue(db.session.get(Webhook, wh_id).get()["encode_values"])
 
     def test_query_by_identifier(self):
         """Webhooks can be queried by identifier."""

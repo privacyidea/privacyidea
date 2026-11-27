@@ -127,7 +127,7 @@ class WebhookAPITestCase(MyApiTestCase):
             ({"url": URL, "timeout": 2.5}, "fractional timeout"),
             ({"url": URL, "timeout": 3601}, "timeout above 3600"),
             ({"url": URL, "verify_tls": "on"}, "unknown true word for verify_tls"),
-            ({"url": URL, "urlencode_values": "yes"}, "unknown true word for urlencode_values"),
+            ({"url": URL, "encode_values": "yes"}, "unknown true word for encode_values"),
             ({"url": URL, "header.": "v"}, "empty header name"),
             ({"url": URL, "header.X:Bad": "v"}, "header name with a colon"),
             ({"url": URL, "header.X-Token": "v", "secret.header.X-Token": "yes"}, "unknown true word for a secret"),
@@ -156,18 +156,39 @@ class WebhookAPITestCase(MyApiTestCase):
 
     def test_08c_flags_accept_json_booleans_and_true_false_words(self):
         self._value(self._request_json("/webhook/hook1", {"url": URL, "verify_tls": False,
-                                                          "urlencode_values": False}))
+                                                          "encode_values": False}))
         webhook = self._value(self._request("/webhook/hook1"))
         self.assertFalse(webhook["verify_tls"])
-        self.assertFalse(webhook["urlencode_values"])
+        self.assertFalse(webhook["encode_values"])
 
-        self._value(self._request("/webhook/hook1", "POST", {"verify_tls": "TRUE", "urlencode_values": "1",
+        self._value(self._request("/webhook/hook1", "POST", {"verify_tls": "TRUE", "encode_values": "1",
                                                              "header.X-Token": "t",
                                                              "secret.header.X-Token": "true"}))
         webhook = self._value(self._request("/webhook/hook1"))
         self.assertTrue(webhook["verify_tls"])
-        self.assertTrue(webhook["urlencode_values"])
+        self.assertTrue(webhook["encode_values"])
         self.assertEqual(["X-Token"], webhook["secret_headers"])
+
+    def test_08e_a_secret_header_is_not_disclosed_by_dropping_its_flag(self):
+        # Without the refusal, the first request stores the value in clear text, GET returns it, and the second
+        # request may then send it to another host.
+        self._value(self._create(**{"header.X-Token": "TOPSECRET", "secret.header.X-Token": "1"}))
+
+        response = self._request_json("/webhook/hook1", {"header.X-Token": "__CENSORED__"})
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertIn("secret", response.json["result"]["error"]["message"])
+
+        webhook = self._value(self._request("/webhook/hook1"))
+        self.assertEqual({"X-Token": "__CENSORED__"}, webhook["headers"])
+        response = self._request_json("/webhook/hook1", {"url": "https://evil.example.net/x"})
+        self.assertEqual(400, response.status_code, response.data)
+
+    def test_08f_a_rename_that_is_not_text_is_rejected(self):
+        self._value(self._create(**{"header.X-A": "a"}))
+
+        response = self._request_json("/webhook/hook1", {"header.X-B": "b", "rename.header.X-B": ["X-A"]})
+
+        self.assertEqual(400, response.status_code, response.data)
 
     def test_08d_a_changed_url_needs_the_stored_password(self):
         self._value(self._create(auth_type="basic", username="svc", password="S3cretPW"))

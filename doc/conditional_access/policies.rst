@@ -289,20 +289,37 @@ Actions
 
     A payload that is a JSON object or array is substituted value by value. Put
     each placeholder of a JSON payload in quotes, for example
-    ``{"count": "{count}"}``. A JSON payload with a placeholder outside quotes,
-    such as ``{"count": {count}}``, is refused when the policy is saved.
+    ``{"count": "{count}"}``.
 
-    Any other payload is substituted as plain text. If the webhook has the
-    content type ``application/x-www-form-urlencoded`` and the setting
-    **URL-encode placeholder values** is on, the values are URL-encoded. Use
-    this setting for a form payload: ``{username}`` is the login name that the
-    client sent, so it can contain ``&`` or ``=``.
+    Any other payload is substituted as plain text. If the setting **Encode
+    placeholder values** of the webhook is on, the values are encoded for the
+    content type of the webhook: URL-encoded for
+    ``application/x-www-form-urlencoded``, and escaped as JSON string content for
+    ``application/json``. Keep the setting on: ``{username}`` is the login name
+    that the client sent, so it can contain ``&``, ``=`` or ``"``.
+
+    These payloads are refused when the policy is saved:
+
+    - A JSON payload with a placeholder outside quotes and other braces, such as
+      ``{"count": {count}}``. The placeholders of such a payload can not be
+      replaced.
+    - A JSON payload with a text placeholder outside quotes, such as
+      ``[{count}, {username}]``. Only ``{count}``, ``{threshold}`` and
+      ``{stage_id}`` are numbers and can stand outside quotes, for example
+      ``[{count}, "{username}"]``.
+    - A plain-text payload with a brace that is not part of a placeholder, such
+      as ``user={username}&x={``. Write such a brace twice: ``{{`` or ``}}``.
 
     ``{email}``, ``{givenname}`` and ``{surname}`` are **not** available here:
     they are read from the resolver and are fetched only for an email action.
 
     A stage may carry more than one ``WEBHOOK``, the way it may carry more than
     one email action - a second one reaches a system the first cannot.
+
+    In a stage, the locks and blocks run before the notifications
+    (``EMAIL_ADMIN``, ``EMAIL_USER`` and ``WEBHOOK``), whatever their order in
+    the stage. A notification waits for its server, and a lock after it would
+    let further requests through in that time.
 
     .. warning:: Delivery is synchronous, so the webhook's timeout is added to
        the authentication request that tripped the stage. See

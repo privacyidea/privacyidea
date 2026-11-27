@@ -155,7 +155,7 @@ class TestMigrateInlineWebhooks(WebhookMigrationTestBase):
         assert wh.auth_type == "none"
         assert wh.verify_tls
         # The inline handler put the values of the placeholders into a form-encoded payload as they are
-        assert wh.urlencode_values is False
+        assert wh.encode_values is False
         assert "Slack_Notify" in wh.identifier
         assert str(eh.id) in wh.identifier
 

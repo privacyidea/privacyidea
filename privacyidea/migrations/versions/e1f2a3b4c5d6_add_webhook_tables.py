@@ -182,7 +182,7 @@ _webhook = sa.table(
     sa.column('auth_type', sa.Unicode(50)),
     sa.column('verify_tls', sa.Boolean),
     sa.column('timeout', sa.Integer),
-    sa.column('urlencode_values', sa.Boolean),
+    sa.column('encode_values', sa.Boolean),
 )
 
 
@@ -430,8 +430,8 @@ def _create_webhook_table():
         sa.Column('content_type', sa.Unicode(length=100), nullable=True,
                   server_default='application/json'),
         sa.Column('default_payload', sa.UnicodeText(), nullable=True),
-        # Whether the values of the placeholders are URL-encoded in a form-encoded payload
-        sa.Column('urlencode_values', sa.Boolean(), nullable=False, server_default='1'),
+        # Whether the values that replace the placeholders of a plain-text payload are encoded for the content type
+        sa.Column('encode_values', sa.Boolean(), nullable=False, server_default='1'),
         # Authentication
         sa.Column('auth_type', sa.Unicode(length=50), nullable=True, server_default='none'),
         sa.Column('username', sa.Unicode(length=255), nullable=True, server_default=''),
@@ -615,7 +615,7 @@ def _run_data_migration(conn):
                     auth_type='none',
                     verify_tls=True,
                     timeout=10,
-                    urlencode_values=False,
+                    encode_values=False,
                 )
             )
 

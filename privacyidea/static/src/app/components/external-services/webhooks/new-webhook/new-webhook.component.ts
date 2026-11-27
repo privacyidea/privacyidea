@@ -41,7 +41,7 @@ import { ERR, markRequired } from "@utils/form-rules.utils";
 import { clearField, hasError } from "@utils/form-state.utils";
 import { reservedNames } from "@utils/reserved-names.utils";
 import {
-  isFormUrlencoded,
+  encodesPlaceholderValues,
   Webhook,
   WEBHOOK_AUTH_TYPES,
   WEBHOOK_CONTENT_TYPES,
@@ -80,6 +80,12 @@ const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 /** Why a row of the header table cannot be saved. */
 type HeaderNameError = "required" | "invalid" | "duplicate";
 
+/**
+ * A header value that the server accepts: empty, or no leading whitespace and no line break. The server checks it
+ * because requests refuses any other value with an error that quotes the value, which can be a secret.
+ */
+const HEADER_VALUE_PATTERN = /^(\S[^\r\n]*)?$/;
+
 /** The server refuses a timeout that is not a whole number of seconds in this range. */
 const TIMEOUT_MIN_SECONDS = 1;
 const TIMEOUT_MAX_SECONDS = 3600;
@@ -87,7 +93,8 @@ const TIMEOUT_MAX_SECONDS = 3600;
 /** Error kinds of the rules in this form that the shared `ERR` kinds do not cover. */
 const WEBHOOK_ERR = {
   wholeNumber: "wholeNumber",
-  headerAuthNeedsHeader: "headerAuthNeedsHeader"
+  headerAuthNeedsHeader: "headerAuthNeedsHeader",
+  notMimeType: "notMimeType"
 } as const;
 
 interface WebhookFormModel {
@@ -109,7 +116,7 @@ interface WebhookFormModel {
   https_proxy: string;
   // `number | null`: a number input writes null to the model while it is empty.
   timeout: number | null;
-  urlencode_values: boolean;
+  encode_values: boolean;
 }
 
 const EMPTY_WEBHOOK_FORM: WebhookFormModel = {
@@ -132,7 +139,7 @@ const EMPTY_WEBHOOK_FORM: WebhookFormModel = {
   https_proxy: "",
   timeout: 3,
   // Mirrors the server default for a new webhook.
-  urlencode_values: true
+  encode_values: true
 };
 
 @Component({
@@ -176,6 +183,9 @@ export class NewWebhookComponent implements OnDestroy {
     // editors. The routes need no reserved word of their own: the test endpoint is
     // /webhook/<identifier>/test, so an identifier cannot collide with it.
     reservedNames(f.identifier, [".", ".."]);
+    // POST /webhook/<identifier> creates or updates, so creating a webhook under a taken identifier would overwrite
+    // the stored one.
+    validate(f.identifier, () => (this.identifierConflict() ? { kind: ERR.nameTaken } : null));
     required(f.url);
     // The same rule set_webhook() enforces; catching it here saves a round-trip to a 400.
     pattern(f.url, /^https?:\/\/.+/i);
@@ -186,6 +196,9 @@ export class NewWebhookComponent implements OnDestroy {
       const timeout = value();
       return timeout !== null && !Number.isInteger(timeout) ? { kind: WEBHOOK_ERR.wholeNumber } : null;
     });
+    // The server refuses a content type without a "/", that is, one that is not a MIME type. An empty value is
+    // refused too: the server would store application/json then, and the field would not show it.
+    validate(f.content_type, ({ value }) => (value().includes("/") ? null : { kind: WEBHOOK_ERR.notMimeType }));
     // The server refuses basic authentication without a username.
     validate(f.username, ({ value }) =>
       this.webhookModel().auth_type === "basic" && !value().trim()
@@ -212,7 +225,7 @@ export class NewWebhookComponent implements OnDestroy {
   readonly showBasicAuth = computed(() => this.webhookModel().auth_type === "basic");
   readonly showMtls = computed(() => this.webhookModel().auth_type === "mtls");
   readonly showHeaderAuthNote = computed(() => this.webhookModel().auth_type === "header");
-  readonly showUrlencodeValues = computed(() => isFormUrlencoded(this.webhookModel().content_type));
+  readonly showEncodeValues = computed(() => encodesPlaceholderValues(this.webhookModel().content_type));
   /** A fraction, a value below the minimum and one above the maximum share one message. */
   readonly timeoutOutOfRange = computed(() =>
     [WEBHOOK_ERR.wholeNumber, ERR.min, ERR.max].some((kind) => hasError(this.webhookForm.timeout, kind))
@@ -243,8 +256,29 @@ export class NewWebhookComponent implements OnDestroy {
       return (counts.get(name.toLowerCase()) ?? 0) > 1 ? "duplicate" : null;
     });
   });
-  readonly headersValid = computed(() => this.headerNameErrors().every((error) => error === null));
+  /** One entry per row of the header table: true when the server would refuse the value of the row. */
+  readonly headerValueErrors = computed<boolean[]>(() =>
+    this.headers().map((row) => !HEADER_VALUE_PATTERN.test(row.value))
+  );
+  readonly headersValid = computed(
+    () =>
+      this.headerNameErrors().every((error) => error === null) && this.headerValueErrors().every((invalid) => !invalid)
+  );
   protected readonly webhookService: WebhookServiceInterface = inject(WebhookService);
+  /**
+   * In create mode, the stored webhook that already has the identifier in the form. The comparison ignores case:
+   * MySQL and MariaDB compare the identifier without case in their default collation, so there a save under
+   * "Siem" finds and overwrites the stored webhook "siem". PostgreSQL stores the two as separate webhooks, but the
+   * editor cannot tell which database the server uses, so it refuses the pair on every database. In edit mode the
+   * identifier is the one being edited and cannot change.
+   */
+  readonly identifierConflict = computed<Webhook | undefined>(() => {
+    const identifier = this.webhookModel().identifier.toLowerCase();
+    if (this.isEditMode() || !identifier) {
+      return undefined;
+    }
+    return this.webhookService.webhooks().find((webhook) => webhook.identifier.toLowerCase() === identifier);
+  });
   protected readonly authTypes = WEBHOOK_AUTH_TYPES;
   protected readonly httpMethods = WEBHOOK_HTTP_METHODS;
   protected readonly contentTypes = WEBHOOK_CONTENT_TYPES;
@@ -291,6 +325,13 @@ export class NewWebhookComponent implements OnDestroy {
         this.data = null;
       }
       this.loadData(this.data);
+    });
+
+    // Save is blocked for a taken identifier, so the reason shows at once and not only after the field loses focus.
+    effect(() => {
+      if (this.identifierConflict()) {
+        this.webhookForm.identifier().markAsTouched();
+      }
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
@@ -445,7 +486,7 @@ export class NewWebhookComponent implements OnDestroy {
       http_proxy: data?.http_proxy || "",
       https_proxy: data?.https_proxy || "",
       timeout: data?.timeout ?? 3,
-      urlencode_values: data?.urlencode_values ?? true
+      encode_values: data?.encode_values ?? true
     });
     const secretHeaders = data?.secret_headers ?? [];
     this.headers.set(

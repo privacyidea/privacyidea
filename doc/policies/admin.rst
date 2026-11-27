@@ -903,7 +903,8 @@ rest and are never returned in clear text, so this right does not disclose the
 credentials of webhooks that already exist. It does allow replacing them.
 A stored credential goes only to the endpoint that it was saved for: a change of
 the URL, a proxy, the CA bundle or the certificate verification needs the
-credential again. See :ref:`webhook_config`.
+credential again. A secret header is stored as not secret only if its value is
+entered again. See :ref:`webhook_config`.
 
 .. versionadded:: 3.15
 

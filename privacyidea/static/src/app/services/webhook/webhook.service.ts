@@ -38,18 +38,24 @@ export type WebhookHttpMethod = "GET" | "POST" | "PUT" | "PATCH";
 export const WEBHOOK_AUTH_TYPES: readonly WebhookAuthType[] = ["none", "basic", "header", "mtls"];
 export const WEBHOOK_HTTP_METHODS: readonly WebhookHttpMethod[] = ["GET", "POST", "PUT", "PATCH"];
 
-/** The content type whose placeholder values `urlencode_values` encodes. */
+export const WEBHOOK_JSON = "application/json";
 export const WEBHOOK_FORM_URLENCODED = "application/x-www-form-urlencoded";
 
 /** The content types offered in the editor; any valid MIME type may be typed instead. */
-export const WEBHOOK_CONTENT_TYPES: readonly string[] = ["application/json", WEBHOOK_FORM_URLENCODED];
+export const WEBHOOK_CONTENT_TYPES: readonly string[] = [WEBHOOK_JSON, WEBHOOK_FORM_URLENCODED];
 
 /**
- * True when a content type is application/x-www-form-urlencoded. Only the media type counts: the part
- * before a parameter such as "; charset=utf-8", trimmed and compared in lower case.
+ * The content types whose placeholder values `encode_values` encodes: URL-encoded for a form, escaped as the
+ * content of a JSON string for JSON. For any other content type the setting has no effect.
  */
-export function isFormUrlencoded(contentType: string): boolean {
-  return contentType.split(";")[0].trim().toLowerCase() === WEBHOOK_FORM_URLENCODED;
+export const WEBHOOK_ENCODED_CONTENT_TYPES: readonly string[] = [WEBHOOK_FORM_URLENCODED, WEBHOOK_JSON];
+
+/**
+ * True when `encode_values` applies to a content type. Only the media type counts: the part before a parameter
+ * such as "; charset=utf-8", trimmed and compared in lower case, as the server compares it.
+ */
+export function encodesPlaceholderValues(contentType: string): boolean {
+  return WEBHOOK_ENCODED_CONTENT_TYPES.includes(contentType.split(";")[0].trim().toLowerCase());
 }
 
 /**
@@ -77,10 +83,12 @@ export interface Webhook {
   https_proxy?: string;
   timeout: number;
   /**
-   * Whether the values that replace the placeholders of a payload are URL-encoded. Only used while the
-   * content type is application/x-www-form-urlencoded: encoded, a value with & or = stays one field.
+   * Whether the values that replace the placeholders of a plain-text payload are encoded for the content type:
+   * URL-encoded for application/x-www-form-urlencoded, so a value with & or = stays one field, and escaped as
+   * JSON string content for application/json, so a value with a quote stays one string. No effect for another
+   * content type.
    */
-  urlencode_values: boolean;
+  encode_values: boolean;
   headers: Record<string, string>;
   /**
    * Names of the headers whose values are stored encrypted. Sent back as `secret.header.*` so a
@@ -153,13 +161,25 @@ export class WebhookService implements WebhookServiceInterface {
    * Flatten a webhook into the parameters POST /webhook/<identifier> expects: the headers go out as
    * `header.<name>`, their secret flags as `secret.header.<name>`, and `clear_headers` is what says
    * "remove the last one" - with no `header.*` parameter at all the server keeps the stored set,
-   * so an emptied header table would otherwise be a silent no-op. The other fields, `urlencode_values`
+   * so an emptied header table would otherwise be a silent no-op. The other fields, `encode_values`
    * included, go out as they are: the request body is JSON, so a boolean stays a boolean.
+   *
+   * The one exception is a password that the authentication type does not use: `password` without basic
+   * authentication and `client_key_password` without mTLS go out empty, which clears them on the server. The
+   * editor shows each of them only for its own type, so otherwise it sends back the `__CENSORED__` placeholder of
+   * a password that is not on screen. The server reads that as "keep the stored password" and then refuses a
+   * change of the URL, with no field on screen to enter the password again.
    */
   private static toRequestBody(webhook: Webhook, headerRenames?: Record<string, string>): Record<string, unknown> {
     // `id` is the database key the list carries; the endpoint takes the identifier from the path.
     const { headers, secret_headers, id: __, ...rest } = webhook;
     const body: Record<string, unknown> = { ...rest };
+    if (webhook.auth_type !== "basic") {
+      body["password"] = "";
+    }
+    if (webhook.auth_type !== "mtls") {
+      body["client_key_password"] = "";
+    }
     const names = Object.keys(headers ?? {});
     for (const name of names) {
       body[`header.${name}`] = headers[name];

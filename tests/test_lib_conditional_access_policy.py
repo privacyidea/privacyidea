@@ -590,9 +590,27 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                     self._create_with_action,
                     {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},
                 )
-        # JSON with quoted placeholders, a JSON array of a placeholder, a form body and plain text are accepted.
-        for index, payload in enumerate(('{"count": "{count}"}', "[{count}]", "user={username}&ip={client_ip}",
-                                         "{username} failed {count} times"), start=1):
+        # A text value outside quotes would end up in the document without quotes
+        for payload in ("[{count}, {username}]", '[{threshold}, {policy}]'):
+            with self.subTest(payload=payload):
+                self.assertRaisesRegex(
+                    ParameterError, "outside quotes. Its value is text",
+                    self._create_with_action,
+                    {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},
+                )
+        # A brace that is not part of a placeholder must be written twice, else the engine sends the payload as it is
+        for payload in ("user={username}&x={", "a { b"):
+            with self.subTest(payload=payload):
+                self.assertRaisesRegex(
+                    ParameterError, "no valid template",
+                    self._create_with_action,
+                    {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},
+                )
+        # JSON with quoted placeholders, numbers outside quotes, a form body, plain text and literal braces written
+        # twice are accepted.
+        for index, payload in enumerate(('{"count": "{count}"}', "[{count}]", '[{count}, "{username}"]',
+                                         "[{threshold}, {stage_id}]", "user={username}&ip={client_ip}",
+                                         "{username} failed {count} times", '{{"user": "{username}"}}'), start=1):
             with self.subTest(payload=payload):
                 self._create_with_action(
                     {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},

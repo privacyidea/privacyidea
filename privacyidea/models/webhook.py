@@ -62,9 +62,10 @@ class Webhook(MethodsMixin, db.Model):
     # Optional default body template (overridable per call site)
     default_payload: Mapped[str | None] = mapped_column(
         UnicodeText(), default=None)
-    # URL-encode the values that replace the placeholders of a form-encoded payload. Off only for the webhooks that
-    # the upgrade and the import create from an inline WebHook handler, which sent the values unencoded.
-    urlencode_values: Mapped[bool] = mapped_column(
+    # Encode the values that replace the placeholders of a plain-text payload for the content type (URL encoding for
+    # a form, JSON string escaping for JSON). Off only for the webhooks that the upgrade and the import create from
+    # an inline WebHook handler, which sent the values unencoded.
+    encode_values: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default='1')
 
     # --- Authentication --------------------------------------------------
@@ -193,7 +194,7 @@ class Webhook(MethodsMixin, db.Model):
             "http_method": self.http_method,
             "content_type": self.content_type,
             "default_payload": self.default_payload,
-            "urlencode_values": self.urlencode_values,
+            "encode_values": self.encode_values,
             "auth_type": self.auth_type,
             "username": self.username,
             "password": self.password,

@@ -45,7 +45,7 @@ const STORED_WEBHOOK: Webhook = {
   auth_type: "header",
   verify_tls: true,
   timeout: 5,
-  urlencode_values: true,
+  encode_values: true,
   headers: { "X-Api-Key": WEBHOOK_CENSORED, "X-Source": "privacyidea" },
   secret_headers: ["X-Api-Key"]
 };
@@ -107,10 +107,19 @@ describe("NewWebhookComponent", () => {
 
   const errorKinds = (field: { errors(): { kind: string }[] }): string[] => field.errors().map((error) => error.kind);
 
-  /** Fills the two fields a new webhook cannot do without, so that only the rule under test decides. */
+  /**
+   * Fills the two fields a new webhook cannot do without, so that only the rule under test decides. The identifier
+   * is not the one of STORED_WEBHOOK, which create mode refuses as taken.
+   */
   const fillRequired = (): void => {
-    component.webhookModel.update((m) => ({ ...m, identifier: "siem", url: "https://example.com/hook" }));
+    component.webhookModel.update((m) => ({ ...m, identifier: "chat", url: "https://example.com/hook" }));
   };
+
+  /** The text of the errors that show for the form field with this label. */
+  const errorTextOf = (label: string): string =>
+    Array.from<HTMLElement>(formFieldOf(label).querySelectorAll("mat-error"))
+      .map((error) => error.textContent ?? "")
+      .join(" ");
 
   describe("create mode", () => {
     beforeEach(async () => {
@@ -134,7 +143,7 @@ describe("NewWebhookComponent", () => {
     });
 
     it("requires an identifier and an http(s) URL", () => {
-      component.webhookModel.update((m) => ({ ...m, identifier: "siem", url: "ftp://example.com" }));
+      component.webhookModel.update((m) => ({ ...m, identifier: "chat", url: "ftp://example.com" }));
       expect(component.canSave).toBe(false);
       component.webhookModel.update((m) => ({ ...m, url: "https://example.com/hook" }));
       expect(component.canSave).toBe(true);
@@ -152,6 +161,63 @@ describe("NewWebhookComponent", () => {
       ).toBe(true);
       expect(component.webhookForm().valid()).toBe(false);
       expect(component.canSave).toBe(false);
+    });
+
+    describe("identifier of a stored webhook", () => {
+      it.each(["siem", "SIEM"])("refuses %p, which would overwrite the stored webhook", async (identifier) => {
+        // POST /webhook/<identifier> creates or updates. MySQL and MariaDB compare the identifier without case.
+        component.webhookModel.update((m) => ({ ...m, identifier, url: "https://example.com/hook" }));
+        await flush();
+
+        expect(component.identifierConflict()?.identifier).toBe("siem");
+        expect(errorKinds(component.webhookForm.identifier())).toContain("nameTaken");
+        expect(component.canSave).toBe(false);
+        // Shown at once: Save is blocked, so the reason must not wait until the field loses focus.
+        expect(errorTextOf("Identifier")).toContain('A webhook with the identifier "siem" already exists.');
+        expect(await component.save()).toBe(false);
+        expect(webhookServiceMock.postWebhook).not.toHaveBeenCalled();
+      });
+
+      it("accepts an identifier that no stored webhook has", async () => {
+        component.webhookModel.update((m) => ({ ...m, identifier: "siem-2", url: "https://example.com/hook" }));
+        await flush();
+
+        expect(component.identifierConflict()).toBeUndefined();
+        expect(errorKinds(component.webhookForm.identifier())).not.toContain("nameTaken");
+        expect(component.canSave).toBe(true);
+        expect(errorTextOf("Identifier")).toBe("");
+      });
+
+      it("refuses an identifier that a webhook got after the form was opened", () => {
+        fillRequired();
+        expect(component.canSave).toBe(true);
+
+        webhookServiceMock.webhooks.set([STORED_WEBHOOK, { ...STORED_WEBHOOK, identifier: "chat" }]);
+
+        expect(errorKinds(component.webhookForm.identifier())).toContain("nameTaken");
+        expect(component.canSave).toBe(false);
+      });
+    });
+
+    describe("content type", () => {
+      it.each(["json", "", "application"])("refuses %p, which is not a MIME type", async (content_type) => {
+        fillRequired();
+        component.webhookModel.update((m) => ({ ...m, content_type }));
+        component.webhookForm.content_type().markAsTouched();
+        await flush();
+
+        expect(errorKinds(component.webhookForm.content_type())).toContain("notMimeType");
+        expect(component.canSave).toBe(false);
+        expect(errorTextOf("Content type")).toContain("The content type must be a MIME type");
+      });
+
+      it.each(["text/plain", "application/json; charset=utf-8"])("accepts the MIME type %p", (content_type) => {
+        fillRequired();
+        component.webhookModel.update((m) => ({ ...m, content_type }));
+
+        expect(errorKinds(component.webhookForm.content_type())).toEqual([]);
+        expect(component.canSave).toBe(true);
+      });
     });
 
     it.each([
@@ -213,7 +279,7 @@ describe("NewWebhookComponent", () => {
       expect(component.canSave).toBe(false);
     });
 
-    describe("header names", () => {
+    describe("header rows", () => {
       beforeEach(() => {
         fillRequired();
       });
@@ -259,6 +325,36 @@ describe("NewWebhookComponent", () => {
         expect(component.canSave).toBe(true);
       });
 
+      it.each([
+        [" Bearer token", "a leading space"],
+        ["\tBearer token", "a leading tab"],
+        ["Bearer\ntoken", "a line feed"],
+        ["Bearer\rtoken", "a carriage return"]
+      ])("refuses the header value %p, with %s", async (value) => {
+        // requests cannot send such a value, and the server refuses it before it stores the header.
+        component.addHeader();
+        component.updateHeader(0, { key: "Authorization", value });
+        await flush();
+
+        expect(component.headerValueErrors()).toEqual([true]);
+        expect(component.headerNameErrors()).toEqual([null]);
+        expect(component.canSave).toBe(false);
+        const message = fixture.nativeElement.querySelector("#webhook-header-value-error-0") as HTMLElement;
+        expect(message.textContent).toContain("A header value must not start with whitespace or contain a line break.");
+        const valueInput = formFieldOf("Value").querySelector("input") as HTMLInputElement;
+        expect(valueInput.getAttribute("aria-describedby")).toBe("webhook-header-value-error-0");
+      });
+
+      it.each(["", "Bearer token", "Bearer token ", WEBHOOK_CENSORED])("accepts the header value %p", async (value) => {
+        component.addHeader();
+        component.updateHeader(0, { key: "Authorization", value });
+        await flush();
+
+        expect(component.headerValueErrors()).toEqual([false]);
+        expect(component.canSave).toBe(true);
+        expect(fixture.nativeElement.querySelector("#webhook-header-value-error-0")).toBeNull();
+      });
+
       it("shows why a header row cannot be saved", async () => {
         component.addHeader();
         component.updateHeader(0, { key: "X-Api-Key", value: "first" });
@@ -274,50 +370,60 @@ describe("NewWebhookComponent", () => {
       });
     });
 
-    describe("URL encoding of placeholder values", () => {
-      const urlencodeCheckbox = (): HTMLElement | undefined =>
+    describe("encoding of placeholder values", () => {
+      const encodeCheckbox = (): HTMLElement | undefined =>
         Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-checkbox")).find((box) =>
-          (box.textContent ?? "").includes("URL-Encode Placeholder Values")
+          (box.textContent ?? "").includes("Encode Placeholder Values")
         );
 
       it("is on for a new webhook", () => {
-        expect(component.webhookModel().urlencode_values).toBe(true);
+        expect(component.webhookModel().encode_values).toBe(true);
       });
 
       it.each([
         ["application/x-www-form-urlencoded", true],
         ["Application/X-WWW-Form-Urlencoded; charset=utf-8", true],
-        ["application/json", false]
+        ["application/json", true],
+        [" Application/JSON ; charset=utf-8", true],
+        ["text/plain", false],
+        ["application/xml", false]
       ])("is offered for the content type %p: %p", async (content_type, offered) => {
         component.webhookModel.update((m) => ({ ...m, content_type }));
         await flush();
-        expect(component.showUrlencodeValues()).toBe(offered);
-        expect(urlencodeCheckbox() !== undefined).toBe(offered);
+        expect(component.showEncodeValues()).toBe(offered);
+        expect(encodeCheckbox() !== undefined).toBe(offered);
+      });
+
+      it("explains what it encodes for a form and for JSON", async () => {
+        await flush();
+        const hint = fixture.nativeElement.querySelector("#webhook-encode-values-hint") as HTMLElement;
+        expect(hint.textContent).toContain("stays one form field");
+        expect(hint.textContent).toContain("stays one JSON string");
       });
 
       it("keeps its value while the content type changes", () => {
         component.webhookModel.update((m) => ({
           ...m,
           content_type: "application/x-www-form-urlencoded",
-          urlencode_values: false
+          encode_values: false
         }));
+        component.webhookModel.update((m) => ({ ...m, content_type: "text/plain" }));
         component.webhookModel.update((m) => ({ ...m, content_type: "application/json" }));
-        component.webhookModel.update((m) => ({ ...m, content_type: "application/x-www-form-urlencoded" }));
-        expect(component.webhookModel().urlencode_values).toBe(false);
+        expect(component.webhookModel().encode_values).toBe(false);
       });
 
       it("is saved with the webhook", async () => {
         fillRequired();
         component.webhookModel.update((m) => ({
           ...m,
-          content_type: "application/x-www-form-urlencoded",
-          urlencode_values: false
+          content_type: "application/json",
+          encode_values: false
         }));
 
         await component.save();
 
         expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(
-          expect.objectContaining({ urlencode_values: false }),
+          expect.objectContaining({ encode_values: false }),
           {}
         );
       });
@@ -326,7 +432,7 @@ describe("NewWebhookComponent", () => {
     it("insists on a username for basic authentication only", () => {
       component.webhookModel.update((m) => ({
         ...m,
-        identifier: "siem",
+        identifier: "chat",
         url: "https://example.com/hook",
         auth_type: "basic"
       }));
@@ -341,7 +447,7 @@ describe("NewWebhookComponent", () => {
     });
 
     it("saves the header table as a record plus the secret flags", async () => {
-      component.webhookModel.update((m) => ({ ...m, identifier: "siem", url: "https://example.com/hook" }));
+      fillRequired();
       component.addHeader();
       component.updateHeader(0, { key: "X-Api-Key", value: "s3cr3t", secret: true });
       component.addHeader();
@@ -410,12 +516,18 @@ describe("NewWebhookComponent", () => {
       expect(component.canTest()).toBe(false);
     });
 
-    it("loads the URL encoding setting of a stored webhook", async () => {
+    it("loads the encoding setting of a stored webhook", async () => {
       // A webhook converted from an old WebHook handler has it off.
-      webhookServiceMock.webhooks.set([{ ...STORED_WEBHOOK, urlencode_values: false }]);
+      webhookServiceMock.webhooks.set([{ ...STORED_WEBHOOK, encode_values: false }]);
       await flush();
 
-      expect(component.webhookModel().urlencode_values).toBe(false);
+      expect(component.webhookModel().encode_values).toBe(false);
+    });
+
+    it("does not count its own identifier as taken", () => {
+      expect(component.identifierConflict()).toBeUndefined();
+      expect(errorKinds(component.webhookForm.identifier())).toEqual([]);
+      expect(component.canSave).toBe(true);
     });
 
     it("loads the stored definition, headers included", () => {

@@ -247,6 +247,11 @@ def inline_webhook_handler(name: str, options: dict | None = None) -> dict:
                                                              "content_type": "json", "data": '{"a": 1}'}}
 
 
+def linked_webhook_handler(name: str, identifier: str) -> dict:
+    """A WebHook event handler that names a webhook, as privacyIDEA 3.15 exports it."""
+    return inline_webhook_handler(name, {"webhook": identifier, "data": '{"a": 1}'})
+
+
 def delete_converted_webhooks() -> None:
     """Delete the webhooks that the import created for the event handlers of the tests."""
     for identifier in get_webhook_identifiers():
@@ -1181,3 +1186,156 @@ class ImportPlanTestCase(MyTestCase):
                 self.assertEqual({"imp-ev-intact"}, {name for name in names_on_system("event")
                                                      if name.startswith(PREFIX)})
                 delete_object("event", "imp-ev-intact")
+
+    def test_34_a_skipped_definition_keeps_its_position_in_its_group(self) -> None:
+        # The definitions of a group are matched with the stored handlers in the order of their ids, by position. This
+        # includes a definition that the import does not convert. The stored handler at its position stays as it is.
+        set_webhook("imp-hook-twin", url="https://hook.example.org/twin")
+        defective = inline_webhook_handler("imp-ev-twin", {"data": "{}"})
+        for defective_first in (False, True):
+            with self.subTest(defective_first=defective_first):
+                first_id = set_event("imp-ev-twin", ["token_init"], "WebHook", "post_webhook", conditions={},
+                                     options={"webhook": "imp-hook-twin"})
+                second_id = set_event("imp-ev-twin", ["token_assign"], "WebHook", "post_webhook", conditions={},
+                                      options={"webhook": "imp-hook-twin"})
+                stored = {entry["id"]: entry for entry in export("event", {"imp-ev-twin"})}
+                updated_id = second_id if defective_first else first_id
+                changed = {**copy.deepcopy(stored[updated_id]), "ordering": 5}
+                definitions = [defective, changed] if defective_first else [changed, defective]
+
+                for replace in (False, True):
+                    plans = build_import_plan({"event": copy.deepcopy(definitions)}, ["event"], replace=replace)
+                    entries = [(entry.action, entry.changed_fields, entry.reason)
+                               for entry in self._type_plan(plans, "event").entries
+                               if entry.key == ("imp-ev-twin", "WebHook")]
+                    self.assertEqual([("update", ["ordering"], None), ("skip", [], "it has no URL")], entries, replace)
+
+                self.assertEqual([], apply_import_plan(plans, skip_invalid=True))
+                self.assertEqual({first_id: (["token_init"], 5 if updated_id == first_id else 0),
+                                  second_id: (["token_assign"], 5 if updated_id == second_id else 0)},
+                                 {entry["id"]: (entry["event"], entry["ordering"])
+                                  for entry in export("event", {"imp-ev-twin"})})
+                delete_object("event", "imp-ev-twin")
+
+    def test_35_a_skipped_definition_counts_for_its_group(self) -> None:
+        # The number of the definitions in the import includes a definition that the import does not convert. With
+        # --replace, only the stored handlers after the last definition are surplus.
+        set_webhook("imp-hook-twin", url="https://hook.example.org/twin")
+        handler_ids = [set_event("imp-ev-twin", [event], "WebHook", "post_webhook", conditions={},
+                                 options={"webhook": "imp-hook-twin"})
+                       for event in ("token_init", "token_assign", "token_revoke")]
+        first = {**copy.deepcopy(min(export("event", {"imp-ev-twin"}), key=lambda entry: entry["id"])), "ordering": 5}
+        data = {"event": [first, inline_webhook_handler("imp-ev-twin", {"data": "{}"})]}
+
+        plans = build_import_plan(copy.deepcopy(data), ["event"])
+        self.assertEqual([("skip", "2 entries in the import, 3 on this system, use --replace"),
+                          ("skip", "it has no URL")],
+                         [(entry.action, entry.reason) for entry in self._type_plan(plans, "event").entries])
+        self.assertIn('  skip event "imp-ev-twin" (WebHook): 2 entries in the import, 3 on this system, '
+                      'use --replace', format_import_plan(plans))
+
+        plans = build_import_plan(copy.deepcopy(data), ["event"], replace=True)
+        self.assertEqual([("update", None), ("skip", None), ("delete", handler_ids[2])],
+                         [(entry.action, entry.target_id) for entry in self._type_plan(plans, "event").entries])
+        self.assertEqual([], apply_import_plan(plans, skip_invalid=True))
+        self.assertEqual([(handler_ids[0], ["token_init"], 5), (handler_ids[1], ["token_assign"], 0)],
+                         sorted((entry["id"], entry["event"], entry["ordering"])
+                                for entry in export("event", {"imp-ev-twin"})))
+
+    def test_36_plan_notes_the_webhooks_that_the_import_creates(self) -> None:
+        # The import converts an inline WebHook handler to a webhook. For a stored handler the plan names the webhook.
+        # A new handler gets its id, and with it the identifier of its webhook, only when the import writes it.
+        self.addCleanup(delete_converted_webhooks)
+        set_webhook("imp-hook-other", url="https://hook.example.org/other")
+        stored_id = set_event("imp-ev-stored", ["validate_check"], "WebHook", "post_webhook", conditions={},
+                              options={"webhook": "imp-hook-other"})
+        data = {"event": [inline_webhook_handler("imp-ev-stored"), inline_webhook_handler("imp-ev-new")]}
+        identifier = f"from_imp-ev-stored_{stored_id}"
+        notes = [f'Webhook "{identifier}" is created for the event handler "imp-ev-stored".',
+                 'A webhook is created for the event handler "imp-ev-new" from its inline URL.']
+
+        plans = build_import_plan(copy.deepcopy(data), ["event"])
+        event_plan = self._type_plan(plans, "event")
+        self.assertEqual({("imp-ev-stored", "WebHook"): "update", ("imp-ev-new", "WebHook"): "create"},
+                         {entry.key: entry.action for entry in event_plan.entries})
+        self.assertEqual(notes, event_plan.notes)
+        lines = format_import_plan(plans)
+        for note in notes:
+            self.assertIn(f"  {note}", lines)
+        self.assertEqual([], apply_import_plan(plans))
+        new_id = export("event", {"imp-ev-new"})[0]["id"]
+        self.assertLessEqual({identifier, f"from_imp-ev-new_{new_id}"}, set(get_webhook_identifiers()))
+
+        # The import links a handler to the webhook that it created before, so it creates no webhook.
+        for handler in data["event"]:
+            handler["ordering"] = 5
+        plans = build_import_plan(copy.deepcopy(data), ["event"])
+        event_plan = self._type_plan(plans, "event")
+        self.assertEqual({("imp-ev-stored", "WebHook"): "update", ("imp-ev-new", "WebHook"): "update"},
+                         {entry.key: entry.action for entry in event_plan.entries})
+        self.assertEqual([], event_plan.notes)
+
+    def test_37_plan_warns_for_a_webhook_that_does_not_exist(self) -> None:
+        # An event handler that names a webhook which is neither on this system nor in the import sends nothing.
+        self.addCleanup(delete_converted_webhooks)
+        set_webhook("imp-hook-stored", url="https://hook.example.org/stored")
+        data = {"webhook": {"imp-hook-imported": {"url": "https://hook.example.org/imported"}},
+                "event": [linked_webhook_handler("imp-ev-missing", "imp-hook-missing"),
+                          linked_webhook_handler("imp-ev-stored", "imp-hook-stored"),
+                          linked_webhook_handler("imp-ev-imported", "imp-hook-imported"),
+                          inline_webhook_handler("imp-ev-inline")]}
+
+        def warning(handler_name: str, identifier: str) -> str:
+            return (f'Event handler "{handler_name}" names the webhook "{identifier}", which is neither on this system '
+                    f'nor in the import. The handler sends nothing until the webhook exists.')
+
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"])
+        self.assertEqual([warning("imp-ev-missing", "imp-hook-missing")], self._type_plan(plans, "event").warnings)
+        self.assertIn(f'  {warning("imp-ev-missing", "imp-hook-missing")}', format_import_plan(plans))
+
+        # The import of the event handlers alone does not import the webhooks of the data.
+        plans = build_import_plan(copy.deepcopy(data), ["event"])
+        self.assertEqual([warning("imp-ev-missing", "imp-hook-missing"),
+                          warning("imp-ev-imported", "imp-hook-imported")], self._type_plan(plans, "event").warnings)
+
+        # With --replace the import keeps a webhook of this system that a handler of the import names.
+        replace_data = {"webhook": {}, "event": [linked_webhook_handler("imp-ev-stored", "imp-hook-stored")]}
+        plans = build_import_plan(copy.deepcopy(replace_data), ["webhook", "event"], replace=True)
+        self.assertNotIn("imp-hook-stored", self._by_key(self._type_plan(plans, "webhook")))
+        self.assertEqual([], self._type_plan(plans, "event").warnings)
+
+        # A handler that the import does not write gets no warning, a handler that it updates gets one.
+        self.assertEqual([], apply_import_plan(build_import_plan(copy.deepcopy(data), ["webhook", "event"])))
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"])
+        self.assertEqual({"unchanged"}, {entry.action for entry in self._type_plan(plans, "event").entries})
+        self.assertEqual([], self._type_plan(plans, "event").warnings)
+        data["event"][1]["options"]["webhook"] = "imp-hook-gone"
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"])
+        self.assertEqual([("update", ["options.webhook"])],
+                         [(entry.action, entry.changed_fields) for entry in self._type_plan(plans, "event").entries
+                          if entry.action != "unchanged"])
+        self.assertEqual([warning("imp-ev-stored", "imp-hook-gone")], self._type_plan(plans, "event").warnings)
+
+    def test_38_an_empty_webhook_text_is_the_same_as_none(self) -> None:
+        # The export writes None for an empty text of a webhook, and import_webhook stores it as an empty text. The
+        # plan compares the two as the same, so that the plan of the same data shows no change after the import.
+        set_webhook("imp-hook-payload", url="https://hook.example.org/payload", default_payload='{"a": 1}')
+        set_webhook("imp-hook-empty", url="https://hook.example.org/empty", default_payload="", description="")
+        set_webhook("imp-hook-none", url="https://hook.example.org/none")
+        data = {"webhook": export("webhook", {"imp-hook-payload", "imp-hook-empty", "imp-hook-none"})}
+        data["webhook"]["imp-hook-payload"]["default_payload"] = None
+        data["webhook"]["imp-hook-empty"].update(default_payload=None, description=None)
+        data["webhook"]["imp-hook-none"].update(default_payload="", description="")
+
+        plans = build_import_plan(copy.deepcopy(data), ["webhook"])
+        entries = self._by_key(self._type_plan(plans, "webhook"))
+        self.assertEqual(("update", ["default_payload"]),
+                         (entries["imp-hook-payload"].action, entries["imp-hook-payload"].changed_fields))
+        self.assertEqual("unchanged", entries["imp-hook-empty"].action)
+        self.assertEqual("unchanged", entries["imp-hook-none"].action)
+
+        # The import removes the default payload, so the plan of the same data shows no change.
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertFalse(export("webhook", {"imp-hook-payload"})["imp-hook-payload"]["default_payload"])
+        plans = build_import_plan(copy.deepcopy(data), ["webhook"])
+        self.assertEqual({"unchanged"}, {entry.action for entry in self._type_plan(plans, "webhook").entries})

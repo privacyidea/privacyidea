@@ -46,6 +46,7 @@ from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.utils import SafeFormatDict
 from privacyidea.lib.utils import safe_format as _safe_format
 from privacyidea.lib.utils import canonical_client_ip
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
@@ -2080,7 +2081,7 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
 
 
 def _render_webhook_payload(payload: str, tags: dict, content_type: str | None = None,
-                            urlencode_values: bool = False) -> str:
+                            encode_values: bool = False) -> str:
     """
     Render the ``{tag}`` placeholders of a WEBHOOK action's payload template.
 
@@ -2091,31 +2092,42 @@ def _render_webhook_payload(payload: str, tags: dict, content_type: str | None =
     Anything else is substituted as plain text. The distinction is made on the
     payload itself rather than on the webhook's ``content_type``.
 
-    In a plain-text payload with the content type ``application/x-www-form-urlencoded``, the
-    values are URL-encoded if the webhook says so (:func:`~privacyidea.lib.webhook.placeholder_values`).
-    Some values come from the client: ``{username}`` is the login name the client tried. Without
-    the encoding, a login name with ``&`` adds fields to the body.
+    In a plain-text payload, the values are encoded for the content type of the webhook if the
+    webhook says so (:func:`~privacyidea.lib.webhook.placeholder_values`): URL-encoded for a form,
+    escaped as JSON string content for JSON. Some values come from the client: ``{username}`` is
+    the login name the client tried. Without the encoding, a login name with ``&`` adds fields to a
+    form body, and one with ``"`` adds keys or elements to a JSON body.
 
-    Substitution is :func:`_safe_format` throughout: an unknown placeholder is
-    left as written rather than dropping the notification, which matters more
-    here than elsewhere, because the payload is what the receiving system reads.
+    An unknown placeholder is left as written rather than dropping the notification, which matters
+    more here than elsewhere, because the payload is what the receiving system reads. A plain-text
+    payload that can not be parsed as a template is sent as it is, with a warning in the log. The
+    policy validation refuses such a payload when it is saved.
 
     :param payload: the payload template of the action
     :param tags: the values of the placeholders
     :param content_type: the content type of the webhook
-    :param urlencode_values: the setting ``urlencode_values`` of the webhook
+    :param encode_values: the setting ``encode_values`` of the webhook
     :return: the payload with the placeholders replaced
     """
     from privacyidea.lib.webhook import placeholder_values
-    text_tags = placeholder_values(tags, content_type, urlencode_values)
+    text_tags = placeholder_values(tags, content_type, encode_values)
+
+    def substitute_text() -> str:
+        try:
+            return payload.format_map(SafeFormatDict(text_tags))
+        except Exception as error:  # Any error of the template: the notification still goes out
+            log.warning(f"The placeholders of a WEBHOOK payload can not be replaced ({error}). The payload is "
+                        f"sent as it is.")
+            return payload
+
     try:
         document = json.loads(payload)
     except (ValueError, TypeError):
-        return _safe_format(payload, text_tags)
+        return substitute_text()
     if not isinstance(document, (dict, list)):
         # A bare JSON scalar ("5", "true", a quoted string) is a plain payload
-        # that happens to parse; substituting it as text keeps it verbatim.
-        return _safe_format(payload, text_tags)
+        # that happens to parse; it is substituted as text.
+        return substitute_text()
 
     def substitute(value):
         if isinstance(value, dict):
@@ -2170,7 +2182,7 @@ def _fire_action_webhook(stage_action: ConditionalAccessStageAction, tags: dict)
 
     payload = webhook_config.get("payload")
     if payload and config is not None:
-        payload = _render_webhook_payload(str(payload), tags, config["content_type"], config["urlencode_values"])
+        payload = _render_webhook_payload(str(payload), tags, config["content_type"], config["encode_values"])
 
     # The identifier is logged, never the URL: it is a property of the webhook definition and may embed a token.
     result = fire_webhook(identifier, payload=payload or None, config=config)
@@ -2236,6 +2248,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
         if target is not None:
             enforced.add(target)
 
+    # The locks and blocks run before the notifications (EMAIL_*, WEBHOOK). A notification waits for its endpoint,
+    # up to the timeout of the webhook or the SMTP server, and each lock or block commits on its own: a lock after a
+    # slow notification would let further guesses through in that time. Within each group the stored order applies.
+    actions = sorted(actions, key=lambda stage_action: stage_action.action_type not in RESTRICTED_TARGET_BY_ACTION)
     for action in actions:
         try:
             action_type = ConditionalAccessAction(action.action_type)

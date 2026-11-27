@@ -178,6 +178,71 @@ def _check_text_parameters(**parameters: object) -> None:
             raise ParameterError(f"The parameter {name!r} must be a string, not {type(value).__name__}.")
 
 
+def _check_lengths(**parameters: str | None) -> None:
+    """
+    Make sure that every given text fits into its column of the ``webhook`` table.
+
+    PostgreSQL, MySQL, MariaDB and Oracle refuse a longer value with a database error, which the API answers with
+    HTTP 500. SQLite stores it.
+
+    :param parameters: the parameters by column name
+    :raises ParameterError: if a value is longer than its column
+    """
+    for name, value in parameters.items():
+        maximum = Webhook.__table__.c[name].type.length
+        if value is not None and maximum is not None and len(value) > maximum:
+            raise ParameterError(f"The parameter {name!r} must have at most {maximum} characters.")
+
+
+def _check_header_arguments(headers: object, secret_headers: object, header_renames: object) -> None:
+    """
+    Make sure that the header arguments have the types that :func:`_stage_webhook` reads.
+
+    A JSON request or an import can carry a list where an object is expected. Without this check, such a value fails
+    later with an AttributeError or a TypeError, which the API answers with HTTP 500.
+
+    :raises ParameterError: if an argument has the wrong type
+    """
+    if headers is not None and not isinstance(headers, dict):
+        raise ParameterError("The headers must be an object that maps each header name to its value.")
+    if secret_headers is not None and (isinstance(secret_headers, (str, bytes, dict))
+                                       or not all(isinstance(name, str) for name in secret_headers)):
+        raise ParameterError("The secret headers must be a list of header names.")
+    if header_renames is not None and (not isinstance(header_renames, dict)
+                                       or not all(isinstance(old_name, str) for old_name in header_renames.values())):
+        raise ParameterError("A header rename must give the name that the header is stored under, as text.")
+
+
+def _check_secret_flags(stored: dict, headers: dict, secret_headers: list | None, header_renames: dict | None) -> None:
+    """
+    Refuse a write that keeps the stored value of a secret header, but stores the header as not secret.
+
+    A client never receives the value of a secret header, only ``__CENSORED__``. If a request sends this placeholder
+    without the secret flag, the stored value is decrypted and stored in clear text, and the next read returns it.
+    An administrator could then read a credential that the API never discloses, and send it to another URL. To store
+    such a header in clear text, the request must send its value again. A secret header with an empty value has
+    nothing to disclose.
+
+    :param stored: the stored configuration, as :meth:`Webhook.get` returns it
+    :param headers: the requested header set
+    :param secret_headers: the names of the requested secret headers
+    :param header_renames: dict of new header name -> the name it is stored under
+    :raises ParameterError: if a kept secret value would be stored in clear text
+    """
+    stored_values = stored.get("headers") or {}
+    stored_secret = set(stored.get("secret_headers") or ())
+    flagged = set(secret_headers or ())
+    for name, value in headers.items():
+        if not is_censored(value) or name in flagged:
+            continue
+        stored_name = (header_renames or {}).get(name, name)
+        if stored_name not in stored_values:
+            # A rename that the stored rows show as done already
+            stored_name = name
+        if stored_name in stored_secret and stored_values.get(stored_name):
+            raise ParameterError(f"The header {name!r} is secret. Enter its value again to store it unencrypted.")
+
+
 def _validate(identifier: str, url: str | None, http_method: str | None,
               content_type: str | None, auth_type: str | None,
               timeout, username: str | None,
@@ -255,6 +320,9 @@ def check_header(name: str, value: str) -> None:
     if not isinstance(name, str) or not _HEADER_NAME.fullmatch(name):
         raise ParameterError(f"{name!r} is not a valid header name. A header name contains only letters, digits "
                              f"and the characters !#$%&'*+-.^_`|~.")
+    maximum = WebhookHeader.__table__.c.key.type.length
+    if len(name) > maximum:
+        raise ParameterError(f"A header name must have at most {maximum} characters.")
     if not isinstance(value, str):
         raise ParameterError(f"The value of the header {name!r} must be a string.")
     if not _HEADER_VALUE.fullmatch(value):
@@ -455,7 +523,8 @@ def _apply_headers(webhook, headers, secret_headers, renames=None):
                                              encrypted=should_be_secret))
                 continue
             # Keep the stored value, but still honor a change of the
-            # "encrypted" checkbox.
+            # "encrypted" checkbox. _check_secret_flags() refuses to keep a
+            # secret value in clear text, so only an empty one gets here.
             if should_be_secret == bool(row.encrypted):
                 continue
             current = row.value or ""
@@ -568,7 +637,7 @@ def get_webhook_identifiers():
 # reads to see that the write happened.
 @log_with(log, log_entry=False)
 def set_webhook(identifier, url=None, description=None, http_method=None,
-                content_type=None, default_payload=None, urlencode_values=None,
+                content_type=None, default_payload=None, encode_values=None,
                 auth_type=None, username=None, password=None,
                 verify_tls=None, tls_ca_bundle=None,
                 client_certificate=None, client_key=None,
@@ -596,10 +665,11 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :param content_type: MIME type of the request body (default application/json)
     :param default_payload: optional body template used when the call site
         supplies no payload of its own
-    :param urlencode_values: whether the values that replace the placeholders of
-        a payload are URL-encoded when the content type is
-        ``application/x-www-form-urlencoded`` (default True)
-    :type urlencode_values: bool or None
+    :param encode_values: whether the values that replace the placeholders of
+        a plain-text payload are encoded for the content type: URL-encoded for
+        ``application/x-www-form-urlencoded``, escaped as JSON string content
+        for ``application/json`` (default True)
+    :type encode_values: bool or None
     :param auth_type: one of 'none', 'basic', 'header', 'mtls'
     :param username: username for basic authentication
     :param password: password for basic authentication (stored encrypted)
@@ -628,7 +698,7 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     """
     webhook_id = _stage_webhook(identifier, url=url, description=description, http_method=http_method,
                                 content_type=content_type, default_payload=default_payload,
-                                urlencode_values=urlencode_values, auth_type=auth_type, username=username,
+                                encode_values=encode_values, auth_type=auth_type, username=username,
                                 password=password, verify_tls=verify_tls, tls_ca_bundle=tls_ca_bundle,
                                 client_certificate=client_certificate, client_key=client_key,
                                 client_key_password=client_key_password,
@@ -640,7 +710,7 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
 
 def _stage_webhook(identifier: str, url: str | None = None, description: str | None = None,
                    http_method: str | None = None, content_type: str | None = None,
-                   default_payload: str | None = None, urlencode_values: bool | None = None,
+                   default_payload: str | None = None, encode_values: bool | None = None,
                    auth_type: str | None = None, username: str | None = None,
                    password: str | None = None, verify_tls: bool | None = None, tls_ca_bundle: str | None = None,
                    client_certificate: str | None = None, client_key: str | None = None,
@@ -656,6 +726,13 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
                            password=password, tls_ca_bundle=tls_ca_bundle, client_certificate=client_certificate,
                            client_key=client_key, client_key_password=client_key_password, http_proxy=http_proxy,
                            https_proxy=https_proxy)
+    if secret_headers is not None and not isinstance(secret_headers, (str, bytes, dict)):
+        # Read more than once below
+        secret_headers = list(secret_headers)
+    _check_header_arguments(headers, secret_headers, header_renames)
+    _check_lengths(identifier=identifier, url=url, description=description, content_type=content_type,
+                   username=username, tls_ca_bundle=tls_ca_bundle, client_certificate=client_certificate,
+                   client_key=client_key, http_proxy=http_proxy, https_proxy=https_proxy)
 
     stmt = select(Webhook).filter(Webhook.identifier == identifier)
     webhook = db.session.execute(stmt).scalar_one_or_none()
@@ -691,6 +768,8 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
                             url=url, username=username,
                             verify_tls=None if verify_tls is None else bool(verify_tls),
                             tls_ca_bundle=tls_ca_bundle, http_proxy=http_proxy, https_proxy=https_proxy)
+        if headers is not None:
+            _check_secret_flags(stored, headers, secret_headers, header_renames)
 
     encrypted_password = None
     if password is not None and not is_censored(password):
@@ -699,6 +778,10 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
     if client_key_password is not None and not is_censored(client_key_password):
         encrypted_key_password = (
             encryptPassword(client_key_password) if client_key_password else "")
+    # The columns hold the encrypted value, which is longer than the password
+    for name, encrypted in (("password", encrypted_password), ("client_key_password", encrypted_key_password)):
+        if encrypted and len(encrypted) > Webhook.__table__.c[name].type.length:
+            raise ParameterError(f"The {name.replace('_', ' ')} is too long.")
 
     if webhook is None:
         webhook = Webhook(identifier=identifier, url=effective_url,
@@ -715,8 +798,8 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
         webhook.description = description
     if default_payload is not None:
         webhook.default_payload = default_payload
-    if urlencode_values is not None:
-        webhook.urlencode_values = bool(urlencode_values)
+    if encode_values is not None:
+        webhook.encode_values = bool(encode_values)
     if username is not None:
         webhook.username = username
     if encrypted_password is not None:
@@ -859,27 +942,43 @@ def media_type(content_type):
     return parse_options_header(content_type or "")[0].strip().lower()
 
 
-def placeholder_values(tags: dict, content_type: str | None, urlencode_values: bool) -> dict:
+def placeholder_values(tags: dict, content_type: str | None, encode_values: bool) -> dict:
     """
-    Return the values for the placeholders of a plain-text payload.
+    Return the values for the placeholders of a plain-text payload, encoded for the content type of the webhook.
 
-    In a form-encoded body (``application/x-www-form-urlencoded``), ``&`` separates the fields and ``=`` separates
-    the name from the value. A value with one of these characters, a ``+`` or a ``%`` changes the fields that the
-    endpoint reads, unless it is URL-encoded. The setting ``urlencode_values`` of the webhook encodes the values. It
-    is off for the webhooks that the upgrade and the import create from an inline WebHook handler, because that
-    handler sent the values unencoded.
+    A payload that is a JSON object or array is substituted value by value and needs no encoding. Any other payload
+    is substituted as plain text, and a value can then change the structure of the body:
+
+    * In a form-encoded body (``application/x-www-form-urlencoded``), ``&`` separates the fields and ``=`` separates
+      the name from the value. A value with one of these characters, a ``+`` or a ``%`` adds or changes fields.
+      The value is URL-encoded.
+    * In a JSON body (``application/json``), for example ``[{count}, "{username}"]``, a value with ``"`` or ``\\``
+      ends the string and adds elements or keys. The value is escaped as the content of a JSON string.
+
+    Some values come from the client, for example the login name that it tried. The setting ``encode_values`` of
+    the webhook turns the encoding on. It is off for the webhooks that the upgrade and the import create from an
+    inline WebHook handler, because that handler sent the values unencoded.
 
     Only text values are encoded. Another value, such as a number, contains none of these characters, and it keeps
     its type for a format specification such as ``{count:03d}``.
 
     :param tags: the values of the placeholders
     :param content_type: the content type of the webhook
-    :param urlencode_values: the setting of the webhook
-    :return: the tags, with URL-encoded text values if the setting applies to the content type
+    :param encode_values: the setting of the webhook
+    :return: the tags, with encoded text values if the setting applies to the content type
     """
-    if not urlencode_values or media_type(content_type) != ContentType.URLENCODED:
+    if not encode_values:
         return tags
-    return {key: quote_plus(value) if isinstance(value, str) else value for key, value in tags.items()}
+    media = media_type(content_type)
+    if media == ContentType.URLENCODED:
+        encode = quote_plus
+    elif media == ContentType.JSON:
+        def encode(value: str) -> str:
+            # The content of a JSON string, without the quotes around it
+            return json.dumps(value)[1:-1]
+    else:
+        return tags
+    return {key: encode(value) if isinstance(value, str) else value for key, value in tags.items()}
 
 
 def _mtls_ssl_context(config, verify, key_password):
@@ -1024,7 +1123,7 @@ def redact_url(text, url):
     return text
 
 
-def _read_response_text(response: requests.Response, deadline: float) -> str:
+def _read_response_text(response: requests.Response, deadline: float) -> tuple[str, bool]:
     """
     Read the start of the response body before the deadline of the delivery.
 
@@ -1032,18 +1131,22 @@ def _read_response_text(response: requests.Response, deadline: float) -> str:
     delivery much longer than the timeout. The body is read in small parts, and the deadline is checked before each
     part. Only the start of the body is read: the result and the log keep MAX_RESPONSE_LENGTH characters.
 
+    When the deadline passes, the read stops. The endpoint has answered at that point, so the caller reports the
+    status code of the response and not a timeout.
+
     :param response: a response of a request with ``stream=True``
     :param deadline: the value of :func:`time.monotonic` when the delivery must end
-    :return: the start of the body as text
-    :raises requests.exceptions.Timeout: if the deadline passes before the body is read
+    :return: the part of the body that was read, as text, and whether the deadline stopped the read
     """
     # read1() returns as soon as data is available. urllib3 before 2.1 does not have it, and read() waits until it
     # has the requested number of bytes, so it reads small parts.
     read1 = getattr(response.raw, "read1", None)
     data = bytearray()
+    stopped = False
     while len(data) < MAX_RESPONSE_BYTES:
         if time.monotonic() > deadline:
-            raise requests.exceptions.Timeout("the endpoint did not send its answer within the timeout")
+            stopped = True
+            break
         if read1 is not None:
             chunk = read1(MAX_RESPONSE_BYTES - len(data), decode_content=True)
         else:
@@ -1052,10 +1155,11 @@ def _read_response_text(response: requests.Response, deadline: float) -> str:
             break
         data.extend(chunk)
     try:
-        return bytes(data).decode(response.encoding or "utf-8", errors="replace")
+        text = bytes(data).decode(response.encoding or "utf-8", errors="replace")
     except LookupError:
         # The endpoint names a character set that Python does not know.
-        return bytes(data).decode("utf-8", errors="replace")
+        text = bytes(data).decode("utf-8", errors="replace")
+    return text, stopped
 
 
 def _redact_secrets(text: str, config: dict) -> str:
@@ -1364,9 +1468,12 @@ def fire_webhook(identifier, payload=None, config=None):
 
     Delivery is **synchronous**: the caller waits for the response. The
     webhook's timeout limits the connection, the wait for the answer and the
-    read of the start of the response body together. An endpoint that sends
-    the status line and the headers of its answer very slowly can still hold
-    a delivery longer, because requests limits each wait for data only.
+    read of the start of the response body together. If the answer arrives
+    but its body does not arrive in time, the read stops and the status code
+    counts. Each redirect that is followed gets a timeout of its own. An
+    endpoint that sends the status line and the headers of its answer very
+    slowly can still hold a delivery longer, because requests limits each
+    wait for data only.
     Pointing a webhook at a slow endpoint therefore adds latency to the
     triggering request. There are no retries.
 
@@ -1470,9 +1577,15 @@ def fire_webhook(identifier, payload=None, config=None):
             stream=True,
         )
         try:
-            body_text = _truncate(_read_response_text(response, deadline))
+            text, stopped = _read_response_text(response, deadline)
         finally:
             response.close()
+        body_text = _truncate(text)
+        if stopped:
+            # The request was delivered, and the status code tells how the endpoint took it. A redirect gets a
+            # timeout of its own, so a chain of redirects can also end here.
+            log.info(f"Webhook {identifier!r}: the timeout stopped the read of the response body. The status "
+                     f"code {response.status_code} counts.")
         # requests.Response.ok is true for anything below 400, so a 3xx counts as a success by
         # default. With redirects not followed that is wrong twice over: nothing was delivered,
         # and the caller - an event handler, or a Conditional Access WEBHOOK action - would
@@ -1546,6 +1659,11 @@ def test_webhook(identifier, payload=None):
 #: configuration, and therefore must not be written back on import.
 _NON_CONFIG_KEYS = ("id", "identifier")
 
+#: Text settings that an export can hold as None: a webhook without a default payload has None, and Oracle reads
+#: an empty string back as NULL. For set_webhook(), None means "keep the stored value", so the import writes "".
+_EMPTY_TEXT_KEYS = ("description", "default_payload", "username", "password", "tls_ca_bundle",
+                    "client_certificate", "client_key", "client_key_password", "http_proxy", "https_proxy")
+
 
 @register_export('webhook')
 def export_webhook(name=None, censor=False):
@@ -1588,6 +1706,11 @@ def import_webhook(data, name=None):
     know the webhook yet, such a secret simply stays empty and has to be
     entered once.
 
+    A text setting that is None in the export is empty after the import, for
+    example the default payload of a webhook that has none. For
+    :func:`set_webhook`, None means "keep the stored value", so it is
+    imported as an empty string.
+
     :param data: dict of identifier -> webhook configuration
     :param name: import only this identifier (default: import all)
     """
@@ -1600,7 +1723,7 @@ def import_webhook(data, name=None):
         parameters = {}
         for key, value in res_data.items():
             if key in known_parameters:
-                parameters[key] = value
+                parameters[key] = "" if value is None and key in _EMPTY_TEXT_KEYS else value
             elif key not in _NON_CONFIG_KEYS:
                 log.warning(f"Ignoring unknown key {key!r} while importing "
                             f"webhook {res_name!r}.")

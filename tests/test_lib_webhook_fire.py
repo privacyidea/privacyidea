@@ -586,6 +586,27 @@ class _TrickleHandler(BaseHTTPRequestHandler):
         pass
 
 
+class _SlowRedirectHandler(BaseHTTPRequestHandler):
+    """Answer /first with a redirect to /second after 0.7 seconds, and /second with 200 after 0.7 seconds."""
+
+    def do_POST(self) -> None:
+        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        time.sleep(0.7)
+        if self.path == "/first":
+            self.send_response(307)
+            self.send_header("Location", "/second")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        else:
+            self.send_response(200)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
 class _QuietServer(ThreadingHTTPServer):
     daemon_threads = True
 
@@ -608,7 +629,10 @@ class FireWebhookLimitsTestCase(MyTestCase):
         super().tearDown()
 
     def test_the_timeout_limits_a_slow_response_body(self):
-        """requests limits each wait for data, so 20 bytes at 0.3 s each take 6 s without the deadline."""
+        """
+        requests limits each wait for data, so 20 bytes at 0.3 s each take 6 s without the deadline. The endpoint
+        answered, so its status code counts, with the part of the body that arrived in time.
+        """
         server = _QuietServer(("127.0.0.1", 0), _TrickleHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -621,9 +645,28 @@ class FireWebhookLimitsTestCase(MyTestCase):
             server.shutdown()
             server.server_close()
 
-        self.assertFalse(result["success"])
-        self.assertIn("Timeout", result["error"])
+        self.assertTrue(result["success"])
+        self.assertEqual(200, result["status_code"])
+        self.assertIsNone(result["error"])
+        self.assertLess(len(result["response"]), 20)
         self.assertLess(duration, 2.5)
+
+    def test_a_redirect_chain_reports_the_status_of_the_last_answer(self):
+        """
+        Each redirect gets a timeout of its own. The answer of the last hop counts, also after the deadline. The body
+        is not read after the deadline.
+        """
+        server = _QuietServer(("127.0.0.1", 0), _SlowRedirectHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            set_webhook("chain", url=f"http://127.0.0.1:{server.server_address[1]}/first", timeout=1)
+            result = fire_webhook("chain", payload="x")
+        finally:
+            server.shutdown()
+            server.server_close()
+
+        self.assertEqual({"success": True, "status_code": 200, "response": "", "error": None}, result)
 
     @responses.activate
     def test_only_the_start_of_a_long_body_is_kept(self):
@@ -641,9 +684,10 @@ class FireWebhookLimitsTestCase(MyTestCase):
         response.encoding = "utf-8"
         response.raw.read1.side_effect = lambda amount, decode_content: b"z" * min(amount, 1000)
 
-        text = _read_response_text(response, time.monotonic() + 5)
+        text, stopped = _read_response_text(response, time.monotonic() + 5)
 
         self.assertEqual(MAX_RESPONSE_BYTES, len(text))
+        self.assertFalse(stopped)
 
     def test_a_ca_directory_is_loaded_as_capath(self):
         """ssl.create_default_context(cafile=<directory>) fails, so a directory goes to capath, as in requests."""

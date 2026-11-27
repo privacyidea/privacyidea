@@ -115,6 +115,7 @@ import json
 import logging
 import re
 from contextlib import contextmanager
+from string import Formatter
 from dataclasses import dataclass, field
 
 from sqlalchemy import func, select
@@ -631,6 +632,8 @@ _EMAIL_MIMETYPES = frozenset({"plain", "html"})
 _WEBHOOK_KEYS = frozenset({"webhook", "payload"})
 #: A placeholder of a payload template: a tag name with an optional conversion and format specification.
 _PLACEHOLDER = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*(?:![rsa])?(?::[^{}]*)?\}")
+#: The tags of a WEBHOOK payload whose values are numbers. Every other tag is text.
+_NUMBER_TAGS = frozenset({"count", "threshold", "stage_id"})
 
 
 def _validate_duration_action_value(action_type: str, action_value) -> None:
@@ -745,31 +748,74 @@ def _is_json_document(text: str) -> bool:
         return False
 
 
+def _numbers_in(document: object) -> list:
+    """Return the numbers of a parsed JSON document, keys excluded."""
+    if isinstance(document, dict):
+        return [number for value in document.values() for number in _numbers_in(value)]
+    if isinstance(document, list):
+        return [number for value in document for number in _numbers_in(value)]
+    if isinstance(document, (int, float)) and not isinstance(document, bool):
+        return [document]
+    return []
+
+
 def _check_webhook_payload(action_type: str, payload: str | None) -> None:
     """
-    Refuse a JSON payload with a placeholder outside quotes, such as ``{"count": {count}}``.
+    Refuse a payload whose placeholders the engine can not replace safely.
 
-    The engine substitutes a JSON object or array value by value. Such a payload is not valid JSON, so the engine
-    substitutes it as plain text, where ``str.format()`` reads the braces of the document as placeholders. The
-    substitution then fails, and the engine sends the payload unchanged, with all of its placeholders.
+    The engine substitutes a JSON object or array value by value. It substitutes any other payload as plain text,
+    with ``str.format()``. Three kinds of payload are refused:
 
-    A payload is such a payload if it is no JSON document as written, but becomes one when each placeholder is
-    replaced by ``0``, and if braces of the document stay outside the placeholders. A text payload such as
-    ``{username} logged in`` stays no JSON document. A JSON array such as ``[{count}]`` has no other braces, so the
-    plain-text substitution gives ``[5]``. Both are accepted.
+    * A plain-text payload that ``str.format()`` can not parse, for example ``user={username}&x={``. A brace that is
+      not part of a placeholder is written twice: ``{{`` or ``}}``. The engine would send such a payload unchanged.
+    * A JSON payload with a placeholder outside quotes and braces of the document outside the placeholders, such as
+      ``{"count": {count}}``. ``str.format()`` reads the braces of the document as placeholders, and the engine would
+      send the payload unchanged.
+    * A JSON payload with a placeholder of a text value outside quotes, such as ``[{count}, {username}]``. The value
+      would end up in the document without quotes. Only ``{count}``, ``{threshold}`` and ``{stage_id}`` are numbers
+      and can stand outside quotes, for example ``[{count}, "{username}"]``.
+
+    A payload is a JSON payload with placeholders outside quotes if it is no JSON document as written, but becomes
+    one when each placeholder is replaced by a number. A text payload such as ``{username} logged in`` does not.
 
     :param action_type: the action type, for the error message
     :param payload: the payload template of the action
-    :raises ParameterError: if the payload is JSON with a placeholder outside quotes
+    :raises ParameterError: if the engine can not replace the placeholders of the payload safely
     """
     if not payload or _is_json_document(payload):
         return
+    try:
+        list(Formatter().parse(payload))
+    except ValueError as error:
+        raise ParameterError(f"The payload of '{action_type}' is no valid template ({error}). Write a brace that is "
+                             f"not part of a placeholder twice: {{{{ or }}}}.")
+
+    # Each placeholder becomes a number that the payload does not contain, so that it can be found again after json.
+    placeholders = {}
+
+    def number_for(match: re.Match) -> str:
+        number = f"7{len(placeholders):09d}1"
+        placeholders[number] = match.group(0)
+        return number
+
+    try:
+        document = json.loads(_PLACEHOLDER.sub(number_for, payload))
+    except ValueError:
+        # A text payload
+        return
+    if not isinstance(document, (dict, list)):
+        return
     without_placeholders = _PLACEHOLDER.sub("", payload)
-    braces_outside_placeholders = "{" in without_placeholders or "}" in without_placeholders
-    if braces_outside_placeholders and _is_json_document(_PLACEHOLDER.sub("0", payload)):
+    if "{" in without_placeholders or "}" in without_placeholders:
         raise ParameterError(f"The payload of '{action_type}' is JSON with a placeholder outside quotes, so the "
                              f"placeholders can not be replaced. Put each placeholder in quotes, for example "
                              f"\"count\": \"{{count}}\".")
+    unquoted_text = [placeholders[str(number)] for number in _numbers_in(document)
+                     if str(number) in placeholders
+                     and placeholders[str(number)].strip("{}").split(":")[0].split("!")[0] not in _NUMBER_TAGS]
+    if unquoted_text:
+        raise ParameterError(f"The payload of '{action_type}' has the placeholder {unquoted_text[0]} outside quotes. "
+                             f"Its value is text, so put it in quotes, for example \"{unquoted_text[0]}\".")
 
 
 def _validate_no_action_value(action_type: str, action_value) -> None:

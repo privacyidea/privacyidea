@@ -42,7 +42,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_stored_secret_settings)
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
-from privacyidea.lib.utils import check_module_allowed
+from privacyidea.lib.utils import check_module_allowed, safe_format
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.models import Config
 from privacyidea.models.config import PRIVACYIDEA_TIMESTAMP
@@ -1750,3 +1750,21 @@ class ImportEntriesTestCase(MyTestCase):
         # The caller can choose the exception
         with self.assertRaises(PolicyError):
             import_entries([("bad", {})], import_entry, "policies", error_class=PolicyError)
+
+
+class SafeFormatTestCase(MyTestCase):
+
+    def test_an_unknown_placeholder_is_kept_as_written(self):
+        tags = {"username": "alice", "count": 3}
+        for template, expected in (("{username} {unknown}", "alice {unknown}"),
+                                   ("{unknown[0]}", "{unknown[0]}"),
+                                   ("{unknown.name}", "{unknown.name}"),
+                                   ("{unknown:>5}", "{unknown:>5}"),
+                                   ("{unknown!r}", "{unknown!r}"),
+                                   ("{count:03d}", "003"),
+                                   ("{{literal}}", "{literal}")):
+            with self.subTest(template=template):
+                self.assertEqual(expected, safe_format(template, tags))
+
+    def test_a_malformed_template_is_returned_as_it_is(self):
+        self.assertEqual("user={username}&x={", safe_format("user={username}&x={", {"username": "alice"}))

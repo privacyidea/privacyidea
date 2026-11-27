@@ -49,7 +49,7 @@ describe("WebhooksComponent", () => {
     auth_type: "none",
     verify_tls: true,
     timeout: 3,
-    urlencode_values: true,
+    encode_values: true,
     headers: {},
     secret_headers: [],
     ...overrides

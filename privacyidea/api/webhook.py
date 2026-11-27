@@ -173,8 +173,10 @@ def list_webhooks():
        When updating a webhook, send ``__CENSORED__`` for a secret to keep
        its stored value, an empty string to clear it, or a new value to
        replace it. Send ``secret_headers`` back as ``secret.header.*``
-       parameters, otherwise a header that is currently encrypted would be
-       rewritten in clear text.
+       parameters. A request that sends ``__CENSORED__`` for a secret header
+       without its ``secret.header.*`` flag is refused with a 400: the stored
+       value is never stored in clear text. To store such a header in clear
+       text, send its value again.
 
     Requires admin authentication and the policy action
     :ref:`policy_webhook_read`.
@@ -231,9 +233,11 @@ def set_webhook_api(identifier=None):
         ``urlencoded`` are rejected; send a real MIME type.
     :jsonparam default_payload: body template used when the call site
         supplies no payload of its own.
-    :jsonparam urlencode_values: whether the values that replace the
-        placeholders of a payload are URL-encoded when the content type is
-        ``application/x-www-form-urlencoded``. ``true`` (default) or ``false``.
+    :jsonparam encode_values: whether the values that replace the
+        placeholders of a plain-text payload are encoded for the content
+        type: URL-encoded for ``application/x-www-form-urlencoded``, escaped
+        as JSON string content for ``application/json``. ``true`` (default)
+        or ``false``.
     :jsonparam auth_type: ``none`` (default), ``basic``, ``header`` or
         ``mtls``.
     :jsonparam username: username for basic authentication.
@@ -289,9 +293,9 @@ def set_webhook_api(identifier=None):
     verify_tls = get_optional(param, "verify_tls")
     if verify_tls is not None:
         verify_tls = _parse_flag(verify_tls, "verify_tls")
-    urlencode_values = get_optional(param, "urlencode_values")
-    if urlencode_values is not None:
-        urlencode_values = _parse_flag(urlencode_values, "urlencode_values")
+    encode_values = get_optional(param, "encode_values")
+    if encode_values is not None:
+        encode_values = _parse_flag(encode_values, "encode_values")
 
     webhook_id = set_webhook(
         identifier,
@@ -300,7 +304,7 @@ def set_webhook_api(identifier=None):
         http_method=get_optional(param, "http_method"),
         content_type=get_optional(param, "content_type"),
         default_payload=get_optional(param, "default_payload"),
-        urlencode_values=urlencode_values,
+        encode_values=encode_values,
         auth_type=get_optional(param, "auth_type"),
         username=get_optional(param, "username"),
         password=get_optional(param, "password"),

@@ -3177,11 +3177,49 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     @responses.activate
     def test_webhook_action_keeps_the_values_unencoded_if_the_webhook_says_so(self):
         # The setting of a webhook converted from an old WebHook handler, which sent the values unencoded
-        self._make_webhook(content_type=ContentType.URLENCODED, urlencode_values=False)
+        self._make_webhook(content_type=ContentType.URLENCODED, encode_values=False)
 
         body = self._fire_form_payload_on_a_source_ip_policy("ghost&severity=none")
 
         self.assertEqual("user=ghost&severity=none&ip=10.0.0.7&severity=low", body)
+
+    @responses.activate
+    def test_webhook_action_escapes_the_values_of_a_json_text_payload(self):
+        # The payload is no JSON document as written, so it is substituted as text. The tried login name stays one
+        # JSON string.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        ip = "10.0.0.7"
+        self._make_policy(
+            name="hookjson", counter_type=AuthEventType.PASSWORD_FAIL, target=ConditionalAccessTarget.SOURCE_IP,
+            stages=(StageDefinition(3, [StageActionDefinition(
+                ConditionalAccessAction.WEBHOOK, {"webhook": "ca-hook", "payload": '[{count}, "{username}"]'})]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_conditional_access_policies(CAContext(None, ip, username='ghost", "forged'),
+                                             AuthEventType.PASSWORD_FAIL)
+
+        self.assertEqual([3, 'ghost", "forged'], json.loads(responses.calls[0].request.body))
+
+    def test_a_lock_is_in_place_before_a_notification_of_its_stage_runs(self):
+        # A notification waits for its endpoint, so a lock stored after it would let guesses through in that time
+        self._make_webhook()
+        self._make_policy(
+            name="hooklock", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK, {"webhook": "ca-hook"}),
+                                        StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        locked_while_firing = []
+
+        def fire(identifier, payload=None, config=None):
+            locked_while_firing.append(is_user_locked(self.user))
+            return {"success": True, "status_code": 200, "response": "", "error": None}
+
+        with mock.patch("privacyidea.lib.webhook.fire_webhook", side_effect=fire):
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user, "10.0.0.9"), AuthEventType.MFA_FAIL)
+
+        self.assertEqual([True], locked_while_firing)
+        self.assertEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.WEBHOOK)],
+                         [outcome.action_type for outcome in outcomes])
 
     @responses.activate
     def test_webhook_action_without_a_payload_sends_the_webhooks_own_default(self):

@@ -42,11 +42,18 @@ Default payload
    action. The call sites know different placeholders, so a body that is to
    carry them belongs there.
 
-URL-encode placeholder values
-   This setting applies to the content type ``application/x-www-form-urlencoded``.
-   If it is on, the values that replace the placeholders of a payload are
-   URL-encoded. A value with ``&`` or ``=`` then stays the value of one field. A
-   JSON payload is not affected.
+Encode placeholder values
+   If this setting is on, the values that replace the placeholders of a
+   plain-text payload are encoded for the content type of the webhook:
+
+   - ``application/x-www-form-urlencoded``: the values are URL-encoded. A value
+     with ``&`` or ``=`` then stays the value of one field.
+   - ``application/json``: the values are escaped as the content of a JSON
+     string. A value with ``"`` or ``\`` then stays one string.
+
+   Other content types are not affected. A payload that is a JSON object or
+   array is not affected either, because its values are substituted one by one
+   (see `Payload placeholders`_).
 
    The setting is on for a new webhook. It is off for a webhook that the upgrade
    or the import creates from a WebHook handler of an earlier version, because
@@ -63,6 +70,10 @@ Headers
    encrypted and is never shown again; the editor displays ``__CENSORED__`` in
    its place. Sending that placeholder back keeps the stored value, an empty
    value clears it.
+
+   To store a secret header as not secret, enter its value again. A save that
+   keeps the stored value of a secret header but takes away its secret flag is
+   refused, because the next read would show the value in clear text.
 
    A header name contains only letters, digits and the characters
    ``!#$%&'*+-.^_`|~``. A header value must not start with a space or contain a
@@ -81,9 +92,19 @@ Proxy
 Timeout
    A whole number of seconds from 1 to 3600, 3 by default. The timeout limits
    the connection, the wait for the answer and the read of the response body
-   together. An endpoint that sends the status line and the headers of its
-   answer very slowly can hold a delivery longer. See
-   :ref:`webhook_synchronous` for why this matters more than it looks.
+   together. If the endpoint answers in time but its response body does not
+   arrive in time, privacyIDEA stops the read. The status code of the answer
+   then decides the result.
+
+   The timeout does not limit these two cases:
+
+   - An endpoint that sends the status line and the headers of its answer very
+     slowly can hold a delivery longer.
+   - If privacyIDEA follows a redirect, each request of the redirect chain gets
+     the full timeout. In ``enforce`` mode of the
+     :ref:`webhook_outbound_guard`, privacyIDEA follows no redirects.
+
+   See :ref:`webhook_synchronous` for why this matters more than it looks.
 
 Testing a webhook
 ~~~~~~~~~~~~~~~~~
@@ -116,15 +137,17 @@ Payload placeholders
 
 The payload a call site supplies may contain ``{placeholders}``. Which ones are
 available depends on the call site - see :ref:`webhookhandler` and
-:ref:`conditional_access_policies`. Unknown placeholders are left as written.
+:ref:`conditional_access_policies`. Unknown placeholders are left as written,
+also with an index or an attribute, for example ``{unknown[0]}``.
 
 A payload that is a JSON object or array is substituted value by value, so a
 placeholder carrying a quote cannot break the document. Anything else is
-substituted as plain text.
+substituted as plain text. In a plain-text payload, write a brace that is not
+part of a placeholder twice: ``{{`` or ``}}``.
 
-In a plain-text payload of a webhook with the content type
-``application/x-www-form-urlencoded``, the values are URL-encoded if the setting
-**URL-encode placeholder values** is on.
+In a plain-text payload, the values are encoded for the content type of the
+webhook if the setting **Encode placeholder values** is on. Keep it on if a
+value can come from the client, for example the login name of a user.
 
 .. _webhook_outbound_guard:
 
@@ -202,15 +225,19 @@ the export shows ``__CENSORED__`` for them. The URL, the proxy URLs and the
 values of the other headers are in the export as they are, also if they contain
 a token or a password.
 
-A stored secret goes only to the endpoint that it was saved for. If a change
-keeps the stored password or the stored value of a secret header, the change
-must not do these things:
+A stored secret goes only to the endpoint that it was saved for, and it is
+never stored in clear text without being entered again. If a change keeps the
+stored password or the stored value of a secret header, the change must not do
+these things:
 
 - change the URL, a proxy or the CA bundle
 - change the username, if the password is kept
 - turn off the certificate verification
+- store a secret header as not secret
 
-To make such a change, enter the secret again or clear it.
+To make such a change, enter the secret again or clear it. In the WebUI, a
+save with an authentication type that does not use the password or the client
+key password clears it.
 
 Importing an export that carries ``__CENSORED__`` keeps an existing secret and
 leaves an unknown one empty - a censored export never wipes a stored credential,

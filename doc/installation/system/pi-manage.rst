@@ -809,10 +809,12 @@ restrict the import to certain types or to a single object.
 Events and periodic tasks are also found by their name, not by their ID. For
 events, the handler module must match as well. Several events can have the same
 name and handler module. Then the file must contain at least as many of them as
-the instance has, and they replace all of them. Otherwise these events are not
-imported, and neither is an event without a name. The other events are
-imported, and the command ends with an error. A periodic task keeps its nodes
-from the export.
+the instance has, and they replace all of them. The first event of the file
+replaces the event of the instance with the lowest ID, the second event the next
+one, and so on. The import creates the remaining events of the file. If the file
+contains fewer of them, these events are not imported, and neither is an event
+without a name. The other events are imported, and the command ends with an
+error. A periodic task keeps its nodes from the export.
 Check them if the target instance uses other node names.
 
 .. note:: In contrast to ``pi-manage backup``, the configuration export does not
@@ -883,7 +885,9 @@ remaining configuration::
 that this version does not know. If no action is left, the policy is not imported. For the
 event handlers, it skips a WebHook event handler in the format before privacyIDEA 3.15 that
 the import does not convert to a webhook, see :ref:`webhookhandler`. The other event
-handlers are imported with or without ``--skip-invalid``.
+handlers are imported with or without ``--skip-invalid``. Such an event handler still
+counts for the number of events with its name and handler module. The event of the
+instance at its place stays as it is.
 
 The import plan
 ~~~~~~~~~~~~~~~
@@ -900,6 +904,18 @@ database compares names without regard to case (as MySQL and MariaDB do by
 default), an imported name that differs only in case from a stored one updates
 that entry and the stored entry is not deleted with ``--replace``.
 
+After the entries, the plan shows notes and warnings:
+
+* For a WebHook event handler in the format before privacyIDEA 3.15, the plan
+  notes the webhook that the import creates for it, see :ref:`webhookhandler`.
+  For a new event handler, the note does not name the webhook. The name contains
+  the ID of the event handler, and this ID exists only after the import. If the
+  import links the event handler to an existing webhook, the plan shows no note.
+* An event handler that the import creates or updates can name a webhook that is
+  neither on the system nor in the import. The plan then shows a warning, because
+  the event handler sends nothing until the webhook exists. With ``-t event``,
+  the import does not import the webhooks of the file.
+
 With ``--dry-run`` only the plan is printed and nothing is changed::
 
    pi-manage config import -i backup.json --dry-run
@@ -913,6 +929,10 @@ the object given with ``-n`` limit what is deleted as well::
 * Deleting runs after the import, in the reverse order of the import, so that
   for example policies and event handlers are removed before realms and realms
   before resolvers.
+* The instance can have more events with a name and handler module than the
+  file. Then the import deletes the events of the instance after the last one of
+  the file. A WebHook event handler that the import does not convert counts for
+  this, so the event of the instance at its place stays.
 * Nothing is forced. A realm that still contains tokens or containers, or a
   resolver that is used by a realm, is kept and reported as an error. The other
   deletions go on.

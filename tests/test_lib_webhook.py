@@ -501,21 +501,43 @@ class WebhookCrudTestCase(MyTestCase):
             ParameterError, "requires sending the header set",
             set_webhook, "siem", description="x", header_renames={"B": "A"})
 
-    def test_toggling_header_encryption_off(self):
-        """Un-checking 'encrypted' decrypts the stored value in place."""
+    def test_toggling_header_encryption_off_needs_the_value(self):
+        """
+        A kept secret value is never stored in clear text: the next read would return it. To store the header in
+        clear text, the request sends the value again.
+        """
         set_webhook("hook", url="https://example.com",
                     auth_type=AuthType.HEADER,
                     headers={"Authorization": "Bearer tok"},
                     secret_headers={"Authorization"})
 
-        # Censored value + empty secret set == "keep value, drop encryption".
-        set_webhook("hook", auth_type=AuthType.HEADER,
-                    headers={"Authorization": CENSORED},
-                    secret_headers=set())
+        with self.assertRaisesRegex(ParameterError, "'Authorization' is secret. Enter its value again"):
+            set_webhook("hook", auth_type=AuthType.HEADER,
+                        headers={"Authorization": CENSORED},
+                        secret_headers=set())
+        row = {h.key: h for h in get_webhook_object("hook").headers}["Authorization"]
+        self.assertTrue(row.encrypted)
 
+        set_webhook("hook", auth_type=AuthType.HEADER,
+                    headers={"Authorization": "Bearer tok"},
+                    secret_headers=set())
         row = {h.key: h for h in get_webhook_object("hook").headers}["Authorization"]
         self.assertFalse(row.encrypted)
-        self.assertEqual(row.value, "Bearer tok")
+        self.assertEqual("Bearer tok", row.value)
+
+    def test_a_renamed_secret_header_without_the_flag_is_refused(self):
+        set_webhook("hook", url="https://example.com", headers={"X-Token": "tok"}, secret_headers={"X-Token"})
+
+        with self.assertRaisesRegex(ParameterError, "'X-Api-Token' is secret"):
+            set_webhook("hook", headers={"X-Api-Token": CENSORED}, secret_headers=set(),
+                        header_renames={"X-Api-Token": "X-Token"})
+
+    def test_an_empty_secret_header_can_lose_its_flag(self):
+        set_webhook("hook", url="https://example.com", headers={"X-Token": ""}, secret_headers={"X-Token"})
+
+        set_webhook("hook", headers={"X-Token": CENSORED}, secret_headers=set())
+
+        self.assertEqual([], get_webhook("hook")["secret_headers"])
 
     def test_toggling_header_encryption_on(self):
         """Checking 'encrypted' encrypts the stored value in place."""
@@ -965,15 +987,43 @@ class WebhookParameterCheckTestCase(MyTestCase):
         set_webhook("hook", url="https://example.com", timeout=3600)
         self.assertEqual(3600, get_webhook("hook")["timeout"])
 
-    def test_urlencode_values_is_stored_exported_and_imported(self):
-        set_webhook("hook", url="https://example.com")
-        self.assertTrue(get_webhook("hook")["urlencode_values"])
+    def test_values_longer_than_their_column_are_refused(self):
+        # PostgreSQL, MySQL and Oracle would refuse them with a database error, that is HTTP 500
+        for name, arguments in (("content type", {"content_type": "a/" + "b" * 120}),
+                                ("identifier", {"identifier": "i" * 256}),
+                                ("header name", {"headers": {"X" * 256: "v"}}),
+                                ("password", {"auth_type": AuthType.BASIC, "username": "u", "password": "p" * 500}),
+                                ("proxy", {"https_proxy": "http://" + "p" * 1100})):
+            with self.subTest(name=name), self.assertRaises(ParameterError):
+                set_webhook(**{"identifier": "hook", "url": "https://example.com", **arguments})
+        self.assertEqual([], get_webhooks())
 
-        set_webhook("hook", urlencode_values=False)
-        self.assertFalse(get_webhook("hook")["urlencode_values"])
+    def test_header_arguments_of_the_wrong_type_are_refused(self):
+        set_webhook("hook", url="https://example.com", headers={"X-A": "a"})
+        for arguments in ({"headers": ["X-A"]}, {"headers": {"X-A": "a"}, "secret_headers": "X-A"},
+                          {"headers": {"X-B": "a"}, "header_renames": {"X-B": ["X-A"]}}):
+            with self.subTest(arguments=arguments), self.assertRaises(ParameterError):
+                set_webhook("hook", **arguments)
+        self.assertEqual({"X-A": "a"}, get_webhook("hook")["headers"])
+
+    def test_an_import_clears_a_text_setting_that_the_export_has_as_none(self):
+        set_webhook("hook", url="https://example.com", default_payload='{"a": 1}', description="old")
+
+        import_webhook({"hook": {"url": "https://example.com", "default_payload": None, "description": None}})
+
+        webhook = get_webhook("hook")
+        self.assertEqual("", webhook["default_payload"])
+        self.assertEqual("", webhook["description"])
+
+    def test_encode_values_is_stored_exported_and_imported(self):
+        set_webhook("hook", url="https://example.com")
+        self.assertTrue(get_webhook("hook")["encode_values"])
+
+        set_webhook("hook", encode_values=False)
+        self.assertFalse(get_webhook("hook")["encode_values"])
 
         exported = export_webhook()
-        self.assertFalse(exported["hook"]["urlencode_values"])
+        self.assertFalse(exported["hook"]["encode_values"])
         delete_webhook("hook")
         import_webhook(exported)
-        self.assertFalse(get_webhook("hook")["urlencode_values"])
+        self.assertFalse(get_webhook("hook")["encode_values"])

@@ -422,6 +422,59 @@ class EventHandlerImportTestCase(MyTestCase):
         self.assertEqual([("mail_admin", "UserNotification", "token_init"),
                           ("mail_admin", "UserNotification", "token_revoke")], self._stored_handlers())
 
+    def _webhook_twins(self, events: tuple) -> list[int]:
+        """Store a WebHook handler "twin" for each event, return their ids."""
+        return [set_event("twin", event, "WebHook", "post_webhook", options={"webhook": "siem"}) for event in events]
+
+    def _linked_entry(self, event: str) -> dict:
+        """A WebHook handler "twin" that names a webhook, as exported."""
+        entry = self._export_entry("twin", handlermodule="WebHook", action="post_webhook", event=event)
+        entry["options"] = {"webhook": "siem"}
+        return entry
+
+    def _defective_entry(self) -> dict:
+        """A WebHook handler "twin" in the inline shape without a URL, as exported."""
+        return self._export_entry("twin", handlermodule="WebHook", action="post_webhook")
+
+    @staticmethod
+    def _stored_twins() -> list[tuple]:
+        return [(e.id, e.event) for e in db.session.scalars(select(EventHandler).order_by(EventHandler.id)).all()]
+
+    def test_13_a_definition_that_is_not_converted_keeps_its_position(self):
+        # The definitions of a group are written over the stored handlers in the order of their ids, by position. An
+        # inline WebHook definition without a URL is not written, and the stored handler at its position stays.
+        for defective_first in (False, True):
+            with self.subTest(defective_first=defective_first):
+                first_id, second_id = self._webhook_twins(("token_assign", "token_revoke"))
+                entries = ([self._defective_entry(), self._linked_entry("token_delete")] if defective_first
+                           else [self._linked_entry("token_delete"), self._defective_entry()])
+
+                with self.assertRaises(ConfigAdminError) as context:
+                    import_event(entries)
+                self.assertEqual('Could not import the following WebHook event handlers: "twin" (it has no URL).',
+                                 context.exception.message)
+                expected = ([(first_id, "token_assign"), (second_id, "token_delete")] if defective_first
+                            else [(first_id, "token_delete"), (second_id, "token_revoke")])
+                self.assertEqual(expected, self._stored_twins())
+                for handler_id in (first_id, second_id):
+                    delete_event(handler_id)
+
+    def test_14_a_definition_that_is_not_converted_counts_for_its_group(self):
+        first_id, second_id, third_id = self._webhook_twins(("token_assign", "token_revoke", "token_disable"))
+
+        # Two definitions in the import, three handlers on this system
+        with self.assertRaises(ConfigAdminError) as context:
+            import_event([self._linked_entry("token_delete"), self._defective_entry()], skip_invalid=True)
+        self.assertEqual('Skipped ambiguous event handlers: 2 "twin" with handler module "WebHook".',
+                         context.exception.message)
+        self.assertEqual([(first_id, "token_assign"), (second_id, "token_revoke"), (third_id, "token_disable")],
+                         self._stored_twins())
+
+        # Only the handler after the last definition is surplus
+        import_event([self._linked_entry("token_delete"), self._defective_entry()], skip_invalid=True,
+                     delete_ids=[third_id])
+        self.assertEqual([(first_id, "token_delete"), (second_id, "token_revoke")], self._stored_twins())
+
 
 class BaseEventHandlerTestCase(MyTestCase):
 
@@ -5498,7 +5551,7 @@ class WebhookObjectHandlerTestCase(MyTestCase):
 
     @responses.activate
     def test_02a_a_converted_webhook_keeps_the_values_unencoded(self):
-        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED, urlencode_values=False)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED, encode_values=False)
 
         body = self._post_form_with_client_ip({"webhook": "siem"})
 
@@ -5521,6 +5574,34 @@ class WebhookObjectHandlerTestCase(MyTestCase):
             g, {"webhook": "siem", "data": '{"ip": "{client_ip}"}', "replace": True})))
 
         self.assertEqual({"ip": "192.0.2.1&admin=1"}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_02a_a_json_text_payload_gets_escaped_values(self):
+        # The data is no JSON document as written, so it is substituted as text. A value with a quote stays one
+        # JSON string.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+        g = self._make_g()
+        g.client_ip = '192.0.2.1", "admin": "1'
+
+        self.assertTrue(self._do_webhook(self._make_options(
+            g, {"webhook": "siem", "data": '{{"ip": "{client_ip}"}}', "replace": True})))
+
+        self.assertEqual({"ip": '192.0.2.1", "admin": "1'}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_02a_a_malformed_template_is_sent_unchanged_and_reported(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED)
+        handler = WebHookHandler()
+
+        with self.assertLogs("privacyidea.lib.eventhandler.webhookeventhandler", level="WARNING"):
+            result = handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=self._make_options(
+                self._make_g(), {"webhook": "siem", "data": "user={user&realm={realm}", "replace": True}))
+
+        self.assertFalse(result)
+        self.assertIn("Unable to replace the placeholders", handler.run_details)
+        self.assertEqual("user={user&realm={realm}", responses.calls[0].request.body)
 
     @responses.activate
     def test_02b_an_inline_content_type_can_not_override_the_webhook(self):
@@ -6165,7 +6246,7 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         # The inline shape's fixed TIMEOUT, so the imported handler behaves as it did.
         self.assertEqual(10, webhook["timeout"])
         # The inline handler put the values of the placeholders into a form-encoded payload as they are.
-        self.assertFalse(webhook["urlencode_values"])
+        self.assertFalse(webhook["encode_values"])
         self.assertTrue(webhook["description"].startswith(IMPORT_MARKER), webhook["description"])
 
     def test_the_rest_of_the_definition_survives_the_conversion(self):
@@ -6304,12 +6385,12 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         # The import does not change a webhook that it links a handler to, also not the URL encoding.
         import_event(self._exported())
         identifier = EventConfiguration().events[0]["options"]["webhook"]
-        set_webhook(identifier, urlencode_values=True)
+        set_webhook(identifier, encode_values=True)
 
         import_event(self._exported(options={"URL": self.URL, "content_type": "urlencoded"}))
 
         self.assertEqual(identifier, EventConfiguration().events[0]["options"]["webhook"])
-        self.assertTrue(get_webhook(identifier)["urlencode_values"])
+        self.assertTrue(get_webhook(identifier)["encode_values"])
 
     def test_a_definition_that_already_names_a_webhook_is_untouched(self):
         set_webhook("siem", url="https://siem.example.com/hook")
