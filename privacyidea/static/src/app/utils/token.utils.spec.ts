@@ -125,6 +125,31 @@ describe("getEnrollmentDeviations", () => {
     ).toEqual([]);
   });
 
+  it("reports the hash algorithm of the enrollment URL that differs from the requested one", () => {
+    const response = responseWithUrl(
+      "hotp",
+      "otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=6&algorithm=SHA256&issuer=privacyIDEA"
+    );
+
+    expect(
+      getEnrollmentDeviations(
+        enrollParameters({ type: "hotp", otpLength: 6, hashAlgorithm: "sha1" }),
+        actualValuesFromEnrollmentUrl(response)
+      )
+    ).toEqual([{ field: "hashAlgorithm", requested: "sha1", actual: "sha256" }]);
+  });
+
+  it("reports the period of a TOTP enrollment URL that differs from the requested time step", () => {
+    const response = responseWithUrl("totp", "otpauth://totp/TOTP0001?secret=ABC&period=60&digits=6&issuer=privacyIDEA");
+
+    expect(
+      getEnrollmentDeviations(
+        enrollParameters({ type: "totp", otpLength: 6, hashAlgorithm: "sha1", timeStep: 30 }),
+        actualValuesFromEnrollmentUrl(response)
+      )
+    ).toEqual([{ field: "timeStep", requested: 30, actual: 60 }]);
+  });
+
   it("compares the day password time step in seconds", () => {
     const response = responseWithUrl(
       "daypassword",

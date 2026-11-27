@@ -102,8 +102,9 @@ export interface FieldPreset<T> {
 
 /**
  * The value of an enrollment field after its preset changed, for example when the system config loads after the
- * dialog opened. A policy value always wins. Otherwise a value the user picked is kept, `chosen` also keeps a pick
- * that equals the old preset.
+ * dialog opened. A policy value always wins and locks the field. Otherwise a value the user picked is kept, `chosen`
+ * also keeps a pick that equals the old preset. The caller drops `chosen` when the fields are reset or a policy locks
+ * the field. A pick made before a lock is not restored, the field then shows the preset again.
  */
 export function presetOrChoice<T>(
   preset: FieldPreset<T>,

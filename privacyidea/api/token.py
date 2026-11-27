@@ -447,11 +447,14 @@ def get_enrollment_policies_api():
         * ``defaults``: the default values of ``hashlib``, ``otplen`` and ``timeStep`` that are set by policies
         * ``2step``: ``"allow"``, ``"force"`` or ``null``
         * ``force_server_generate``: whether the server has to generate the key
-        * ``sms_gateways``: the allowed sms gateway identifiers, an empty list means no restriction
+        * ``sms_gateways``: the sms gateway identifiers the policies allow, an empty list means no
+          ``sms_gateways`` policy applies, so ``POST /token/init`` refuses a request that sets ``sms.identifier``
         * ``require_description``: whether a description is required
 
     :status 403: The caller lacks the ``enroll<TOKENTYPE>`` right, or policies with conflicting actions
         apply because no user is given ("There are policies with conflicting actions").
+    :status 400: The token type is unknown, or ``type`` differs from the type of the token with the given
+        ``serial``.
 
     **Example response**:
 

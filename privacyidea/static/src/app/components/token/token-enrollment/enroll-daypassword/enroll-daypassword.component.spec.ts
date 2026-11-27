@@ -273,6 +273,35 @@ describe("EnrollDaypasswordComponent", () => {
     expect(component.timeStep()).toBe("2h");
   });
 
+  describe("a choice that a locking policy overrode", () => {
+    const pick = () => {
+      fixture.detectChanges();
+      component.hashAlgorithm.set("sha256");
+      component.hashAlgorithmForm().markAsDirty();
+      component.otpLength.set(8);
+      component.otpLengthForm().markAsDirty();
+      TestBed.tick();
+    };
+    const loadPolicies = (state: EnrollmentPolicyState) => {
+      fixture.componentRef.setInput("enrollmentPolicies", state);
+      fixture.detectChanges();
+      TestBed.tick();
+    };
+
+    it("is not restored when the policy no longer locks the field", () => {
+      pick();
+      loadPolicies(loadedPolicies({ defaults: { hashlib: "sha512", otplen: "6" } }));
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.otpLength()).toBe(6);
+
+      loadPolicies(loadedPolicies());
+
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.otpLength()).toBe(6);
+    });
+
+  });
+
   describe("a value the user picked", () => {
     beforeEach(() => {
       component.otpLength.set(8);

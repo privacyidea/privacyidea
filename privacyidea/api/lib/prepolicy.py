@@ -733,7 +733,8 @@ def check_application_tokentype(request=None, action=None):
 def get_sms_gateways(user: User) -> list[str]:
     """
     Returns the sms gateway identifiers the admin or user may set for the given user according to the policy
-    scope=SCOPE.ADMIN or scope=SCOPE.USER, action=SMSACTION.GATEWAYS. An empty list means no restriction.
+    scope=SCOPE.ADMIN or scope=SCOPE.USER, action=SMSACTION.GATEWAYS. An empty list means no such policy applies.
+    Then :func:`check_sms_gateway` refuses a request that sets ``sms.identifier`` and accepts one without it.
 
     :param user: The user the token is enrolled for
     :return: list of gateway identifiers

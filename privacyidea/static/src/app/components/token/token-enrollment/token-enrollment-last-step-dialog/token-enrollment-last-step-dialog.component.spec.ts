@@ -218,6 +218,15 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       expect(text()).not.toContain("instead of");
     });
 
+    it("names the hash algorithm of a deviation", async () => {
+      await setup(
+        hotpDialogData("otpauth://hotp/OATH0001?secret=ABC&counter=1&digits=6&algorithm=SHA256&issuer=privacyIDEA")
+      );
+      await render();
+
+      expect(text()).toContain("hash algorithm sha256 instead of sha1");
+    });
+
     it("shows both time steps of a deviation in the same unit", async () => {
       await setup({
         ...createDialogData(),

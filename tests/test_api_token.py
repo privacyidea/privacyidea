@@ -7248,6 +7248,13 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         return res.json["result"]["value"]
 
+    @staticmethod
+    def _remove_tokens(serials):
+        # Removes the tokens that exist, a token that was never created is skipped
+        for serial in serials:
+            if get_tokens(serial=serial):
+                remove_token(serial)
+
     def _set_enroll_policy(self, scope: str = SCOPE.ADMIN):
         # Once admin or user policies exist, the enrollment right has to be granted explicitly
         set_policy(self.enroll_policy, scope=scope,
@@ -7256,20 +7263,18 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
     def test_01_defaults_per_target(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_hash_r1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha256, hotp_otplen=8",
-                   realm=self.realm1)
-        set_policy("init_policies_hash_r2", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512", realm=self.realm2)
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_hash_r1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha256, hotp_otplen=8",
+                       realm=self.realm1)
+            set_policy("init_policies_hash_r2", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512", realm=self.realm2)
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm1})
             self.assertEqual({"hashlib": "sha256", "otplen": "8"}, value["defaults"])
 
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm2})
             self.assertEqual({"hashlib": "sha512"}, value["defaults"])
         finally:
-            delete_policy("init_policies_hash_r1")
-            delete_policy("init_policies_hash_r2")
-            delete_policy(self.enroll_policy)
+            delete_policies(["init_policies_hash_r1", "init_policies_hash_r2", self.enroll_policy])
 
     def test_02_defaults_only_enrollment_fields(self):
         self.setUp_user_realms()
@@ -7279,8 +7284,8 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
 
     def test_03_requires_enroll_right(self):
         self.setUp_user_realms()
-        set_policy("init_policies_totp_only", scope=SCOPE.ADMIN, action="enrollTOTP")
         try:
+            set_policy("init_policies_totp_only", scope=SCOPE.ADMIN, action="enrollTOTP")
             res = self._get_policies({"type": "hotp", "user": "cornelius", "realm": self.realm1})
             self.assertEqual(403, res.status_code, res.json)
             self.assertIn("Admin actions are defined, but you are not allowed to enroll this token type!",
@@ -7289,18 +7294,18 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
             res = self._get_policies({"type": "totp", "user": "cornelius", "realm": self.realm1})
             self.assertEqual(200, res.status_code, res.json)
         finally:
-            delete_policy("init_policies_totp_only")
+            delete_policies(["init_policies_totp_only"])
 
     def test_04_twostep_per_target(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_2step_r1", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
-        set_policy("init_policies_totp_2step", scope=SCOPE.ADMIN, action="totp_2step=allow")
         serial = "INITPOLTOTP01"
-        init_token({"serial": serial, "type": "totp", "otpkey": "31323334353637383930313233343536373839dd"},
-                   user=User("cornelius", self.realm1))
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_2step_r1", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
+            set_policy("init_policies_totp_2step", scope=SCOPE.ADMIN, action="totp_2step=allow")
+            init_token({"serial": serial, "type": "totp", "otpkey": "31323334353637383930313233343536373839dd"},
+                       user=User("cornelius", self.realm1))
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm1})
             self.assertEqual("force", value["2step"])
 
@@ -7317,49 +7322,45 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
             res = self._get_policies({"type": "hotp", "serial": serial, "user": "cornelius", "realm": self.realm1})
             self.assertEqual(400, res.status_code, res.json)
         finally:
-            remove_token(serial)
-            delete_policy("init_policies_2step_r1")
-            delete_policy("init_policies_totp_2step")
-            delete_policy(self.enroll_policy)
+            self._remove_tokens([serial])
+            delete_policies(["init_policies_2step_r1", "init_policies_totp_2step", self.enroll_policy])
 
     def test_05_force_server_generate_per_target(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_genkey_r1", scope=SCOPE.ADMIN,
-                   action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", realm=self.realm1)
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_genkey_r1", scope=SCOPE.ADMIN,
+                       action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", realm=self.realm1)
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm1})
             self.assertIs(True, value["force_server_generate"])
 
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm2})
             self.assertIs(False, value["force_server_generate"])
         finally:
-            delete_policy("init_policies_genkey_r1")
-            delete_policy(self.enroll_policy)
+            delete_policies(["init_policies_genkey_r1", self.enroll_policy])
 
     def test_06_sms_gateways_per_target(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_sms_r1", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS}=gw1 gw2",
-                   realm=self.realm1)
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_sms_r1", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS}=gw1 gw2",
+                       realm=self.realm1)
             value = self._get_value({"type": "sms", "user": "cornelius", "realm": self.realm1})
             self.assertEqual(["gw1", "gw2"], sorted(value["sms_gateways"]))
 
             value = self._get_value({"type": "sms", "user": "cornelius", "realm": self.realm2})
             self.assertEqual([], value["sms_gateways"])
         finally:
-            delete_policy("init_policies_sms_r1")
-            delete_policy(self.enroll_policy)
+            delete_policies(["init_policies_sms_r1", self.enroll_policy])
 
     def test_07_require_description_per_target(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        set_policy("init_policies_desc_r1", scope=SCOPE.ENROLL, action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp",
-                   realm=self.realm1)
         try:
+            set_policy("init_policies_desc_r1", scope=SCOPE.ENROLL, action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp",
+                       realm=self.realm1)
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm1})
             self.assertIs(True, value["require_description"])
 
@@ -7369,60 +7370,56 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
             value = self._get_value({"type": "totp", "user": "cornelius", "realm": self.realm1})
             self.assertIs(False, value["require_description"])
         finally:
-            delete_policy("init_policies_desc_r1")
+            delete_policies(["init_policies_desc_r1"])
 
     def test_08_conflict_without_user_passes_through(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_conflict_r1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha256", realm=self.realm1)
-        set_policy("init_policies_conflict_r2", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512", realm=self.realm2)
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_conflict_r1", scope=SCOPE.ADMIN, action="hotp_hashlib=sha256", realm=self.realm1)
+            set_policy("init_policies_conflict_r2", scope=SCOPE.ADMIN, action="hotp_hashlib=sha512", realm=self.realm2)
             # Without user and realm both policies match, as with POST /token/init without a user
             res = self._get_policies({"type": "hotp"})
             self.assertEqual(403, res.status_code, res.json)
             self.assertIn("There are policies with conflicting actions", res.json["result"]["error"]["message"])
         finally:
-            delete_policy("init_policies_conflict_r1")
-            delete_policy("init_policies_conflict_r2")
-            delete_policy(self.enroll_policy)
+            delete_policies(["init_policies_conflict_r1", "init_policies_conflict_r2", self.enroll_policy])
 
     def test_09_user_gets_own_values(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         self.authenticate_selfservice_user()
-        self._set_enroll_policy(scope=SCOPE.USER)
-        set_policy("init_policies_user_r1", scope=SCOPE.USER, action="hotp_hashlib=sha256", realm=self.realm1)
-        set_policy("init_policies_user_r2", scope=SCOPE.USER, action="hotp_hashlib=sha512", realm=self.realm2)
         try:
+            self._set_enroll_policy(scope=SCOPE.USER)
+            set_policy("init_policies_user_r1", scope=SCOPE.USER, action="hotp_hashlib=sha256", realm=self.realm1)
+            set_policy("init_policies_user_r2", scope=SCOPE.USER, action="hotp_hashlib=sha512", realm=self.realm2)
             # A user always gets the values of the own account, whatever user and realm are passed
             value = self._get_value({"type": "hotp", "user": "cornelius", "realm": self.realm2}, auth=self.at_user)
             self.assertEqual("sha256", value["defaults"]["hashlib"])
         finally:
-            delete_policy("init_policies_user_r1")
-            delete_policy("init_policies_user_r2")
-            delete_policy(self.enroll_policy)
+            delete_policies(["init_policies_user_r1", "init_policies_user_r2", self.enroll_policy])
 
     def test_10_serial_only_uses_owner_realm(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        self._set_enroll_policy()
-        set_policy("init_policies_owner_2step", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
-        set_policy("init_policies_owner_genkey", scope=SCOPE.ADMIN,
-                   action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", realm=self.realm1)
-        set_policy("init_policies_owner_desc", scope=SCOPE.ENROLL,
-                   action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp", realm=self.realm1)
-        set_policy("init_policies_owner_sms", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS}=gw1 gw2",
-                   realm=self.realm1)
         otpkey = "31323334353637383930313233343536373839dd"
         serials = {self.realm1: {"hotp": "INITPOLOWNH1", "sms": "INITPOLOWNS1"},
                    self.realm2: {"hotp": "INITPOLOWNH2", "sms": "INITPOLOWNS2"}}
-        for realm, realm_serials in serials.items():
-            user = User("cornelius", realm)
-            init_token({"serial": realm_serials["hotp"], "type": "hotp", "otpkey": otpkey}, user=user)
-            init_token({"serial": realm_serials["sms"], "type": "sms", "phone": "123456", "otpkey": otpkey},
-                       user=user)
         try:
+            self._set_enroll_policy()
+            set_policy("init_policies_owner_2step", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
+            set_policy("init_policies_owner_genkey", scope=SCOPE.ADMIN,
+                       action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", realm=self.realm1)
+            set_policy("init_policies_owner_desc", scope=SCOPE.ENROLL,
+                       action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp", realm=self.realm1)
+            set_policy("init_policies_owner_sms", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS}=gw1 gw2",
+                       realm=self.realm1)
+            for realm, realm_serials in serials.items():
+                user = User("cornelius", realm)
+                init_token({"serial": realm_serials["hotp"], "type": "hotp", "otpkey": otpkey}, user=user)
+                init_token({"serial": realm_serials["sms"], "type": "sms", "phone": "123456", "otpkey": otpkey},
+                           user=user)
             # Like the rollover dialog, the request names only the serial and the type, so the policies are matched
             # for the realm of the owner of the token
             value = self._get_value({"serial": serials[self.realm1]["hotp"], "type": "hotp"})
@@ -7441,11 +7438,10 @@ class APITokenInitPoliciesTestCase(MyApiTestCase):
             value = self._get_value({"serial": serials[self.realm2]["sms"], "type": "sms"})
             self.assertEqual([], value["sms_gateways"])
         finally:
-            for realm_serials in serials.values():
-                for serial in realm_serials.values():
-                    remove_token(serial)
-            delete_policy("init_policies_owner_2step")
-            delete_policy("init_policies_owner_genkey")
-            delete_policy("init_policies_owner_desc")
-            delete_policy("init_policies_owner_sms")
-            delete_policy(self.enroll_policy)
+            self._remove_tokens(s for realm_serials in serials.values() for s in realm_serials.values())
+            delete_policies([
+                "init_policies_owner_2step",
+                "init_policies_owner_genkey",
+                "init_policies_owner_desc",
+                "init_policies_owner_sms",
+                self.enroll_policy])

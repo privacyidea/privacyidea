@@ -238,8 +238,20 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   private readonly selectedUsername = computed(() => this.userService.selectedUser()?.username ?? "");
   /** True while the typed name is not yet part of the policy target, the policies are then outdated. */
   private readonly policyUsernamePending = computed(() => this.selectedUsername() !== this.policyUsername());
-  /** Emits when the typed name was applied, so an Enroll clicked meanwhile can re-check the policy request. */
-  private readonly policyUsernameApplied = new Subject<void>();
+  private readonly policyUsernamePending$ = toObservable(this.policyUsernamePending);
+  /**
+   * Emits when the typed name was applied, so an Enroll clicked meanwhile can re-check the policy request.
+   * toObservable replays its last value synchronously on subscribe, which may be a stale "applied" from before
+   * the typing and would end the wait at once. Only a later, asynchronous emission counts.
+   */
+  private readonly policyUsernameApplied$ = new Observable<void>((subscriber) => {
+    let replaying = true;
+    const subscription = this.policyUsernamePending$.subscribe((pending) => {
+      if (!replaying && !pending) subscriber.next();
+    });
+    replaying = false;
+    return subscription;
+  });
   private lastRequestedTarget: EnrollmentPolicyTarget | undefined;
 
   /** The target the enrollment policies are evaluated for, as POST /token/init would see it. */
@@ -437,11 +449,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         }
       });
     });
-    effect(() => {
-      if (!this.policyUsernamePending()) {
-        this.policyUsernameApplied.next();
-      }
-    });
   }
 
   ngOnInit(): void {
@@ -457,6 +464,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.policyUsernameDebouncer.cancel();
     this.containerService.compatibleWithSelectedTokenType.set(null);
     this.pendingChangesService.clearAllRegistrations();
   }
@@ -555,7 +563,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       if (!this.enrollmentPoliciesLoading() && (requested || !waitedForTypedName)) {
         break;
       }
-      await firstValueFrom(merge(this.policiesSettled, this.policyUsernameApplied));
+      await firstValueFrom(merge(this.policiesSettled, this.policyUsernameApplied$));
     }
     const currentTokenType = this.tokenType();
     if (!currentTokenType) {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal, untracked } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -125,10 +125,20 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
     },
     { equal: samePreset }
   );
-  // A value the user picked is kept when the preset changes later, even one that equals the preset.
-  private readonly otpLengthChosen = signal(false);
-  private readonly hashAlgorithmChosen = signal(false);
-  private readonly timeStepChosen = signal(false);
+  // A value the user picked is kept when the preset changes later, even one that equals the preset. A policy
+  // that locks the field drops the pick, so the default shows again once the policy no longer applies.
+  private readonly otpLengthChosen = linkedSignal<FieldPreset<number>, boolean>({
+    source: this.otpLengthPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
+  private readonly hashAlgorithmChosen = linkedSignal<FieldPreset<string>, boolean>({
+    source: this.hashAlgorithmPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
+  private readonly timeStepChosen = linkedSignal<FieldPreset<string>, boolean>({
+    source: this.timeStepPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
   otpLength = linkedSignal<FieldPreset<number>, number>({
     source: this.otpLengthPreset,
     computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.otpLengthChosen))
@@ -177,13 +187,19 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
   constructor() {
     super();
 
-    // A pick in the field marks it dirty, which keeps its value over a later preset.
+    // A pick in the field marks it dirty, which keeps its value over a later preset. One effect per field, so
+    // that the dirty state of one field does not set the flag of another one again after a policy dropped it.
     effect(() => {
       if (this.otpLengthForm().dirty()) this.otpLengthChosen.set(true);
+    });
+    effect(() => {
       if (this.hashAlgorithmForm().dirty()) this.hashAlgorithmChosen.set(true);
+    });
+    effect(() => {
       if (this.timeStepForm().dirty()) this.timeStepChosen.set(true);
     });
   }
+
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<DaypasswordEnrollmentData> | null {
     if (!this.generateOnServer() && !this.otpKeyForm().valid()) {

@@ -43,6 +43,7 @@ import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
+import { HOTP_HASHLIB } from "@constants/token.constants";
 import { SystemService } from "@services/system/system.service";
 import {
   EnrollmentPolicies,
@@ -87,6 +88,7 @@ import { By } from "@angular/platform-browser";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AXE_TIMEOUT, axe } from "@testing/axe";
+import { DEBOUNCE_MS } from "@utils/debounce.utils";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -875,7 +877,6 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   describe("policy target of a typed user", () => {
-    const DELAY = 300;
     const targetUsers = () => tokenService.getEnrollmentPolicies.mock.calls.map((call) => call[0].user);
     const type = (name: string) => {
       userService.selectedUser.set({ username: name } as unknown as UserData);
@@ -896,15 +897,23 @@ describe("TokenEnrollmentComponent", () => {
     it("sends one policy request after five keystrokes of an unknown name", () => {
       for (const name of ["a", "al", "ali", "alic", "alice"]) {
         type(name);
-        jest.advanceTimersByTime(DELAY - 100);
+        jest.advanceTimersByTime(DEBOUNCE_MS - 100);
         TestBed.tick();
       }
       expect(tokenService.getEnrollmentPolicies).not.toHaveBeenCalled();
 
-      jest.advanceTimersByTime(DELAY);
+      jest.advanceTimersByTime(DEBOUNCE_MS);
       TestBed.tick();
 
       expect(targetUsers()).toEqual(["alice"]);
+    });
+
+    it("drops a pending typed name when the component is destroyed", () => {
+      type("dave");
+      fixture.destroy();
+      jest.advanceTimersByTime(DEBOUNCE_MS);
+
+      expect((component as unknown as { policyUsername: () => string }).policyUsername()).toBe("");
     });
 
     it("requests the policies of a user known to the user service at once", () => {
@@ -930,7 +939,7 @@ describe("TokenEnrollmentComponent", () => {
       await Promise.resolve();
       expect(tokenService.enrollToken).not.toHaveBeenCalled();
 
-      jest.advanceTimersByTime(DELAY);
+      jest.advanceTimersByTime(DEBOUNCE_MS);
       TestBed.tick();
       await enrolling;
 
@@ -1091,6 +1100,29 @@ describe("TokenEnrollmentComponent", () => {
         expect(wizardComponent.description()).toBe("my token");
         expect(wizardComponent.setPin()).toBe("1234");
         expect(wizardComponent["inputsGeneration"]()).toBe(generation);
+      });
+
+      it("keeps a value picked in the wizard over a later preset after the enrollment", () => {
+        const wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+        wizardFixture.detectChanges();
+        httpTestingController.match(() => true).forEach((req) => req.flush(""));
+        const wizardComponent = wizardFixture.componentInstance;
+        const hotp = () =>
+          wizardFixture.debugElement.query(By.directive(EnrollHotpComponent)).componentInstance as EnrollHotpComponent;
+        // The pick equals the preset, so only the chosen flag keeps it.
+        hotp().hashAlgorithmForm().markAsDirty();
+        TestBed.tick();
+        wizardComponent.enrolledDialogData.set(lastStepData());
+        wizardComponent["inputsResetPending"] = true;
+
+        openLastStep(wizardComponent);
+        (TestBed.inject(SystemService) as unknown as MockSystemService).systemConfig.set({
+          [HOTP_HASHLIB]: "sha256"
+        });
+        wizardFixture.detectChanges();
+        TestBed.tick();
+
+        expect(hotp().hashAlgorithm()).toBe("sha1");
       });
 
       it("resets the inputs at once when the push step stops in clientwait", async () => {
