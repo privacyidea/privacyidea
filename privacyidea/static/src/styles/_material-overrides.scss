@@ -231,16 +231,20 @@
 // Padding, not margin: a margin collapses with its parent's and reserves nothing inside a clipping container. A field
 // without a label (the paginator's page size, a policy action's value) has nothing to float and keeps its height. No
 // specificity, so a field that sets its own top padding keeps it.
-$labelled-outline-field: ".mat-mdc-form-field.mat-form-field-appearance-outline:has(> .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label))";
+// The text field wrapper of a field with a label. Selectors reach it with child combinators, as :has() cannot be nested.
+$labelled-field-wrapper: ".mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label)";
 
-:where(#{$labelled-outline-field}) {
+:where(.mat-mdc-form-field.mat-form-field-appearance-outline:has(> #{$labelled-field-wrapper})) {
   padding-top: var(--form-field-label-room);
 }
 
 // The sticky controls and the roomy table actions centre their items, and a labelled field's box includes the room
 // above its outline. The other items take the same room, so they centre on the outline. A field can sit in a component
 // of its own (the policy action search).
-:is(.sticky-controls, .table-actions-roomy):has(> #{$labelled-outline-field}, > * > #{$labelled-outline-field})
+:is(.sticky-controls, .table-actions-roomy):has(
+    > .mat-form-field-appearance-outline > #{$labelled-field-wrapper},
+    > * > .mat-form-field-appearance-outline > #{$labelled-field-wrapper}
+  )
   > :not(.mat-form-field-appearance-outline, :has(> .mat-form-field-appearance-outline)) {
   margin-top: var(--form-field-label-room);
 }

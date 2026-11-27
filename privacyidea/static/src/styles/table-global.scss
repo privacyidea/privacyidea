@@ -227,7 +227,8 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   &:has(
       .filter-actions-group
-        .mat-form-field-appearance-outline:has(> .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label))
+        .mat-form-field-appearance-outline
+        > .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label)
     ) {
     --filter-row-label-room: var(--form-field-label-room);
   }
