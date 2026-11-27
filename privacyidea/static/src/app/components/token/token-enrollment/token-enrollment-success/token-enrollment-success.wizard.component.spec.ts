@@ -19,10 +19,13 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
-import { BaseApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  EnrollmentResponse,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthData, AuthService } from "@services/auth/auth.service";
@@ -30,34 +33,36 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { axe } from "@testing/axe";
+import { EnrollmentDialogHarness } from "@testing/enrollment-dialog-harness";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
-import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
+import { TokenEnrollmentSuccessWizardComponent } from "./token-enrollment-success.wizard.component";
 
-describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
-  let component: TokenEnrollmentLastStepDialogWizardComponent;
-  let fixture: ComponentFixture<TokenEnrollmentLastStepDialogWizardComponent>;
+describe("TokenEnrollmentSuccessWizardComponent", () => {
+  let component: TokenEnrollmentSuccessWizardComponent;
+  let harness: EnrollmentDialogHarness;
   let authService: MockAuthService;
   let httpMock: HttpTestingController;
 
-  const dialogData = (): TokenEnrollmentDialogData => ({
-    response: {
+  const response = (): EnrollmentResponse => ({
+    type: "totp",
+    detail: {
       type: "totp",
-      detail: {
-        type: "totp",
-        serial: "1234567890",
-        googleurl: {
-          description: "Google Authenticator URL",
-          img: "",
-          value: "otpauth://totp/Example:user?secret=ABCDEF1234567890&issuer=Example"
-        }
-      },
-      result: { status: true }
+      serial: "1234567890",
+      googleurl: {
+        description: "Google Authenticator URL",
+        img: "",
+        value: "otpauth://totp/Example:user?secret=ABCDEF1234567890&issuer=Example"
+      }
     },
+    result: { status: true }
+  });
+  const dialogData = (): Partial<TokenEnrollmentDialogData> => ({
     tokenType: "totp",
+    wizard: true,
     enrollParameters: {
       data: { user: "alice", realm: "realm1" } as unknown as TokenEnrollmentData,
       mapper: {} as unknown as BaseApiPayloadMapper
@@ -67,13 +72,12 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
     environment.proxyUrl + `/static/public/customize/token-enrollment.wizard.post.${position}.html`;
 
   const setup = async (containerWizard = false) => {
+    harness = new EnrollmentDialogHarness();
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentLastStepDialogWizardComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: dialogData() },
+        ...harness.providers,
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
@@ -87,22 +91,19 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
       container_wizard: { enabled: containerWizard, type: "", registration: false, template: null }
     } as AuthData);
     httpMock = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogWizardComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    harness.open(response(), dialogData(), { successStep: () => TokenEnrollmentSuccessWizardComponent });
+    component = harness.step<TokenEnrollmentSuccessWizardComponent>();
   };
 
   const flushCustomization = async (top = "", bottom = "") => {
     httpMock.expectOne(customizationUrl("top")).flush(top);
     httpMock.expectOne(customizationUrl("bottom")).flush(bottom);
-    await fixture.whenStable();
-    fixture.detectChanges();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
   };
 
-  const footerButtons = (): HTMLButtonElement[] =>
-    Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
-  const footerButton = (label: string) =>
-    footerButtons().find((button) => button.textContent?.trim() === label) as HTMLButtonElement | undefined;
+  const footerButtons = () => harness.footerButtons();
+  const footerButton = (label: string) => harness.footerButton(label);
 
   afterEach(() => httpMock.verify());
 
@@ -110,20 +111,20 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
     await setup();
     await flushCustomization("<p>Top {{ serial }}</p>", "<p>Bottom</p>");
 
-    const text = fixture.nativeElement.textContent as string;
+    const text = harness.element.textContent as string;
     expect(text).toContain("The token has been successfully enrolled.");
     expect(text).toContain("Top 1234567890");
     expect(text).toContain("Bottom");
-    expect(fixture.nativeElement.querySelector(".enrolled__cards")).toBeNull();
+    expect(harness.element.querySelector(".enrolled__cards")).toBeNull();
   });
 
   it("shows the reduced enrollment data", async () => {
     await setup();
     await flushCustomization();
 
-    expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
-    expect(fixture.nativeElement.querySelector("app-qr-code-text")).toBeNull();
-    expect(fixture.nativeElement.textContent).not.toContain("Regenerate");
+    expect(harness.element.querySelector("app-token-enrollment-data")).toBeTruthy();
+    expect(harness.element.querySelector("app-qr-code-text")).toBeNull();
+    expect(harness.element.textContent).not.toContain("Regenerate");
   });
 
   it("offers only create container and logout", async () => {
@@ -136,7 +137,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
   it("cannot be closed", async () => {
     await setup();
     await flushCustomization();
-    const dialogRef = component["dialogRef"] as unknown as MockMatDialogRef<unknown>;
+    const dialogRef = harness.dialogRef;
 
     dialogRef.fireKeydownEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     dialogRef.fireBackdropClick();
@@ -159,11 +160,12 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
       await setup(true);
       await flushCustomization();
       dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      dialogService.openDialog.mockClear();
     });
 
     it("keeps logout and create container enabled", () => {
       component.onCloseConfirmationChange(unsaved);
-      fixture.detectChanges();
+      harness.fixture.detectChanges();
 
       expect(footerButtons().every((button) => !button.disabled)).toBe(true);
     });
@@ -215,7 +217,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
         })
       );
       expect(navigate).not.toHaveBeenCalled();
-      expect(component["dialogRef"].close).not.toHaveBeenCalled();
+      expect(harness.dialogRef.close).not.toHaveBeenCalled();
     });
   });
 
@@ -226,7 +228,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
     footerButton("Create Container")?.click();
 
-    expect(component["dialogRef"].close).toHaveBeenCalled();
+    expect(harness.dialogRef.close).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_WIZARD]);
   });
 
@@ -234,6 +236,6 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
     await setup();
     await flushCustomization();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    expect(await axe(harness.element)).toHaveNoViolations();
   });
 });

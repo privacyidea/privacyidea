@@ -17,21 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { Signal, signal } from "@angular/core";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { EnrollmentStepResult } from "@components/token/token-enrollment/token-enrollment.constants";
-import { Observable } from "rxjs";
+import type { EnrollmentFirstStep } from "@components/token/token-enrollment/enrollment-flow";
 
 export interface EnrollmentArgs<T extends TokenEnrollmentData> {
   data: T;
   mapper: TokenApiPayloadMapper<T>;
 }
-
-export type ReopenDialogAction = () => Promise<EnrollmentStepResult> | Observable<EnrollmentStepResult>;
 
 // Abstract class so it can be used as a DI token via
 // `{ provide: EnrollTokenBase, useExisting: forwardRef(() => MyEnrollComponent) }`.
@@ -40,15 +37,12 @@ export type ReopenDialogAction = () => Promise<EnrollmentStepResult> | Observabl
 export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrollmentData> {
   abstract buildEnrollmentArgs(basic: TokenEnrollmentData): EnrollmentArgs<T> | null;
 
-  onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentStepResult>;
+  // The step this token type needs right after its first response, see push, WebAuthn and passkey.
+  firstStep?(response: EnrollmentResponse, data: TokenEnrollmentData): EnrollmentFirstStep;
 
   readonly showEnrollDataInLastStep: boolean = true;
 
   // Set while the token type cannot be enrolled at all with the admin's rights; the parent disables Enroll and shows
   // the reason on it.
   readonly enrollmentBlockedReason: Signal<string | null> = signal(null);
-
-  readonly reopenDialog: WritableSignal<ReopenDialogAction | undefined> = signal<ReopenDialogAction | undefined>(
-    undefined
-  );
 }

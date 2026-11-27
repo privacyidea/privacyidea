@@ -1,7 +1,8 @@
 // Caps a block of dialog prose at a readable measure. It lives here rather than in the wrapper
 // because view encapsulation keeps the wrapper's own styles off the content projected into it.
+// A dialog can widen or lift the cap with --dialog-prose-max-width, see the enrollment dialog.
 .dialog-prose {
-  max-width: var(--dialog-prose-width);
+  max-width: var(--dialog-prose-max-width, var(--dialog-prose-width));
 }
 
 // Lets a single unbreakable word (a long token serial, URL, ...) wrap instead of stretching the

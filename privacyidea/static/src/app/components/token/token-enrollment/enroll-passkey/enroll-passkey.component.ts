@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject, input, signal } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
+import { Component, forwardRef, inject } from "@angular/core";
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
@@ -30,22 +29,16 @@ import {
   PasskeyFinalizeApiPayloadMapper,
   PasskeyFinalizeData
 } from "@app/mappers/token-api-payload/passkey-token-api-payload.mapper";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
-import {
-  TokenEnrollmentFirstStepDialogComponent,
-  TokenEnrollmentFirstStepDialogData
-} from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import type { EnrollmentFirstStep } from "@components/token/token-enrollment/enrollment-flow";
 import {
   ENROLLMENT_CANCELLED,
   EnrollmentStepResult
 } from "@components/token/token-enrollment/token-enrollment.constants";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
-import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { lastValueFrom } from "rxjs";
+import { defer, lastValueFrom, Observable } from "rxjs";
 
 @Component({
   selector: "app-enroll-passkey",
@@ -55,21 +48,11 @@ import { lastValueFrom } from "rxjs";
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPasskeyComponent) }]
 })
 export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentData> {
-  wizard = input<boolean>(false);
   protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(PasskeyApiPayloadMapper);
   protected readonly finalizeMapper: PasskeyFinalizeApiPayloadMapper = inject(PasskeyFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
-  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-
-  currentStepOneRef?: MatDialogRef<
-    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
-    EnrollmentStepResult
-  >;
-
-  readonly registrationFailed = signal(false);
 
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<PasskeyEnrollmentData> | null {
     if (!navigator.credentials?.create) {
@@ -89,93 +72,42 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     };
   }
 
-  override async onEnrollmentResponse(
+  override firstStep(
     enrollmentResponse: EnrollmentResponse,
     enrollmentInitData: TokenEnrollmentData
-  ): Promise<EnrollmentStepResult> {
+  ): EnrollmentFirstStep {
+    return { kind: "fido2", register: (signal) => this.register(enrollmentResponse, enrollmentInitData, signal) };
+  }
+
+  private async register(
+    enrollmentResponse: EnrollmentResponse,
+    enrollmentInitData: TokenEnrollmentData,
+    signal: AbortSignal
+  ): Promise<Observable<EnrollmentStepResult> | null> {
     if (enrollmentInitData.type !== "passkey") {
       console.warn("Received enrollment data is not of type 'passkey'. Cannot proceed with Passkey enrollment.");
       return null;
     }
-    if (!enrollmentResponse.detail?.passkey_registration) {
-      this.notificationService.error(
-        $localize`:@@token.failedInitiate:Failed to initiate Passkey registration: Invalid server response.`
-      );
-      throw new Error("Invalid server response for Passkey initiation.");
+    const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse, signal);
+    if (!publicKeyCred || signal.aborted) {
+      return null;
     }
-
-    return this.runRegistration({
-      enrollmentInitData: enrollmentInitData as PasskeyEnrollmentData,
-      enrollmentResponse
-    });
-  }
-
-  private async runRegistration(args: {
-    enrollmentInitData: PasskeyEnrollmentData;
-    enrollmentResponse: EnrollmentResponse;
-  }): Promise<EnrollmentStepResult> {
-    const dialogRef = this.openStepOneDialog(args);
-    const dialogClosed = lastValueFrom(dialogRef.afterClosed());
-    void this.attemptRegistration(args);
-
-    const dialogResult = await dialogClosed;
-    if (dialogResult === ENROLLMENT_CANCELLED) {
-      this.reopenDialog.set(undefined);
-      return ENROLLMENT_CANCELLED;
-    }
-    return dialogResult ?? null;
-  }
-
-  private async attemptRegistration(args: {
-    enrollmentInitData: PasskeyEnrollmentData;
-    enrollmentResponse: EnrollmentResponse;
-  }): Promise<void> {
-    const dialogRef = this.currentStepOneRef;
-    this.registrationFailed.set(false);
-
-    const publicKeyCred = await this.readPublicKeyCred(args.enrollmentResponse);
-    if (!publicKeyCred || (dialogRef && !this.dialogService.isDialogOpen(dialogRef))) {
-      this.registrationFailed.set(true);
-      return;
-    }
-
-    const responseLastStep = await this.finalizeEnrollment({ ...args, publicKeyCred }).catch(() => null);
-    dialogRef?.close(responseLastStep ?? ENROLLMENT_CANCELLED);
-  }
-
-  openStepOneDialog(args: {
-    enrollmentInitData: PasskeyEnrollmentData;
-    enrollmentResponse: EnrollmentResponse;
-  }): MatDialogRef<
-    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
-    EnrollmentStepResult
-  > {
-    const { enrollmentInitData, enrollmentResponse } = args;
-    const canCancel = !enrollmentInitData.rollover && this.authService.actionAllowed("delete");
-
-    this.reopenDialog.set(async () => {
-      if (this.currentStepOneRef && this.dialogService.isDialogOpen(this.currentStepOneRef)) {
-        return null;
-      }
-      return this.runRegistration(args);
-    });
-
-    this.currentStepOneRef = this.dialogService.openDialog({
-      component: TokenEnrollmentFirstStepDialogComponent,
-      data: {
+    // A failed finalization deletes the token.
+    return defer(() =>
+      this.finalizeEnrollment({
+        enrollmentInitData: enrollmentInitData as PasskeyEnrollmentData,
         enrollmentResponse,
-        enrollmentData: enrollmentInitData,
-        showCancelButton: canCancel,
-        wizard: this.wizard(),
-        registrationFailed: this.registrationFailed.asReadonly(),
-        onRetry: () => void this.attemptRegistration(args)
-      },
-      configOverride: { disableClose: canCancel }
-    });
-    return this.currentStepOneRef;
+        publicKeyCred
+      })
+        .catch(() => null)
+        .then((finalResponse): EnrollmentStepResult => finalResponse ?? ENROLLMENT_CANCELLED)
+    );
   }
 
-  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<PublicKeyCredential | null> {
+  private async readPublicKeyCred(
+    responseStepOne: EnrollmentResponse,
+    signal: AbortSignal
+  ): Promise<PublicKeyCredential | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
@@ -205,8 +137,12 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       attestation: passkeyRegOptions.attestation
     };
     const publicKeyCred = await navigator.credentials
-      .create({ publicKey: publicKeyOptions })
+      .create({ publicKey: publicKeyOptions, signal })
       .catch((browserOrCredentialError) => {
+        // The user left the step, nothing failed.
+        if (signal.aborted) {
+          return null;
+        }
         this.notificationService.error(
           $localize`:@@token.passkeyCredential:Passkey credential creation failed: ${browserOrCredentialError.message}:MESSAGE:`
         );
@@ -263,7 +199,6 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
         throw Error(errorStep3);
       })
       .then((finalResponse) => {
-        this.reopenDialog.set(undefined);
         if (finalResponse.detail) {
           finalResponse.detail.serial = detail.serial;
         } else {

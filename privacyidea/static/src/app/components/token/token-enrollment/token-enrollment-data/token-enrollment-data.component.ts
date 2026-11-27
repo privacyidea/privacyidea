@@ -66,6 +66,8 @@ export class TokenEnrollmentDataComponent {
   tokenType = input.required<string>();
   // Without the QR code's text, the regenerate button and the hints to save secrets, for the wizard.
   compact = input<boolean>(false);
+  // Set while another request for the token runs, which a regenerate request would cross.
+  regenerateDisabled = input<boolean>(false);
   enrollmentResponseChange = output<EnrollmentResponse>();
   unsavedDataChange = output<string>();
   closeConfirmationChange = output<string>();
@@ -209,7 +211,7 @@ export class TokenEnrollmentDataComponent {
   }
 
   regenerateQRCode() {
-    if (this.regenerating()) {
+    if (this.regenerating() || this.regenerateDisabled()) {
       return;
     }
     const enrollmentParameters = this.enrollmentParameters();

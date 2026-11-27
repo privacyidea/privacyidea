@@ -16,64 +16,35 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
-import { Component, computed, inject, signal, Signal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
-import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { map, Observable, of } from "rxjs";
 
+// The enrolled token with its enrollment data.
 @Component({
-  selector: "app-token-enrollment-last-step-dialog",
-  templateUrl: "./token-enrollment-last-step-dialog.component.html",
-  imports: [DialogWrapperComponent, TokenEnrollmentDataComponent, TokenEnrolledTextComponent]
+  selector: "app-token-enrollment-success",
+  templateUrl: "./token-enrollment-success.component.html",
+  imports: [TokenEnrollmentDataComponent]
 })
-export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+export class TokenEnrollmentSuccessComponent extends EnrollmentStep {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly serial = this.data.response?.detail?.serial ?? "";
-  protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
   protected readonly rollover = this.data.rollover ?? false;
 
-  // What closing would leave unsaved, so the dialog asks first; empty closes right away.
-  private readonly closeConfirmation = signal("");
-  // The links in the header ask the same way as Close.
-  protected readonly confirmLeave = () => this.confirmClose();
-
-  title: Signal<string> = computed(() =>
+  readonly title = computed(() =>
     this.rollover
       ? $localize`:@@token.tokenSuccessfullyRolled:Token Successfully Rolled Over`
       : $localize`:@@token.tokenSuccessfully:Token Successfully Enrolled`
   );
+  readonly headerState = "done";
 
-  constructor() {
-    super();
-    this.dialogRef.afterClosed().subscribe(() => {
-      this.tokenService.stopPolling();
-    });
-    this.dialogRef.disableClose = true;
-    this.dialogRef.backdropClick().subscribe(() => this.attemptClose());
-    this.dialogRef.keydownEvents().subscribe((event) => {
-      if (event.key === "Escape") {
-        this.attemptClose();
-      }
-    });
-  }
+  // What closing would leave unsaved, so the dialog asks first; empty closes right away.
+  private readonly closeConfirmation = signal("");
 
-  protected attemptClose(): void {
-    this.confirmClose().subscribe((confirmed) => {
-      if (confirmed) {
-        this.dialogRef.close();
-      }
-    });
-  }
-
-  protected confirmClose(confirmLabel = $localize`:@@common.close:Close`): Observable<boolean> {
+  override confirmClose(confirmLabel = $localize`:@@common.close:Close`): Observable<boolean> {
     const message = this.closeConfirmation();
     if (!message) {
       return of(true);
@@ -97,9 +68,5 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {
     this.data.onEnrollmentResponseChange?.(response);
-  }
-
-  onSwitchRoute() {
-    this.dialogRef.close();
   }
 }

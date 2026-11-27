@@ -25,6 +25,8 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { Observable, of } from "rxjs";
 
 export type EnrolledTextLink = "token" | "container" | "user" | "realm";
+// "verify" and "incomplete" while the user still has to act before the token can be used.
+export type EnrolledTextState = "done" | "verify" | "incomplete";
 
 @Component({
   selector: "app-token-enrolled-text",
@@ -44,8 +46,7 @@ export class TokenEnrolledTextComponent {
   rollover = input<boolean>(false);
   // Asked before a link closes the surrounding dialog; the link is only followed on true.
   confirmLeave = input<(link: EnrolledTextLink) => Observable<boolean>>();
-  // "verify" and "incomplete" while the user still has to act before the token can be used.
-  state = input<"done" | "verify" | "incomplete">("done");
+  state = input<EnrolledTextState>("done");
   // Only the summary sentence, without the cards.
   summaryOnly = input<boolean>(false);
   switchRoute = output();
@@ -57,6 +58,14 @@ export class TokenEnrolledTextComponent {
   );
   protected readonly pending = computed(() => this.state() !== "done");
   protected readonly showRealmOnly = computed(() => this.isAdmin() && !!this.userRealm() && !!this.onlyAddToRealm());
+  // The number of cards shown, so the dialog can make room for one row of them.
+  readonly cardCount = computed(() => {
+    if (this.summaryOnly()) {
+      return 0;
+    }
+    const cards = [true, !!this.containerSerial(), this.showUser(), this.showUser() || this.showRealmOnly()];
+    return cards.filter(Boolean).length;
+  });
 
   tokenSelected() {
     const serial = this.serial();

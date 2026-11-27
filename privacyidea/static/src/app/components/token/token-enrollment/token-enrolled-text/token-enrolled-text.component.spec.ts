@@ -284,6 +284,23 @@ describe("TokenEnrolledTextComponent", () => {
       expect(labels()).toEqual(["Token"]);
     });
 
+    it("counts the cards it shows, none in summary-only mode", () => {
+      fixture.componentRef.setInput("serial", "HOTP1");
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.detectChanges();
+      expect(component.cardCount()).toBe(3);
+
+      fixture.componentRef.setInput("containerSerial", "CONT1");
+      fixture.detectChanges();
+      expect(component.cardCount()).toBe(4);
+      expect(labels()).toHaveLength(4);
+
+      fixture.componentRef.setInput("summaryOnly", true);
+      fixture.detectChanges();
+      expect(component.cardCount()).toBe(0);
+    });
+
     it("leaves out the realm for a self-service user in realm-only mode", () => {
       mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
       fixture.componentRef.setInput("userRealm", "realm1");

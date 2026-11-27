@@ -41,6 +41,10 @@ export class DialogWrapperComponent<R = unknown> implements OnInit {
   icon = input<string>();
   // Width tier, see --dialog-width-* in styles.scss. Default holds ~65 characters of prose.
   width = input<"s" | "m" | "l">("m");
+  // Header and footer stay in place, only the body scrolls.
+  scrollBody = input<boolean>(false);
+  // Keeps width and height while the content changes, see the enrollment dialog. Implies scrollBody.
+  fixedSize = input<boolean>(false);
   showCloseButton = input<boolean>(true);
   // Empty by default so the template falls back to the translated <div i18n>Cancel</div>.
   // A hardcoded "Cancel" here would bypass i18n and always render in English.

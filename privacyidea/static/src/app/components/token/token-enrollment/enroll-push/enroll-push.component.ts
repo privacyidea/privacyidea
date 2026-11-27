@@ -17,26 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, inject, input, signal } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
-import { PiResponse } from "@app/app.component";
-import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { Component, forwardRef, inject } from "@angular/core";
 import { PushApiPayloadMapper, PushEnrollmentData } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
-import {
-  TokenEnrollmentFirstStepDialogComponent,
-  TokenEnrollmentFirstStepDialogData
-} from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import {
-  ENROLLMENT_CANCELLED,
-  EnrollmentStepResult
-} from "@components/token/token-enrollment/token-enrollment.constants";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { Tokens, TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { lastValueFrom } from "rxjs";
+import type { EnrollmentFirstStep } from "@components/token/token-enrollment/enrollment-flow";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-enroll-push",
@@ -46,21 +32,10 @@ import { lastValueFrom } from "rxjs";
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPushComponent) }]
 })
 export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
-  wizard = input<boolean>(false);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-
-  pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
-
-  firstStepDialogRef: MatDialogRef<
-    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
-    EnrollmentStepResult
-  > | null = null;
 
   override readonly showEnrollDataInLastStep: boolean = false;
 
@@ -75,99 +50,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
     };
   }
 
-  override async onEnrollmentResponse(
-    initResponse: EnrollmentResponse,
-    enrollmentData?: TokenEnrollmentData
-  ): Promise<EnrollmentStepResult> {
-    if (!initResponse) {
-      return null;
-    }
-    return this.awaitRolloutState(initResponse, 5000, enrollmentData);
-  }
-
-  private async awaitRolloutState(
-    initResponse: EnrollmentResponse,
-    initDelay: number,
-    enrollmentData?: TokenEnrollmentData
-  ): Promise<EnrollmentStepResult> {
-    const dialogRef = this._openStepOneDialog(initResponse, enrollmentData);
-    this.firstStepDialogRef = dialogRef;
-    const dialogClosed = lastValueFrom(dialogRef.afterClosed());
-
-    let lastPollResponse: PiResponse<Tokens> | undefined;
-    let pollingFailed = false;
-    this.tokenService.pollTokenRolloutState({ tokenSerial: initResponse.detail.serial, initDelay }).subscribe({
-      next: (pollResponse) => {
-        lastPollResponse = pollResponse;
-        this.pollResponse.set(pollResponse);
-        if (pollResponse.result?.value?.tokens[0]?.rollout_state !== "clientwait") {
-          dialogRef.close();
-        }
-      },
-      error: () => {
-        pollingFailed = true;
-        dialogRef.close();
-      }
-    });
-
-    const dialogResult = await dialogClosed;
-    this.tokenService.stopPolling();
-    this.pollResponse.set(undefined);
-
-    if (dialogResult === ENROLLMENT_CANCELLED) {
-      this.reopenDialog.set(undefined);
-      return ENROLLMENT_CANCELLED;
-    }
-    if (pollingFailed) {
-      return null;
-    }
-    if (lastPollResponse?.result?.value?.tokens.length === 0) {
-      this.notificationService.warning(
-        $localize`:@@token.enrollmentTokenGone:The token ${initResponse.detail.serial}:serial: no longer exists. The enrollment was ended.`
-      );
-      this.reopenDialog.set(undefined);
-      return ENROLLMENT_CANCELLED;
-    }
-
-    const rolloutState = lastPollResponse?.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state;
-    if (rolloutState === "clientwait") {
-      return null;
-    }
-    return {
-      ...initResponse,
-      detail: {
-        ...initResponse.detail,
-        rollout_state: rolloutState
-      }
-    };
-  }
-
-  private _openStepOneDialog(
-    enrollmentResponse: EnrollmentResponse,
-    enrollmentData?: TokenEnrollmentData
-  ): MatDialogRef<
-    AbstractDialogComponent<TokenEnrollmentFirstStepDialogData, EnrollmentStepResult>,
-    EnrollmentStepResult
-  > {
-    const canCancel = !enrollmentData?.rollover && this.authService.actionAllowed("delete");
-
-    this.reopenDialog.set(async () => {
-      if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
-        return null;
-      }
-      return this.awaitRolloutState(enrollmentResponse, 0, enrollmentData);
-    });
-
-    return this.dialogService.openDialog({
-      component: TokenEnrollmentFirstStepDialogComponent,
-      data: {
-        enrollmentResponse,
-        enrollmentData,
-        showCancelButton: canCancel,
-        wizard: this.wizard(),
-        cancelConfirmationMessage: $localize`:@@token.whenCancelingRolloutToken:When canceling the rollout the token will be deleted even when the QR code was scanned.`
-      },
-      configOverride: { disableClose: true }
-    });
+  override firstStep(): EnrollmentFirstStep {
+    return { kind: "push" };
   }
 }
