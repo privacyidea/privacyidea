@@ -81,7 +81,7 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
   private readonly hashlibPolicy = computed(() => this.policies()?.defaults.hashlib || undefined);
   private readonly otpLengthPolicy = computed(() => numericPolicyValue(this.policies()?.defaults.otplen));
 
-  twoStep = computed(() => twoStepMode(this.policies()));
+  twoStep = computed(() => twoStepMode(this.enrollmentPolicies()));
   forceServerGenerate = computed(() => !!this.policies()?.force_server_generate);
 
   // Policy value first, then the enrollment data (rollover, template), then the token configuration default.

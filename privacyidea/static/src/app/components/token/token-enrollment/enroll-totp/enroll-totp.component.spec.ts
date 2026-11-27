@@ -51,6 +51,13 @@ function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentP
   };
 }
 
+/** The native input of the `mat-checkbox` whose label contains `text`. */
+function checkboxInputByText(fixture: ComponentFixture<unknown>, text: string): HTMLInputElement {
+  return Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-checkbox"))
+    .find((box) => box.textContent?.includes(text))
+    ?.querySelector("input[type='checkbox']") as HTMLInputElement;
+}
+
 describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
   let fixture: ComponentFixture<EnrollTotpComponent>;
@@ -209,7 +216,12 @@ describe("EnrollTotpComponent", () => {
   });
 
   it("keeps enrollment data values that equal the preset when the system config loads later", () => {
-    fixture.componentRef.setInput("enrollmentData", { type: "totp", otpLength: 6, hashAlgorithm: "sha1", timeStep: 30 });
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "totp",
+      otpLength: 6,
+      hashAlgorithm: "sha1",
+      timeStep: 30
+    });
     fixture.detectChanges();
     expect(component.otpLength()).toBe(6);
     expect(component.hashAlgorithm()).toBe("sha1");
@@ -537,8 +549,7 @@ describe("EnrollTotpComponent", () => {
 
   describe("key input visibility", () => {
     const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
-    const checkbox = () =>
-      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const checkbox = () => checkboxInputByText(fixture, "Generate the OTP key");
     const settle = () => {
       fixture.detectChanges();
       TestBed.tick();
@@ -597,7 +608,8 @@ describe("EnrollTotpComponent", () => {
     it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
       expect(component.generateOnServerForm().dirty()).toBe(false);
 
-      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+      checkboxInputByText(fixture, "Generate the OTP key").click();
+      await flushFixture(fixture);
 
       expect(component.generateOnServer()).toBe(false);
       expect(component.generateOnServerForm().dirty()).toBe(true);
@@ -683,5 +695,66 @@ describe("EnrollTotpComponent", () => {
     fixture.detectChanges();
 
     expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
+  describe("two-step checkbox without a policy target (template editor)", () => {
+    afterEach(clearOverlays);
+
+    const twoStepElement = () =>
+      Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-checkbox")).find((box) =>
+        box.textContent?.includes("two-step")
+      );
+    const twoStepBox = () =>
+      twoStepElement()?.querySelector<HTMLInputElement>('input[type="checkbox"]') as HTMLInputElement;
+
+    async function render(data: Record<string, unknown> | null, policies: EnrollmentPolicyState) {
+      fixture = TestBed.createComponent(EnrollTotpComponent);
+      component = fixture.componentInstance;
+      if (data) fixture.componentRef.setInput("enrollmentData", data);
+      fixture.componentRef.setInput("enrollmentPolicies", policies);
+      await flushFixture(fixture);
+    }
+
+    it("shows the stored twoStepInit checked and emits it", async () => {
+      await render({ type: "totp", twoStepInit: true }, { state: "unrestricted" });
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().checked).toBe(true);
+      expect(twoStepBox().disabled).toBe(false);
+      expect(component.generateOnServerDisabled()).toBe(true);
+      expect(component.buildEnrollmentArgs({ type: "totp" })!.data).toEqual(
+        expect.objectContaining({ twoStepInit: true, generateOnServer: true })
+      );
+    });
+
+    it("shows the checkbox unchecked without twoStepInit and lets the admin toggle it", async () => {
+      await render({ type: "totp" }, { state: "unrestricted" });
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().checked).toBe(false);
+
+      twoStepBox().click();
+      await flushFixture(fixture);
+
+      expect(component.twoStepEnabled()).toBe(true);
+      expect(component.buildEnrollmentArgs({ type: "totp" })!.data).toEqual(
+        expect.objectContaining({ twoStepInit: true })
+      );
+    });
+
+    it("disables the checkbox for a disabled form", async () => {
+      await render(null, { state: "unrestricted" });
+      fixture.componentRef.setInput("disabled", true);
+      await flushFixture(fixture);
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().disabled).toBe(true);
+    });
+
+    it("keeps the checkbox hidden for loaded policies without 2step", async () => {
+      await render(null, loadedPolicies({ "2step": null }));
+
+      expect(twoStepElement()).toBeUndefined();
+    });
   });
 });

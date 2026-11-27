@@ -490,7 +490,7 @@ describe("EnrollHotpComponent", () => {
   describe("key input visibility", () => {
     const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
     const checkbox = () =>
-      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+      fixture.nativeElement.querySelector("mat-checkbox.server-checkbox input[type='checkbox']") as HTMLInputElement;
     const settle = () => {
       fixture.detectChanges();
       TestBed.tick();
@@ -635,5 +635,65 @@ describe("EnrollHotpComponent", () => {
     fixture.detectChanges();
 
     expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
+  describe("two-step checkbox without a policy target (template editor)", () => {
+    afterEach(clearOverlays);
+
+    const twoStepElement = () =>
+      Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-checkbox")).find((box) =>
+        box.textContent?.includes("two-step")
+      );
+    const twoStepBox = () =>
+      twoStepElement()?.querySelector<HTMLInputElement>('input[type="checkbox"]') as HTMLInputElement;
+
+    async function render(data: Record<string, unknown> | null, policies: EnrollmentPolicyState) {
+      createAndInit();
+      if (data) fixture.componentRef.setInput("enrollmentData", data);
+      fixture.componentRef.setInput("enrollmentPolicies", policies);
+      await flushFixture(fixture);
+    }
+
+    it("shows the stored twoStepInit checked and emits it", async () => {
+      await render({ type: "hotp", twoStepInit: true }, { state: "unrestricted" });
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().checked).toBe(true);
+      expect(twoStepBox().disabled).toBe(false);
+      expect(component.generateOnServerDisabled()).toBe(true);
+      expect(component.buildEnrollmentArgs({ type: "hotp" })!.data).toEqual(
+        expect.objectContaining({ twoStepInit: true, generateOnServer: true })
+      );
+    });
+
+    it("shows the checkbox unchecked without twoStepInit and lets the admin toggle it", async () => {
+      await render({ type: "hotp" }, { state: "unrestricted" });
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().checked).toBe(false);
+
+      twoStepBox().click();
+      await flushFixture(fixture);
+
+      expect(component.twoStepEnabled()).toBe(true);
+      expect(component.buildEnrollmentArgs({ type: "hotp" })!.data).toEqual(
+        expect.objectContaining({ twoStepInit: true })
+      );
+    });
+
+    it("disables the checkbox for a disabled form", async () => {
+      await render(null, { state: "unrestricted" });
+      fixture.componentRef.setInput("disabled", true);
+      await flushFixture(fixture);
+
+      expect(twoStepElement()).toBeDefined();
+      expect(twoStepBox().disabled).toBe(true);
+    });
+
+    it("keeps the checkbox hidden for loaded policies without 2step", async () => {
+      await render(null, loadedPolicies({ "2step": null }));
+
+      expect(twoStepElement()).toBeUndefined();
+    });
   });
 });

@@ -86,7 +86,7 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
   private readonly otpLengthPolicy = computed(() => numericPolicyValue(this.policies()?.defaults.otplen));
   private readonly timeStepPolicy = computed(() => numericPolicyValue(this.policies()?.defaults.timeStep));
 
-  twoStep = computed(() => twoStepMode(this.policies()));
+  twoStep = computed(() => twoStepMode(this.enrollmentPolicies()));
   forceServerGenerate = computed(() => !!this.policies()?.force_server_generate);
 
   // Policy value first, then the enrollment data (rollover, template), then the token configuration default.

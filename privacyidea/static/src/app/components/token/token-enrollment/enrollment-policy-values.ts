@@ -83,9 +83,12 @@ export function loadedEnrollmentPolicies(state: EnrollmentPolicyState): Enrollme
   }
 }
 
-/** The two-step mode the enrollment policies allow. */
-export function twoStepMode(policies: EnrollmentPolicies | null): TwoStepMode {
-  return policies?.["2step"] ?? "disabled";
+/** The two-step mode of the enrollment form: "allow" without a policy target (container template editor), else the policy's. */
+export function twoStepMode(state: EnrollmentPolicyState): TwoStepMode {
+  if (state.state === "unrestricted") {
+    return "allow";
+  }
+  return loadedEnrollmentPolicies(state)?.["2step"] ?? "disabled";
 }
 
 /** A numeric policy value, undefined if it is not set or not a number. */
