@@ -54,7 +54,8 @@ export const NO_QR_CODE_TOKEN_TYPES = [
   "applspec",
   "indexedsecret",
   "webauthn",
-  "passkey"
+  "passkey",
+  "vasco"
 ];
 
 /**
@@ -77,7 +78,8 @@ export const NO_REGENERATE_TOKEN_TYPES = [
   "applspec",
   "indexedsecret",
   "webauthn",
-  "passkey"
+  "passkey",
+  "vasco"
 ];
 
 /**
