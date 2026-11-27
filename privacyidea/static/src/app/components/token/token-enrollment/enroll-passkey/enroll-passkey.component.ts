@@ -70,6 +70,11 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
 
   readonly registrationFailed = signal(false);
 
+  // No own fields, and buildEnrollmentArgs() reports an unsupported browser.
+  override markFieldsTouched(): void {
+    // Nothing to mark.
+  }
+
   buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<PasskeyEnrollmentData> | null {
     if (!navigator.credentials?.create) {
       const errorMsg = $localize`:@@token.passkeyWebauthn:Passkey/WebAuthn is not supported by this browser.`;

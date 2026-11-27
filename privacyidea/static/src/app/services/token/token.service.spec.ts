@@ -1365,6 +1365,28 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getEnrollmentPolicies()", () => {
+    it("getEnrollmentPolicies requests the target", () => {
+      tokenService.getEnrollmentPolicies({ type: "hotp", user: "alice", realm: "realm1" }).subscribe();
+
+      const req = mockBackend.expectOne((r) => r.url === `${tokenService.tokenBaseUrl}init/policies`);
+      expect(req.request.method).toBe("GET");
+      expect(req.request.params.get("type")).toBe("hotp");
+      expect(req.request.params.get("user")).toBe("alice");
+      expect(req.request.params.get("realm")).toBe("realm1");
+      expect(req.request.params.has("serial")).toBe(false);
+      req.flush(MockPiResponse.fromValue({}));
+    });
+
+    it("getEnrollmentPolicies leaves out the parameters that are not set", () => {
+      tokenService.getEnrollmentPolicies({ type: "totp", user: "", realm: "" }).subscribe();
+
+      const req = mockBackend.expectOne((r) => r.url === `${tokenService.tokenBaseUrl}init/policies`);
+      expect(req.request.params.keys()).toEqual(["type"]);
+      req.flush(MockPiResponse.fromValue({}));
+    });
+  });
+
   describe("verifyToken()", () => {
     it("POSTs only the serial and the OTP value to /init", () => {
       postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));

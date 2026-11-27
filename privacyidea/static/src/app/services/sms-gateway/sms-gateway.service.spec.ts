@@ -157,6 +157,24 @@ describe("SmsGatewayService", () => {
       httpMock.expectOne((r) => r.url === "/smsgateway/providers");
     });
 
+    it("requests the gateway list on the token enrollment page", () => {
+      contentServiceMock.onTokenEnrollmentLikely = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue([]));
+      httpMock.expectNone((r) => r.url === "/smsgateway/providers");
+    });
+
+    it("does not request the gateway list on the enrollment page without smsgateway_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.onTokenEnrollmentLikely = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/smsgateway/");
+    });
+
     it("should not request the gateways or providers without smsgateway_read", () => {
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
       contentServiceMock.onExternalSms = signal(true);

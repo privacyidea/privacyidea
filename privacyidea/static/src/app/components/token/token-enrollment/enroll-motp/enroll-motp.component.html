@@ -25,17 +25,15 @@
       >Generate the OTP key on the server and show a QR code to scan.</mat-checkbox
     >
     <div class="flex-row gap-16">
-      @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
-        <mat-form-field class="input-width-l">
-          <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
-          <input
-            [formField]="otpKeyForm"
-            i18n-placeholder="@@token.enterOtpKey"
-            matInput
-            placeholder="Enter OTP key" />
-          <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong>.</mat-error>
-        </mat-form-field>
-      }
+      <mat-form-field class="input-width-l">
+        <mat-label i18n="@@token.otpKey">OTP Key</mat-label>
+        <input
+          [formField]="otpKeyForm"
+          i18n-placeholder="@@token.enterOtpKey"
+          matInput
+          placeholder="Enter OTP key" />
+        <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong>.</mat-error>
+      </mat-form-field>
     </div>
   }
 </div>

@@ -16,10 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { signal, Type, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import { PiResponse } from "@app/app.component";
+import { loadedEnrollmentPolicies } from "./enrollment-policy-values";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import {
   EnrollmentResponse,
@@ -41,14 +43,23 @@ import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
+import { HOTP_HASHLIB } from "@constants/token.constants";
 import { SystemService } from "@services/system/system.service";
-import { EnrollTokenArguments, TokenService, TokenType } from "@services/token/token.service";
+import {
+  EnrollmentPolicies,
+  EnrollmentPolicyState,
+  EnrollmentPolicyTarget,
+  EnrollTokenArguments,
+  TokenService,
+  TokenType
+} from "@services/token/token.service";
 import { UserData, UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
   MockContentService,
   MockLocalService,
+  MockPiResponse,
   MockNotificationService,
   MockRealmService,
   MockSystemService,
@@ -60,7 +71,9 @@ import { clearOverlays, flushFixture, pickOption, typeInto } from "@testing/enro
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
-import { of } from "rxjs";
+import { of, Subject, throwError } from "rxjs";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollHotpComponent } from "./enroll-hotp/enroll-hotp.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,
@@ -72,7 +85,10 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { By } from "@angular/platform-browser";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
+import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AXE_TIMEOUT, axe } from "@testing/axe";
+import { DEBOUNCE_MS } from "@utils/debounce.utils";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -84,7 +100,12 @@ interface TokenEnrollmentComponentInternals {
 // Mock token enroll strategy
 function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
   const withDefaults = strategy
-    ? { enrollmentBlockedReason: signal(null), reopenDialog: signal(undefined), ...(strategy as object) }
+    ? {
+        enrollmentBlockedReason: signal(null),
+        fieldsInvalid: signal(false),
+        reopenDialog: signal(undefined),
+        ...(strategy as object)
+      }
     : strategy;
   Object.defineProperty(component, "enrollSwitch", {
     value: () => ({ currentStrategy: () => withDefaults }),
@@ -264,7 +285,12 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
-      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
+      tokenService.selectedTokenType.set({
+        key: "custom_plugin_type",
+        name: "Custom Type",
+        info: "",
+        text: ""
+      } as unknown as TokenType);
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -351,6 +377,14 @@ describe("TokenEnrollmentComponent", () => {
       expect(blockedComponent.enrollmentBlockedReason()).toBe("no right");
     });
 
+    it("Treats the form as invalid while the token type reports invalid fields of its own", () => {
+      const fieldsComponent = TestBed.createComponent(TokenEnrollmentComponent).componentInstance;
+      installStrategy(fieldsComponent, { buildEnrollmentArgs: jest.fn(), fieldsInvalid: signal(true) });
+
+      expect(fieldsComponent.isFormInvalid()).toBe(true);
+      expect(fieldsComponent.enrollmentBlockedReason()).toBeNull();
+    });
+
     it("Hands the blocking reason to the enroll button of the type selector", () => {
       const blockedFixture = TestBed.createComponent(TokenEnrollmentComponent);
       blockedFixture.componentInstance.enrollmentBlockedReason = signal("no right");
@@ -359,6 +393,22 @@ describe("TokenEnrollmentComponent", () => {
       const selector = blockedFixture.debugElement.query(By.directive(TokenEnrollmentTypeSelectorComponent));
       expect(selector.componentInstance.enrollBlockedReason()).toBe("no right");
       expect(selector.componentInstance.formInvalid()).toBe(true);
+    });
+
+    it("Click on the wrapper of the disabled enroll button reveals field errors and does not submit", () => {
+      const blockedFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      blockedFixture.componentInstance.enrollmentBlockedReason = signal("no right");
+      blockedFixture.detectChanges();
+      const instance = blockedFixture.componentInstance;
+      const revealSpy = jest.spyOn(instance, "revealFieldErrors");
+      const enrollSpy = jest.spyOn(instance, "enrollToken");
+      const button: HTMLButtonElement = blockedFixture.nativeElement.querySelector("button[type='submit']");
+
+      expect(button.disabled).toBe(true);
+      button.parentElement!.click();
+
+      expect(revealSpy).toHaveBeenCalledTimes(1);
+      expect(enrollSpy).not.toHaveBeenCalled();
     });
 
     it("Setting validity dates works", () => {
@@ -831,6 +881,81 @@ describe("TokenEnrollmentComponent", () => {
     });
   });
 
+  describe("policy target of a typed user", () => {
+    const targetUsers = () => tokenService.getEnrollmentPolicies.mock.calls.map((call) => call[0].user);
+    const type = (name: string) => {
+      userService.selectedUser.set({ username: name } as unknown as UserData);
+      TestBed.tick();
+    };
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      TestBed.tick();
+      tokenService.getEnrollmentPolicies.mockClear();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("sends one policy request after five keystrokes of an unknown name", () => {
+      for (const name of ["a", "al", "ali", "alic", "alice"]) {
+        type(name);
+        jest.advanceTimersByTime(DEBOUNCE_MS - 100);
+        TestBed.tick();
+      }
+      expect(tokenService.getEnrollmentPolicies).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(DEBOUNCE_MS);
+      TestBed.tick();
+
+      expect(targetUsers()).toEqual(["alice"]);
+    });
+
+    it("drops a pending typed name when the component is destroyed", () => {
+      type("dave");
+      fixture.destroy();
+      jest.advanceTimersByTime(DEBOUNCE_MS);
+
+      expect((component as unknown as { policyUsername: () => string }).policyUsername()).toBe("");
+    });
+
+    it("requests the policies of a user known to the user service at once", () => {
+      userService.users.set([{ username: "bob" } as unknown as UserData]);
+      type("bob");
+
+      expect(targetUsers()).toEqual(["bob"]);
+    });
+
+    it("lets an Enroll click wait for the policies of the typed name", async () => {
+      installStrategy(component, {
+        buildEnrollmentArgs: jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        })
+      });
+      tokenService.enrollToken.mockReturnValue(
+        of({ result: { status: true }, detail: { serial: "TOTP1", googleurl: { img: "", value: "" } } })
+      );
+      type("carol");
+
+      const enrolling = component.enrollToken();
+      await Promise.resolve();
+      expect(tokenService.enrollToken).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(DEBOUNCE_MS);
+      TestBed.tick();
+      await enrolling;
+
+      expect(targetUsers()).toEqual(["carol"]);
+      expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+      expect(tokenService.getEnrollmentPolicies.mock.invocationCallOrder[0]).toBeLessThan(
+        tokenService.enrollToken.mock.invocationCallOrder[0]
+      );
+    });
+  });
+
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
       (component as unknown as TokenEnrollmentComponentInternals).openLastStepDialog(null);
@@ -980,6 +1105,29 @@ describe("TokenEnrollmentComponent", () => {
         expect(wizardComponent.description()).toBe("my token");
         expect(wizardComponent.setPin()).toBe("1234");
         expect(wizardComponent["inputsGeneration"]()).toBe(generation);
+      });
+
+      it("keeps a value picked in the wizard over a later preset after the enrollment", () => {
+        const wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+        wizardFixture.detectChanges();
+        httpTestingController.match(() => true).forEach((req) => req.flush(""));
+        const wizardComponent = wizardFixture.componentInstance;
+        const hotp = () =>
+          wizardFixture.debugElement.query(By.directive(EnrollHotpComponent)).componentInstance as EnrollHotpComponent;
+        // The pick equals the preset, so only the chosen flag keeps it.
+        hotp().hashAlgorithmForm().markAsDirty();
+        TestBed.tick();
+        wizardComponent.enrolledDialogData.set(lastStepData());
+        wizardComponent["inputsResetPending"] = true;
+
+        openLastStep(wizardComponent);
+        (TestBed.inject(SystemService) as unknown as MockSystemService).systemConfig.set({
+          [HOTP_HASHLIB]: "sha256"
+        });
+        wizardFixture.detectChanges();
+        TestBed.tick();
+
+        expect(hotp().hashAlgorithm()).toBe("sha1");
       });
 
       it("resets the inputs at once when the push step stops in clientwait", async () => {
@@ -1240,6 +1388,19 @@ describe("TokenEnrollmentComponent", () => {
       req2.flush("");
     });
 
+    it("requests the policies of the type it enrolls, not of the selected one", () => {
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, default_tokentype: "totp" });
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.getEnrollmentPolicies.mockClear();
+
+      wizardFixture.detectChanges();
+      TestBed.tick();
+      httpTestingController.match(() => true).forEach((req) => req.flush(""));
+
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenCalledWith(expect.objectContaining({ type: "totp" }));
+      expect(tokenService.getEnrollmentPolicies).not.toHaveBeenCalledWith(expect.objectContaining({ type: "hotp" }));
+    });
+
     it("disables the enroll button and shows the blocking reason on it", () => {
       // Set before the first render so isFormInvalid picks it up.
       wizardComponent.enrollmentBlockedReason = signal("no right");
@@ -1312,6 +1473,25 @@ describe("TokenEnrollmentComponent", () => {
         req2.flush("");
       });
 
+      // A new target makes the wizard load the enrollment policies again.
+      const loadPoliciesRequiringDescription = (requireDescription: boolean, realm: string) => {
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          of(
+            MockPiResponse.fromValue<EnrollmentPolicies>({
+              defaults: {},
+              "2step": null,
+              force_server_generate: false,
+              sms_gateways: [],
+              require_description: requireDescription
+            })
+          )
+        );
+        userService.selectedUserRealm.set(realm);
+        // A user of the user list is applied to the policy target without the typing delay.
+        userService.users.set([{ username: "wizard-user" } as unknown as UserData]);
+        userService.selectedUser.set({ username: "wizard-user" } as unknown as UserData);
+      };
+
       it("description form reports required error when description is required and empty", () => {
         authServiceMock.authData.set({
           ...authServiceMock.authData()!,
@@ -1319,6 +1499,7 @@ describe("TokenEnrollmentComponent", () => {
           token_wizard: true,
           default_tokentype: "hotp"
         });
+        loadPoliciesRequiringDescription(true, "wizard-realm-1");
         wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(true);
         wizardComponent.description.set("");
@@ -1339,6 +1520,7 @@ describe("TokenEnrollmentComponent", () => {
           token_wizard: true,
           default_tokentype: "hotp"
         });
+        loadPoliciesRequiringDescription(false, "wizard-realm-2");
         wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(false);
         wizardComponent.description.set("");
@@ -1361,6 +1543,7 @@ describe("TokenEnrollmentComponent", () => {
           token_wizard: true,
           default_tokentype: "hotp"
         });
+        loadPoliciesRequiringDescription(true, "wizard-realm-3");
         wizardFixture.detectChanges();
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).not.toBeNull();
 
@@ -1371,9 +1554,439 @@ describe("TokenEnrollmentComponent", () => {
           token_wizard: true,
           default_tokentype: "hotp"
         });
+        loadPoliciesRequiringDescription(false, "wizard-realm-4");
         wizardFixture.detectChanges();
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
       });
+
+      it("marks the description as required when the enrollment policies require it", () => {
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: ["hotp"],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        loadPoliciesRequiringDescription(true, "wizard-realm-5");
+        wizardFixture.detectChanges();
+        const field: HTMLElement = wizardFixture.nativeElement.querySelector("mat-form-field.description-form");
+        expect(field.querySelector("textarea")!.required).toBe(true);
+        expect(field.querySelector(".mat-mdc-form-field-required-marker")).not.toBeNull();
+      });
+
+      it("shows all field errors when the disabled Enroll button is clicked", () => {
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: ["hotp"],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        loadPoliciesRequiringDescription(true, "wizard-realm-6");
+        wizardFixture.detectChanges();
+        const hotp = wizardFixture.debugElement.query(By.directive(EnrollHotpComponent))
+          .componentInstance as EnrollHotpComponent;
+        hotp.generateOnServer.set(false);
+        wizardFixture.detectChanges();
+
+        const button: HTMLButtonElement = wizardFixture.nativeElement.querySelector("button[type='submit']");
+        expect(button.disabled).toBe(true);
+        expect(wizardFixture.nativeElement.textContent).not.toContain("Description is required.");
+
+        // The click on the wrapper of the disabled button reveals the errors.
+        button.parentElement!.click();
+        wizardFixture.detectChanges();
+
+        expect(wizardComponent.descriptionForm().touched()).toBe(true);
+        expect(hotp.otpKeyForm().touched()).toBe(true);
+        expect(wizardFixture.nativeElement.textContent).toContain("Description is required.");
+      });
+    });
+  });
+
+  describe("enrollment policies", () => {
+    const policies: EnrollmentPolicies = {
+      defaults: { hashlib: "sha512", otplen: "8" },
+      "2step": "force",
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false
+    };
+    // A user of the user list is applied to the policy target without the typing delay.
+    const asUser = (username: string): UserData => {
+      const user = { username } as unknown as UserData;
+      userService.users.update((users) => [...users, user]);
+      return user;
+    };
+
+    it("enrollment policies follow the selected target", () => {
+      userService.selectedUserRealm.set("realm1");
+      userService.selectedUser.set(asUser("alice"));
+      fixture.detectChanges();
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "hotp", user: "alice", realm: "realm1" })
+      );
+
+      userService.selectedUserRealm.set("realm2");
+      userService.selectedUser.set(asUser("bob"));
+      fixture.detectChanges();
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "hotp", user: "bob", realm: "realm2" })
+      );
+
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      fixture.detectChanges();
+      expect(tokenService.getEnrollmentPolicies).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "totp", user: "bob", realm: "realm2" })
+      );
+    });
+
+    // The policies endpoint must see exactly the user and realm that POST /token/init sends for the same form state.
+    const userAssignment = () => {
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, rights: ["userlist"] });
+      fixture.detectChanges();
+      return fixture.debugElement.query(By.directive(UserAssignmentComponent))
+        .componentInstance as UserAssignmentComponent;
+    };
+    const sentInitPayload = async () => {
+      const mapper = TestBed.inject(HotpApiPayloadMapper);
+      installStrategy(component, { buildEnrollmentArgs: (data: TokenEnrollmentData) => ({ data, mapper }) });
+      tokenService.enrollToken.mockClear();
+      await component.enrollToken();
+      expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+      const args = tokenService.enrollToken.mock.calls[0][0] as EnrollTokenArguments;
+      return args.mapper.toApiPayload(args.data);
+    };
+    const lastPolicyTarget = () => tokenService.getEnrollmentPolicies.mock.calls.at(-1)![0] as EnrollmentPolicyTarget;
+
+    it("requests the enrollment policies without a realm when no user is selected", async () => {
+      userService.selectedUserRealm.set("passwd");
+      userService.selectedUser.set(null);
+      fixture.detectChanges();
+      userAssignment().onlyAddToRealm.set(false);
+      fixture.detectChanges();
+
+      const payload = await sentInitPayload();
+      expect(payload.user).toBeUndefined();
+      expect(payload.realm).toBeUndefined();
+
+      const target = lastPolicyTarget();
+      expect(target.user).toBeUndefined();
+      expect(target.realm).toBeUndefined();
+    });
+
+    it("requests the enrollment policies with the realm when only adding to the realm", async () => {
+      userService.selectedUserRealm.set("passwd");
+      userService.selectedUser.set(null);
+      fixture.detectChanges();
+      userAssignment().onlyAddToRealmChange(true);
+      fixture.detectChanges();
+
+      const target = lastPolicyTarget();
+      expect(target.realm).toBe("passwd");
+      expect(target.user).toBeUndefined();
+
+      const payload = await sentInitPayload();
+      expect(payload.realm).toBe("passwd");
+      expect(payload.user).toBeUndefined();
+    });
+
+    it("uses the same user and realm for the policies and the enrollment", async () => {
+      userService.selectedUserRealm.set("realm1");
+      userService.selectedUser.set(asUser("alice"));
+      fixture.detectChanges();
+
+      const target = lastPolicyTarget();
+      const payload = await sentInitPayload();
+      expect(target.user).toBe("alice");
+      expect(target.realm).toBe("realm1");
+      expect({ user: target.user, realm: target.realm }).toEqual({ user: payload.user, realm: payload.realm });
+    });
+
+    describe("while the enrollment policies load", () => {
+      const startLoading = () => {
+        const response = new Subject<PiResponse<EnrollmentPolicies>>();
+        tokenService.getEnrollmentPolicies.mockReturnValue(response);
+        const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+        const fresh = freshFixture.componentInstance;
+        freshFixture.detectChanges();
+        const buildEnrollmentArgs = jest.fn().mockReturnValue({
+          data: { type: "hotp" },
+          mapper: jest.fn().mockReturnValue({ type: "hotp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        });
+        const markFieldsTouched = jest.fn();
+        installStrategy(fresh, { buildEnrollmentArgs, markFieldsTouched });
+        tokenService.enrollToken.mockReturnValue(
+          of({ result: { status: true }, detail: { serial: "HOTP1", googleurl: { img: "", value: "" } } })
+        );
+        const answer = (value: Partial<EnrollmentPolicies>) => {
+          response.next(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, ...value }));
+          freshFixture.detectChanges();
+        };
+        return { fresh, freshFixture, answer, buildEnrollmentArgs, markFieldsTouched };
+      };
+
+      it("does not look blocked or invalid", () => {
+        const { fresh } = startLoading();
+        expect(fresh.enrollmentPoliciesLoading()).toBe(true);
+        expect(fresh.enrollmentBlockedReason()).toBeNull();
+        expect(fresh.isFormInvalid()).toBe(false);
+      });
+
+      it("enrolls after the response when the form is valid with the new policies", async () => {
+        const { fresh, answer, buildEnrollmentArgs } = startLoading();
+        const result = fresh.enrollToken();
+        await Promise.resolve();
+        expect(tokenService.enrollToken).not.toHaveBeenCalled();
+        expect(buildEnrollmentArgs).not.toHaveBeenCalled();
+
+        answer({ require_description: false });
+        await result;
+        expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+      });
+
+      it("does not enroll and reveals the errors when the new policies make the form invalid", async () => {
+        const { fresh, answer, markFieldsTouched } = startLoading();
+        fresh.description.set("");
+        const result = fresh.enrollToken();
+        await Promise.resolve();
+
+        answer({ require_description: true });
+        expect(await result).toBe(false);
+        expect(tokenService.enrollToken).not.toHaveBeenCalled();
+        expect(fresh.descriptionForm().touched()).toBe(true);
+        expect(markFieldsTouched).toHaveBeenCalled();
+      });
+
+      it("does not enroll when the policies cannot be determined", async () => {
+        const { fresh, freshFixture } = startLoading();
+        tokenService.getEnrollmentPolicies.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        userService.selectedUserRealm.set("realm1");
+        userService.selectedUser.set(asUser("alice"));
+        freshFixture.detectChanges();
+        expect(await fresh.enrollToken()).toBe(false);
+        expect(tokenService.enrollToken).not.toHaveBeenCalled();
+      });
+    });
+
+    it("keeps the previous policies visible while those of a new target load", () => {
+      const next = new Subject<PiResponse<EnrollmentPolicies>>();
+      tokenService.getEnrollmentPolicies.mockReturnValueOnce(
+        of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, "2step": "allow" }))
+      );
+      const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      const fresh = freshFixture.componentInstance;
+      freshFixture.detectChanges();
+      expect(fresh.enrollmentPolicyState().state).toBe("loaded");
+
+      tokenService.getEnrollmentPolicies.mockReturnValue(next);
+      userService.selectedUserRealm.set("realm1");
+      userService.selectedUser.set(asUser("alice"));
+      freshFixture.detectChanges();
+
+      expect(fresh.enrollmentPoliciesLoading()).toBe(true);
+      const state = fresh.enrollmentPolicyState();
+      expect(loadedEnrollmentPolicies(state)?.["2step"]).toBe("allow");
+      expect(state.state).toBe("pending");
+    });
+
+    it("does not show the policies of the previous token type while those of the new type load", () => {
+      const next = new Subject<PiResponse<EnrollmentPolicies>>();
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.getEnrollmentPolicies.mockReturnValueOnce(
+        of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, defaults: { hashlib: "sha512" } }))
+      );
+      const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      const fresh = freshFixture.componentInstance;
+      freshFixture.detectChanges();
+      expect(loadedEnrollmentPolicies(fresh.enrollmentPolicyState())?.defaults.hashlib).toBe("sha512");
+
+      tokenService.getEnrollmentPolicies.mockReturnValue(next);
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      freshFixture.detectChanges();
+
+      const state = fresh.enrollmentPolicyState();
+      expect(state.state).toBe("pending");
+      expect(loadedEnrollmentPolicies(state)).toBeNull();
+    });
+
+    it("blocks Enroll with the policy error", () => {
+      const message = "There are policies with conflicting actions: ['a', 'b']";
+      tokenService.getEnrollmentPolicies.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({ status: 403, error: { result: { status: false, error: { code: 303, message } } } })
+        )
+      );
+      const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      const fresh = freshFixture.componentInstance;
+      freshFixture.detectChanges();
+
+      expect(fresh.enrollmentBlockedReason()).toContain(message);
+      expect(fresh.isFormInvalid()).toBe(true);
+      expect(freshFixture.nativeElement.textContent).toContain(message);
+    });
+
+    describe("policy error as alert", () => {
+      const message = "There are policies with conflicting actions: ['a', 'b']";
+      const failPolicies = () =>
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          throwError(
+            () =>
+              new HttpErrorResponse({
+                status: 403,
+                error: { result: { status: false, error: { code: 303, message } } }
+              })
+          )
+        );
+      const alertOf = (element: HTMLElement) => element.querySelector("p.inline-warning[role=alert]");
+
+      it("announces the error on the admin page", () => {
+        failPolicies();
+        const adminFixture = TestBed.createComponent(TokenEnrollmentComponent);
+        adminFixture.detectChanges();
+
+        expect(alertOf(adminFixture.nativeElement)?.textContent).toContain(message);
+      });
+
+      it("announces the error in self service", () => {
+        failPolicies();
+        const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+        selfFixture.detectChanges();
+
+        expect(alertOf(selfFixture.nativeElement)?.textContent).toContain(message);
+      });
+
+      it("shows and announces the error in the wizard", () => {
+        failPolicies();
+        const wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+        wizardFixture.detectChanges();
+        httpTestingController.match(() => true).forEach((req) => req.flush(""));
+
+        expect(alertOf(wizardFixture.nativeElement)?.textContent).toContain(message);
+      });
+    });
+
+    it("passes the blocked reason to the type selector", () => {
+      tokenService.getEnrollmentPolicies.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+      const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+      selfFixture.detectChanges();
+
+      const selector = selfFixture.debugElement.query(By.directive(TokenEnrollmentTypeSelectorComponent))
+        .componentInstance as TokenEnrollmentTypeSelectorComponent;
+      expect(selector.enrollBlockedReason()).not.toBeNull();
+      expect(selector.enrollBlockedReason()).toBe(selfFixture.componentInstance.enrollmentBlockedReason());
+    });
+
+    it("requires the description from the enrollment policies", () => {
+      const descriptionFormFor = (requireDescription: boolean) => {
+        tokenService.getEnrollmentPolicies.mockReturnValue(
+          of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, require_description: requireDescription }))
+        );
+        const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+        const fresh = freshFixture.componentInstance;
+        freshFixture.detectChanges();
+        fresh.description.set("");
+        freshFixture.detectChanges();
+        return fresh.descriptionForm();
+      };
+
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, require_description: [] });
+      expect(descriptionFormFor(true).valid()).toBe(false);
+
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, require_description: ["hotp"] });
+      expect(descriptionFormFor(false).valid()).toBe(true);
+    });
+
+    const renderWithPolicies = <C extends TokenEnrollmentComponent>(
+      componentType: Type<C>,
+      overrides: Partial<EnrollmentPolicies>
+    ): ComponentFixture<C> => {
+      tokenService.getEnrollmentPolicies.mockReturnValue(
+        of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, ...overrides }))
+      );
+      const freshFixture = TestBed.createComponent(componentType);
+      freshFixture.detectChanges();
+      return freshFixture;
+    };
+    const descriptionField = (root: HTMLElement): HTMLElement =>
+      Array.from(root.querySelectorAll<HTMLElement>("mat-form-field")).find(
+        (field) => field.querySelector("mat-label")?.textContent?.trim() === "Description"
+      )!;
+    const variants: [string, Type<TokenEnrollmentComponent>][] = [
+      ["admin", TokenEnrollmentComponent],
+      ["self-service", TokenEnrollmentSelfServiceComponent]
+    ];
+
+    it("does not notify or throw when the disabled Enroll button is clicked for passkey", () => {
+      tokenService.selectedTokenType.set({ key: "passkey", name: "Passkey", info: "", text: "" });
+      const freshFixture = renderWithPolicies(TokenEnrollmentComponent, { require_description: true });
+      const fresh = freshFixture.componentInstance;
+      notificationServiceMock.error.mockClear();
+
+      const button: HTMLButtonElement = freshFixture.nativeElement.querySelector("button[type='submit']");
+      expect(button.disabled).toBe(true);
+      expect(() => fresh.revealFieldErrors()).not.toThrow();
+      button.parentElement!.click();
+      freshFixture.detectChanges();
+
+      expect(notificationServiceMock.error).not.toHaveBeenCalled();
+      expect(fresh.descriptionForm().touched()).toBe(true);
+    });
+
+    describe.each(variants)("%s", (_variant, componentType) => {
+      it("marks the description as required when the enrollment policies require it", () => {
+        const freshFixture = renderWithPolicies(componentType, { require_description: true });
+        const field = descriptionField(freshFixture.nativeElement);
+        expect(field).toBeDefined();
+        expect(field.querySelector("textarea")!.required).toBe(true);
+        expect(field.querySelector(".mat-mdc-form-field-required-marker")).not.toBeNull();
+      });
+
+      it("does not mark the description as required without the enrollment policy", () => {
+        const freshFixture = renderWithPolicies(componentType, { require_description: false });
+        const field = descriptionField(freshFixture.nativeElement);
+        expect(field).toBeDefined();
+        expect(field.querySelector("textarea")!.required).toBe(false);
+        expect(field.querySelector(".mat-mdc-form-field-required-marker")).toBeNull();
+      });
+
+      it("shows all field errors when the disabled Enroll button is clicked", () => {
+        const freshFixture = renderWithPolicies(componentType, { require_description: true, "2step": null });
+        const fresh = freshFixture.componentInstance;
+        const hotp = freshFixture.debugElement.query(By.directive(EnrollHotpComponent))
+          .componentInstance as EnrollHotpComponent;
+        hotp.generateOnServer.set(false);
+        fresh.setPin.set("1234");
+        freshFixture.detectChanges();
+
+        const button: HTMLButtonElement = freshFixture.nativeElement.querySelector("button[type='submit']");
+        expect(button.disabled).toBe(true);
+        expect(freshFixture.nativeElement.textContent).not.toContain("Description is required.");
+
+        // The click on the wrapper of the disabled button reveals the errors.
+        button.parentElement!.click();
+        freshFixture.detectChanges();
+
+        expect(fresh.descriptionForm().touched()).toBe(true);
+        expect(fresh.repeatPinForm().touched()).toBe(true);
+        expect(hotp.otpKeyForm().touched()).toBe(true);
+        expect(freshFixture.nativeElement.textContent).toContain("Description is required.");
+        expect(freshFixture.nativeElement.textContent).toContain("OTP key is required");
+      });
+    });
+
+    it("forwards enrollmentPolicies to the hotp component", () => {
+      const loaded: EnrollmentPolicyState = { state: "loaded", policies };
+      const switchFixture = TestBed.createComponent(EnrollTokenTypeSwitchComponent);
+      switchFixture.componentRef.setInput("tokenTypeKey", "hotp");
+      switchFixture.detectChanges();
+      const hotp = () =>
+        switchFixture.debugElement.query(By.directive(EnrollHotpComponent)).componentInstance as EnrollHotpComponent;
+      expect(hotp().enrollmentPolicies()).toEqual({ state: "unrestricted" });
+
+      switchFixture.componentRef.setInput("enrollmentPolicies", loaded);
+      switchFixture.detectChanges();
+
+      expect(hotp().enrollmentPolicies()).toEqual(loaded);
     });
   });
 
@@ -1392,9 +2005,23 @@ describe("TokenEnrollmentComponent", () => {
     beforeEach(async () => {
       authServiceMock.authData.set({
         ...authServiceMock.authData()!,
-        rights: ["userlist", "container_list", "enrollpin"],
-        require_description: ["hotp"]
+        rights: ["userlist", "container_list", "enrollpin"]
       });
+      // The enrollment policies of a new component require the description for hotp only.
+      tokenService.getEnrollmentPolicies.mockImplementation((target: EnrollmentPolicyTarget) =>
+        of(
+          MockPiResponse.fromValue<EnrollmentPolicies>({
+            defaults: {},
+            "2step": null,
+            force_server_generate: false,
+            sms_gateways: [],
+            require_description: target.type === "hotp"
+          })
+        )
+      );
+      (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
+      fixture = TestBed.createComponent(TokenEnrollmentComponent);
+      component = fixture.componentInstance;
       await flushFixture(fixture);
     });
 

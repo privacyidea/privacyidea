@@ -30,6 +30,7 @@ import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-pa
 import { ContainerCreateDialogData } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
@@ -66,6 +67,7 @@ import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-se
     MatIcon,
     ClearableInputComponent,
     ScrollToTopDirective,
+    EnrollmentPolicyErrorComponent,
     EnrollTokenTypeSwitchComponent,
     EnrollmentPinComponent,
     TokenEnrollmentTypeSelectorComponent

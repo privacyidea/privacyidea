@@ -8,7 +8,7 @@ from werkzeug.test import EnvironBuilder
 from privacyidea.api.lib.prepolicy import (check_container_action,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key)
+                                           hide_container_info, init_force_server_generate)
 from privacyidea.lib.error import PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE)
@@ -943,27 +943,27 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Policy is not set
         g.policies = {}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
 
         # Set policy for different token type
         g.policies = {}
         set_policy("totp_genkey", scope=SCOPE.USER, action=f"totp_{PolicyAction.FORCE_SERVER_GENERATE}")
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
 
         # Set policy for hotp
         g.policies = {}
         set_policy("hotp_genkey", scope=SCOPE.USER, action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}")
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
 
         # Test for TOTP
         g.policies = {}
         request.all_data = {"type": "totp"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
 
@@ -971,7 +971,7 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         set_policy("motp_genkey", scope=SCOPE.USER, action=f"motp_{PolicyAction.FORCE_SERVER_GENERATE}")
         g.policies = {}
         request.all_data = {"type": "motp", "motppin": "123"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
@@ -980,7 +980,7 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         set_policy("applspec_genkey", scope=SCOPE.USER, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         g.policies = {}
         request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
@@ -989,7 +989,7 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Test for a token type not having this policy
         g.policies = {}
         request.all_data = {"type": "spass"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"spass_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
@@ -1016,20 +1016,20 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Policy is not set
         g.policies = {}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
 
         # Set policy for hotp
         g.policies = {}
         set_policy("hotp_genkey", scope=SCOPE.ADMIN, action=f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}")
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
 
         # Test for TOTP
         set_policy("totp_genkey", scope=SCOPE.ADMIN, action=f"totp_{PolicyAction.FORCE_SERVER_GENERATE}")
         g.policies = {}
         request.all_data = {"type": "totp"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
 
@@ -1037,7 +1037,7 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         set_policy("motp_genkey", scope=SCOPE.ADMIN, action=f"motp_{PolicyAction.FORCE_SERVER_GENERATE}")
         g.policies = {}
         request.all_data = {"type": "motp", "motppin": "123"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"motp_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
@@ -1046,7 +1046,7 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         g.policies = {}
         request.all_data = {"type": "applspec", "motppin": "123", "service_id": "123"}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertTrue(g.policies.get(f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}"))
         self.assertNotIn(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
         self.assertNotIn(f"totp_{PolicyAction.FORCE_SERVER_GENERATE}", g.policies)
@@ -1074,12 +1074,12 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
                             "resolver": self.resolvername1, "role": "user"}
         request.User = User("hans", self.realm1)
         g.policies = {}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))
 
         # No admin policies at all
         g.logged_in_user = {"username": self.testadmin, "realm": "", "role": "admin"}
         request.User = User()
         g.policies = {}
-        force_server_generate_key(request)
+        init_force_server_generate(request)
         self.assertFalse(g.policies.get(f"hotp_{PolicyAction.FORCE_SERVER_GENERATE}"))

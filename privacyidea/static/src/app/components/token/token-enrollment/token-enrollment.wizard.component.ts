@@ -30,6 +30,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
@@ -66,6 +67,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     MatLabel,
     MatError,
     MatHint,
+    EnrollmentPolicyErrorComponent,
     EnrollTokenTypeSwitchComponent
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
@@ -84,7 +86,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly authService = inject(AuthService);
   protected override wizard = true;
-  protected readonly tokenType = computed(() => {
+  protected override readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
     return (
       tokenTypes.find((type) => type.key === defaultType) ||
@@ -118,10 +120,6 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   // The wizard keeps the inputs of the enrolled token. Its template does not create the type-specific
   // inputs anew.
   protected override readonly resetsInputsAfterEnrollment = false;
-
-  override descriptionRequired = computed(() => {
-    return this.authService.requireDescription().includes(this.tokenType().key);
-  });
 
   override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {

@@ -77,7 +77,7 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       expect(button.disabled).toBe(true);
     });
 
-    it("shows the reason on the enroll button while the enrollment is blocked", () => {
+    it("shows the reason on the enroll wrapper while the enrollment is blocked", () => {
       fixture.componentRef.setInput("formInvalid", true);
       fixture.componentRef.setInput("enrollBlockedReason", "needs privacyideaserver_read");
       fixture.detectChanges();
@@ -90,13 +90,24 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       expect(tooltip.disabled).toBe(false);
     });
 
-    it("shows no tooltip on the enroll button without a blocking reason", () => {
+    it("shows no tooltip on the enroll wrapper without a blocking reason", () => {
       const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
       const tooltip: MatTooltip = fixture.debugElement
         .queryAll(By.directive(MatTooltip))
         .find((el) => el.nativeElement.contains(button))!
         .injector.get(MatTooltip);
       expect(tooltip.disabled).toBe(true);
+    });
+
+    it("click on the wrapper of the disabled enroll button emits disabledEnrollClick", () => {
+      fixture.componentRef.setInput("formInvalid", true);
+      fixture.detectChanges();
+      const emitted = jest.fn();
+      fixture.componentInstance.disabledEnrollClick.subscribe(emitted);
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
+      expect(button.disabled).toBe(true);
+      button.parentElement!.click();
+      expect(emitted).toHaveBeenCalledTimes(1);
     });
 
     it("enroll button is enabled when form is valid and a token type is selected", () => {

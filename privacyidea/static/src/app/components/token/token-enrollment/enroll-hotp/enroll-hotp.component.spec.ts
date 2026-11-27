@@ -24,7 +24,7 @@ import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-h
 import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import {
@@ -37,10 +37,23 @@ import {
 } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
 
+function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
+  return {
+    state: "loaded",
+    policies: {
+      defaults: {},
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false,
+      ...policies
+    }
+  };
+}
+
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
-  let authService: MockAuthService;
   let systemService: MockSystemService;
 
   beforeEach(async () => {
@@ -59,7 +72,6 @@ describe("EnrollHotpComponent", () => {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
 
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
     fixture.detectChanges();
@@ -85,9 +97,10 @@ describe("EnrollHotpComponent", () => {
 
   it("Uses policy values for hashlib and otplen", () => {
     createAndInit();
-    authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "8" });
-    fixture = TestBed.createComponent(EnrollHotpComponent);
-    component = fixture.componentInstance;
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha256", otplen: "8" } })
+    );
     fixture.detectChanges();
 
     function checkPolicyEnforcedValues() {
@@ -128,6 +141,35 @@ describe("EnrollHotpComponent", () => {
 
     expect(component.hashAlgorithm()).toBe("sha256");
     expect(component.otpLength()).toBe(8);
+  });
+
+  describe("a choice that a locking policy overrode", () => {
+    const pick = () => {
+      createAndInit();
+      component.hashAlgorithm.set("sha256");
+      component.hashAlgorithmForm().markAsDirty();
+      component.otpLength.set(8);
+      component.otpLengthForm().markAsDirty();
+      TestBed.tick();
+    };
+    const loadPolicies = (state: EnrollmentPolicyState) => {
+      fixture.componentRef.setInput("enrollmentPolicies", state);
+      fixture.detectChanges();
+      TestBed.tick();
+    };
+
+    it("is not restored when the policy no longer locks the field", () => {
+      pick();
+      loadPolicies(loadedPolicies({ defaults: { hashlib: "sha512", otplen: "6" } }));
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.otpLength()).toBe(6);
+
+      loadPolicies(loadedPolicies());
+
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.otpLength()).toBe(6);
+    });
+
   });
 
   it("keeps the values the user picked when the system config loads later", () => {
@@ -185,7 +227,10 @@ describe("EnrollHotpComponent", () => {
 
   it("keeps the policy values over a system config that loads later", () => {
     createAndInit();
-    authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "6" });
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha256", otplen: "6" } })
+    );
     fixture.detectChanges();
     systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
     fixture.detectChanges();
@@ -195,8 +240,8 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
     fixture.detectChanges();
     TestBed.tick();
     fixture.detectChanges();
@@ -207,7 +252,6 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("toggles otpKey enablement & validators when generateOnServer changes", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
     expect(component.otpKeyForm().disabled()).toBe(true);
@@ -227,8 +271,8 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("disables 2step control if policy hotp_2step is set to force", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("force");
     createAndInit();
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": "force" }));
     fixture.detectChanges();
     TestBed.tick();
     fixture.detectChanges();
@@ -242,8 +286,8 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("enable 2step control if policy hotp_2step is set to allow", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": "allow" }));
     fixture.detectChanges();
     TestBed.tick();
     fixture.detectChanges();
@@ -257,8 +301,8 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("selecting 2 step should select and disable generate on server input", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": "allow" }));
     fixture.detectChanges();
     TestBed.tick();
     fixture.detectChanges();
@@ -287,8 +331,8 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("hide 2step input if policy hotp_2step is disabled", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("disabled");
     createAndInit();
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": null }));
     fixture.detectChanges();
     TestBed.tick();
     fixture.detectChanges();
@@ -302,7 +346,6 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("calls enrollToken with server-generated key (default values respected)", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
     component.generateOnServer.set(true);
@@ -325,7 +368,6 @@ describe("EnrollHotpComponent", () => {
   });
 
   it("calls enrollToken with user-provided otpKey (trimmed) when not generating on server", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
     component.generateOnServer.set(false);
@@ -342,6 +384,77 @@ describe("EnrollHotpComponent", () => {
         otpKey: "ABCDEFGHIJKLMNOP"
       })
     );
+  });
+
+  it("presets and locks from the enrollment policies", () => {
+    createAndInit();
+    const otpKeyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({
+        defaults: { hashlib: "sha512", otplen: "8" },
+        "2step": "force",
+        force_server_generate: true
+      })
+    );
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.hashAlgorithmForm().disabled()).toBe(true);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(true);
+    expect(component.twoStep()).toBe("force");
+    expect(component.twoStepEnabled()).toBe(true);
+    expect(component.twoStepDisabled()).toBe(true);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(true);
+    expect(otpKeyInput()).not.toBeNull();
+    expect(otpKeyInput().disabled).toBe(true);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(6);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+    expect(component.twoStep()).toBe("disabled");
+    expect(component.twoStepEnabled()).toBe(false);
+    expect(component.generateOnServerDisabled()).toBe(false);
+    expect(otpKeyInput()).not.toBeNull();
+    expect(otpKeyInput().disabled).toBe(true);
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    expect(otpKeyInput()).not.toBeNull();
+
+    fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.hashAlgorithmForm().disabled()).toBe(true);
+    expect(component.otpLengthForm().disabled()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(true);
+  });
+
+  it("keeps the policy values over the enrollment data", () => {
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "hotp",
+      otpLength: 6,
+      hashAlgorithm: "sha1"
+    });
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha512", otplen: "8" } })
+    );
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.otpLength()).toBe(8);
   });
 
   describe("ngOnInit with enrollmentData input", () => {
@@ -374,6 +487,66 @@ describe("EnrollHotpComponent", () => {
     });
   });
 
+  describe("key input visibility", () => {
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+    const checkbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const settle = () => {
+      fixture.detectChanges();
+      TestBed.tick();
+      fixture.detectChanges();
+    };
+
+    it("keeps the key input disabled while generate on server is ticked and enabled when unticked", () => {
+      createAndInit();
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(false);
+      expect(keyInput().disabled).toBe(false);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps the key input disabled when the policy forces server generation", () => {
+      createAndInit();
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(checkbox().disabled).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps Enroll disabled while the visible key is empty", () => {
+      createAndInit();
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+
+      component.generateOnServer.set(false);
+      settle();
+      expect(component.fieldsInvalid()).toBe(true);
+
+      component.otpKey.set("12345678901234567890123456789012");
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+    });
+
+    it("does not render the key input in wizard mode", () => {
+      createAndInit();
+      fixture.componentRef.setInput("wizard", true);
+      settle();
+      expect(keyInput()).toBeNull();
+    });
+  });
+
   describe("bound controls", () => {
     afterEach(clearOverlays);
 
@@ -388,8 +561,9 @@ describe("EnrollHotpComponent", () => {
     });
 
     it("writes a click on the two-step checkbox to the model", async () => {
-      (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
       createAndInit();
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ "2step": "allow" }));
+      await flushFixture(fixture);
 
       await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
 
@@ -397,11 +571,13 @@ describe("EnrollHotpComponent", () => {
       expect(component.twoStepEnabledForm().dirty()).toBe(true);
     });
 
-    it("renders the checkboxes disabled while the policy forces the setting", () => {
-      const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-      auth.check2Step.mockReturnValue("force");
-      auth.checkForceServerGenerateOTPKey.mockReturnValue(true);
+    it("renders the checkboxes disabled while the policy forces the setting", async () => {
       createAndInit();
+      fixture.componentRef.setInput(
+        "enrollmentPolicies",
+        loadedPolicies({ "2step": "force", force_server_generate: true })
+      );
+      await flushFixture(fixture);
 
       expect(checkboxInput(fixture, "mat-checkbox.server-checkbox").disabled).toBe(true);
       expect(checkboxInput(fixture, "mat-checkbox:not(.server-checkbox)").disabled).toBe(true);

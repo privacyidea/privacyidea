@@ -27,11 +27,25 @@ import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-p
 import { EnrollApplspecComponent } from "./enroll-applspec.component";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { checkboxInput, clickCheckbox } from "@testing/enroll-form-dom";
+import { clickCheckbox } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
+
+function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
+  return {
+    state: "loaded",
+    policies: {
+      defaults: {},
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false,
+      ...policies
+    }
+  };
+}
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
@@ -119,6 +133,42 @@ describe("EnrollAspComponent", () => {
     expect(component.otpKey()).toBe("");
   });
 
+  it("locks generate on server when forced", () => {
+    const generateOnServerCheckbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter static password']");
+    component.generateOnServer.set(false);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(true);
+    expect(generateOnServerCheckbox().disabled).toBe(true);
+    expect(keyInput()).not.toBeNull();
+    expect(keyInput().disabled).toBe(true);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(generateOnServerCheckbox().disabled).toBe(false);
+    expect(keyInput()).not.toBeNull();
+    expect(keyInput().disabled).toBe(true);
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    expect(keyInput()).not.toBeNull();
+
+    fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(generateOnServerCheckbox().disabled).toBe(true);
+  });
+
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {
@@ -146,20 +196,68 @@ describe("EnrollAspComponent", () => {
     });
   });
 
+  describe("key input visibility", () => {
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter static password']");
+    const checkbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const settle = () => {
+      fixture.detectChanges();
+      TestBed.tick();
+      fixture.detectChanges();
+    };
+
+    it("keeps the key input disabled while generate on server is ticked and enabled when unticked", () => {
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(false);
+      expect(keyInput().disabled).toBe(false);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps the key input disabled when the policy forces server generation", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(checkbox().disabled).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps Enroll disabled while the visible key is empty", () => {
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+
+      component.generateOnServer.set(false);
+      settle();
+      expect(component.fieldsInvalid()).toBe(true);
+
+      component.otpKey.set("12345678901234567890123456789012");
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+    });
+
+    it("does not render the key input in wizard mode", () => {
+      fixture.componentRef.setInput("wizard", true);
+      settle();
+      expect(keyInput()).toBeNull();
+    });
+  });
+
   it("writes a click on the checkbox to the model and enables the password field", async () => {
     await clickCheckbox(fixture);
 
     expect(component.generateOnServer()).toBe(false);
     expect(component.generateOnServerForm().dirty()).toBe(true);
     expect(component.otpKeyForm().disabled()).toBe(false);
-  });
-
-  it("renders the checkbox disabled while the policy forces server-side generation", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
-    fixture = TestBed.createComponent(EnrollApplspecComponent);
-    fixture.detectChanges();
-
-    expect(checkboxInput(fixture).disabled).toBe(true);
   });
 
   it("passes the axe accessibility checks", async () => {

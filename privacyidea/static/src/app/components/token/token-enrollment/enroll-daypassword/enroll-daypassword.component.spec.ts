@@ -23,12 +23,11 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollmentPolicies, EnrollmentPolicyState, TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 import {
-  checkboxInput,
   clearOverlays,
   clickCheckbox,
   flushFixture,
@@ -38,11 +37,24 @@ import {
 } from "@testing/enroll-form-dom";
 import { axe } from "@testing/axe";
 
+function loadedPolicies(policies: Partial<EnrollmentPolicies> = {}): EnrollmentPolicyState {
+  return {
+    state: "loaded",
+    policies: {
+      defaults: {},
+      "2step": null,
+      force_server_generate: false,
+      sms_gateways: [],
+      require_description: false,
+      ...policies
+    }
+  };
+}
+
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
   let fixture: ComponentFixture<EnrollDaypasswordComponent>;
   let systemService: MockSystemService;
-  let authService: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -57,7 +69,6 @@ describe("EnrollDaypasswordComponent", () => {
     }).compileComponents();
 
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
@@ -125,13 +136,12 @@ describe("EnrollDaypasswordComponent", () => {
       [DAYPASSWORD_TIME_STEP]: "12h"
     };
     systemService.systemConfig.set(mockConfig);
-    authService.rightsWithValues.set({
-      daypassword_hashlib: "sha256",
-      daypassword_otplen: "8",
-      daypassword_timestep: "48h"
-    });
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha256", otplen: "8", timeStep: "48h" } })
+    );
     fixture.detectChanges();
 
     function checkPolicyEnforcedValues() {
@@ -153,6 +163,187 @@ describe("EnrollDaypasswordComponent", () => {
     fixture.componentRef.setInput("disabled", false);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
+  });
+
+  it("keeps time step, OTP length and hash algorithm in one row when the OTP key is disabled", () => {
+    fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    const fields: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("mat-form-field"));
+    const timeStepField = fields.find((f) => f.querySelector("mat-label")?.textContent?.trim() === "Timestep")!;
+    const row = timeStepField.closest(".flex-row") as HTMLElement;
+    const labels = Array.from(row.querySelectorAll("mat-form-field mat-label")).map((l) => l.textContent?.trim());
+    expect(labels).toEqual(["OTP Key", "OTP Length", "Hash Algorithm", "Timestep"]);
+  });
+
+  it("keeps the OTP key in the same row as the other fields when it is shown", () => {
+    fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+    component = fixture.componentInstance;
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    const fields: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("mat-form-field"));
+    const timeStepField = fields.find((f) => f.querySelector("mat-label")?.textContent?.trim() === "Timestep")!;
+    const row = timeStepField.closest(".flex-row") as HTMLElement;
+    const labels = Array.from(row.querySelectorAll("mat-form-field mat-label")).map((l) => l.textContent?.trim());
+    expect(labels).toEqual(["OTP Key", "OTP Length", "Hash Algorithm", "Timestep"]);
+  });
+
+  it("presets and locks from the enrollment policies", () => {
+    systemService.systemConfig.set({ [DAYPASSWORD_HASHLIB]: "sha512", [DAYPASSWORD_TIME_STEP]: "12h" });
+    fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+    component = fixture.componentInstance;
+    const generateOnServerCheckbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const otpKeyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({
+        defaults: { hashlib: "sha256", otplen: "8", timeStep: "2h" },
+        force_server_generate: true
+      })
+    );
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.hashAlgorithmForm().disabled()).toBe(true);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(true);
+    expect(component.timeStep()).toBe("2h");
+    expect(component.timeStepForm().disabled()).toBe(true);
+    expect(component.generateOnServer()).toBe(true);
+    expect(generateOnServerCheckbox().disabled).toBe(true);
+    expect(otpKeyInput()).not.toBeNull();
+    expect(otpKeyInput().disabled).toBe(true);
+
+    fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies());
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(6);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe("12h");
+    expect(component.timeStepForm().disabled()).toBe(false);
+    expect(generateOnServerCheckbox().disabled).toBe(false);
+    expect(otpKeyInput()).not.toBeNull();
+    expect(otpKeyInput().disabled).toBe(true);
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    expect(otpKeyInput()).not.toBeNull();
+
+    fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithmForm().disabled()).toBe(true);
+    expect(component.otpLengthForm().disabled()).toBe(true);
+    expect(component.timeStepForm().disabled()).toBe(true);
+    expect(generateOnServerCheckbox().disabled).toBe(true);
+  });
+
+  it("keeps the policy values over the enrollment data", () => {
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "daypassword",
+      otpLength: 6,
+      hashAlgorithm: "sha1",
+      timeStep: "24h"
+    });
+    fixture.componentRef.setInput(
+      "enrollmentPolicies",
+      loadedPolicies({ defaults: { hashlib: "sha256", otplen: "8", timeStep: "2h" } })
+    );
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(8);
+    expect(component.timeStep()).toBe("2h");
+  });
+
+  describe("a choice that a locking policy overrode", () => {
+    const pick = () => {
+      fixture.detectChanges();
+      component.hashAlgorithm.set("sha256");
+      component.hashAlgorithmForm().markAsDirty();
+      component.otpLength.set(8);
+      component.otpLengthForm().markAsDirty();
+      TestBed.tick();
+    };
+    const loadPolicies = (state: EnrollmentPolicyState) => {
+      fixture.componentRef.setInput("enrollmentPolicies", state);
+      fixture.detectChanges();
+      TestBed.tick();
+    };
+
+    it("is not restored when the policy no longer locks the field", () => {
+      pick();
+      loadPolicies(loadedPolicies({ defaults: { hashlib: "sha512", otplen: "6" } }));
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.otpLength()).toBe(6);
+
+      loadPolicies(loadedPolicies());
+
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.otpLength()).toBe(6);
+    });
+
+  });
+
+  describe("a value the user picked", () => {
+    beforeEach(() => {
+      component.otpLength.set(8);
+      component.hashAlgorithm.set("sha512");
+      component.timeStep.set("1h");
+    });
+
+    it("stays when the system config changes later", () => {
+      systemService.systemConfig.set({ [DAYPASSWORD_HASHLIB]: "sha256", [DAYPASSWORD_TIME_STEP]: "12h" });
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.timeStep()).toBe("1h");
+    });
+
+    it("stays when a policy without these values loads", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.timeStep()).toBe("1h");
+    });
+
+    it("is overridden and locked by a policy value", () => {
+      fixture.componentRef.setInput(
+        "enrollmentPolicies",
+        loadedPolicies({ defaults: { hashlib: "sha256", otplen: "6", timeStep: "2h" } })
+      );
+      fixture.detectChanges();
+      TestBed.tick();
+
+      expect(component.otpLength()).toBe(6);
+      expect(component.otpLengthForm().disabled()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha256");
+      expect(component.hashAlgorithmForm().disabled()).toBe(true);
+      expect(component.timeStep()).toBe("2h");
+      expect(component.timeStepForm().disabled()).toBe(true);
+    });
   });
 
   describe("ngOnInit with enrollmentData input", () => {
@@ -191,6 +382,62 @@ describe("EnrollDaypasswordComponent", () => {
     });
   });
 
+  describe("key input visibility", () => {
+    const keyInput = () => fixture.nativeElement.querySelector("input[placeholder='Enter OTP key']");
+    const checkbox = () =>
+      fixture.nativeElement.querySelector("mat-checkbox input[type='checkbox']") as HTMLInputElement;
+    const settle = () => {
+      fixture.detectChanges();
+      TestBed.tick();
+      fixture.detectChanges();
+    };
+
+    it("keeps the key input disabled while generate on server is ticked and enabled when unticked", () => {
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(false);
+      expect(keyInput().disabled).toBe(false);
+
+      checkbox().click();
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps the key input disabled when the policy forces server generation", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ force_server_generate: true }));
+      settle();
+      expect(component.generateOnServer()).toBe(true);
+      expect(checkbox().disabled).toBe(true);
+      expect(keyInput()).not.toBeNull();
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("keeps Enroll disabled while the visible key is empty", () => {
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+
+      component.generateOnServer.set(false);
+      settle();
+      expect(component.fieldsInvalid()).toBe(true);
+
+      component.otpKey.set("12345678901234567890123456789012");
+      settle();
+      expect(component.fieldsInvalid()).toBe(false);
+    });
+
+    it("does not render the key input in wizard mode", () => {
+      fixture.componentRef.setInput("wizard", true);
+      settle();
+      expect(keyInput()).toBeNull();
+    });
+  });
+
   describe("bound controls", () => {
     afterEach(clearOverlays);
 
@@ -201,15 +448,6 @@ describe("EnrollDaypasswordComponent", () => {
 
       expect(component.generateOnServer()).toBe(false);
       expect(component.generateOnServerForm().dirty()).toBe(true);
-    });
-
-    it("renders the checkbox disabled while the policy forces server-side generation", () => {
-      authService.checkForceServerGenerateOTPKey.mockReturnValue(true);
-      fixture = TestBed.createComponent(EnrollDaypasswordComponent);
-      component = fixture.componentInstance;
-      fixture.detectChanges();
-
-      expect(checkboxInput(fixture).disabled).toBe(true);
     });
 
     it("writes the picked OTP length and hash algorithm to the model", async () => {

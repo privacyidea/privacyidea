@@ -18,13 +18,22 @@
  **/
 
 import { Component, WritableSignal, computed, inject, signal, viewChild } from "@angular/core";
+import { form, FormField, required, validate, ValidationError } from "@angular/forms/signals";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import {
+  EnrollmentPoliciesLoad,
+  enrollmentPolicyState,
+  loadEnrollmentPolicies
+} from "@components/token/token-enrollment/enrollment-policy-values";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import {
   ENROLLMENT_CANCELLED,
@@ -34,17 +43,30 @@ import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import {
+  EnrollmentPolicyState,
+  EnrollmentPolicyTarget,
   TokenDetails,
   TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { Observable, lastValueFrom } from "rxjs";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { Observable, lastValueFrom, of, switchMap } from "rxjs";
 
 @Component({
   selector: "app-token-rollover",
-  imports: [DialogWrapperComponent, EnrollTokenTypeSwitchComponent],
+  imports: [
+    DialogWrapperComponent,
+    EnrollmentPolicyErrorComponent,
+    EnrollTokenTypeSwitchComponent,
+    FormField,
+    MatError,
+    MatFormField,
+    MatHint,
+    MatInput,
+    MatLabel
+  ],
   standalone: true,
   templateUrl: "./token-rollover.component.html"
 })
@@ -64,12 +86,58 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal<string | null | undefined>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
-  dialogActions = signal<DialogAction<boolean>[]>([
+  /** The target the enrollment policies are evaluated for, as POST /token/init sees it for the rollover. */
+  private readonly enrollmentTarget = computed<EnrollmentPolicyTarget | undefined>(() => {
+    const token = this.token();
+    return token?.serial ? { type: token.type, serial: token.serial } : undefined;
+  });
+
+  private readonly enrollmentPoliciesLoad = toSignal(
+    toObservable(this.enrollmentTarget).pipe(
+      switchMap(
+        (target): Observable<EnrollmentPoliciesLoad> =>
+          target ? loadEnrollmentPolicies(this.tokenService.getEnrollmentPolicies(target)) : of({ status: "idle" })
+      )
+    ),
+    { initialValue: { status: "idle" } as EnrollmentPoliciesLoad }
+  );
+
+  readonly enrollmentPolicyState = computed<EnrollmentPolicyState>(() =>
+    enrollmentPolicyState(this.enrollmentPoliciesLoad())
+  );
+
+  /** The server message when the enrollment policies cannot be determined for the token, else null. */
+  readonly enrollmentPoliciesError = computed<string | null>(() => {
+    const load = this.enrollmentPoliciesLoad();
+    return load.status === "error" ? load.message : null;
+  });
+
+  /** The description field is offered only when the policies require a description and the token has none. */
+  readonly needsDescriptionInput = computed(() => {
+    const state = this.enrollmentPolicyState();
+    return state.state === "loaded" && !!state.policies.require_description && !this.token()?.description;
+  });
+
+  readonly description = signal("");
+  readonly descriptionForm = form(this.description, (f) => {
+    required(f, { when: () => this.needsDescriptionInput() });
+    validate(f, (ctx) => {
+      const v = ctx.value();
+      const errors: ValidationError[] = [];
+      if (this.needsDescriptionInput() && v !== "" && !v.trim()) errors.push({ kind: "required" });
+      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: "maxlength" });
+      return errors;
+    });
+  });
+
+  readonly descriptionInvalid = computed(() => this.needsDescriptionInput() && !this.descriptionForm().valid());
+
+  dialogActions = computed<DialogAction<boolean>[]>(() => [
     {
       type: "confirm",
       label: $localize`:@@common.rollover:Rollover`,
       value: true,
-      disabled: false
+      disabled: this.enrollmentPolicyState().state === "pending" || this.descriptionInvalid()
     }
   ]);
 
@@ -103,6 +171,11 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
 
+    if (this.descriptionInvalid()) {
+      this.descriptionForm().markAsTouched();
+      return;
+    }
+
     const strategy = this.enrollSwitch()?.currentStrategy();
     if (!strategy) {
       this.notificationService.warning(
@@ -114,7 +187,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     const basicOptions: TokenEnrollmentData = {
       type: this.token()!.type,
       serial: this.token()!.serial,
-      description: this.token()!.description,
+      description: this.needsDescriptionInput() ? this.description() : this.token()!.description,
       rollover: true
     };
 

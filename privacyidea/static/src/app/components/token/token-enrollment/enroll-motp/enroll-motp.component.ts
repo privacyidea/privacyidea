@@ -16,16 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, forwardRef, inject, input, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { MotpApiPayloadMapper, MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { loadedEnrollmentPolicies } from "@components/token/token-enrollment/enrollment-policy-values";
 import { MaskedInputComponent } from "@components/shared/masked-input/masked-input.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
@@ -51,20 +52,28 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
 
   wizard = input<boolean>(false);
   disabled = input<boolean>(false);
+  enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
-  generateOnServer = signal<boolean>(true);
+  forceServerGenerate = computed(() => !!loadedEnrollmentPolicies(this.enrollmentPolicies())?.force_server_generate);
+  override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
+
+  generateOnServerDisabled = computed(
+    () => this.disabled() || this.enrollmentPolicies().state === "pending" || this.forceServerGenerate()
+  );
+
+  // Starts checked again for every policy change, forced server generation keeps it checked.
+  generateOnServer = linkedSignal<boolean, boolean>({ source: this.forceServerGenerate, computation: () => true });
   otpKey = signal<string>("");
   motpPin = signal<string>("");
   repeatMotpPin = signal<string>("");
 
-  generateOnServerForm = form(this.generateOnServer);
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.generateOnServerDisabled());
+  });
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(
-      f,
-      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp")
-    );
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.forceServerGenerate());
   });
 
   motpPinForm = form(this.motpPin, (f) => {

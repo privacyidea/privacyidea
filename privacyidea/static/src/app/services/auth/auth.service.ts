@@ -161,8 +161,6 @@ export interface AuthDetail {
   type?: string;
 }
 
-export type TwoStepValue = "disabled" | "allow" | "force";
-
 /**
  * Parameters for password-based authentication. Covers standard login, remote
  * login (password omitted), and challenge response (transaction_id set).
@@ -226,7 +224,6 @@ export interface AuthServiceInterface {
   readonly menus: Signal<string[]>;
   readonly realm: Signal<string>;
   readonly rights: Signal<string[]>;
-  readonly rightsWithValues: Signal<Record<string, string | null>>;
   readonly role: Signal<AuthRole>;
   readonly token: Signal<string>;
   readonly username: Signal<string>;
@@ -256,7 +253,6 @@ export interface AuthServiceInterface {
   readonly qrImageCustom: Signal<string | null>;
   readonly logoutRedirectUrl: Signal<string>;
   readonly supportMail: Signal<string>;
-  readonly requireDescription: Signal<string[]>;
   readonly rssAge: Signal<number>;
   readonly containerWizard: Signal<{
     enabled: boolean;
@@ -290,10 +286,6 @@ export interface AuthServiceInterface {
   tokenEnrollmentAllowed(): boolean;
 
   anyTokenActionAllowed(): boolean;
-
-  checkForceServerGenerateOTPKey(tokenType: string): boolean;
-
-  check2Step(tokenType: string): TwoStepValue;
 }
 
 @Injectable({
@@ -327,23 +319,6 @@ export class AuthService implements AuthServiceInterface {
   readonly menus = computed(() => this.authData()?.menus || []);
   readonly realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
   readonly rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
-  readonly rightsWithValues = computed(() => {
-    const rightsList = this.rights();
-    const result: Record<string, string | null> = {};
-    rightsList.forEach((entry) => {
-      const equation_index = entry.indexOf("=");
-      if (equation_index === -1) {
-        if (!(entry in result)) {
-          // avoid overwriting existing keys with null if they have a value in another entry
-          result[entry] = null;
-        }
-      } else {
-        const key = entry.substring(0, equation_index);
-        result[key] = entry.substring(equation_index + 1);
-      }
-    });
-    return result;
-  });
   readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   readonly token = computed(() => this.authData()?.token || "");
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
@@ -373,7 +348,6 @@ export class AuthService implements AuthServiceInterface {
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
   readonly supportMail = computed(() => this.authData()?.supportmail || "");
-  readonly requireDescription = computed(() => this.authData()?.require_description || []);
   readonly rssAge = computed(() => this.authData()?.rss_age || 0);
   readonly containerWizard = computed(
     () =>
@@ -508,22 +482,6 @@ export class AuthService implements AuthServiceInterface {
   anyTokenActionAllowed(): boolean {
     const allowed = this.oneActionAllowed(["tokenlist", "getchallenges", "getserial", "machinelist"]);
     return allowed || this.tokenEnrollmentAllowed();
-  }
-
-  checkForceServerGenerateOTPKey(tokenType: string): boolean {
-    return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
-  }
-
-  check2Step(tokenType: string): TwoStepValue {
-    const key = tokenType + "_2step";
-    const value = this.rightsWithValues()[key];
-    if (value === "allow") {
-      return "allow";
-    } else if (value === "force") {
-      return "force";
-    } else {
-      return "disabled";
-    }
   }
 
   private readonly router = inject(Router);

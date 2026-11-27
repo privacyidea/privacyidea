@@ -349,6 +349,27 @@ export interface TokenEnrollmentDialogData {
   onEnrollmentResponseChange?: (response: EnrollmentResponse) => void;
 }
 
+export interface EnrollmentPolicyTarget {
+  type: string;
+  user?: string;
+  realm?: string;
+  serial?: string;
+}
+
+export interface EnrollmentPolicies {
+  defaults: { hashlib?: string; otplen?: string; timeStep?: string };
+  "2step": "allow" | "force" | null;
+  force_server_generate: boolean;
+  sms_gateways: string[];
+  require_description: boolean;
+}
+
+export type EnrollmentPolicyState =
+  | { state: "unrestricted" }
+  /** `previous` are the policies of the last target, kept so the form does not change while the new ones load. */
+  | { state: "pending"; previous?: EnrollmentPolicies }
+  | { state: "loaded"; policies: EnrollmentPolicies };
+
 export interface LostTokenData {
   disable: number;
   end_date: string;
@@ -476,6 +497,8 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<PiResponse<number>>;
 
   importTokens(fileName: string, params: FormData): Observable<PiResponse<TokenImportResult>>;
+
+  getEnrollmentPolicies(target: EnrollmentPolicyTarget): Observable<PiResponse<EnrollmentPolicies>>;
 }
 
 @Injectable()
@@ -1461,5 +1484,18 @@ export class TokenService extends FilterableTableService implements TokenService
           return throwError(() => error);
         })
       );
+  }
+
+  getEnrollmentPolicies(target: EnrollmentPolicyTarget): Observable<PiResponse<EnrollmentPolicies>> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(target)) {
+      if (value) {
+        params = params.set(key, value);
+      }
+    }
+    return this.http.get<PiResponse<EnrollmentPolicies>>(`${this.tokenBaseUrl}init/policies`, {
+      headers: this.authService.getHeaders(),
+      params
+    });
   }
 }

@@ -33,6 +33,8 @@
     [userRealm]="data.enrollParameters.data.realm"
     [username]="data.enrollParameters.data.user"></app-token-enrolled-text>
 
+  <app-token-enrollment-policy-deviation-note [deviations]="policyDeviations()" />
+
   @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
       (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"

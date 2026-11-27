@@ -22,8 +22,30 @@
   [title]="title()"
   [actions]="dialogActions()">
   <div>
+    <app-enrollment-policy-error [error]="enrollmentPoliciesError()" />
     <app-enroll-token-type-switch
       [tokenTypeKey]="token()?.type ?? ''"
-      [enrollmentData]="token()" />
+      [enrollmentData]="token()"
+      [enrollmentPolicies]="enrollmentPolicyState()" />
+    @if (needsDescriptionInput()) {
+      <mat-form-field class="input-width-xl margin-top-16">
+        <mat-label i18n="@@common.description">Description</mat-label>
+        <textarea
+          [formField]="descriptionForm"
+          i18n-placeholder="@@common.enterDescription"
+          matInput
+          placeholder="Enter description"
+          rows="3"></textarea>
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
+        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+          <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
+        }
+        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+          <mat-error i18n="@@token.descriptionMust"
+            >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
+          >
+        }
+      </mat-form-field>
+    }
   </div>
 </app-dialog-wrapper>

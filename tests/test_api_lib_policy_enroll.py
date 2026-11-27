@@ -17,14 +17,14 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_otp_pin,
                                            init_token_length_contents,
                                            papertoken_count,
-                                           tantoken_count, sms_identifiers,
+                                           tantoken_count, check_sms_gateway,
                                            pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            pushtoken_disable_wait,
                                            check_application_tokentype,
                                            required_piv_attestation, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description)
+                                           check_required_description)
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -1324,28 +1324,28 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Only a description is set, no type
         # This should work without a defined type because hotp is default
         req.all_data = {"description": "test"}
-        self.assertIsNone(require_description(req))
+        self.assertIsNone(check_required_description(req))
 
         # Totp token is not defined in pol and should be rolled oud without desc
         req.all_data = {"type": "totp"}
-        self.assertIsNone(require_description(req))
+        self.assertIsNone(check_required_description(req))
 
         # Type and description is set, token should be rolled out
         req.all_data = {"type": "hotp",
                         "description": "test"}
-        self.assertIsNone(require_description(req))
+        self.assertIsNone(check_required_description(req))
 
         # This should not work, a description is required for hotp
         req.all_data = {"type": "hotp"}
         self.assertRaisesRegex(PolicyError,
                                "ERR303: Description required for hotp token.",
-                               require_description, req)
+                               check_required_description, req)
 
         # The token type of the request is compared in lower case
         req.all_data = {"type": "HOTP"}
         self.assertRaisesRegex(PolicyError,
                                "ERR303: Description required for hotp token.",
-                               require_description, req)
+                               check_required_description, req)
 
         # and so are the token types of the policy
         set_policy(name="require_description",
@@ -1354,7 +1354,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.all_data = {"type": "hotp"}
         self.assertRaisesRegex(PolicyError,
                                "ERR303: Description required for hotp token.",
-                               require_description, req)
+                               check_required_description, req)
 
         delete_policy("require_description")
 
@@ -1425,14 +1425,14 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.User = User()
         req.all_data = {"sms.identifier": "gw1"}
         g.policy_object = PolicyClass()
-        r = sms_identifiers(req)
+        r = check_sms_gateway(req)
         self.assertTrue(r)
 
         delete_policy("sms1")
         delete_policy("sms2")
         g.policy_object = PolicyClass()
         # No policy set, the request will fail
-        self.assertRaises(PolicyError, sms_identifiers, req)
+        self.assertRaises(PolicyError, check_sms_gateway, req)
 
         # Users are allowed to choose gw4
         set_policy("sms1", scope=SCOPE.USER, action=f"{SMSAction.GATEWAYS!s}=gw4")
@@ -1448,12 +1448,12 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.User = User("root")
         req.all_data = {"sms.identifier": "gw4"}
         g.policy_object = PolicyClass()
-        r = sms_identifiers(req)
+        r = check_sms_gateway(req)
         self.assertTrue(r)
 
         # Now the user tries gw1
         req.all_data = {"sms.identifier": "gw1"}
-        self.assertRaises(PolicyError, sms_identifiers, req)
+        self.assertRaises(PolicyError, check_sms_gateway, req)
 
         delete_policy("sms1")
 

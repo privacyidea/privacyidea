@@ -25,6 +25,7 @@ import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { TokenEnrollmentPolicyDeviationNoteComponent } from "@components/token/token-enrollment/token-enrollment-policy-deviation-note/token-enrollment-policy-deviation-note.component";
 import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
@@ -51,7 +52,8 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
     OtpValuesComponent,
     DialogWrapperComponent,
     MatButtonModule,
-    TokenEnrolledTextComponent
+    TokenEnrolledTextComponent,
+    TokenEnrollmentPolicyDeviationNoteComponent
   ],
   templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html"
 })

@@ -62,6 +62,11 @@
   no longer rejected when you save a policy: `Mon-Fri: 18-8` is the night from 18:00 to 08:00, not the day from 08:00
   to 18:00.
 
+* **The WebUI presets the enrollment form from the policies of the selected user.** Before, it could take the hash
+  algorithm, OTP length or time step from a policy of another realm, and tokens of realms without such a policy were
+  enrolled with that value. They now get the default. If all realms should use the value, set the policy for each
+  realm or without a realm.
+
 ## Update from 3.14 to 3.14.1
 
 If you update from 3.13 to 3.14.1, you can read [UPDATE_FROM_3.13_TO_3.14.1.md](UPDATE_FROM_3.13_TO_3.14.1.md)

@@ -33,11 +33,14 @@
     >
   }
   <form
-    class="margin-left-16"
+    class="margin-left-16 enrollment-content"
     (submit)="$event.preventDefault(); enrollToken()">
     <div class="enroll-button-container margin-top-16 margin-bottom-16">
-      <!-- A disabled button fires no hover events, so the wrapper carries the tooltip. -->
+      <!-- A disabled button fires no hover or click events, so the wrapper carries the tooltip and the click. -->
       <span
+        (click)="revealFieldErrors()"
+        (keydown.enter)="revealFieldErrors()"
+        tabindex="-1"
         [matTooltip]="enrollmentBlockedReason() ?? ''"
         [matTooltipDisabled]="!enrollmentBlockedReason()">
         <button
@@ -59,9 +62,11 @@
         <mat-icon>open_in_new</mat-icon>
       </button>
     </div>
+    <app-enrollment-policy-error [error]="enrollmentPoliciesError()" />
     <app-enroll-token-type-switch
-      [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
-      [wizard]="wizard" />
+      [tokenTypeKey]="tokenType().key"
+      [wizard]="wizard"
+      [enrollmentPolicies]="enrollmentPolicyState()" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">
         <mat-label i18n="@@common.description">Description</mat-label>

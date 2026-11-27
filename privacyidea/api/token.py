@@ -75,18 +75,22 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            check_external, init_token_defaults,
                                            enroll_pin, papertoken_count,
                                            tantoken_count,
-                                           twostep_enrollment_activation,
+                                           init_twostep_activation,
                                            twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config,
+                                           check_sms_gateway, pushtoken_add_config,
                                            verify_enrollment,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description_on_edit, require_description,
+                                           init_subject_components, require_description_on_edit,
+                                           check_required_description,
                                            check_container_action, check_user_params,
                                            resolver_realm_access,
-                                           force_server_generate_key)
+                                           init_force_server_generate,
+                                           get_twostep_setting, get_force_server_generate,
+                                           get_sms_gateways, is_description_required)
+from privacyidea.lib.config import get_token_class
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
@@ -166,14 +170,14 @@ overall policy concept.
 @token_blueprint.route('/init', methods=['POST'])
 @prepolicy(check_token_init, request)
 @prepolicy(check_max_token_realm, request)
-@prepolicy(require_description, request)
+@prepolicy(check_required_description, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(init_tokenlabel, request)
 @prepolicy(init_ca_connector, request)
 @prepolicy(init_ca_template, request)
 @prepolicy(init_subject_components, request)
 @prepolicy(enroll_pin, request)
-@prepolicy(twostep_enrollment_activation, request)
+@prepolicy(init_twostep_activation, request)
 @prepolicy(twostep_enrollment_parameters, request)
 @prepolicy(init_random_pin, request)
 @prepolicy(encrypt_pin, request)
@@ -182,7 +186,7 @@ overall policy concept.
 @prepolicy(init_token_defaults, request)
 @prepolicy(init_token_length_contents, request)
 @prepolicy(papertoken_count, request)
-@prepolicy(sms_identifiers, request)
+@prepolicy(check_sms_gateway, request)
 @prepolicy(tantoken_count, request)
 @prepolicy(pushtoken_add_config, request)
 @prepolicy(indexedsecret_force_attribute, request)
@@ -191,7 +195,7 @@ overall policy concept.
 @prepolicy(fido2_enroll, request)
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
-@prepolicy(force_server_generate_key, request)
+@prepolicy(init_force_server_generate, request)
 @postpolicy(remove_new_token_on_error(save_pin_change), request)
 @event("token_init", request, g)
 @postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
@@ -410,6 +414,86 @@ def init():
                             "token_type": token.token.tokentype})
 
     return send_result(True, details=response_details)
+
+
+# Keys of the default settings that the enrollment dialog shows. Other default settings, like the path of the
+# trusted attestation CA of the certificate token, stay on the server.
+ENROLLMENT_DEFAULT_KEYS = ["hashlib", "otplen", "timeStep"]
+
+
+@token_blueprint.route('/init/policies', methods=['GET'])
+@prepolicy(check_token_init, request)
+@log_with(log)
+def get_enrollment_policies_api():
+    """
+    Read the enrollment policy values that ``POST /token/init`` would apply to a token with the given
+    parameters. This endpoint only reads and does not change anything.
+
+    Requires authentication. Authorization is gated by the ``enroll<TOKENTYPE>`` policy in the calling
+    principal's scope (admin or user), like ``POST /token/init``. A request without an explicit ``type``
+    defaults to ``HOTP`` and is therefore checked against ``enrollHOTP``.
+
+    The values are determined for the target user, so an admin should pass ``user`` and ``realm``. For user
+    callers, ``user`` and ``realm`` are bound to the calling user, so a user always gets the values of the
+    own account.
+
+    :query type: The token type, default ``hotp``
+    :query user: The username of the token owner
+    :query realm: The realm of the token owner
+    :query serial: The serial of an existing token, e.g. for a rollover. Then the 2step value is taken for
+        the type of this token.
+
+    :return: A dictionary with the keys
+
+        * ``defaults``: the default values of ``hashlib``, ``otplen`` and ``timeStep`` that are set by policies
+        * ``2step``: ``"allow"``, ``"force"`` or ``null``
+        * ``force_server_generate``: whether the server has to generate the key
+        * ``sms_gateways``: the sms gateway identifiers the policies allow, an empty list means no
+          ``sms_gateways`` policy applies, so ``POST /token/init`` refuses a request that sets ``sms.identifier``
+        * ``require_description``: whether a description is required
+
+    :status 403: The caller lacks the ``enroll<TOKENTYPE>`` right, or policies with conflicting actions
+        apply because no user is given ("There are policies with conflicting actions").
+    :status 400: The token type is unknown, or ``type`` differs from the type of the token with the given
+        ``serial``.
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+       HTTP/1.1 200 OK
+       Content-Type: application/json
+
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "status": true,
+            "value": {
+              "defaults": {"hashlib": "sha256", "otplen": "8"},
+              "2step": "force",
+              "force_server_generate": false,
+              "sms_gateways": [],
+              "require_description": true
+            }
+          },
+          "version": "privacyIDEA unknown"
+        }
+    """
+    params = request.all_data
+    token_type = params.get("type") or "hotp"
+    token_class = get_token_class(token_type)
+    if not token_class:
+        raise ParameterError(f"Unknown token type: {token_type}")
+    default_settings = token_class.get_default_settings(g, params)
+    defaults = {key: value for key, value in default_settings.items() if key in ENROLLMENT_DEFAULT_KEYS}
+    result = {"defaults": defaults,
+              "2step": get_twostep_setting(token_type, request.User),
+              "force_server_generate": get_force_server_generate(token_type, request.User),
+              "sms_gateways": get_sms_gateways(request.User),
+              "require_description": is_description_required(params, request.User)}
+    g.audit_object.log({"success": True, "token_type": token_type})
+    return send_result(result)
 
 
 @token_blueprint.route('/challenges/', methods=['GET'])

@@ -39,7 +39,7 @@
     >Read number dynamically from user source on each request.</mat-checkbox
   >
   <div class="flex-row gap-16 margin-bottom-16">
-    @if (!wizard() || !defaultSMSGatewayIsSet()) {
+    @if (gatewayFieldShown() && (!wizard() || !defaultSMSGatewayIsSet())) {
       <mat-form-field class="input-width-xl">
         <mat-label i18n="@@token.tokenSpecific">A Token Specific SMS Gateway</mat-label>
         <mat-hint i18n="@@token.ifTokenShould"

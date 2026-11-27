@@ -216,6 +216,10 @@ be assigned. From version 3.11, you can also assign the token only to a realm (*
 When enrolling a token, you can select the token type and according to the
 token type other necessary information. For more information on the different token types, see :ref:`tokentypes`.
 
+The enrollment form takes its preset values and choices, such as the hash algorithm, the OTP length or the
+SMS gateways, from the enrollment policies of the selected user or realm, not from those of the logged-in
+administrator. If these policies cannot be evaluated, the page shows the policy error and disables *Enroll*.
+
 .. figure:: images/token_enroll.png
    :width: 500
 

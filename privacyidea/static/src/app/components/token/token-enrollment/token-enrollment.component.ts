@@ -28,6 +28,7 @@ import {
   OnDestroy,
   OnInit,
   signal,
+  untracked,
   viewChild,
   WritableSignal
 } from "@angular/core";
@@ -59,6 +60,7 @@ import {
 } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollmentPolicyErrorComponent } from "@components/shared/enrollment-policy-error/enrollment-policy-error.component";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
@@ -75,17 +77,24 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
+  EnrollmentPolicies,
+  EnrollmentPolicyState,
+  EnrollmentPolicyTarget,
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface,
-  TokenType
+  TokenType,
+  TokenTypeKey
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { toObservable, toSignal } from "@angular/core/rxjs-interop";
+import { Debouncer } from "@utils/debounce.utils";
 import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
-import { lastValueFrom, Observable } from "rxjs";
+import { firstValueFrom, lastValueFrom, merge, Observable, of, Subject, switchMap, tap } from "rxjs";
+import { EnrollmentPoliciesLoad, enrollmentPolicyState, loadEnrollmentPolicies } from "./enrollment-policy-values";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import {
   CUSTOM_TOOLTIP_OPTIONS,
@@ -166,6 +175,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     ClearableInputComponent,
     ScrollToTopDirective,
     UserAssignmentComponent,
+    EnrollmentPolicyErrorComponent,
     EnrollTokenTypeSwitchComponent,
     EnrollmentPinComponent,
     MatError,
@@ -196,34 +206,132 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
+  /** The token type that is shown, its policies are requested for and that is enrolled. */
+  protected readonly tokenType = computed<TokenType>(() => this.tokenService.selectedTokenType());
   enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
-    source: this.tokenService.selectedTokenType,
+    source: () => this.tokenType(),
     computation: () => null
   });
   tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
-      return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
+      return tokenTypes.find((type) => type.key === this.tokenType().key)?.text;
     }
   });
   serial = signal<string | null>(null);
   readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
-  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
+  /** The owner the token is enrolled for, read once for the policy request and for the enrollment itself. */
+  private readonly enrollmentOwner = computed(() => ({
+    user: this.userService.selectedUser()?.username ?? "",
+    realm: this.userService.selectedUserRealm() ?? "",
+    onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false
+  }));
 
-  descriptionRequired = computed(() => {
-    const selectedTokenType = this.tokenService.selectedTokenType();
-    return this.authService.requireDescription().includes(selectedTokenType.key);
+  /**
+   * The username the policy target is built from. A typed name is applied after the debounce delay, so that
+   * not every keystroke requests the policies. A user found in the user list and a cleared user apply at once.
+   */
+  private readonly policyUsername = signal("");
+  private readonly policyUsernameDebouncer = new Debouncer(this.policyUsername);
+  private readonly selectedUsername = computed(() => this.userService.selectedUser()?.username ?? "");
+  /** True while the typed name is not yet part of the policy target, the policies are then outdated. */
+  private readonly policyUsernamePending = computed(() => this.selectedUsername() !== this.policyUsername());
+  private readonly policyUsernamePending$ = toObservable(this.policyUsernamePending);
+  /**
+   * Emits when the typed name was applied, so an Enroll clicked meanwhile can re-check the policy request.
+   * toObservable replays its last value synchronously on subscribe, which may be a stale "applied" from before
+   * the typing and would end the wait at once. Only a later, asynchronous emission counts.
+   */
+  private readonly policyUsernameApplied$ = new Observable<void>((subscriber) => {
+    let replaying = true;
+    const subscription = this.policyUsernamePending$.subscribe((pending) => {
+      if (!replaying && !pending) subscriber.next();
+    });
+    replaying = false;
+    return subscription;
+  });
+  private lastRequestedTarget: EnrollmentPolicyTarget | undefined;
+
+  /** The target the enrollment policies are evaluated for, as POST /token/init would see it. */
+  readonly enrollmentTarget = computed<EnrollmentPolicyTarget | undefined>(
+    () => {
+      const type = this.tokenType()?.key;
+      if (!type) {
+        return undefined;
+      }
+      const owner = this.enrollmentOwner();
+      const user = this.policyUsername();
+      const serial = this.serial();
+      return {
+        type,
+        ...(user && !owner.onlyAddToRealm && { user }),
+        ...(owner.realm && (user || owner.onlyAddToRealm) && { realm: owner.realm }),
+        ...(serial && { serial })
+      };
+    },
+    { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
+  );
+
+  /** The last loaded policies and the token type they belong to, only policies of the same type are kept while loading. */
+  private lastLoadedPolicies: { type: string; policies: EnrollmentPolicies } | undefined;
+  /** Emits when a policy request ended, so an Enroll clicked while loading can go on with the new policies. */
+  private readonly policiesSettled = new Subject<void>();
+
+  /** The enrollment policies of the current target, a new target starts a new request and drops the pending one. */
+  private readonly enrollmentPoliciesLoad = toSignal(
+    toObservable(this.enrollmentTarget).pipe(
+      switchMap((target): Observable<EnrollmentPoliciesLoad> => {
+        this.lastRequestedTarget = target;
+        if (!target) {
+          return of({ status: "idle" });
+        }
+        return loadEnrollmentPolicies(
+          this.tokenService.getEnrollmentPolicies(target),
+          this.lastLoadedPolicies?.type === target.type ? this.lastLoadedPolicies.policies : undefined
+        ).pipe(
+          tap((load) => {
+            if (load.status === "loaded") {
+              this.lastLoadedPolicies = { type: target.type, policies: load.policies };
+            }
+            if (load.status !== "loading") {
+              this.policiesSettled.next();
+            }
+          })
+        );
+      })
+    ),
+    { initialValue: { status: "idle" } as EnrollmentPoliciesLoad }
+  );
+
+  readonly enrollmentPoliciesLoading = computed(
+    () => this.enrollmentPoliciesLoad().status === "loading" || this.policyUsernamePending()
+  );
+
+  /** The server message when the enrollment policies cannot be determined for the target, else null. */
+  readonly enrollmentPoliciesError = computed<string | null>(() => {
+    const load = this.enrollmentPoliciesLoad();
+    return load.status === "error" ? load.message : null;
   });
 
-  isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? ""));
+  readonly enrollmentPolicyState = computed<EnrollmentPolicyState>(() =>
+    enrollmentPolicyState(this.enrollmentPoliciesLoad())
+  );
+
+  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
+
+  // While the policies load or fail, Enroll is blocked anyway.
+  descriptionRequired = computed(() => {
+    const state = this.enrollmentPolicyState();
+    return state.state === "loaded" && state.policies.require_description;
+  });
+
+  isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenType()?.key ?? ""));
   protected readonly showOnlyAddToRealm = computed(
-    () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
+    () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenType()?.key ?? "")
   );
-  protected readonly showPinFields = computed(
-    () => !NO_PIN_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
-  );
+  protected readonly showPinFields = computed(() => !NO_PIN_TOKEN_TYPES.includes(this.tokenType()?.key ?? ""));
 
   description = signal<string>("");
   setPin = signal<string>("");
@@ -293,12 +401,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
   // the mismatch error has nowhere to show, so the enrollment would fail without a reason.
   enrollmentBlockedReason = computed<string | null>(() => {
+    // Loading alone does not block: enrollToken() waits for the policies instead, so Enroll does not flash disabled.
+    const policyError = this.enrollmentPoliciesError();
+    if (policyError) {
+      return policyError;
+    }
     const sw = this.enrollSwitch();
     if (!sw) {
       return null;
     }
     const strategy = sw.currentStrategy();
-    if (strategy === undefined && !!this.tokenService.selectedTokenType()?.key) {
+    if (strategy === undefined && !!this.tokenType()?.key) {
       return $localize`:@@token.enrollmentUnsupportedType:Enrollment is not available for this token type.`;
     }
     return strategy?.enrollmentBlockedReason() ?? null;
@@ -308,11 +421,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       !this.descriptionForm().valid() ||
       (this.showPinFields() && !this.repeatPinForm().valid()) ||
       !this.userValid() ||
-      !!this.enrollmentBlockedReason()
+      !!this.enrollmentBlockedReason() ||
+      !!this.enrollSwitch()?.currentStrategy()?.fieldsInvalid()
   );
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
+    source: () => this.tokenType(),
     computation: () => null
   });
   canReopenEnrollmentDialog = computed(
@@ -325,6 +439,18 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     effect(() => {
       this.containerService.selectedContainerSerial.set(this.selectedContainer());
     });
+    effect(() => {
+      const username = this.selectedUsername();
+      untracked(() => {
+        if (username === this.policyUsername()) {
+          this.policyUsernameDebouncer.cancel();
+        } else if (!username || this.userService.users().some((user) => user.username === username)) {
+          this.policyUsernameDebouncer.set(username);
+        } else {
+          this.policyUsernameDebouncer.schedule(username);
+        }
+      });
+    });
   }
 
   ngOnInit(): void {
@@ -333,13 +459,12 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   private registerPendingChanges(): void {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
-    this.pendingChangesService.registerValidChanges(
-      () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
-    );
+    this.pendingChangesService.registerValidChanges(() => !!this.tokenType()?.key && !this.isFormInvalid());
     this.pendingChangesService.registerSave(() => this.enrollToken());
   }
 
   ngOnDestroy(): void {
+    this.policyUsernameDebouncer.cancel();
     this.containerService.compatibleWithSelectedTokenType.set(null);
     this.pendingChangesService.clearAllRegistrations();
   }
@@ -386,30 +511,15 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
   }
 
-  async enrollToken(): Promise<boolean> {
-    const currentTokenType = this.tokenService.selectedTokenType();
-    if (!currentTokenType) {
-      this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
-      return false;
-    }
+  // Enroll is disabled while the form is invalid, so a click on it shows every field error instead of submitting.
+  revealFieldErrors(): void {
+    if (!this.isFormInvalid()) return;
+    this.touchFields();
+    this.enrollSwitch()?.currentStrategy()?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenType().key));
+  }
 
-    if (this.isFormInvalid()) {
-      this.touchFields();
-      this.notificationService.warning(
-        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
-      );
-      return false;
-    }
-
-    const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
-    if (!strategy) {
-      this.notificationService.warning(
-        $localize`:@@token.enrollmentAction:Enrollment action is not available for the selected token type.`
-      );
-      return false;
-    }
-
-    const user = this.userService.selectedUser();
+  private basicEnrollmentOptions(tokenTypeKey: TokenTypeKey): TokenEnrollmentData {
+    const owner = this.enrollmentOwner();
     let validityPeriodStart = "";
     if (this.selectedStartDate() && this.selectedStartTime()) {
       validityPeriodStart = this.formatDateTimeOffset(
@@ -427,18 +537,55 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       );
     }
 
-    const basicOptions: TokenEnrollmentData = {
-      type: currentTokenType.key,
+    return {
+      type: tokenTypeKey,
       description: this.description().trim(),
       containerSerial: this.selectedContainer().trim(),
       validityPeriodStart: validityPeriodStart,
       validityPeriodEnd: validityPeriodEnd,
-      user: user?.username ?? "",
-      realm: this.userService.selectedUserRealm() ?? "",
-      onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false,
+      user: owner.user,
+      realm: owner.realm,
+      onlyAddToRealm: owner.onlyAddToRealm,
       pin: this.showPinFields() ? (this.setPin() ?? "") : "",
       serial: this.serial()
     };
+  }
+
+  async enrollToken(): Promise<boolean> {
+    // Never enroll with the policies of the previous target: wait for the ones of the current target.
+    // A typed name that was just applied has its request started after the next change detection.
+    let waitedForTypedName = false;
+    while (true) {
+      waitedForTypedName ||= this.policyUsernamePending();
+      const requested = JSON.stringify(this.lastRequestedTarget) === JSON.stringify(this.enrollmentTarget());
+      if (!this.enrollmentPoliciesLoading() && (requested || !waitedForTypedName)) {
+        break;
+      }
+      await firstValueFrom(merge(this.policiesSettled, this.policyUsernameApplied$));
+    }
+    const currentTokenType = this.tokenType();
+    if (!currentTokenType) {
+      this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
+      return false;
+    }
+
+    if (this.isFormInvalid()) {
+      this.revealFieldErrors();
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
+      );
+      return false;
+    }
+
+    const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
+    if (!strategy) {
+      this.notificationService.warning(
+        $localize`:@@token.enrollmentAction:Enrollment action is not available for the selected token type.`
+      );
+      return false;
+    }
+
+    const basicOptions = this.basicEnrollmentOptions(currentTokenType.key);
 
     const enrollmentArgs: EnrollTokenArguments | null = strategy.buildEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) {

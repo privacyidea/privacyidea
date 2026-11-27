@@ -31,15 +31,19 @@
       [formInvalid]="isFormInvalid()"
       [enrollBlockedReason]="enrollmentBlockedReason()"
       [scrollContainer]="scrollContainer"
-      (reopenDialog)="reopenEnrollmentDialog()" />
-    <div class="responsive-margin-left-1310">
+      (reopenDialog)="reopenEnrollmentDialog()"
+      (disabledEnrollClick)="revealFieldErrors()" />
+    <div class="responsive-margin-left-1310 enrollment-content">
       <div class="enroll-content-width margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n="@@token.tokenConfiguration">Token Configuration</h4>
+      <app-enrollment-policy-error [error]="enrollmentPoliciesError()" />
       <!-- Each new inputsGeneration recreates the type-specific inputs with their defaults. -->
       @for (generation of [inputsGeneration()]; track generation) {
-        <app-enroll-token-type-switch [tokenTypeKey]="tokenService.selectedTokenType().key" />
+        <app-enroll-token-type-switch
+          [tokenTypeKey]="tokenService.selectedTokenType().key"
+          [enrollmentPolicies]="enrollmentPolicyState()" />
       }
       <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n="@@common.description">Description</mat-label>

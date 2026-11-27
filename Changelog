@@ -9,6 +9,11 @@ Version 3.15
     system itself looks them up, so `-n` finds a realm or resolver regardless of case and, on MySQL and MariaDB, an
     entry whose name differs only in case is updated instead of being created and deleted (#4945)
 
+  Fixes:
+  * WebUI: The token enrollment, the token wizard and the rollover dialog take the values of the enrollment policies,
+    like the hash algorithm, OTP length or SMS gateways, for the selected user, realm or token instead of the
+    logged-in administrator. The new endpoint `GET /token/init/policies` returns these values (#6253)
+
 Version 3.14.1
 
   Features:

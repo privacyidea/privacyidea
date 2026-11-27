@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -28,21 +28,19 @@ import {
   DaypasswordApiPayloadMapper,
   DaypasswordEnrollmentData
 } from "@app/mappers/token-api-payload/daypassword-token-api-payload.mapper";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
-import {
-  DAYPASSWORD_HASHLIB,
-  DAYPASSWORD_HASHLIB_POLICY,
-  DAYPASSWORD_OTP_LENGTH_POLICY,
-  DAYPASSWORD_TIME_STEP,
-  DAYPASSWORD_TIME_STEP_POLICY
-} from "@constants/token.constants";
+  FieldPreset,
+  loadedEnrollmentPolicies,
+  numericPolicyValue,
+  presetOrChoice,
+  samePreset
+} from "@components/token/token-enrollment/enrollment-policy-values";
+import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EnrollmentPolicyState, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 
@@ -58,22 +56,10 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-daypassword",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatHint,
-    MatError,
-    MatCheckbox,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatHint, MatError, MatCheckbox, FormField],
   templateUrl: "./enroll-daypassword.component.html",
   styleUrl: "./enroll-daypassword.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollDaypasswordComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollDaypasswordComponent) }]
 })
 export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrollmentData> {
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
@@ -92,78 +78,128 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
   enrollmentData = input<DaypasswordEnrollmentData>();
   wizard = input<boolean>(false);
   disabled = input<boolean>(false);
+  enrollmentPolicies = input<EnrollmentPolicyState>({ state: "unrestricted" });
 
-  generateOnServer = signal<boolean>(true);
-  otpKey = signal<string>("");
-  otpLength = signal<number>(6);
+  private readonly policies = computed(() => loadedEnrollmentPolicies(this.enrollmentPolicies()));
+  private readonly policiesPending = computed(() => this.enrollmentPolicies().state === "pending");
+  private readonly hashlibPolicy = computed(() => this.policies()?.defaults.hashlib || undefined);
+  private readonly otpLengthPolicy = computed(() => numericPolicyValue(this.policies()?.defaults.otplen));
+  private readonly timeStepPolicy = computed(() => this.policies()?.defaults.timeStep || undefined);
+
+  forceServerGenerate = computed(() => !!this.policies()?.force_server_generate);
 
   defaultHashlib = computed(() => this.systemService.systemConfig()[DAYPASSWORD_HASHLIB] || "sha1");
   defaultTimeStep = computed(() => this.systemService.systemConfig()[DAYPASSWORD_TIME_STEP] || "24h");
 
-  hashAlgorithm = linkedSignal<string>(() => this.defaultHashlib());
-  timeStep = linkedSignal<string>(() => this.defaultTimeStep());
+  // Policy value first, then the enrollment data (rollover, template), then the default.
+  generateOnServer = linkedSignal(
+    () => this.forceServerGenerate() || (this.enrollmentData()?.generateOnServer ?? true)
+  );
+  otpKey = linkedSignal(() => this.enrollmentData()?.otpKey ?? "");
+  private readonly otpLengthPreset = computed<FieldPreset<number>>(
+    () => {
+      const policy = this.otpLengthPolicy();
+      return { value: policy ?? this.enrollmentData()?.otpLength ?? 6, locked: policy !== undefined };
+    },
+    { equal: samePreset }
+  );
+  private readonly hashAlgorithmPreset = computed<FieldPreset<string>>(
+    () => {
+      const policy = this.hashlibPolicy();
+      const data = this.enrollmentData();
+      return {
+        value: policy ?? (data ? (data.hashAlgorithm ?? "sha256") : this.defaultHashlib()),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  private readonly timeStepPreset = computed<FieldPreset<string>>(
+    () => {
+      const policy = this.timeStepPolicy();
+      const data = this.enrollmentData();
+      return {
+        value: policy ?? (data ? (data.timeStep ?? "24h") : this.defaultTimeStep()),
+        locked: policy !== undefined
+      };
+    },
+    { equal: samePreset }
+  );
+  // A value the user picked is kept when the preset changes later, even one that equals the preset. A policy
+  // that locks the field drops the pick, so the default shows again once the policy no longer applies.
+  private readonly otpLengthChosen = linkedSignal<FieldPreset<number>, boolean>({
+    source: this.otpLengthPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
+  private readonly hashAlgorithmChosen = linkedSignal<FieldPreset<string>, boolean>({
+    source: this.hashAlgorithmPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
+  private readonly timeStepChosen = linkedSignal<FieldPreset<string>, boolean>({
+    source: this.timeStepPreset,
+    computation: (preset, previous) => !preset.locked && (previous?.value ?? false)
+  });
+  otpLength = linkedSignal<FieldPreset<number>, number>({
+    source: this.otpLengthPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.otpLengthChosen))
+  });
+  hashAlgorithm = linkedSignal<FieldPreset<string>, string>({
+    source: this.hashAlgorithmPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.hashAlgorithmChosen))
+  });
+  timeStep = linkedSignal<FieldPreset<string>, string>({
+    source: this.timeStepPreset,
+    computation: (preset, previous) => presetOrChoice(preset, previous, untracked(this.timeStepChosen))
+  });
+
+  override readonly fieldsInvalid = computed(() => !this.generateOnServer() && !this.otpKeyForm().valid());
+
+  generateOnServerDisabled = computed(() => this.disabled() || this.policiesPending() || this.forceServerGenerate());
 
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
 
   generateOnServerForm = form(this.generateOnServer, (f) => {
-    disabled(f, () => this.disabled() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
+    disabled(f, () => this.generateOnServerDisabled());
   });
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
     validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: ERR.minLength }] : []));
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.forceServerGenerate());
   });
 
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH_POLICY]);
+    disabled(f, () => this.disabled() || this.policiesPending() || this.otpLengthPolicy() !== undefined);
   });
 
   hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB_POLICY]);
+    disabled(f, () => this.disabled() || this.policiesPending() || this.hashlibPolicy() !== undefined);
   });
 
   timeStepForm = form(this.timeStep, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP_POLICY]);
+    disabled(f, () => this.disabled() || this.policiesPending() || this.timeStepPolicy() !== undefined);
   });
 
   constructor() {
     super();
 
-    // Apply policy defaults when rights load
+    // A pick in the field marks it dirty, which keeps its value over a later preset. One effect per field, so
+    // that the dirty state of one field does not set the flag of another one again after a policy dropped it.
     effect(() => {
-      const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB_POLICY];
-      if (hashlib) this.hashAlgorithm.set(hashlib);
-      const otpLengthPolicy = this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH_POLICY];
-      if (otpLengthPolicy) {
-        const parsedLength = parseInt(otpLengthPolicy, 10);
-        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
-      }
-      const timeStepPolicy = this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP_POLICY];
-      if (timeStepPolicy) this.timeStep.set(timeStepPolicy);
+      if (this.otpLengthForm().dirty()) this.otpLengthChosen.set(true);
     });
-
-    // Force generateOnServer when policy requires it
     effect(() => {
-      if (this.authService.checkForceServerGenerateOTPKey("daypassword")) this.generateOnServer.set(true);
+      if (this.hashAlgorithmForm().dirty()) this.hashAlgorithmChosen.set(true);
     });
-
-    // Apply initial enrollment data
     effect(() => {
-      const data = this.enrollmentData();
-      if (data) {
-        this.generateOnServer.set(data.generateOnServer ?? true);
-        this.otpLength.set(data.otpLength ?? 6);
-        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha256");
-        this.timeStep.set(data.timeStep ?? "24h");
-        if (data.otpKey) this.otpKey.set(data.otpKey);
-      }
+      if (this.timeStepForm().dirty()) this.timeStepChosen.set(true);
     });
   }
+
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<DaypasswordEnrollmentData> | null {
     if (!this.generateOnServer() && !this.otpKeyForm().valid()) {

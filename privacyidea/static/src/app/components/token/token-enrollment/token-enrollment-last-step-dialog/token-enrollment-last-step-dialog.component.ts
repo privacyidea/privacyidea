@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, inject, signal, Signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -25,9 +26,17 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokenEnrollmentPolicyDeviationNoteComponent } from "@components/token/token-enrollment/token-enrollment-policy-deviation-note/token-enrollment-policy-deviation-note.component";
 import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import {
+  actualValuesFromEnrollmentUrl,
+  EnrollmentDeviation,
+  getEnrollmentDeviations,
+  POLICY_DEVIATION_TOKEN_TYPES
+} from "@utils/token.utils";
+import { catchError, EMPTY } from "rxjs";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -38,7 +47,8 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
     MatIconModule,
     MatButtonModule,
     TokenEnrollmentDataComponent,
-    TokenEnrolledTextComponent
+    TokenEnrolledTextComponent,
+    TokenEnrollmentPolicyDeviationNoteComponent
   ]
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
@@ -62,6 +72,8 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   protected readonly rollover = this.data.rollover ?? false;
 
   protected readonly closeBlockedReason = signal("");
+  /** Enrolled values that differ from the requested ones, because a policy applied between form and enrollment. */
+  protected readonly policyDeviations = signal<EnrollmentDeviation[]>([]);
 
   title: Signal<string> = computed(() =>
     this.rollover
@@ -74,6 +86,42 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
+    this.loadPolicyDeviations();
+  }
+
+  /**
+   * Compares the requested values with the enrollment URL. Without a URL, for example removed by a response mangler,
+   * the token from the token list is used once. An empty list (no tokenlist right) or an error shows no note.
+   */
+  private loadPolicyDeviations(): void {
+    const enrollParameters = this.data.enrollParameters;
+    const actual = actualValuesFromEnrollmentUrl(this.data.response);
+    if (actual) {
+      this.policyDeviations.set(getEnrollmentDeviations(enrollParameters, actual));
+      return;
+    }
+    if (!this.serial || !POLICY_DEVIATION_TOKEN_TYPES.includes(enrollParameters?.data?.type)) {
+      return;
+    }
+    this.tokenService
+      .getTokenDetails(this.serial)
+      .pipe(
+        catchError(() => EMPTY),
+        takeUntilDestroyed()
+      )
+      .subscribe((response) => {
+        const token = response?.result?.value?.tokens?.[0];
+        if (!token) {
+          return;
+        }
+        this.policyDeviations.set(
+          getEnrollmentDeviations(enrollParameters, {
+            otpLength: token.otplen,
+            hashAlgorithm: token.info?.hashlib,
+            timeStep: token.info?.timeStep
+          })
+        );
+      });
   }
 
   showQRCode(): boolean {

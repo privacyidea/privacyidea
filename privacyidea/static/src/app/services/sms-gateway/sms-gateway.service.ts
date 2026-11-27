@@ -86,7 +86,10 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   readonly canListSmsGateways = computed<boolean>(() => this.authService.actionAllowed("smsgateway_read"));
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
-    const onPageUsingTheList = this.contentService.onExternalSms() || this.contentService.onConfigurationTokenTypes();
+    const onPageUsingTheList =
+      this.contentService.onExternalSms() ||
+      this.contentService.onConfigurationTokenTypes() ||
+      this.contentService.onTokenEnrollmentLikely();
     if (!onPageUsingTheList || !this.canListSmsGateways()) {
       return undefined;
     }
