@@ -85,6 +85,8 @@ export class EnrollTokenTypeSwitchComponent {
   readonly tokenTypeKey = input.required<string>();
   readonly wizard = input(false);
   readonly enrollmentData = input<TokenEnrollmentData | null>(null);
+  // Set by the rollover dialog, where the token keeps its serial.
+  readonly rollover = input(false);
 
   // The active child enrollment component, resolved via DI. Children register themselves as `EnrollTokenBase` via
   // `providers: [{ provide, useExisting }]`.

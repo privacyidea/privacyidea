@@ -70,6 +70,8 @@ export class EnrollVascoComponent extends EnrollTokenBase<VascoEnrollmentData> {
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
   disabled = input<boolean>(false);
+  // A rolled over token keeps its serial, so the serial from the blob is neither offered nor sent.
+  rollover = input<boolean>(false);
 
   useVascoSerial = signal<boolean>(false);
   otpKey = signal<string>("");
@@ -94,7 +96,7 @@ export class EnrollVascoComponent extends EnrollTokenBase<VascoEnrollmentData> {
       ...basicOptions,
       type: "vasco",
       otpKey: this.otpKey(),
-      useVascoSerial: this.useVascoSerial()
+      useVascoSerial: this.useVascoSerial() && !basicOptions.rollover
     };
     if (enrollmentData.useVascoSerial) {
       enrollmentData.vascoSerial = this.vascoSerial();

@@ -34,15 +34,17 @@
     >
   }
 </mat-form-field>
-<span
-  class="enroll-content-width"
-  i18n="@@token.vascoSerialRead"
-  >The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
-  activate the checkbox. Otherwise, privacyIDEA will create a new unique serial number.</span
->
-<mat-checkbox [formField]="useVascoSerialForm">
-  <span i18n="@@token.useVascoSerialFromBlob">Use VASCO serial from the blob</span>
-  @if (vascoSerial()) {
-    <code class="margin-left-8">{{ vascoSerial() }}</code>
-  }
-</mat-checkbox>
+@if (!rollover()) {
+  <span
+    class="enroll-content-width"
+    i18n="@@token.vascoSerialRead"
+    >The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
+    activate the checkbox. Otherwise, privacyIDEA will create a new unique serial number.</span
+  >
+  <mat-checkbox [formField]="useVascoSerialForm">
+    <span i18n="@@token.useVascoSerialFromBlob">Use VASCO serial from the blob</span>
+    @if (vascoSerial()) {
+      <code class="margin-left-8">{{ vascoSerial() }}</code>
+    }
+  </mat-checkbox>
+}

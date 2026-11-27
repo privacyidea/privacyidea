@@ -119,6 +119,30 @@ describe("EnrollVascoComponent", () => {
     expect(fixture.nativeElement.textContent).not.toContain("VASCO Token blob is required");
   });
 
+  describe("in a rollover", () => {
+    const rolloverOptions = { type: "vasco", serial: "VASC0001234", rollover: true } as TokenEnrollmentData;
+
+    beforeEach(async () => {
+      fixture.componentRef.setInput("rollover", true);
+      await flushFixture(fixture);
+    });
+
+    it("offers no serial from the blob", () => {
+      expect(fixture.nativeElement.querySelector("mat-checkbox")).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain("The VASCO serial is read from the VASCO blob");
+    });
+
+    it("keeps the serial of the rolled over token even if the serial from the blob was chosen", async () => {
+      await typeInto(fixture, blobInput(), BLOB);
+      component.useVascoSerial.set(true);
+
+      const args = component.buildEnrollmentArgs(rolloverOptions)!;
+
+      expect((args.data as VascoEnrollmentData).vascoSerial).toBeUndefined();
+      expect(args.mapper.toApiPayload(args.data).serial).toBe("VASC0001234");
+    });
+  });
+
   it("passes the axe accessibility checks", async () => {
     fixture.detectChanges();
 
