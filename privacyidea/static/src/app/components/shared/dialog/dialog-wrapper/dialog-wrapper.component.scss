@@ -49,12 +49,6 @@
   .pi-dialog-body {
     margin-left: 16px;
   }
-
-  // The label of an outlined field sits on the field's top border and reaches above the field's box. The content area
-  // scrolls and cuts off what leaves it, so a body that starts with a field keeps that much room above it.
-  .pi-dialog-body:has(> .mat-mdc-form-field:first-child, > :first-child > .mat-mdc-form-field:first-child) {
-    padding-top: 8px;
-  }
 }
 
 // Header and footer stay in place, only the body between them scrolls.

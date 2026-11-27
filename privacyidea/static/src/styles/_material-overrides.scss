@@ -226,6 +226,29 @@
 
 // --- Form fields and inputs -------------------------------------------------------------------
 
+// The floated label of an outlined field sits on the top border and reaches above it. The field keeps that room inside
+// its own box, so no sticky header, clipping container or scrolling dialog body can cover or cut off the label.
+// Padding, not margin: a margin collapses with its parent's and reserves nothing inside a clipping container. A field
+// without a label (the paginator's page size, a policy action's value) has nothing to float and keeps its height. No
+// specificity, so a field that sets its own top padding keeps it.
+// The text field wrapper of a field with a label. Selectors reach it with child combinators, as :has() cannot be nested.
+$labelled-field-wrapper: ".mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label)";
+
+:where(.mat-mdc-form-field.mat-form-field-appearance-outline:has(> #{$labelled-field-wrapper})) {
+  padding-top: var(--form-field-label-room);
+}
+
+// The sticky controls and the roomy table actions centre their items, and a labelled field's box includes the room
+// above its outline. The other items take the same room, so they centre on the outline. A field can sit in a component
+// of its own (the policy action search).
+:is(.sticky-controls, .table-actions-roomy):has(
+    > .mat-form-field-appearance-outline > #{$labelled-field-wrapper},
+    > * > .mat-form-field-appearance-outline > #{$labelled-field-wrapper}
+  )
+  > :not(.mat-form-field-appearance-outline, :has(> .mat-form-field-appearance-outline)) {
+  margin-top: var(--form-field-label-room);
+}
+
 // The outline of a field keeps the two tones of the flat depth border and follows the light source the same way: the
 // shadow tone on the sides the light falls away from, the light tone on the two it reaches. Material draws the outline
 // as three pieces, each with its own borders, so every side takes its tone from the sign of the light direction: a

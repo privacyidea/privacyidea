@@ -200,6 +200,9 @@ body {
   // Width of a config form body: one input-width-xl field plus its leading inset.
   --config-form-width: calc(var(--input-width-xl) + 16px);
 
+  // Room above an outlined field's box for its floated label (Material puts the label's top 6.75px above the outline).
+  --form-field-label-room: 8px;
+
   --button-width-xs: 40px;
   --button-width-s: 120px;
   --button-width-m: 180px;
@@ -779,17 +782,6 @@ $status-colors: (
 
 .sticky-header.is-sticky {
   box-shadow: var(--elevation-3);
-}
-
-// The label of an outlined field sits on the field's top border and reaches above the field's box, where the header
-// would cover it, so content that starts with a field keeps that much room below the header.
-.sticky-header
-  + :has(
-    > .mat-mdc-form-field:first-child,
-    > :first-child > .mat-mdc-form-field:first-child,
-    > :first-child > :first-child > .mat-mdc-form-field:first-child
-  ) {
-  padding-top: 8px;
 }
 
 .sticky-controls {

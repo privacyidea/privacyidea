@@ -53,12 +53,14 @@
 
 // The checkbox and its info icon stay together as one control beside the action select: the icon follows the label it
 // explains, and where the row is short of room the label wraps inside the checkbox rather than the control moving to a
-// row of its own. It moves below the select only once less than 240px are left.
+// row of its own. It moves below the select only once less than 240px are left. It starts below the room for the
+// select's label and is centred on the select's outline.
 .ca-action-retrigger {
   align-items: center;
   align-self: flex-start;
   display: flex;
   flex: 1 1 240px;
+  margin-top: calc(var(--form-field-label-room) + 8px);
   min-width: 0;
 }
 

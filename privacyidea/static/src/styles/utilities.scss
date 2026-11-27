@@ -56,6 +56,11 @@ $negative-margin-properties: (
   margin-right: auto;
 }
 
+// For an item that lines up with the outline of a field beside it: the room above the outline for the field's label.
+.margin-top-label-room {
+  margin-top: var(--form-field-label-room);
+}
+
 .width-full {
   width: 100%;
 }

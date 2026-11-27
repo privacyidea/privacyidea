@@ -222,6 +222,16 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   justify-content: space-between;
   margin-bottom: 16px;
   flex-wrap: wrap;
+  // Room above the filter field's outline for its label; a row with a heading instead of a filter field has none.
+  --filter-row-label-room: 0px;
+
+  &:has(
+      .filter-actions-group
+        .mat-form-field-appearance-outline
+        > .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label)
+    ) {
+    --filter-row-label-room: var(--form-field-label-room);
+  }
 
   // Groups the filter field with its adjacent buttons (More Filter, bulk actions, ...) into one
   // block, capped at a comfortable reading width instead of letting the row stretch edge-to-edge on
@@ -249,24 +259,26 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
     max-width: calc(932px + 48px + 48px);
   }
 
-  // The filter field is taller than its input: a hint line sits underneath it. Centring the row
-  // would centre on that too, so give the paginator the input's own height from the top of the row
-  // and centre it inside that - it then lines up on the middle of the input itself, whether or not
-  // a hint is showing. It also grows into the free space in the row, so its controls are kept
-  // against the right edge of that space rather than the left one flex would start them at.
-  > .mat-mdc-paginator {
+  // The filter field is taller than its input: the room for its label sits above it and a hint line underneath.
+  // Centring the row would centre on those too, so give the paginator the input's own height, starting where the input
+  // starts, and centre it inside that - it then lines up on the middle of the input itself, whether or not a hint is
+  // showing. It also grows into the free space in the row, so its controls are kept against the right edge of that
+  // space rather than the left one flex would start them at. A wrapper that holds only the paginator takes its place.
+  > .mat-mdc-paginator,
+  > :has(> .mat-mdc-paginator:only-child) {
     align-self: flex-start;
+    margin-top: var(--filter-row-label-room);
     height: table.$field-input-height;
     display: flex;
     align-items: center;
     justify-content: flex-end;
   }
 
-  // The filter trigger is the same control on every table, whichever utility classes a given
-  // table's markup puts on it, so it is sized here rather than per table. It stays square - it is
-  // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
-  // is shifted onto the middle of the input row: a translate percentage resolves against the
-  // element's own height, so the offset holds whatever the size above is.
+  // The filter trigger is the same control on every table, whichever utility classes a given table's markup puts on it,
+  // so it is sized here rather than per table. It stays square - it is drawn as a circle, and matching the input's
+  // height instead would draw it as an ellipse - and is shifted onto the middle of the input row, below the room for
+  // the field's label: a translate percentage resolves against the element's own height, so the offset holds whatever
+  // the size above is.
   .filter-actions-group > button,
   .filter-actions-group > app-table-actions-trigger > button {
     align-self: flex-start;
@@ -278,7 +290,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
     // .filter-button offsets itself for the compact copies that sit inline in a header cell.
     top: auto;
     right: auto;
-    transform: translateY(calc(#{table.$field-input-height} / 2 - 50%));
+    transform: translateY(calc(var(--filter-row-label-room) + #{table.$field-input-height} / 2 - 50%));
 
     span.mat-mdc-button-touch-target {
       height: table.$filter-trigger-size;

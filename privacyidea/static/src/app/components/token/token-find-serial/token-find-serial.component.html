@@ -47,7 +47,7 @@
     <button
       (click)="onClickRunSearch()"
       [disabled]="runSearchDisabled()"
-      class="action-button-primary button-width-l margin-bottom-16"
+      class="action-button-primary button-width-l margin-top-label-room margin-bottom-16"
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
       <span
@@ -95,7 +95,7 @@
       </mat-form-field>
     </div>
 
-    <div class="flex-row gap-16">
+    <div class="flex-row gap-16 ali-start">
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.serialSubstring">Serial Substring</mat-label>
         <input
