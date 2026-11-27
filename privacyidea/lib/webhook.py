@@ -967,6 +967,18 @@ def _prepared_url(url: str) -> str:
     return prepared.url
 
 
+def _prepared_url_or_none(url: str) -> str | None:
+    """
+    Return *url* as requests sends it, or None if requests refuses the URL. Then no message about the request
+    contains a prepared form of it.
+    """
+    try:
+        return _prepared_url(url)
+    except Exception:
+        # Every exception: redact_url() runs in the error handling of fire_webhook(), which never raises.
+        return None
+
+
 def redact_url(text, url):
     """
     Remove the sensitive part of a webhook's URL from a message about it.
@@ -993,11 +1005,9 @@ def redact_url(text, url):
     if not text or not url:
         return text
     candidates = [url]
-    try:
-        candidates.append(_prepared_url(url))
-    except Exception:
-        # requests refuses the URL, so no message contains its prepared form.
-        pass
+    prepared = _prepared_url_or_none(url)
+    if prepared is not None:
+        candidates.append(prepared)
     parts = set()
     for candidate in candidates:
         try:

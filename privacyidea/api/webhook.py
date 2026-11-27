@@ -55,7 +55,7 @@ webhook_blueprint = Blueprint('webhook_blueprint', __name__)
 #: Prefix marking a request parameter as a static HTTP header.
 HEADER_PREFIX = "header."
 #: Prefix marking a header as secret, i.e. to be stored encrypted.
-SECRET_HEADER_PREFIX = "secret.header."
+SECRET_HEADER_PREFIX = "secret.header."  # nosec B105 # the prefix of a parameter name, not a secret
 #: Prefix naming the header a header is being renamed from.
 RENAME_HEADER_PREFIX = "rename.header."
 
