@@ -18,7 +18,6 @@
 import logging
 from datetime import datetime, timedelta, UTC
 
-from dateutil.tz import tzutc
 from sqlalchemy import (
     Sequence,
     Unicode,
@@ -31,7 +30,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -130,7 +129,7 @@ class NodeName(db.Model):
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
     id: Mapped[str] = mapped_column(Unicode(36), primary_key=True)
     name: Mapped[str | None] = mapped_column(Unicode(100), index=True)
-    lastseen: Mapped[datetime | None] = mapped_column(DateTime, index=True, default=datetime.now(tz=tzutc()))
+    lastseen: Mapped[datetime | None] = mapped_column(DateTime, index=True, default=utc_now)
 
 
 class Admin(db.Model):
@@ -173,7 +172,7 @@ class PasswordReset(MethodsMixin, db.Model):
     realm: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
     resolver: Mapped[str | None] = mapped_column(Unicode(64))
     email: Mapped[str | None] = mapped_column(Unicode(255))
-    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
     expiration: Mapped[datetime | None] = mapped_column(DateTime)
 
     @log_with(log)

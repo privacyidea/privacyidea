@@ -22,7 +22,7 @@ from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class ClientApplication(MethodsMixin, db.Model):
     ip: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
     hostname: Mapped[str | None] = mapped_column(Unicode(255))
     clienttype: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    lastseen: Mapped[datetime | None] = mapped_column(DateTime, index=True, default=datetime.now)
+    lastseen: Mapped[datetime | None] = mapped_column(DateTime, index=True, default=utc_now)
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     __table_args__ = (UniqueConstraint('ip', 'clienttype', 'node', name='caix'),)
 

@@ -63,6 +63,7 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.params import get_optional
 import datetime
 import base64
+from typing import Any
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
@@ -380,7 +381,7 @@ class YubikeyTokenClass(TokenClass):
         return api_key
 
     @classmethod
-    def api_endpoint(cls, request, g):
+    def api_endpoint(cls, request: Any, g: Any) -> tuple[str, str]:
         """
         This provides a function to be plugged into the API endpoint
         /ttype/yubikey which is defined in api/ttype.py
@@ -408,7 +409,7 @@ class YubikeyTokenClass(TokenClass):
         signature = get_optional(request.all_data, "h")
         status = "MISSING_PARAMETER"
 
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
+        timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ%f")
         data = {'otp': otp,
                 'nonce': nonce,
                 'status': status,

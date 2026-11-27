@@ -25,6 +25,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { MatTooltip } from "@angular/material/tooltip";
 import { MatPaginator } from "@angular/material/paginator";
 import {
   MatCell,
@@ -83,6 +84,7 @@ import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
     RouterLink,
     MatButtonModule,
     MatIcon,
+    MatTooltip,
     ScrollToTopDirective,
     ClearableInputComponent,
     ScrollEdgesDirective,

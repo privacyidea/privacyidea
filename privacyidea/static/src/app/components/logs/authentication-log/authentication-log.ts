@@ -103,7 +103,13 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { toFilterDisplay } from "@utils/date-format.utils";
+import {
+  endOfLocalDayIso,
+  parseFilterEndTimestamp,
+  parseFilterTimestamp,
+  startOfLocalDayIso,
+  toFilterDisplay
+} from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
@@ -219,21 +225,6 @@ const DRY_RUN_OPTIONS: readonly MultiSelectFilterOption[] = [
   { label: $localize`:@@authLog.dryRunOnly:Dry run only`, value: "true" }
 ];
 
-// Local start/end-of-day ISO bounds for a date chosen in the range picker: the picker yields a native Date at local
-// midnight, and since the log renders timestamps in local time, the bounds are the local day's edges (inclusive end at
-// 23:59:59) converted to the ISO string the API filter expects.
-function startOfDayIso(date: Date): string {
-  const day = new Date(date);
-  day.setHours(0, 0, 0, 0);
-  return day.toISOString();
-}
-
-function endOfDayIso(date: Date): string {
-  const day = new Date(date);
-  day.setHours(23, 59, 59, 0);
-  return day.toISOString();
-}
-
 // The custom-range slider has a fixed number of positions (its resolution) mapped onto a dynamic time span (the
 // window), which defaults to the span from the oldest entry to now, or the widest fallback until that loads.
 const RANGE_SLIDER_STEPS = 200;
@@ -250,24 +241,6 @@ const PRESET_LABELS: readonly { ms: number; label: string }[] = [
   { ms: 182 * MS_PER_DAY, label: $localize`:@@authLog.lastMonths:Last 6 months` },
   { ms: 365 * MS_PER_DAY, label: $localize`:@@authLog.lastYear:Last year` }
 ];
-
-// Inverse of toFilterDisplay for the editable start_time/end_time chips: parses the mirrored display, plain ISO, or a
-// partial typed datetime into an ISO string, returning null for an empty or unparsable value.
-function parseFilterTimestamp(value: string | null | undefined): string | null {
-  const trimmed = (value ?? "").trim();
-  if (!trimmed) {
-    return null;
-  }
-  // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
-  // then fall back to the raw text so plain ISO input still parses.
-  for (const candidate of [trimmed.replace(" ", "T").replace(/\s+(?=[+\-Z])/, ""), trimmed]) {
-    const date = new Date(candidate);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString();
-    }
-  }
-  return null;
-}
 
 // What the Client column's provenance badge says. Mirrors
 // privacyidea.lib.conditional_access.authentication_log.ClientLabelSource; an unknown or absent value gets no
@@ -588,14 +561,20 @@ export class AuthenticationLog {
 
   // Drives the time filter from the start_time/end_time entries in the filter text; guards keep the signal-to-chip
   // mirroring from looping, leave an unparsable in-progress edit untouched without clearing an active filter, and clear
-  // a bound only when its entry is removed or emptied.
+  // a bound only when its entry is removed or emptied. A typed end that is only a date includes that whole local
+  // period, as a day picked as the end in the calendar does.
   private syncTimeFilterFromText(): void {
     const map = this.authenticationLogService.authenticationLogFilter().filterMap;
-    this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom);
-    this.syncBoundFromText(map, "end_time", this.authenticationLogService.timestampTo);
+    this.syncBoundFromText(map, "start_time", this.authenticationLogService.timestampFrom, parseFilterTimestamp);
+    this.syncBoundFromText(map, "end_time", this.authenticationLogService.timestampTo, parseFilterEndTimestamp);
   }
 
-  private syncBoundFromText(map: Map<string, string>, key: string, bound: WritableSignal<string | null>): void {
+  private syncBoundFromText(
+    map: Map<string, string>,
+    key: string,
+    bound: WritableSignal<string | null>,
+    parse: (value: string) => string | null
+  ): void {
     const current = bound();
     const chip = map.get(key);
     // Chip still equals what we mirrored out of the signal -> the user did not edit it; nothing to do.
@@ -608,7 +587,7 @@ export class AuthenticationLog {
       }
       return;
     }
-    const parsed = parseFilterTimestamp(chip);
+    const parsed = parse(chip);
     if (parsed && parsed !== current) {
       bound.set(parsed);
     }
@@ -772,7 +751,7 @@ export class AuthenticationLog {
   // other bound, and clearing a field (null) drops its bound; the picked range also zooms the slider window so the
   // selected span fills the track (e.g. a single day becomes 24 hours).
   onRangeStartDateChange(date: Date | null): void {
-    this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
+    this.applyPickedRange(date ? startOfLocalDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
   // An end picked on or after the active start keeps that start as it is - narrowed on the slider or set by a preset.
@@ -781,11 +760,11 @@ export class AuthenticationLog {
   // start, which may lie after it.
   onRangeEndDateChange(date: Date | null): void {
     const fromIso = this.authenticationLogService.timestampFrom();
-    if (date && fromIso && new Date(endOfDayIso(date)) < new Date(fromIso)) {
-      this.applyPickedRange(startOfDayIso(date), endOfDayIso(new Date(fromIso)));
+    if (date && fromIso && new Date(endOfLocalDayIso(date)) < new Date(fromIso)) {
+      this.applyPickedRange(startOfLocalDayIso(date), endOfLocalDayIso(new Date(fromIso)));
       return;
     }
-    this.applyPickedRange(fromIso, date ? endOfDayIso(date) : null);
+    this.applyPickedRange(fromIso, date ? endOfLocalDayIso(date) : null);
   }
 
   // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. The parts
@@ -819,7 +798,7 @@ export class AuthenticationLog {
     const { start, end } = pick;
     if (end === null) {
       const day = start === undefined ? this.rangePickerStart() : start;
-      this.applyPickedRange(day ? startOfDayIso(day) : null, null);
+      this.applyPickedRange(day ? startOfLocalDayIso(day) : null, null);
     } else if (end) {
       this.onRangeEndDateChange(start === undefined ? end : start);
     } else if (start !== undefined) {
@@ -834,7 +813,7 @@ export class AuthenticationLog {
       return;
     }
     if (!this.authenticationLogService.timestampFrom() || this.authenticationLogService.timestampTo()) {
-      this.applyPickedRange(startOfDayIso(date), null);
+      this.applyPickedRange(startOfLocalDayIso(date), null);
       return;
     }
     this.onRangeEndDateChange(date);

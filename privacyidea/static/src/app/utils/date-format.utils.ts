@@ -19,12 +19,18 @@
 
 import { formatDate } from "@angular/common";
 
-// Matches server-supplied "YYYY-MM-DD HH:mm:ss[.fraction][offset]" timestamps that use a
+// Matches server-supplied "YYYY-MM-DD HH:mm[:ss][.fraction][offset]" timestamps that use a
 // space instead of "T", a fractional-seconds part longer than the 3 digits (milliseconds)
 // the Date Time String Format allows, or an offset without a colon. All three are only
 // reliably parsed by new Date() on some engines, so normalize to a spec-conformant ISO
 // string before parsing.
-const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/i;
+// True for a timestamp without Z or offset, as audit entries written before UTC storage carry (server local time).
+export function hasNoTimeZoneOffset(value: string | null | undefined): boolean {
+  const match = value ? LOOSE_ISO_DATE_TIME_REGEX.exec(value.trim()) : null;
+  return !!match && !match[4];
+}
+
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 // Normalizes a server timestamp to a spec-conformant ISO string new Date() parses consistently,
@@ -72,11 +78,100 @@ export function formatLocalTime(value: string | number | Date | null | undefined
 
 /**
  * Converts an ISO 8601 string to the human-readable form the authentication log's editable start_time/end_time filter
- * chips carry, e.g. "2026-06-02T10:00:00.000Z" becomes "2026-06-02 10:00:00 +00:00".
+ * chips and the halves of the audit log's startdate interval chip carry, e.g. "2026-06-02T10:00:00.000Z" becomes
+ * "2026-06-02 10:00:00 +00:00".
  *
  * Shared rather than local to the log page because anything that pre-seeds those chips - the dashboard's activity
  * widget, for one - has to write the exact form the page mirrors back out, or the page reads the chip as an edit.
  */
 export function toFilterDisplay(isoString: string): string {
   return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
+}
+
+// A typed date without a time ("2026", "2026-11" or "2026-11-05") as the local period it names, by its first and its
+// last day. Undefined when the value is no date alone, null when it names an impossible date: the Date constructor
+// rolls an impossible month or day over into the next one, and a typo must not move the bound.
+function typedLocalPeriod(value: string): { first: Date; last: Date } | null | undefined {
+  const match: RegExpExecArray | null = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(value);
+  if (!match) {
+    return undefined;
+  }
+  const [year, month, date]: number[] = [Number(match[1]), Number(match[2] ?? 1), Number(match[3] ?? 1)];
+  const first = new Date(year, month - 1, date);
+  if (first.getMonth() !== month - 1 || first.getDate() !== date) {
+    return null;
+  }
+  const last: Date = match[3] ? first : match[2] ? new Date(year, month, 0) : new Date(year, 11, 31);
+  return { first, last };
+}
+
+/**
+ * Inverse of toFilterDisplay for the editable time filter chips: parses the mirrored display, plain ISO
+ * or a partial typed datetime into an ISO string, returning null for an empty value, for a value that is no ISO 8601
+ * date and time, and for an impossible date.
+ * A value without an offset is the viewer's local time, as everywhere in the WebUI, a date alone included: it is local
+ * midnight, where new Date("2026-11-05") would give UTC midnight. A value with Z or an offset names that instant.
+ */
+export function parseFilterTimestamp(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) {
+    return null;
+  }
+  const period = typedLocalPeriod(trimmed);
+  if (period !== undefined) {
+    return period ? period.first.toISOString() : null;
+  }
+  // Drop the space before the offset of the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form. Only the ISO 8601 date and
+  // time is read: anything else would be guessed by the browser (5.11.2026 as 11 May) and goes to the API as typed.
+  const candidate = trimmed.replace(/\s+(?=[+\-z])/i, "");
+  const match = LOOSE_ISO_DATE_TIME_REGEX.exec(candidate);
+  // An impossible day must not roll over into the next month, as for a date alone.
+  if (!match || typedLocalPeriod(match[1]) === null) {
+    return null;
+  }
+  const date = new Date(normalizeDateTimeString(candidate));
+  return isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/**
+ * parseFilterTimestamp for the end of a range: a typed end that is only a date (a day, a month or a year) includes
+ * that whole local period, so it runs to 23:59:59 of its last day, as a day picked in the range picker does. An end
+ * with a time or an offset reads as in parseFilterTimestamp.
+ */
+export function parseFilterEndTimestamp(value: string | null | undefined): string | null {
+  const period = typedLocalPeriod((value ?? "").trim());
+  if (period !== undefined) {
+    return period ? endOfLocalDayIso(period.last) : null;
+  }
+  return parseFilterTimestamp(value);
+}
+
+/**
+ * Inclusive bounds of the local day a date falls on, as the ISO strings the time filters expect. The
+ * logs render timestamps in the viewer's zone, so a picked or clicked day means that zone's 00:00:00 to 23:59:59.
+ */
+export function startOfLocalDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  return day.toISOString();
+}
+
+export function endOfLocalDayIso(date: Date): string {
+  const day = new Date(date);
+  day.setHours(23, 59, 59, 0);
+  return day.toISOString();
+}
+
+/**
+ * The local day a date falls on at a wall-clock time given as "HH:mm" (as formatClockTime of the clock dial gives it),
+ * at second 0, as an ISO string. Null when the time is empty or malformed.
+ */
+export function atLocalTimeIso(date: Date, time: string): string | null {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/.exec(time);
+  if (!match) {
+    return null;
+  }
+  const day = new Date(date);
+  day.setHours(Number(match[1]), Number(match[2]), 0, 0);
+  return day.toISOString();
 }

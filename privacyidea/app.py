@@ -24,7 +24,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import atexit
-import datetime
 import logging
 import logging.config
 import os
@@ -96,6 +95,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.lib.utils import censor_connect_string, get_remote_user_header_proxies
 from privacyidea.models import db, NodeName
+from privacyidea.models.utils import utc_now
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
                                      get_accepted_language)
 
@@ -480,7 +480,7 @@ def _setup_database_engine_options(app: Flask):
         sys.stderr.write(f"Database engine options: {engine_options}\n")
 
 
-def _setup_node_configuration(app: Flask):
+def _setup_node_configuration(app: Flask) -> None:
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
         # TODO: this is not multi-process-safe since every process runs its own `create_app()`
@@ -526,7 +526,7 @@ def _setup_node_configuration(app: Flask):
         if inspect.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid),
                                       name=pi_node_name,
-                                      lastseen=datetime.datetime.now(datetime.UTC)))
+                                      lastseen=utc_now()))
             db.session.commit()
         else:
             log.warning(f"Could not update node names in db. "

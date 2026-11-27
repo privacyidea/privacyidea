@@ -60,12 +60,13 @@ from privacyidea.lib.clients import create_client
 from privacyidea.lib.token import get_one_token, remove_token
 from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
                                 Realm, RememberedDevice)
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC
 from privacyidea.models.metric_aggregate import MetricAggregate
 from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
                                                           ConditionalAccessPolicyStage, UserLockState)
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
-from ..base import _reset_database
+from ..base import _reset_database, non_utc_time_zone
 from ..base import PWFILE
 
 
@@ -448,7 +449,121 @@ class PIManageAuditTestCase(CliTestCase):
         self.assertEqual(2, res.exit_code, res.output)
         self.assertIn("Could not parse timelimit (five days)", res.output)
 
-    def test_18_dump_refuses_an_audit_module_that_can_not_be_read(self):
+    @contextlib.contextmanager
+    def _unmigrated_audit_database(self, old_entries: int, recent_entries: int) -> Iterator[sa.engine.Engine]:
+        # A copy of tests/testdata/audit.sqlite as PI_AUDIT_SQL_URI. Its table has no column entry_version, as in an
+        # audit database that was not migrated. The entries are written with plain SQL, because the model would
+        # insert the missing column.
+        import shutil
+        import sqlite3
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            audit_file = pathlib.Path(tmp_dir) / "audit.sqlite"
+            shutil.copyfile(pathlib.Path(__file__).parent.parent / "testdata" / "audit.sqlite", audit_file)
+            now = dt.datetime.now()
+            with contextlib.closing(sqlite3.connect(audit_file)) as connection:
+                columns = [column[1] for column in connection.execute("PRAGMA table_info(pidea_audit)")]
+                self.assertNotIn("entry_version", columns)
+                # The fixture holds entries of its own, the tests count only the ones written here.
+                connection.execute("DELETE FROM pidea_audit")
+                for age_days, count in ((10, old_entries), (0.01, recent_entries)):
+                    for _ in range(count):
+                        connection.execute("INSERT INTO pidea_audit (date, action) VALUES (?, ?)",
+                                           ((now - dt.timedelta(days=age_days)).isoformat(sep=" "), "GET /token/"))
+                connection.commit()
+            audit_uri = f"sqlite:///{audit_file}"
+            audit_engine = sa.create_engine(audit_uri)
+            try:
+                with mock.patch.dict(self.app.config, {"PI_AUDIT_SQL_URI": audit_uri}):
+                    yield audit_engine
+            finally:
+                audit_engine.dispose()
+
+    @staticmethod
+    def _entry_count(audit_engine: sa.engine.Engine) -> int:
+        with audit_engine.connect() as connection:
+            return connection.execute(sa.text("SELECT COUNT(*) FROM pidea_audit")).scalar_one()
+
+    def test_18_rotate_dryrun_counts_on_an_unmigrated_audit_db(self):
+        with self._unmigrated_audit_database(old_entries=3, recent_entries=2) as audit_engine:
+            res = self._rotate("--age", "5", "--dryrun")
+            self.assertIsNone(res.exception, res.output)
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertIn("Would delete 3 entries.", res.output)
+
+            res = self._rotate("--highwatermark", "1", "--lowwatermark", "0", "--dryrun")
+            self.assertIsNone(res.exception, res.output)
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertIn("Would delete 5 entries.", res.output)
+
+            self.assertEqual(5, self._entry_count(audit_engine), "--dryrun must not delete anything")
+
+    def test_18a_rotate_by_config_on_an_unmigrated_audit_db(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = pathlib.Path(tmp_dir) / "audit.yaml"
+            # A rule without a condition besides rotate never matches, so the rule needs one that every entry meets.
+            config_file.write_text("- rotate: 1\n  action: .*\n")
+            with self._unmigrated_audit_database(old_entries=3, recent_entries=2) as audit_engine:
+                res = self._rotate("--config", str(config_file), "--dryrun")
+                self.assertIsNone(res.exception, res.output)
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertRegex(res.output, r"Rule .* matched 3 times\.")
+                self.assertEqual(5, self._entry_count(audit_engine), "--dryrun must not delete anything")
+
+                res = self._rotate("--config", str(config_file))
+                self.assertIsNone(res.exception, res.output)
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertRegex(res.output, r"Rule .* matched 3 times\.")
+                self.assertEqual(2, self._entry_count(audit_engine))
+
+    def _insert_entries_around_one_day(self) -> dict[str, int]:
+        # Entries marked with AUDIT_ENTRY_VERSION_UTC are written in UTC, unmarked ones in local time of the server.
+        # Of each kind one entry is 22 hours old and one 26 hours old, each on its own clock.
+        utc = utc_now()
+        local = dt.datetime.now()
+        entry_ids = {}
+        for action, date, entry_version in (("marked_younger", utc - dt.timedelta(hours=22), AUDIT_ENTRY_VERSION_UTC),
+                                            ("marked_older", utc - dt.timedelta(hours=26), AUDIT_ENTRY_VERSION_UTC),
+                                            ("unmarked_younger", local - dt.timedelta(hours=22), None),
+                                            ("unmarked_older", local - dt.timedelta(hours=26), None)):
+            entry = Audit(action=action, date=date, entry_version=entry_version)
+            db.session.add(entry)
+            db.session.flush()
+            entry_ids[action] = entry.id
+        db.session.commit()
+        return entry_ids
+
+    def test_19_rotate_by_age_uses_the_utc_clock(self):
+        # In UTC-6 (UTC-5 in summer) a marked entry looks six hours younger on the local clock, so the one that is
+        # 26 hours old in UTC would be kept by a rotation that measures it in local time.
+        with non_utc_time_zone("America/Chicago"):
+            entry_ids = self._insert_entries_around_one_day()
+
+            res = self._rotate("--age", "1")
+
+        self.assertIsNone(res.exception, res.output)
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual({entry_ids["marked_younger"], entry_ids["unmarked_younger"]}, self._remaining_ids())
+        # The cut-off is told in UTC with its offset
+        self.assertRegex(res.output, r"Deleting entries older than .*\+00:00")
+
+    def test_20_rotate_by_config_uses_the_utc_clock(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = pathlib.Path(tmp_dir) / "audit.yaml"
+            # A rule without a condition besides rotate never matches, so the rule needs one that every entry meets.
+            config_file.write_text("- rotate: 1\n  action: .*\n")
+            with non_utc_time_zone("America/Chicago"):
+                entry_ids = self._insert_entries_around_one_day()
+
+                res = self._rotate("--config", str(config_file))
+
+        self.assertIsNone(res.exception, res.output)
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual({entry_ids["marked_younger"], entry_ids["unmarked_younger"]}, self._remaining_ids())
+        self.assertRegex(res.output, r"Rule .* matched 2 times\.")
+
+    def test_21_dump_refuses_an_audit_module_that_can_not_be_read(self):
         # The logger audit module only writes, it has no entries to dump.
         import unittest.mock as mock
 
@@ -459,7 +574,7 @@ class PIManageAuditTestCase(CliTestCase):
         self.assertIsInstance(res.exception, SystemExit, res.exception)
         self.assertIn("privacyidea.lib.auditmodules.loggeraudit can not be dumped", res.output)
 
-    def test_19_rotate_uses_the_engine_options_of_the_audit_module(self):
+    def test_22_rotate_uses_the_engine_options_of_the_audit_module(self):
         # Like the SQL audit module, rotate takes the engine options from PI_AUDIT_SQL_OPTIONS and falls back to
         # SQLALCHEMY_ENGINE_OPTIONS. pool_pre_ping is understood by every database the tests run against.
         import unittest.mock as mock
@@ -476,7 +591,7 @@ class PIManageAuditTestCase(CliTestCase):
                 self.assertEqual(0, res.exit_code, res.output)
                 self.assertIs(True, create_engine.call_args.kwargs.get("pool_pre_ping"))
 
-    def test_20_rotate_rejects_a_chunksize_below_one(self):
+    def test_23_rotate_rejects_a_chunksize_below_one(self):
         for chunksize in ["0", "-1"]:
             res = self._rotate("--age", "5", "--chunksize", chunksize)
             self.assertEqual(2, res.exit_code, res.output)

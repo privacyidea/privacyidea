@@ -49,18 +49,20 @@ import logging
 import re
 import traceback
 from collections import OrderedDict
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text
+from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text, insert
 from sqlalchemy import inspect as sqlalchemy_inspect
-from sqlalchemy import create_engine
+from sqlalchemy import ColumnElement, Engine, Select, create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import InstrumentedAttribute, sessionmaker, scoped_session, undefer
+from sqlalchemy.sql.compiler import SQLCompiler
 from sqlalchemy.sql.expression import FunctionElement
 
 from privacyidea.config import ConfigKey
-from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
+from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate, TimeInterval
 from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.log import redact
@@ -69,8 +71,12 @@ from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.utils import (is_true, convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
-from privacyidea.models.audit import AUDIT_TABLE_NAME
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC, AUDIT_TABLE_NAME
+from privacyidea.models.utils import utc_now, utc_isoformat
 from privacyidea.models import audit_column_length as column_length
+
+if TYPE_CHECKING:
+    from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -153,31 +159,56 @@ class to_isodate(FunctionElement):
 
 @compiles(to_isodate, 'oracle')
 @compiles(to_isodate, 'postgresql')
-def fn_to_isodate_oracle_pg(element, compiler, **kw):
+def fn_to_isodate_oracle_pg(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # YYYY is the calendar year. IYYY would be the year of the ISO week, which is a different one for up to three
     # days around New Year.
     return f"to_char({compiler.process(element.clauses, **kw)}, 'YYYY-MM-DD HH24:MI:SS')"
 
 
 @compiles(to_isodate, 'sqlite')
-def fn_to_isodate_sqlite(element, compiler, **kw):
+def fn_to_isodate_sqlite(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # sqlite does not have a DateTime type, they are already in ISO format
     return f"{compiler.process(element.clauses, **kw)}"
 
 
 @compiles(to_isodate)
-def fn_to_isodate_default(element, compiler, **kw):
+def fn_to_isodate_default(element: to_isodate, compiler: SQLCompiler, **kw: Any) -> str:
     # %% escapes a literal % past the DBAPI driver's pyformat paramstyle.
     return "date_format({}, '%%Y-%%m-%%d %%H:%%i:%%s')".format(compiler.process(
         element.clauses, **kw))
 
 
-def _now():
+def _now() -> datetime.datetime:
     """
-    Returns the current local date and time.
-    This function is required to be able to mock datetime.now() in tests.
+    Returns the current date and time in UTC as a naive datetime.
+    This function is required to be able to mock the current time in tests.
     """
-    return datetime.datetime.now()
+    return utc_now()
+
+
+def _utc_to_local(value: datetime.datetime | None) -> datetime.datetime | None:
+    """
+    Convert a naive UTC datetime to the naive local time of the server, which is how audit
+    entries without the entry_version column are written.
+
+    :param value: naive UTC datetime or None
+    :return: naive local datetime or None
+    """
+    if value is None:
+        return None
+    return value.replace(tzinfo=datetime.UTC).astimezone().replace(tzinfo=None)
+
+
+def has_entry_version_column(engine: Engine) -> bool:
+    """
+    Whether the audit table has the entry_version column, which marks the entries written in
+    UTC. Only a table whose columns are known and lack it counts as not migrated. If the
+    columns cannot be read, the table is assumed to look like the model.
+
+    :param engine: the SQLAlchemy engine of the audit database
+    """
+    live_length = get_live_column_length(engine)
+    return not live_length or "entry_version" in live_length
 
 
 # The audit table is introspected once per process and database: an Audit object is created
@@ -357,6 +388,57 @@ class Audit(AuditBase):
             self._effective_column_length = effective
         return self._effective_column_length
 
+    @property
+    def has_entry_version(self) -> bool:
+        """
+        Whether the audit table has the entry_version column, which marks the entries
+        written in UTC. Only a table whose columns are known and lack it counts as not
+        migrated. If the columns cannot be read, the table is assumed to look like the
+        model, as it does for the column lengths.
+        """
+        return has_entry_version_column(self.engine)
+
+    @staticmethod
+    def newer_than(delta: datetime.timedelta, has_entry_version: bool = True) -> ColumnElement[bool]:
+        """
+        Condition for audit entries younger than ``delta``. Marked entries are written in UTC
+        and measured on that clock, unmarked entries in local time of the server, as before.
+
+        :param delta: The maximum age of an entry
+        :param has_entry_version: Whether the audit table has the entry_version column. Without
+            it, every entry is unmarked and the column must not be named.
+        """
+        local_condition = LogEntry.date >= datetime.datetime.now() - delta
+        if not has_entry_version:
+            return local_condition
+        return or_(and_(LogEntry.entry_version.isnot(None), LogEntry.date >= _now() - delta),
+                   and_(LogEntry.entry_version.is_(None), local_condition))
+
+    @staticmethod
+    def _time_interval(column: InstrumentedAttribute[datetime.datetime | None], interval: TimeInterval,
+                       has_entry_version: bool = True) -> ColumnElement[bool]:
+        """
+        Condition for audit entries whose ``column`` lies in ``interval``. Marked entries are compared
+        in UTC, unmarked entries against the bounds in local time of the server, as they are written.
+
+        :param column: The timestamp column, ``LogEntry.startdate`` or ``LogEntry.date``
+        :param interval: The interval with bounds as naive UTC datetimes
+        :param has_entry_version: Whether the audit table has the entry_version column
+        """
+        def compare(start: datetime.datetime | None, end: datetime.datetime | None) -> ColumnElement[bool]:
+            conditions = []
+            if start is not None:
+                conditions.append(column >= start)
+            if end is not None:
+                conditions.append(column < end if interval.end_exclusive else column <= end)
+            return and_(*conditions)
+
+        local_condition = compare(_utc_to_local(interval.start), _utc_to_local(interval.end))
+        if not has_entry_version:
+            return local_condition
+        return or_(and_(LogEntry.entry_version.isnot(None), compare(interval.start, interval.end)),
+                   and_(LogEntry.entry_version.is_(None), local_condition))
+
     def _truncate_data(self):
         """
         Shorten every value of self.audit_data to the length the table can hold.
@@ -373,7 +455,8 @@ class Audit(AuditBase):
 
     @staticmethod
     def _create_filter(param: dict, admin_params: dict | None = None,
-                       timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None):
+                       timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None,
+                       has_entry_version: bool = True) -> ColumnElement[bool]:
         """
         create a filter condition for the logentry
 
@@ -388,6 +471,7 @@ class Audit(AuditBase):
         :param timelimit: Only audit entries newer than this timedelta
         :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
             *param*, such as the identity of a user
+        :param has_entry_version: Whether the audit table has the entry_version column
         """
         conditions = []
         param = param or {}
@@ -414,11 +498,15 @@ class Audit(AuditBase):
 
         for search_key in param.keys():
             search_value = param.get(search_key)
-            # Any filter value is compared as a string. Coerce non-string
+            if search_key in ("startdate", "date") and isinstance(search_value, TimeInterval):
+                # A time interval, read by privacyidea.lib.audit.read_time_intervals
+                conditions.append(Audit._time_interval(getattr(LogEntry, search_key), search_value,
+                                                       has_entry_version))
+            # Any other filter value is compared as a string. Coerce non-string
             # scalars so a meaningful filter is never silently dropped, which would
             # widen the audit result set. An empty value or a bare '*' wildcard means
             # "no filter" for this key.
-            if search_value is not None:
+            elif search_value is not None:
                 if not isinstance(search_value, str):
                     search_value = str(search_value)
                 if search_value.strip() == '' or search_value.strip('*') == '':
@@ -474,8 +562,7 @@ class Audit(AuditBase):
             conditions.append(getattr(LogEntry, search_key) == search_value)
 
         if timelimit:
-            conditions.append(LogEntry.date >= datetime.datetime.now() -
-                              timelimit)
+            conditions.append(Audit.newer_than(timelimit, has_entry_version))
         # Combine them with or to a BooleanClauseList
         if conditions:
             filter_condition = and_(*conditions)
@@ -494,7 +581,8 @@ class Audit(AuditBase):
         count = 0
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
-        filter_condition = self._create_filter(param, admin_params, timelimit=timelimit, exact_params=exact_params)
+        filter_condition = self._create_filter(param, admin_params, timelimit=timelimit, exact_params=exact_params,
+                                               has_entry_version=self.has_entry_version)
 
         try:
             count = self.session.query(LogEntry.id).filter(filter_condition).count()
@@ -502,7 +590,7 @@ class Audit(AuditBase):
             self.session.close()
         return count
 
-    def finalize_log(self):
+    def finalize_log(self) -> None:
         """
         This method is used to log the data.
         It should hash the data and do a hash chain and sign the data
@@ -519,41 +607,57 @@ class Audit(AuditBase):
                             "Error occurs in action: {!r}.".format(self.audit_data.get("action")))
                 if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
+            # The start date of a request is taken in UTC, so the duration is measured on that clock
             end_date = _now()
-            if self.audit_data.get("startdate"):
-                duration = end_date - self.audit_data.get("startdate")
+            start_date = self.audit_data.get("startdate")
+            if start_date:
+                duration = end_date - start_date
             else:
                 duration = None
-            le = LogEntry(action=self.audit_data.get("action"),
-                          success=int(self.audit_data.get("success", 0)),
-                          authentication=self.audit_data.get("authentication"),
-                          serial=self.audit_data.get("serial"),
-                          token_type=self.audit_data.get("token_type"),
-                          container_serial=self.audit_data.get("container_serial"),
-                          container_type=self.audit_data.get("container_type"),
-                          user=self.audit_data.get("user"),
-                          realm=self.audit_data.get("realm"),
-                          resolver=self.audit_data.get("resolver"),
-                          administrator=self.audit_data.get("administrator"),
-                          action_detail=self.audit_data.get("action_detail"),
-                          info=self.audit_data.get("info"),
-                          privacyidea_server=self.audit_data.get("privacyidea_server"),
-                          client=self.audit_data.get("client", ""),
-                          user_agent=self.audit_data.get("user_agent"),
-                          user_agent_version=self.audit_data.get("user_agent_version"),
-                          loglevel=self.audit_data.get("log_level"),
-                          clearance_level=self.audit_data.get("clearance_level"),
-                          policies=self.audit_data.get("policies"),
-                          startdate=self.audit_data.get("startdate"),
-                          duration=duration,
-                          date=end_date,
-                          thread_id=self.audit_data.get("thread_id")
-                          )
-            self.session.add(le)
-            self.session.commit()
+            entry_values = dict(action=self.audit_data.get("action"),
+                                success=int(self.audit_data.get("success", 0)),
+                                authentication=self.audit_data.get("authentication"),
+                                serial=self.audit_data.get("serial"),
+                                token_type=self.audit_data.get("token_type"),
+                                container_serial=self.audit_data.get("container_serial"),
+                                container_type=self.audit_data.get("container_type"),
+                                user=self.audit_data.get("user"),
+                                realm=self.audit_data.get("realm"),
+                                resolver=self.audit_data.get("resolver"),
+                                administrator=self.audit_data.get("administrator"),
+                                action_detail=self.audit_data.get("action_detail"),
+                                info=self.audit_data.get("info"),
+                                privacyidea_server=self.audit_data.get("privacyidea_server"),
+                                client=self.audit_data.get("client", ""),
+                                user_agent=self.audit_data.get("user_agent"),
+                                user_agent_version=self.audit_data.get("user_agent_version"),
+                                loglevel=self.audit_data.get("log_level"),
+                                clearance_level=self.audit_data.get("clearance_level"),
+                                policies=self.audit_data.get("policies"),
+                                startdate=start_date,
+                                duration=duration,
+                                date=end_date,
+                                thread_id=self.audit_data.get("thread_id")
+                                )
+            if self.has_entry_version:
+                entry_version = AUDIT_ENTRY_VERSION_UTC
+                le = LogEntry(**entry_values, entry_version=entry_version)
+                self.session.add(le)
+                self.session.commit()
+            else:
+                # An audit table without the entry_version column keeps getting entries the
+                # old way, in local time and without the marker. The ORM would name the
+                # missing column in the INSERT, so the row is written without it and read
+                # back by its id, which leaves the deferred column unloaded.
+                entry_version = None
+                entry_values["date"] = _utc_to_local(end_date)
+                entry_values["startdate"] = _utc_to_local(start_date)
+                result = self.session.execute(insert(LogEntry.__table__).values(**entry_values))
+                self.session.commit()
+                le = self.session.get(LogEntry, result.inserted_primary_key[0])
             # Add the signature
             if self.sign_data and self.sign_object:
-                s = self._log_to_string(le)
+                s = self._log_to_string(le, entry_version)
                 sign = self.sign_object.sign(s)
                 le.signature = sign
                 self.session.merge(le)
@@ -663,7 +767,7 @@ class Audit(AuditBase):
         return res
 
     @staticmethod
-    def _log_to_string(le):
+    def _log_to_string(le: LogEntry, entry_version: int | None = None) -> str:
         """
         This function creates a string from the logentry so
         that this string can be signed.
@@ -673,9 +777,12 @@ class Audit(AuditBase):
 
         :param le: LogEntry object containing the data
         :type le: LogEntry
+        :param entry_version: The marker of the entry. It is passed rather than read from the
+            entry, because the column is deferred and missing in an audit table that was not
+            migrated. Entries without a marker keep the string they were signed with.
         :rtype str
         """
-        # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
+        # TODO: Add thread_id.
         s = f"id={le.id},date={le.date},action={le.action},succ={le.success},serial={le.serial}," \
             f"t={le.token_type},u={le.user},r={le.realm},adm={le.administrator},ad={le.action_detail}," \
             f"i={le.info},ps={le.privacyidea_server},c={le.client},l={le.loglevel},cl={le.clearance_level}"
@@ -688,7 +795,28 @@ class Audit(AuditBase):
             s += f",c_serial={le.container_serial}"
         if le.container_type:
             s += f",ct={le.container_type}"
+        if entry_version is not None:
+            s += f",v={entry_version}"
         return s
+
+    def _select_entries(self) -> Select[tuple[LogEntry]]:
+        """
+        Select statement for whole audit entries, which loads the marker along with them if the
+        audit table has it. Without the column, the marker stays unloaded and must not be read.
+        """
+        stmt = select(LogEntry)
+        if self.has_entry_version:
+            stmt = stmt.options(undefer(LogEntry.entry_version))
+        return stmt
+
+    def _entry_version(self, audit_entry: LogEntry) -> int | None:
+        """
+        The marker of an audit entry, or None for an entry written in local time or read from
+        an audit table without the column
+        """
+        if not self.has_entry_version:
+            return None
+        return audit_entry.entry_version
 
     @staticmethod
     def _get_logentry_attribute(key):
@@ -718,8 +846,8 @@ class Audit(AuditBase):
                     'container_type': LogEntry.container_type}
         return sortname.get(key)
 
-    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user=None,
-                      timelimit: datetime.timedelta | None = None):
+    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user: "User | None" = None,
+                      timelimit: datetime.timedelta | None = None) -> Iterator[str]:
         """
         Returns the audit log as csv file.
 
@@ -735,7 +863,8 @@ class Audit(AuditBase):
         :param user: The user, who issued the request
         :return: None. It yields results as a generator
         """
-        filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit)
+        filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit,
+                                               has_entry_version=self.has_entry_version)
 
         # The rows are written through the csv module so that a value containing a comma, a quote
         # or a line break is quoted and escaped the way every CSV reader expects, instead of being
@@ -765,7 +894,7 @@ class Audit(AuditBase):
         last_date = None
         last_id = None
         while True:
-            stmt = select(LogEntry).where(filter_condition)
+            stmt = self._select_entries().where(filter_condition)
             if last_date is not None:
                 # The date is not unique, so the id breaks the tie and makes the order total.
                 # Written out rather than as a row-value comparison, which Oracle does not have.
@@ -788,7 +917,8 @@ class Audit(AuditBase):
                 # export and undo the point of reading it in rounds.
                 self.session.expunge(entry)
 
-    def get_count(self, search_dict, timedelta=None, success=None, exact_params: dict[str, str] | None = None):
+    def get_count(self, search_dict: dict, timedelta: datetime.timedelta | None = None, success: bool | None = None,
+                  exact_params: dict[str, str] | None = None) -> int:
         # create filter condition
         filter_condition = self._create_filter(search_dict, exact_params=exact_params)
         conditions = [filter_condition]
@@ -796,14 +926,13 @@ class Audit(AuditBase):
             conditions.append(LogEntry.success == int(is_true(success)))
 
         if timedelta is not None:
-            conditions.append(LogEntry.date >= datetime.datetime.now() -
-                              timedelta)
+            conditions.append(self.newer_than(timedelta, self.has_entry_version))
 
         if conditions:
             filter_condition = and_(*conditions)
         else:
             filter_condition = and_(True, *conditions)
-        log_count = self.session.query(LogEntry).filter(filter_condition).count()
+        log_count = self.session.query(LogEntry.id).filter(filter_condition).count()
 
         return log_count
 
@@ -863,7 +992,7 @@ class Audit(AuditBase):
 
     def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
                      sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None,
-                     exact_params: dict[str, str] | None = None):
+                     exact_params: dict[str, str] | None = None) -> Iterator[LogEntry]:
         """
         This function returns the audit log as an iterator on the result
 
@@ -890,8 +1019,9 @@ class Audit(AuditBase):
 
             # create filter condition
             filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit,
-                                                   exact_params=exact_params)
-            stmt = select(LogEntry).where(filter_condition)
+                                                   exact_params=exact_params,
+                                                   has_entry_version=self.has_entry_version)
+            stmt = self._select_entries().where(filter_condition)
 
             if sortorder == "desc":
                 stmt = stmt.order_by(
@@ -927,9 +1057,12 @@ class Audit(AuditBase):
     def audit_entry_to_dict(self, audit_entry: LogEntry,
                             existing_neighbour_ids: set[int] | None = None) -> OrderedDict:
         sig = None
+        entry_version = self._entry_version(audit_entry)
+        # Marked entries are written in UTC and say so, the others are returned as before
+        format_date = utc_isoformat if entry_version is not None else datetime.datetime.isoformat
         if self.sign_data:
             try:
-                sig = self.sign_object.verify(self._log_to_string(audit_entry),
+                sig = self.sign_object.verify(self._log_to_string(audit_entry, entry_version),
                                               audit_entry.signature,
                                               self.verify_old_sig)
             except UnicodeDecodeError as _e:
@@ -943,7 +1076,7 @@ class Audit(AuditBase):
         # is_not_missing = True
         audit_dict = OrderedDict()
         audit_dict['number'] = audit_entry.id
-        audit_dict['date'] = audit_entry.date.isoformat()
+        audit_dict['date'] = format_date(audit_entry.date)
         audit_dict['sig_check'] = "OK" if sig else "FAIL"
         audit_dict['missing_line'] = "OK" if is_not_missing else "FAIL"
         audit_dict['action'] = audit_entry.action
@@ -966,7 +1099,7 @@ class Audit(AuditBase):
         audit_dict['user_agent_version'] = audit_entry.user_agent_version
         audit_dict['log_level'] = audit_entry.loglevel
         audit_dict['clearance_level'] = audit_entry.clearance_level
-        audit_dict['startdate'] = audit_entry.startdate.isoformat() if audit_entry.startdate else None
+        audit_dict['startdate'] = format_date(audit_entry.startdate) if audit_entry.startdate else None
         audit_dict['duration'] = audit_entry.duration.total_seconds() if audit_entry.duration else None
         audit_dict['thread_id'] = audit_entry.thread_id
         return audit_dict

@@ -24,6 +24,8 @@ import { PiResponse } from "@app/app.component";
 import { AuditDownloadDialogComponent } from "@components/logs/audit/audit-download-dialog/audit-download-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
+import { parseFilterEndTimestamp, parseFilterTimestamp } from "@utils/date-format.utils";
+import { splitExactMatch } from "@utils/filter.utils";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -98,6 +100,30 @@ const apiFilterKeys = [
   "container_type"
 ];
 
+// An emptied or removed chip drops the bound, an unparsable one is null as well and requestFilterParams sends it as
+// typed. The end of an interval is read by parseFilterEndTimestamp, so a typed end that is only a date includes that
+// whole local day.
+function boundFromChip(
+  chip: string | undefined,
+  parse: (value: string) => string | null = parseFilterTimestamp
+): string | null {
+  if (!chip?.trim()) {
+    return null;
+  }
+  return parse(chip) ?? null;
+}
+
+// A startdate or date value with a "/" is an ISO 8601 time interval "<start>/<end>", either end may be empty. Any other
+// value is a text filter. A leading "=" has no meaning for an interval.
+export function timeInterval(value: string | undefined): { start: string; end: string } | null {
+  const text = splitExactMatch((value ?? "").trim()).text;
+  const slash = text.indexOf("/");
+  if (slash < 0) {
+    return null;
+  }
+  return { start: text.slice(0, slash), end: text.slice(slash + 1) };
+}
+
 const apiFilterKeyMap: Record<string, string> = {
   action: "action",
   success: "success",
@@ -125,6 +151,9 @@ const apiFilterKeyMap: Record<string, string> = {
 export interface AuditServiceInterface extends FilterableTableServiceInterface {
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
   isDownloading: WritableSignal<boolean>;
+  timestampFrom: WritableSignal<string | null>;
+  timestampTo: WritableSignal<string | null>;
+  rangeTimeMode: WritableSignal<boolean>;
 
   downloadCSV(): void;
 
@@ -148,11 +177,50 @@ export class AuditService extends FilterableTableService implements AuditService
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
 
+  // The time range sent as the startdate interval. The startdate chip in the filter text carries it as
+  // "<start>/<end>", so a typed edit of a half moves its bound, an emptied half drops it and an unparsable half is
+  // null, requestFilterParams sends it as typed. A startdate chip without "/" is a text filter and no range. The chip is the source of
+  // truth: every filter change re-reads it, so a bound set without its chip does not outlive the next filter change.
+  // The range picker and the date cell filter write signals and chip together.
+  timestampFrom = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("startdate"),
+    computation: (chip) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.start) : null;
+    }
+  });
+  timestampTo = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("startdate"),
+    computation: (chip) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.end, parseFilterEndTimestamp) : null;
+    }
+  });
+
+  // The bounds of a typed date interval chip ("<start>/<end>" on date), read like the startdate halves: a bound
+  // without an offset is the viewer's local time, an emptied half drops it and an unparsable half is null, sent as typed.
+  private readonly dateFrom = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("date"),
+    computation: (chip) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.start) : null;
+    }
+  });
+  private readonly dateTo = linkedSignal<string | undefined, string | null>({
+    source: () => this.activeFilter().getValueOfKey("date"),
+    computation: (chip) => {
+      const interval = timeInterval(chip);
+      return interval ? boundFromChip(interval.end, parseFilterEndTimestamp) : null;
+    }
+  });
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.activeFilter(),
       pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl()
+      routeUrl: this.contentService.routeUrl(),
+      timestampFrom: this.timestampFrom(),
+      timestampTo: this.timestampTo()
     }),
     computation: () => 1
   });
@@ -172,18 +240,44 @@ export class AuditService extends FilterableTableService implements AuditService
       params: {
         page_size: this.pageSize(),
         page: this.pageIndex(),
-        ...this.filterParams()
+        ...this.requestFilterParams()
       }
     };
   });
 
   isDownloading = signal(false);
 
+  // The "Time" checkbox of the range picker: off applies whole days on click, on picks a time on a clock for each
+  // clicked day. Kept here so it survives leaving and reopening the audit log within the session.
+  rangeTimeMode = signal(false);
+
   constructor() {
     super();
     effect(() => {
       this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
     });
+  }
+
+  // The filter parameters of search and download. A startdate interval chip goes out as "<from>/<to>" in UTC with open
+  // ends left empty, or not at all when both halves are empty, instead of the wildcard-wrapped chip text. A typed date
+  // interval goes out the same way. A half the WebUI cannot read is sent as typed, so the server refuses it.
+  private requestFilterParams(): Record<string, string> {
+    const params = { ...this.filterParams() };
+    const intervalParam = (key: string, from: string | null, to: string | null): void => {
+      const interval = timeInterval(this.activeFilter().getValueOfKey(key));
+      if (!interval) {
+        return;
+      }
+      delete params[key];
+      const start = from ?? interval.start.trim();
+      const end = to ?? interval.end.trim();
+      if (start || end) {
+        params[key] = `${start}/${end}`;
+      }
+    };
+    intervalParam("date", this.dateFrom(), this.dateTo());
+    intervalParam("startdate", this.timestampFrom(), this.timestampTo());
+    return params;
   }
 
   downloadCSV(): void {
@@ -213,7 +307,7 @@ export class AuditService extends FilterableTableService implements AuditService
   private downloadSubscription?: Subscription;
   private executeDownload(): void {
     this.isDownloading.set(true);
-    const params = new HttpParams({ fromObject: this.filterParams() });
+    const params = new HttpParams({ fromObject: this.requestFilterParams() });
     this.downloadSubscription = this.http
       .get(this.auditBaseUrl + "audit.csv", {
         headers: this.authService.getHeaders(),

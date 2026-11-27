@@ -28,7 +28,6 @@ The code is tested in tests/test_lib_clientapplication.py.
 
 import logging
 import traceback
-from datetime import datetime
 
 from netaddr import IPAddress
 from sqlalchemy import func, select
@@ -38,6 +37,7 @@ from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from .log import log_with
 from ..models import ClientApplication, db
+from ..models.utils import utc_isoformat, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ def _written_within(client_key: tuple, interval: int) -> bool:
     next request instead of being skipped for a whole interval.
     """
     last_write = get_app_local_store().get(_LAST_WRITE_KEY, {}).get(client_key)
-    return last_write is not None and (datetime.now() - last_write).total_seconds() < interval
+    return last_write is not None and (utc_now() - last_write).total_seconds() < interval
 
 
 def _note_write(client_key: tuple, interval: int) -> None:
@@ -98,7 +98,7 @@ def _note_write(client_key: tuple, interval: int) -> None:
         # Nothing is being skipped, so there is nothing to remember
         return
     last_writes = get_app_local_store().setdefault(_LAST_WRITE_KEY, {})
-    now = datetime.now()
+    now = utc_now()
     last_writes[client_key] = now
     if len(last_writes) <= _MAX_TRACKED_CLIENTS:
         return
@@ -124,7 +124,7 @@ def _note_write(client_key: tuple, interval: int) -> None:
 
 
 @log_with(log)
-def save_clientapplication(ip: IPAddress | str, clienttype: str):
+def save_clientapplication(ip: IPAddress | str, clienttype: str) -> None:
     """
     Save (or update) the IP and the clienttype to the database table.
 
@@ -151,7 +151,7 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
     write_interval = _write_interval_seconds()
     if write_interval and _written_within(client_key, write_interval):
         return
-    last_seen = datetime.now()
+    last_seen = utc_now()
     # TODO: resolve hostname
 
     try:
@@ -179,7 +179,8 @@ def save_clientapplication(ip: IPAddress | str, clienttype: str):
 
 
 @log_with(log)
-def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
+def get_clientapplication(ip: IPAddress | str | None = None, clienttype: str | None = None,
+                          group_by: str = "clienttype") -> dict:
     """
     Return ClientApplications.
 
@@ -221,9 +222,9 @@ def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
         if group_by.lower() == "clienttype":
             clients.setdefault(row.clienttype, []).append({"ip": row.ip,
                                                            "hostname": row.hostname,
-                                                           "lastseen": row.max_lastseen})
+                                                           "lastseen": utc_isoformat(row.max_lastseen)})
         else:
             clients.setdefault(row.ip, []).append({"hostname": row.hostname,
                                                    "clienttype": row.clienttype,
-                                                   "lastseen": row.max_lastseen})
+                                                   "lastseen": utc_isoformat(row.max_lastseen)})
     return clients

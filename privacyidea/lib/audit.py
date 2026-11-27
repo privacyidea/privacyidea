@@ -53,12 +53,17 @@ which creates a signature of the audit data and writes the data to the audit
 storage.
 """
 
+import datetime
 import logging
+import re
 from collections import OrderedDict
 
 from privacyidea.config import ConfigKey
+from privacyidea.lib.auditmodules.base import TimeInterval
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import parse_timedelta, get_module_class
+from privacyidea.lib.params import parse_timestamp
+from privacyidea.lib.utils import naive_utc, parse_timedelta, get_module_class
 
 log = logging.getLogger(__name__)
 
@@ -83,8 +88,61 @@ def getAudit(config, startdate=None):
     return audit
 
 
+# Whitespace before an offset at the end of a timestamp, as in the readable form "2026-11-05 00:00:00 +01:00"
+_SPACE_BEFORE_OFFSET = re.compile(r"\s+(?=(Z|[+-]\d{2}(:?\d{2})?)$)")
+
+
+def _read_interval_bound(value: str, key: str) -> datetime.datetime | None:
+    """
+    Read one bound of a time interval as naive UTC datetime. An empty bound is None, a bound without
+    an offset is UTC.
+
+    :raises ParameterError: if the bound is not a valid ISO 8601 timestamp
+    """
+    value = _SPACE_BEFORE_OFFSET.sub("", value.strip())
+    if not value:
+        return None
+    return naive_utc(parse_timestamp(value, key))
+
+
+def read_time_intervals(param: dict) -> None:
+    """
+    Replace a value of ``startdate`` or ``date`` that is an ISO 8601 time interval ``start/end`` in the
+    filter parameters by a :class:`~privacyidea.lib.auditmodules.base.TimeInterval`. A value without a
+    ``/`` stays a text filter. Either end may be empty, a ``/`` alone is no filter and is removed. A bound
+    is an ISO 8601 timestamp, also in the readable form with spaces, and a bound without an offset is
+    UTC. An end in whole seconds includes its whole second.
+
+    :param param: The filter parameters, changed in place
+    :raises ParameterError: if an interval has more than one ``/``, a leading ``!``, a ``*``, a bound
+        that is not a valid ISO 8601 timestamp or a start after its end
+    """
+    for key in ("startdate", "date"):
+        value = param.get(key)
+        if not isinstance(value, str) or "/" not in value:
+            continue
+        value = value.strip()
+        if value.count("/") > 1 or value.startswith("!") or "*" in value:
+            raise ParameterError(f"Invalid ISO 8601 time interval for {key}: {value!r}. A time interval "
+                                 f"is start/end and can not be negated or contain wildcards.")
+        start_value, end_value = value.split("/")
+        start = _read_interval_bound(start_value, key)
+        end = _read_interval_bound(end_value, key)
+        if start is None and end is None:
+            param.pop(key)
+            continue
+        end_exclusive = end is not None and end.microsecond == 0
+        if end_exclusive:
+            end += datetime.timedelta(seconds=1)
+        if start is not None and end is not None and (start >= end if end_exclusive else start > end):
+            raise ParameterError(f"Invalid ISO 8601 time interval for {key}: {value!r}. The start of a time "
+                                 f"interval can not lie after its end.")
+        param[key] = TimeInterval(start, end, end_exclusive)
+
+
 @log_with(log)
-def search(config, param=None, admin_params: dict | None = None, exact_params: dict[str, str] | None = None):
+def search(config: dict, param: dict | None = None, admin_params: dict | None = None,
+           exact_params: dict[str, str] | None = None) -> dict:
     """
     Returns a list of audit entries, supports pagination
 
@@ -119,6 +177,7 @@ def search(config, param=None, admin_params: dict | None = None, exact_params: d
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
+    read_time_intervals(param)
     if "hidden_columns" in param:
         hidden_columns = param["hidden_columns"]
         del param["hidden_columns"]

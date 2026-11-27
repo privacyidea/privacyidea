@@ -47,6 +47,7 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.models.utils import utc_now, utc_isoformat
 import datetime
 
 log = logging.getLogger(__name__)
@@ -433,7 +434,8 @@ class FourEyesTokenClass(TokenClass):
         self.challenge_janitor()
         return r_success
 
-    def create_challenge(self, transactionid=None, options=None):
+    def create_challenge(self, transactionid: str | None = None,
+                         options: dict | None = None) -> tuple[bool, str, str | None, dict]:
         """
         This method creates a challenge, which is submitted to the user.
         The submitted challenge will be preserved in the challenge
@@ -474,9 +476,8 @@ class FourEyesTokenClass(TokenClass):
                                         session=options.get("session"),
                                         challenge=message,
                                         validitytime=validity)
-        expiry_date = datetime.datetime.now() + \
-                      datetime.timedelta(seconds=validity)
-        reply_dict = {'attributes': {'valid_until': f"{expiry_date!s}"}}
+        expiry_date = utc_now() + datetime.timedelta(seconds=validity)
+        reply_dict = {'attributes': {'valid_until': utc_isoformat(expiry_date)}}
         return True, message, db_challenge.transaction_id, reply_dict
 
     def is_challenge_request(self, passw, user=None, options=None):

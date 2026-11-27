@@ -6,12 +6,16 @@ This tests the files
 import csv
 import datetime
 import io
+import json
 import os
+import shutil
+import sqlite3
+import tempfile
 import types
 import unittest
 
 from unittest import mock
-from sqlalchemy import event, text
+from sqlalchemy import Row, event, text, update
 from sqlalchemy.pool import NullPool
 
 from privacyidea.config import TestingConfig
@@ -21,12 +25,15 @@ from privacyidea.lib.auditmodules.loggeraudit import Audit as LoggerAudit
 from privacyidea.lib.auditmodules import sqlaudit
 from privacyidea.lib.auditmodules.sqlaudit import Audit as SQLAudit, column_length, LogEntry
 from privacyidea.lib.utils import AUTH_RESPONSE
-from .base import MyTestCase, OverrideConfigTestCase
-from testfixtures import log_capture
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC
+from privacyidea.models.utils import utc_now, utc_isoformat
+from .base import MyTestCase, OverrideConfigTestCase, non_utc_time_zone
+from testfixtures import LogCapture, log_capture
 
 PUBLIC = "tests/testdata/public.pem"
 PRIVATE = "tests/testdata/private.pem"
 AUDIT_DB = 'sqlite:///tests/testdata//audit.sqlite'
+AUDIT_DB_FILE = 'tests/testdata/audit.sqlite'
 
 
 class AuditTestCase(MyTestCase):
@@ -239,12 +246,12 @@ class AuditTestCase(MyTestCase):
                         "success": False})
         self.Audit.finalize_log()
 
-        # remember the current time for later
-        current_timestamp = datetime.datetime.now()
+        # remember the current time for later, the entries are written in UTC
+        current_timestamp = utc_now()
 
         # create a new audit log entry 2 seconds after the previous ones
-        with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_dt:
-            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2)
+        with mock.patch('privacyidea.lib.auditmodules.base.utc_now',
+                        return_value=current_timestamp + datetime.timedelta(seconds=2)):
             self.Audit = getAudit(self.app.config)
             self.Audit.log({"action": "/validate/check",
                             "success": True})
@@ -258,8 +265,8 @@ class AuditTestCase(MyTestCase):
         # This is necessary because when doing unit tests on a CI server,
         # things will sometimes go slower than expected, which will
         # cause the very last assertion to fail.
-        with mock.patch('datetime.datetime') as mock_dt:
-            mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2.5)
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit._now",
+                        return_value=current_timestamp + datetime.timedelta(seconds=2.5)):
 
             # get 6 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
@@ -750,7 +757,222 @@ class AuditTestCase(MyTestCase):
             audit._truncate_data()
             self.assertEqual(500, len(audit.audit_data.get("serial")))
 
-    def test_17_add_to_log(self):
+    def _latest_row(self, audit: SQLAudit) -> Row | None:
+        """Date, start date, duration and marker of the newest audit row, read without the ORM entity"""
+        return audit.session.query(LogEntry.date, LogEntry.startdate, LogEntry.duration,
+                                   LogEntry.entry_version).order_by(LogEntry.id.desc()).first()
+
+    def test_17_unmigrated_audit_db_keeps_writing_entries(self):
+        # A separate audit database that does not have the entry_version column yet must keep accepting entries
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            db_file = os.path.join(tmp_dir, "audit.sqlite")
+            shutil.copyfile(AUDIT_DB_FILE, db_file)
+            # Do not depend on what the fixture holds
+            connection = sqlite3.connect(db_file)
+            try:
+                connection.execute("DELETE FROM pidea_audit")
+                connection.commit()
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(pidea_audit)")]
+            finally:
+                connection.close()
+            self.assertNotIn("entry_version", columns)
+
+            config = self.app.config.copy()
+            config["PI_AUDIT_SQL_URI"] = f"sqlite:///{db_file}"
+            sqlaudit._live_column_length.clear()
+            audit = getAudit(config)
+            audit.log({"action": "unmigrated_entry", "success": True})
+            audit.finalize_log()
+
+            self.assertEqual(1, audit.get_count({}))
+            audit_log = audit.search({"action": "unmigrated_entry"})
+            self.assertEqual(1, audit_log.total)
+            self.assertEqual("OK", audit_log.auditdata[0].get("sig_check"))
+            audit.engine.dispose()
+
+            # The table was not changed, so no marker was written
+            connection = sqlite3.connect(db_file)
+            try:
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(pidea_audit)")]
+            finally:
+                connection.close()
+            self.assertNotIn("entry_version", columns)
+            sqlaudit._live_column_length.clear()
+
+    def test_17a_unreadable_columns_count_as_migrated(self):
+        # When the columns of the audit table are unknown, the marker column is assumed to exist
+        with non_utc_time_zone(), mock.patch("privacyidea.lib.auditmodules.sqlaudit.get_live_column_length",
+                                             return_value={}):
+            audit = getAudit(self.app.config)
+            audit.log({"action": "unreadable_columns"})
+            audit.finalize_log()
+            now = utc_now()
+            row = self._latest_row(self.Audit)
+        self.assertIsNotNone(row)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, row.entry_version)
+        self.assertLess(abs(now - row.date), datetime.timedelta(seconds=10))
+
+    def test_18_entries_are_written_in_utc_and_marked(self):
+        with non_utc_time_zone():
+            audit = getAudit(self.app.config)
+            audit.log({"action": "utc_entry"})
+            audit.finalize_log()
+            now = utc_now()
+            row = self._latest_row(self.Audit)
+        self.assertIsNotNone(row)
+        limit = datetime.timedelta(seconds=10)
+        self.assertLess(abs(now - row.date), limit)
+        self.assertLess(abs(now - row.startdate), limit)
+        self.assertLess(row.duration, limit)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, row.entry_version)
+
+    def _write_entry(self, action: str, marked: bool = True) -> Row:
+        """Write one entry through a fresh audit object, marked in UTC or the old way in local time"""
+        audit = getAudit(self.app.config)
+        audit.log({"action": action, "success": True})
+        if marked:
+            audit.finalize_log()
+        else:
+            # The way an audit table without the entry_version column is written
+            with mock.patch.object(SQLAudit, "has_entry_version", new_callable=mock.PropertyMock,
+                                   return_value=False):
+                audit.finalize_log()
+        return self.Audit.session.query(LogEntry.id, LogEntry.date, LogEntry.startdate,
+                                        LogEntry.entry_version).filter(LogEntry.action == action).one()
+
+    def _set_entry_version(self, entry_id: int, value: int | None) -> None:
+        self.Audit.session.execute(update(LogEntry).where(LogEntry.id == entry_id).values(entry_version=value))
+        self.Audit.session.commit()
+
+    def _sig_check(self, action: str) -> str | None:
+        audit_log = getAudit(self.app.config).search({"action": action})
+        self.assertEqual(1, audit_log.total, action)
+        return audit_log.auditdata[0].get("sig_check")
+
+    def test_19_changing_the_marker_breaks_the_signature(self):
+        marked = self._write_entry("marked_entry")
+        unmarked = self._write_entry("unmarked_entry", marked=False)
+        self._write_entry("untouched_unmarked_entry", marked=False)
+        self.assertEqual(AUDIT_ENTRY_VERSION_UTC, marked.entry_version)
+        self.assertIsNone(unmarked.entry_version)
+        self.assertEqual("OK", self._sig_check("marked_entry"))
+        self.assertEqual("OK", self._sig_check("unmarked_entry"))
+
+        # Removing the marker would make a UTC entry read as local time
+        self._set_entry_version(marked.id, None)
+        self.assertEqual("FAIL", self._sig_check("marked_entry"))
+        # Setting the marker would make a local time entry read as UTC
+        self._set_entry_version(unmarked.id, AUDIT_ENTRY_VERSION_UTC)
+        self.assertEqual("FAIL", self._sig_check("unmarked_entry"))
+        # An old entry nobody changed keeps verifying
+        self.assertEqual("OK", self._sig_check("untouched_unmarked_entry"))
+
+    def test_20_marked_entries_are_returned_with_utc_offset(self):
+        marked = self._write_entry("marked_entry")
+        unmarked = self._write_entry("unmarked_entry", marked=False)
+        self.assertIsNotNone(marked.startdate)
+        self.assertIsNotNone(unmarked.startdate)
+
+        audit_log = self.Audit.search({}, page_size=10)
+        by_action = {entry.get("action"): entry for entry in audit_log.auditdata}
+        # A marked entry is UTC and says so
+        self.assertEqual(utc_isoformat(marked.date), by_action["marked_entry"].get("date"))
+        self.assertEqual(utc_isoformat(marked.startdate), by_action["marked_entry"].get("startdate"))
+        # An old entry is returned as before, without an offset
+        self.assertEqual(unmarked.date.isoformat(), by_action["unmarked_entry"].get("date"))
+        self.assertEqual(unmarked.startdate.isoformat(), by_action["unmarked_entry"].get("startdate"))
+
+        rows = list(csv.reader(io.StringIO("".join(self.Audit.csv_generator()))))
+        columns = list(self.Audit.audit_entry_to_dict(self.Audit.session.query(LogEntry).first()).keys())
+        csv_by_action = {row[columns.index("action")]: row for row in rows}
+        self.assertEqual(utc_isoformat(marked.date), csv_by_action["marked_entry"][columns.index("date")])
+        self.assertEqual(utc_isoformat(marked.startdate),
+                         csv_by_action["marked_entry"][columns.index("startdate")])
+        self.assertEqual(unmarked.date.isoformat(), csv_by_action["unmarked_entry"][columns.index("date")])
+        self.assertEqual(unmarked.startdate.isoformat(),
+                         csv_by_action["unmarked_entry"][columns.index("startdate")])
+
+    def _insert_entries_of_different_age(self) -> None:
+        """
+        A marked entry is measured against the UTC clock, an old one against the local clock of
+        the server. One young and one old entry of each kind, the young ones are one hour old,
+        the old ones three hours.
+        """
+        utc = utc_now()
+        local = datetime.datetime.now()
+        hour = datetime.timedelta(hours=1)
+        self.Audit.session.bulk_insert_mappings(LogEntry, [
+            {"action": "young_marked", "date": utc - hour, "entry_version": AUDIT_ENTRY_VERSION_UTC, "signature": ""},
+            {"action": "old_marked", "date": utc - 3 * hour, "entry_version": AUDIT_ENTRY_VERSION_UTC, "signature": ""},
+            {"action": "young_unmarked", "date": local - hour, "entry_version": None, "signature": ""},
+            {"action": "old_unmarked", "date": local - 3 * hour, "entry_version": None, "signature": ""}])
+        self.Audit.session.commit()
+
+    def test_21_timelimit_uses_the_utc_clock_for_marked_entries(self):
+        with non_utc_time_zone():
+            self._insert_entries_of_different_age()
+            audit_log = self.Audit.search({}, page_size=10, timelimit=datetime.timedelta(hours=2))
+        self.assertEqual({"young_marked", "young_unmarked"},
+                         {entry.get("action") for entry in audit_log.auditdata})
+        self.assertEqual(2, audit_log.total)
+
+    def test_22_get_count_uses_the_utc_clock_for_marked_entries(self):
+        with non_utc_time_zone():
+            self._insert_entries_of_different_age()
+            count = self.Audit.get_count({}, timedelta=datetime.timedelta(hours=2))
+        self.assertEqual(2, count)
+
+    def test_23_time_interval_values_are_parsed(self):
+        from privacyidea.lib.audit import read_time_intervals
+        from privacyidea.lib.auditmodules.base import TimeInterval
+        from privacyidea.lib.error import ParameterError
+
+        def read(value: str) -> TimeInterval | str | None:
+            param = {"startdate": value, "date": value, "action": "enroll"}
+            read_time_intervals(param)
+            self.assertEqual("enroll", param["action"])
+            self.assertEqual(param.get("startdate"), param.get("date"))
+            return param.get("startdate", "removed")
+
+        # The ISO 8601 form and the readable form with a space name the same interval. An end in whole
+        # seconds includes its whole second, so it is moved one second on and compared exclusively.
+        whole_day = TimeInterval(datetime.datetime(2026, 11, 4, 23), datetime.datetime(2026, 11, 5, 23), True)
+        self.assertEqual(whole_day, read("2026-11-05T00:00:00+01:00/2026-11-05T23:59:59+01:00"))
+        self.assertEqual(whole_day, read("2026-11-05 00:00:00 +01:00/2026-11-05 23:59:59 +01:00"))
+        # Open ends, a bound without an offset is UTC, an end with a fraction of a second is inclusive
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5), None, False), read("2026-11-05 00:00:00 Z/"))
+        self.assertEqual(TimeInterval(None, datetime.datetime(2026, 11, 5, 10, 0, 0, 500000), False),
+                         read("/2026-11-05T10:00:00.5Z"))
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10), datetime.datetime(2026, 11, 5, 11, 0, 1),
+                                      True),
+                         read("2026-11-05T10:00:00/2026-11-05 11:00:00"))
+        # A slash alone is no filter, a value without a slash stays a text filter
+        self.assertEqual("removed", read("/"))
+        self.assertEqual("2026-11-05*", read("2026-11-05*"))
+
+        for value in ("foo/", "!a/b", "*/2026-11-05", "a/b/c"):
+            for key in ("startdate", "date"):
+                with self.assertRaises(ParameterError, msg=(key, value)):
+                    read_time_intervals({key: value})
+        with self.assertRaisesRegex(ParameterError, "Invalid ISO 8601 timestamp for date"):
+            read_time_intervals({"date": "foo/"})
+
+        # A start after the end is refused, a start equal to the end is allowed
+        for key in ("startdate", "date"):
+            with self.assertRaisesRegex(ParameterError, f"Invalid ISO 8601 time interval for {key}.*start .*after"):
+                read_time_intervals({key: "2026-11-05T11:00:00Z/2026-11-05T10:59:59Z"})
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10), datetime.datetime(2026, 11, 5, 10, 0, 1),
+                                      True),
+                         read("2026-11-05T10:00:00Z/2026-11-05T10:00:00Z"))
+        # The end includes its whole second, so a start within that second is allowed
+        self.assertEqual(TimeInterval(datetime.datetime(2026, 11, 5, 10, 0, 0, 500000),
+                                      datetime.datetime(2026, 11, 5, 10, 0, 1), True),
+                         read("2026-11-05T10:00:00.5Z/2026-11-05T10:00:00Z"))
+        # but not a start at the next second
+        with self.assertRaisesRegex(ParameterError, "Invalid ISO 8601 time interval for date.*start .*after"):
+            read_time_intervals({"date": "2026-11-05T10:00:01Z/2026-11-05T10:00:00Z"})
+
+    def test_24_add_to_log(self):
         self.Audit.log({"info": "first"})
         self.Audit.add_to_log({"info": "second"}, add_with_comma=True)
         self.assertEqual("first,second", self.Audit.audit_data.get("info"))
@@ -893,39 +1115,54 @@ class AuditFileTestCase(OverrideConfigTestCase):
         self.assertEqual(r.total, 0)
 
     @log_capture()
-    def test_30_logger_audit_qualname(self, capture):
+    def test_30_logger_audit_qualname(self, capture: LogCapture):
         # Check that the default qualname is 'privacyidea.lib.auditmodules.loggeraudit'
         # The audit log runs 2 seconds - mocked
         current_utc_time = datetime.datetime(2018, 3, 4, 5, 6, 8)
         startdate_time = datetime.datetime(2018, 3, 4, 5, 6, 6)
-        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_timestamp:
-            with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_startdate:
-                mock_timestamp.utcnow.return_value = current_utc_time
-                mock_startdate.now.return_value = startdate_time
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.utc_now') as mock_timestamp:
+            with mock.patch('privacyidea.lib.auditmodules.base.utc_now') as mock_startdate:
+                mock_timestamp.return_value = current_utc_time
+                mock_startdate.return_value = startdate_time
                 a = LoggerAudit(config={})
                 a.log({"action": "No PI_AUDIT_LOGGER_QUALNAME given"})
                 a.finalize_log()
                 capture.check_present(
                     ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
                      '{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:02", '
-                     f'"policies": "", "startdate": "{startdate_time.isoformat()}", '
-                     f'"timestamp": "{current_utc_time.isoformat()}"}}'))
+                     f'"policies": "", "startdate": "{utc_isoformat(startdate_time)}", '
+                     f'"timestamp": "{utc_isoformat(current_utc_time)}"}}'))
 
         # Now change the qualname to 'pi-audit'
         current_utc_time = datetime.datetime(2020, 3, 4, 5, 6, 8)
         startdate_time = datetime.datetime(2020, 3, 4, 5, 6, 0)
-        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.datetime') as mock_dt:
-            with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_startdate:
-                mock_dt.utcnow.return_value = current_utc_time
-                mock_startdate.now.return_value = startdate_time
+        with mock.patch('privacyidea.lib.auditmodules.loggeraudit.utc_now') as mock_timestamp:
+            with mock.patch('privacyidea.lib.auditmodules.base.utc_now') as mock_startdate:
+                mock_timestamp.return_value = current_utc_time
+                mock_startdate.return_value = startdate_time
                 a = LoggerAudit(config={"PI_AUDIT_LOGGER_QUALNAME": "pi-audit"})
                 a.log({"action": "PI_AUDIT_LOGGER_QUALNAME given"})
                 a.finalize_log()
                 capture.check_present(
                     ('pi-audit', 'INFO',
                      '{"action": "PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:08", '
-                     f'"policies": "", "startdate": "{startdate_time.isoformat()}", '
-                     f'"timestamp": "{current_utc_time.isoformat()}"}}'))
+                     f'"policies": "", "startdate": "{utc_isoformat(startdate_time)}", '
+                     f'"timestamp": "{utc_isoformat(current_utc_time)}"}}'))
+
+
+    def test_40_logger_audit_uses_one_utc_clock(self):
+        with non_utc_time_zone(), self.assertLogs("privacyidea.lib.auditmodules.loggeraudit", "INFO") as logs:
+            a = LoggerAudit(config={})
+            a.log({"action": "one_utc_clock"})
+            a.finalize_log()
+        entry = json.loads(logs.records[-1].getMessage())
+        self.assertEqual("one_utc_clock", entry.get("action"))
+        self.assertTrue(entry.get("timestamp").endswith("+00:00"), entry)
+        self.assertTrue(entry.get("startdate").endswith("+00:00"), entry)
+        # Start and end are taken on the same clock, so the duration is the time the request took
+        hours, minutes, seconds = entry.get("duration").split(":")
+        duration = datetime.timedelta(hours=int(hours), minutes=int(minutes), seconds=float(seconds))
+        self.assertLess(duration, datetime.timedelta(seconds=10), entry)
 
 
 class ContainerAuditTestCase(OverrideConfigTestCase):

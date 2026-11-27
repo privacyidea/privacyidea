@@ -50,6 +50,7 @@ from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent, get_version_number, is_true
 from ..models import ClientApplication, Subscription, db
+from ..models.utils import utc_isoformat, utc_now
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -484,9 +485,9 @@ def get_plugin_subscription_status(token_users: int | None = None) -> list[dict]
         subscription = subscriptions_by_app.get(owning_application)
         state_info = _subscription_state(subscription, now, token_users)
         overview.append({"application": plugin,
-                         "in_use": _is_in_use(bool(subscription), last_seen, now),
+                         "in_use": _is_in_use(bool(subscription), last_seen, utc_now()),
                          "subscription": state_info.state,
-                         "last_seen": last_seen,
+                         "last_seen": utc_isoformat(last_seen),
                          "date_till": state_info.date_till,
                          "days_left": state_info.days_left,
                          # Versions seen in the user-agents, newest first.

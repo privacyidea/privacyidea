@@ -22,6 +22,7 @@ import click
 from flask.cli import AppGroup
 
 from privacyidea.models import Challenge
+from privacyidea.models.utils import utc_now
 from privacyidea.lib.challenge import _build_challenge_criterion, cleanup_expired_challenges
 
 challenge_cli = AppGroup("challenge", help="Manage challenge data")
@@ -49,7 +50,7 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
     """
     if age is not None:
         # Delete challenges created earlier than age minutes ago, even if they are still valid
-        now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
+        now = utc_now() - datetime.timedelta(minutes=age)
         click.echo(f"Deleting challenges older than {now!s}")
     else:
         # Delete expired challenges

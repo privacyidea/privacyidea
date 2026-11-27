@@ -16,7 +16,8 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import Audit, db
-from .base import MyApiTestCase
+from privacyidea.models.audit import AUDIT_ENTRY_VERSION_UTC
+from .base import MyApiTestCase, non_utc_time_zone
 
 PWFILE = "tests/testdata/passwords"
 
@@ -707,7 +708,178 @@ class APIAuditTestCase(MyApiTestCase):
                 value = res.json.get("result").get("value")
                 self.assertEqual(expected, sorted(entry.get("date")[:10] for entry in value.get("auditdata")), day)
 
-    def test_10_a_user_sees_only_their_own_entries_whatever_their_login(self):
+    # The range of the time range tests is 10:00 to 12:00 UTC on 2026-03-10, which is 18:00 to 20:00 in Asia/Shanghai
+    # (UTC+8, no daylight saving), the zone of non_utc_time_zone().
+    RANGE_ENTRIES_IN_RANGE = {"range_marked_at_start", "range_marked_inside",
+                              "range_unmarked_inside", "range_unmarked_at_end"}
+
+    def _insert_entries_around_a_time_range(self) -> None:
+        # Entries marked with AUDIT_ENTRY_VERSION_UTC are written in UTC, unmarked ones in local time of the server.
+        # Each kind has one entry that only lies in the range if it is compared on the clock of the other kind.
+        Audit.query.delete()
+        entries = [
+            # marked, naive UTC
+            ("range_marked_before", datetime(2026, 3, 10, 9, 59), AUDIT_ENTRY_VERSION_UTC),
+            ("range_marked_at_start", datetime(2026, 3, 10, 10, 0), AUDIT_ENTRY_VERSION_UTC),
+            ("range_marked_inside", datetime(2026, 3, 10, 11, 0), AUDIT_ENTRY_VERSION_UTC),
+            ("range_marked_after", datetime(2026, 3, 10, 12, 1), AUDIT_ENTRY_VERSION_UTC),
+            # 19:00 UTC lies in the range only when read as local time
+            ("range_marked_at_local_time", datetime(2026, 3, 10, 19, 0), AUDIT_ENTRY_VERSION_UTC),
+            # unmarked, naive local time of Asia/Shanghai
+            ("range_unmarked_before", datetime(2026, 3, 10, 17, 0), None),
+            ("range_unmarked_inside", datetime(2026, 3, 10, 19, 30), None),
+            ("range_unmarked_at_end", datetime(2026, 3, 10, 20, 0), None),
+            # 11:00 local time is 03:00 UTC, it lies in the range only when read as UTC
+            ("range_unmarked_at_utc_time", datetime(2026, 3, 10, 11, 0), None)]
+        db.session.execute(Audit.__table__.insert(),
+                           [{"action": action, "date": date, "entry_version": entry_version, "success": 1,
+                             "signature": ""}
+                            for action, date, entry_version in entries])
+        db.session.commit()
+
+    # Long requests around the same range: each one starts 10 minutes before it is written. Each kind has one
+    # request that only lies in the range if its start is compared on the clock of the other kind.
+    LONG_REQUESTS_STARTED_IN_RANGE = {"range_long_marked_inside", "range_long_unmarked_inside"}
+
+    def _insert_long_requests_around_a_time_range(self) -> None:
+        Audit.query.delete()
+        entries = [
+            # marked, naive UTC. Started before the range, written in it
+            ("range_long_marked_before", datetime(2026, 3, 10, 9, 55), AUDIT_ENTRY_VERSION_UTC),
+            # started in the range, written after it
+            ("range_long_marked_inside", datetime(2026, 3, 10, 11, 55), AUDIT_ENTRY_VERSION_UTC),
+            ("range_long_marked_at_local_time", datetime(2026, 3, 10, 19, 0), AUDIT_ENTRY_VERSION_UTC),
+            # unmarked, naive local time of Asia/Shanghai
+            ("range_long_unmarked_before", datetime(2026, 3, 10, 17, 55), None),
+            ("range_long_unmarked_inside", datetime(2026, 3, 10, 19, 55), None),
+            ("range_long_unmarked_at_utc_time", datetime(2026, 3, 10, 11, 0), None)]
+        db.session.execute(Audit.__table__.insert(),
+                           [{"action": action, "startdate": startdate, "date": startdate + timedelta(minutes=10),
+                             "entry_version": entry_version, "success": 1, "signature": ""}
+                            for action, startdate, entry_version in entries])
+        db.session.commit()
+
+    def _search_actions(self, query_string: dict) -> set[str]:
+        with self.app.test_request_context('/audit/', method='GET',
+                                           query_string={"action": "range_*", "page_size": 50, **query_string},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return {entry.get("action") for entry in res.json["result"]["value"]["auditdata"]}
+
+    def test_10_search_by_date_interval_on_mixed_entries(self):
+        with non_utc_time_zone():
+            self._insert_entries_around_a_time_range()
+
+            # Both ends are inclusive. A bound is given with any offset, a bound without one is UTC.
+            for interval in ("2026-03-10T18:00:00+08:00/2026-03-10T12:00:00Z",
+                             "2026-03-10T10:00:00/2026-03-10T07:00:00-05:00"):
+                self.assertEqual(self.RANGE_ENTRIES_IN_RANGE, self._search_actions({"date": interval}), interval)
+
+            # An open end limits only the other side
+            self.assertEqual({"range_marked_inside", "range_marked_after", "range_marked_at_local_time",
+                              "range_unmarked_inside", "range_unmarked_at_end"},
+                             self._search_actions({"date": "2026-03-10T11:00:00+00:00/"}))
+            self.assertEqual({"range_marked_before", "range_marked_at_start", "range_unmarked_before",
+                              "range_unmarked_at_utc_time"},
+                             self._search_actions({"date": "/2026-03-10T10:00:00+00:00"}))
+
+    def test_11_csv_download_by_startdate_interval(self):
+        with non_utc_time_zone():
+            self._insert_long_requests_around_a_time_range()
+            with self.app.test_request_context('/audit/audit.csv', method='GET',
+                                               query_string={"action": "range_*",
+                                                             "startdate": "2026-03-10T18:00:00+08:00/"
+                                                                          "2026-03-10T12:00:00Z"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                rows = list(csv.reader(io.StringIO(res.get_data(as_text=True))))
+        actions = {cell for row in rows for cell in row if cell.startswith("range_")}
+        self.assertEqual(self.LONG_REQUESTS_STARTED_IN_RANGE, actions)
+
+        with self.app.test_request_context('/audit/audit.csv', method='GET', query_string={"startdate": "foo/"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res)
+        self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+        self.assertIn("Invalid ISO 8601 timestamp for startdate", res.json["result"]["error"]["message"])
+
+    def test_12_search_by_startdate_interval_on_mixed_entries(self):
+        with non_utc_time_zone():
+            self._insert_long_requests_around_a_time_range()
+
+            # A bound is given with any offset, without one (UTC) or in the readable form with spaces
+            for interval in ("2026-03-10T10:00:00Z/2026-03-10T12:00:00Z",
+                             "2026-03-10T18:00:00+08:00/2026-03-10T07:00:00-05:00",
+                             "2026-03-10T10:00:00/2026-03-10T12:00:00",
+                             "2026-03-10 18:00:00 +08:00/2026-03-10 20:00:00 +08:00"):
+                self.assertEqual(self.LONG_REQUESTS_STARTED_IN_RANGE,
+                                 self._search_actions({"startdate": interval}), interval)
+
+            # An open end limits only the other side
+            self.assertEqual({"range_long_marked_inside", "range_long_marked_at_local_time",
+                              "range_long_unmarked_inside"},
+                             self._search_actions({"startdate": "2026-03-10T10:00:00Z/"}))
+            self.assertEqual({"range_long_marked_before", "range_long_unmarked_before",
+                              "range_long_unmarked_at_utc_time"},
+                             self._search_actions({"startdate": "/2026-03-10T10:00:00Z"}))
+
+    def test_13_invalid_time_interval_is_refused(self):
+        for key in ("startdate", "date"):
+            for value in ("foo/2026-03-10T12:00:00Z", "!2026-03-10/", "*/2026-03-10T12:00:00Z", "a/b/c"):
+                with self.app.test_request_context('/audit/', method='GET', query_string={key: value},
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, (key, value, res.json))
+                self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+                if value.startswith("foo"):
+                    self.assertIn(f"Invalid ISO 8601 timestamp for {key}", res.json["result"]["error"]["message"])
+
+    def test_13a_reversed_time_interval_is_refused(self):
+        # The start lies after the end, also when the bounds carry different offsets
+        for key in ("startdate", "date"):
+            for value in ("2026-03-10T12:00:01Z/2026-03-10T12:00:00Z",
+                          "2026-03-10T20:00:00+08:00/2026-03-10T11:00:00Z"):
+                with self.app.test_request_context('/audit/', method='GET', query_string={key: value},
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, (key, value, res.json))
+                self.assertEqual(905, res.json["result"]["error"]["code"], res.json)
+                self.assertIn(f"Invalid ISO 8601 time interval for {key}", res.json["result"]["error"]["message"])
+                self.assertIn("The start of a time interval can not lie after its end",
+                              res.json["result"]["error"]["message"])
+
+    def test_14_end_bound_includes_its_whole_second(self):
+        with non_utc_time_zone():
+            Audit.query.delete()
+            entries = [("range_marked_in_last_second", datetime(2026, 3, 10, 12, 0, 0, 400000),
+                        AUDIT_ENTRY_VERSION_UTC),
+                       # 20:00:00.400 in Asia/Shanghai is 12:00:00.400 UTC
+                       ("range_unmarked_in_last_second", datetime(2026, 3, 10, 20, 0, 0, 400000), None),
+                       ("range_marked_in_next_second", datetime(2026, 3, 10, 12, 0, 1), AUDIT_ENTRY_VERSION_UTC)]
+            db.session.execute(Audit.__table__.insert(),
+                               [{"action": action, "startdate": startdate, "date": startdate,
+                                 "entry_version": entry_version, "success": 1, "signature": ""}
+                                for action, startdate, entry_version in entries])
+            db.session.commit()
+
+            # An end in whole seconds includes its whole second, an end with a fraction of a second is the bound
+            self.assertEqual({"range_marked_in_last_second", "range_unmarked_in_last_second"},
+                             self._search_actions({"startdate": "/2026-03-10T12:00:00Z"}))
+            self.assertEqual(set(), self._search_actions({"startdate": "/2026-03-10T12:00:00.300Z"}))
+
+    def test_15_start_time_and_end_time_are_no_filters(self):
+        with non_utc_time_zone():
+            self._insert_entries_around_a_time_range()
+            every_entry = {"range_marked_before", "range_marked_at_start", "range_marked_inside",
+                           "range_marked_after", "range_marked_at_local_time", "range_unmarked_before",
+                           "range_unmarked_inside", "range_unmarked_at_end", "range_unmarked_at_utc_time"}
+            self.assertEqual(every_entry, self._search_actions({"start_time": "2026-03-10T11:00:00+00:00",
+                                                                "end_time": "2026-03-10T11:30:00+00:00"}))
+            self.assertEqual(every_entry, self._search_actions({"start_time": "foo"}))
+
+    def test_16_a_user_sees_only_their_own_entries_whatever_their_login(self):
         realm = "operatorrealm"
         resolver = "operatorresolver"
         save_resolver({"resolver": resolver, "type": "passwdresolver",
@@ -738,7 +910,7 @@ class APIAuditTestCase(MyApiTestCase):
             delete_realm(realm)
             delete_resolver(resolver)
 
-    def test_11_the_realms_of_an_administrator_come_from_their_audit_policies_only(self):
+    def test_17_the_realms_of_an_administrator_come_from_their_audit_policies_only(self):
         # A search key named like the internal list of allowed realms neither widens nor replaces the realms of the
         # policies, in the search and in the download
         self.setUp_user_realms()

@@ -1,6 +1,8 @@
 Version 3.15
 
   Features:
+  * The audit log allows filtering by a time range: the filters `startdate` and `date` accept an ISO 8601 interval
+    `start/end`, and either bound may be left out (#6012)
   * `pi-manage config import` compares the import with the system first and prints a plan of the entries it creates,
     updates, leaves unchanged or skips. Unchanged entries are not written again. `--dry-run` only prints the plan,
     `--interactive` asks before applying it and `--replace` deletes the entries of the imported types that are missing
@@ -8,6 +10,10 @@ Version 3.15
     id of the exporting system, hence a repeated import no longer creates duplicates. Names are matched the way the
     system itself looks them up, so `-n` finds a realm or resolver regardless of case and, on MySQL and MariaDB, an
     entry whose name differs only in case is updated instead of being created and deleted (#4945)
+
+  Enhancements:
+  * privacyIDEA stores its timestamps in UTC and returns them with a time zone offset. Audit entries written before
+    the update keep their local time (#6012)
 
 Version 3.14.1
 

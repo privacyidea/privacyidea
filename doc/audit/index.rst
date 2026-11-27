@@ -57,10 +57,72 @@ be written this way too, e.g. ``authentication: =!CHALLENGE``; without the
 ``=`` the WebUI searches for the text ``!CHALLENGE``. In the previous WebUI
 every value is searched anywhere in the column, and a negation is not possible.
 
+The ``GET /audit/`` API and the CSV download also accept an ISO 8601 time
+interval in the filters ``startdate`` and ``date``. The interval has the form
+``start/end``. Each bound is an ISO 8601 timestamp, e.g.
+``startdate=2026-11-05T00:00:00Z/2026-11-05T23:59:59Z``. The readable form with
+a space before the offset, e.g. ``2026-11-05 14:30:00 +01:00``, is accepted too.
+
+Both bounds are inclusive. If the end is given in whole seconds, the whole
+second is included. If the end is only a date, it means 00:00:00 of that day.
+If a bound has no offset, it is taken as UTC.
+
+Leave out a bound for an open end, e.g. ``start/`` or ``/end``. A ``/`` alone
+is no filter. A value without ``/`` is a text filter as before. The API returns
+HTTP 400 if an interval contains ``!`` or ``*``, if it has more than one ``/``,
+if a bound is invalid or if the start lies after the end.
+
+An interval on ``startdate`` selects requests by their start. An interval on
+``date`` selects requests by their end.
+
+In the current WebUI the filter button in the header of the *Start Date* column
+opens a calendar. If you choose a first and a last day, the range runs from the
+start of the first day to the end of the last day. If you choose one day, the
+range is that day. The days are in the local time of the browser. Check *Time*
+in the calendar to choose a start time and an end time for these days. If only
+one day is chosen, the range ends at 23:59:59 of that day. If you reopen the
+calendar with *Time* checked, it shows the active range with its times, and the
+first day you click starts a new range. If you close the calendar without
+choosing a time for that day, the range is the whole day. *Clear Filter* in the
+calendar removes the range. The filter button of a date cell selects the local
+day of that entry.
+
+The filter text shows the range as one ``startdate`` value with the offset of
+the browser, e.g.
+``startdate: "2026-11-05 00:00:00 +01:00/2026-11-05 23:59:59 +01:00"``. If
+you type a bound without an offset in a ``startdate`` or ``date`` interval,
+the WebUI reads it as the local time of the browser. A typed end that is only
+a date includes that whole day.
+
+The WebUI applies a typed interval in ``startdate`` or ``date`` when you press
+Enter. The calendar and the filter button of a date cell apply at once. The
+WebUI sends a bound it cannot read as you typed it, and the API refuses an
+invalid bound with an error. ISO 8601 forms that only the API reads, e.g.
+``2026-11-05T10``, ``20261105`` or ``2026-W45``, are taken as UTC, not as the
+local time of the browser.
+
+Entries written by privacyIDEA 3.15 or later store ``date`` and ``startdate``
+in UTC. The API returns them with the offset ``+00:00``. The current WebUI
+shows them in the local time of the browser. Older entries keep the local time
+of the server that wrote them. The API returns them without an offset. The
+current WebUI shows them as stored and marks their *Start Date* with a
+crossed-out globe. The column ``entry_version``
+of the audit table tells the two kinds apart. It holds ``2`` for an entry in
+UTC and is empty (``NULL``) for an older entry in the local time of the server.
+
+A time interval compares older entries in the local time of the server. A text
+filter on ``date`` or ``startdate`` compares the stored value. It matches older
+entries in server time and new entries in UTC.
+
 .. versionchanged:: 3.14 ``*`` is the only wildcard. Earlier versions also
    treated a literal ``%`` as a wildcard in the audit search; now ``%`` and
    ``_`` match literally. Update any saved filters or integrations that relied
    on ``%`` to use ``*`` instead.
+
+.. versionchanged:: 3.15 New audit entries are stored in UTC. The filters
+   ``date`` and ``startdate`` of the API and the CSV download accept an ISO 8601
+   time interval. Text filters on ``date`` or ``startdate`` match new entries in
+   UTC.
 
 .. index:: Audit Log Rotate
 .. _audit_rotate:

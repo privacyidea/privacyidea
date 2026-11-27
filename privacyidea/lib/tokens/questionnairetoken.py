@@ -37,6 +37,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, GROUP, get_action_values_from_options
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import safe_compare
+from privacyidea.models.utils import utc_now, utc_isoformat
 import secrets
 import json
 import datetime
@@ -210,7 +211,8 @@ class QuestionnaireTokenClass(TokenClass):
         pin_match = self.check_pin(passw, user=user, options=options)
         return pin_match
 
-    def create_challenge(self, transactionid=None, options=None):
+    def create_challenge(self, transactionid: str | None = None,
+                         options: dict | None = None) -> tuple[bool, str, str | None, dict]:
         """
         This method creates a challenge, which is submitted to the user.
         The submitted challenge will be preserved in the challenge
@@ -266,9 +268,8 @@ class QuestionnaireTokenClass(TokenClass):
                                         session=options.get("session"),
                                         challenge=message,
                                         validitytime=validity)
-        expiry_date = datetime.datetime.now() + \
-                      datetime.timedelta(seconds=validity)
-        reply_dict = {'attributes': {'valid_until': f"{expiry_date!s}"}}
+        expiry_date = utc_now() + datetime.timedelta(seconds=validity)
+        reply_dict = {'attributes': {'valid_until': utc_isoformat(expiry_date)}}
         return True, message, db_challenge.transaction_id, reply_dict
 
     def check_answer(self, given_answer, challenge_object):

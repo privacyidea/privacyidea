@@ -325,7 +325,8 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         return self.check_pin(passw, user=user, options=options)
 
     @log_with(log)
-    def create_challenge(self, transactionid=None, options=None):
+    def create_challenge(self, transactionid: str | None = None,
+                         options: dict | None = None) -> tuple[bool, str, str | None, dict]:
         """
         create a challenge, which is submitted to the user
 
@@ -389,8 +390,8 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = valid_until.astimezone().replace(tzinfo=None)
-        reply_dict['attributes']['valid_until'] = f"{expiry_date!s}"
+        # valid_until is timezone-aware UTC, so the ISO string carries the offset +00:00
+        reply_dict['attributes']['valid_until'] = valid_until.isoformat()
 
         return success, return_message, transactionid, reply_dict
 

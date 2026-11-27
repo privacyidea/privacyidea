@@ -18,7 +18,7 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, UTC
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -32,6 +32,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
+from privacyidea.lib.utils import naive_utc
 
 log = logging.getLogger(__name__)
 
@@ -135,17 +136,6 @@ class AuthenticationLogPage:
             "prev": self.prev,
             "next": self.next,
         }
-
-
-def naive_utc(value: datetime) -> datetime:
-    """
-    Normalize a datetime to naive UTC, matching how the ``timestamp`` column is stored. A timezone-aware value is
-    converted to UTC and stripped of its tzinfo; a naive value is assumed to already be in UTC and returned unchanged.
-    This lets callers pass either form without risking a naive-vs-aware comparison against the column.
-    """
-    if value.tzinfo is not None:
-        return value.astimezone(UTC).replace(tzinfo=None)
-    return value
 
 
 @dataclass

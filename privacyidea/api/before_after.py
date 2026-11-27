@@ -93,7 +93,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            outcome_of)
 from privacyidea.api.lib.utils import log_authentication, add_autoresync_to_audit
 from privacyidea.lib.user import User
-import datetime
+from privacyidea.models.utils import utc_now
 import threading
 
 log = logging.getLogger(__name__)
@@ -127,9 +127,9 @@ NO_STORE_ENDPOINTS = frozenset({
 # at the application, so it's sufficient to call them only for one blueprint.
 # The decorated functions are called before and after *every* request.
 @token_blueprint.before_app_request
-def log_begin_request():
+def log_begin_request() -> None:
     log.debug(f"Begin handling of request {redact_url(request.full_path)!r}")
-    g.startdate = datetime.datetime.now()
+    g.startdate = utc_now()
 
 
 @token_blueprint.before_app_request

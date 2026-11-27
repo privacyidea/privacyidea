@@ -5,6 +5,10 @@
 
 import type { Config } from "jest";
 
+// The tests run in a zone away from UTC, so a time read as UTC where the WebUI means the viewer's local time fails them
+// in a UTC CI too. Set here, before Jest starts its workers, which inherit it.
+process.env["TZ"] = "Europe/Berlin";
+
 const config: Config = {
   // All imported modules in your tests should be mocked automatically
   // automock: false,

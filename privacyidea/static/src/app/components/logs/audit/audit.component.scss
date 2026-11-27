@@ -43,6 +43,66 @@
   margin-left: 8px;
 }
 
+// The date header's filter button and its hidden connected range input share a box so the picker overlay anchors to
+// the button. The input carries the picker's model only, it is not shown or interacted with directly.
+.date-range-anchor {
+  position: relative;
+}
+
+.date-range-hidden-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+// The summary row of the range picker in time mode (start and end, placeholders until picked). It is template content
+// of this component portalled into the picker's overlay, so these scoped styles reach it. Start and end share one row,
+// each left-aligned in its own half. Always one line high, so the panel does not jump while picking.
+.audit-range-time-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  min-height: var(--mat-sys-body-small-line-height, 1rem);
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+
+  > div {
+    min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// The summary and the hint below it form one live region. The hint is always one line high, so the panel does not
+// jump when it changes or goes empty.
+.audit-range-time-live {
+  width: 100%;
+}
+
+.audit-range-time-hint {
+  min-height: var(--mat-sys-body-small-line-height, 1rem);
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Marks a startdate without offset, written before timestamps were stored in UTC. Focusable so its tooltip opens.
+.audit-time-zone-unknown {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+  vertical-align: middle;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
 .audit-table {
   // The scroll region wraps anywhere, so below this width the date breaks mid-value.
   th.mat-mdc-header-cell.mat-column-startdate,

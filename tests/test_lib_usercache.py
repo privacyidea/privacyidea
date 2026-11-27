@@ -3,26 +3,27 @@ This test file tests the lib.usercache
 
 The lib.usercache.py only depends on the database model
 """
+from collections.abc import Iterator
 from contextlib import contextmanager
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from sqlalchemy import select
 
 from privacyidea.lib.error import UserError
 from tests import ldap3mock
 from tests.test_mock_ldap3 import LDAPDirectory
-from .base import MyTestCase, PristineSqliteFixtures
+from .base import MyTestCase, PristineSqliteFixtures, non_utc_time_zone
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_object)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
-from privacyidea.lib.usercache import (get_cache_time,
-                                       cache_username, delete_user_cache, create_filter,
+from privacyidea.lib.usercache import (get_cache_time, add_to_cache, create_filter,
+                                       cache_username, delete_user_cache,
                                        EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled,
                                        get_cached_usernames, add_many_to_cache)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
-from datetime import datetime
 from privacyidea.models import UserCache, db
+from privacyidea.models.utils import utc_now
 
 
 class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
@@ -98,7 +99,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         resolver = "resolver1"
         uid = "1"
 
-        UserCache(username, username, resolver, uid, datetime.now()).save()
+        UserCache(username, username, resolver, uid, utc_now()).save()
         u_name = get_username(uid, resolver)
         self.assertEqual(u_name, username)
 
@@ -208,7 +209,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
 
     def test_04_delete_cache(self):
-        now = datetime.now()
+        now = utc_now()
         UserCache("hans1", "hans1", "resolver1", "uid1", now).save()
         UserCache("hans2", "hans1", "resolver2", "uid2", now).save()
 
@@ -233,7 +234,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
     def test_05_multiple_entries(self):
         # two consistent entries
-        now = datetime.now()
+        now = utc_now()
         UserCache("hans1", "hans1", "resolver1", "uid1", now - timedelta(seconds=60)).save()
         UserCache("hans1", "hans1", "resolver1", "uid1", now).save()
 
@@ -275,7 +276,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         # testing `User()`, but this time we add an already-expired entry to the cache
         self.assertEqual(UserCache.query.count(), 0)
         UserCache(self.username, self.username,
-                  self.resolvername1, 'fake_uid', datetime.now() - timedelta(weeks=50)).save()
+                  self.resolvername1, 'fake_uid', utc_now() - timedelta(weeks=50)).save()
         # cache contains an expired entry, uid is read from the resolver (we can verify
         # that the cache entry is indeed not queried as it contains 'fake_uid' instead of the correct uid)
         user = User(self.username, self.realm1, self.resolvername1)
@@ -289,10 +290,10 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
         self._delete_realm()
 
-    def _populate_cache(self):
+    def _populate_cache(self) -> None:
         self.assertEqual(UserCache.query.count(), 0)
         # initially populate the cache with three entries
-        timestamp = datetime.now()
+        timestamp = utc_now()
         UserCache("hans1", "hans1", self.resolvername1, "uid1", timestamp).save()
         UserCache("hans2", "hans2", self.resolvername1, "uid2", timestamp - timedelta(weeks=50)).save()
         UserCache("hans3", "hans3", "resolver2", "uid2", timestamp).save()
@@ -385,18 +386,18 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         self._delete_sql_realm()
 
     @contextmanager
-    def _patch_datetime_now(self, target, delta=timedelta(days=1)):
-        with patch(target) as mock_datetime:
-            mock_datetime.now.side_effect = lambda: datetime.now() + delta
-            mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
-            yield mock_datetime
+    def _patch_utc_now(self, target: str = "privacyidea.lib.usercache.utc_now",
+                       delta: timedelta = timedelta(days=1)) -> Iterator[MagicMock]:
+        with patch(target) as mock_utc_now:
+            mock_utc_now.side_effect = lambda: utc_now() + delta
+            yield mock_utc_now
 
     def test_11_cache_expiration(self):
         # delete user_cache
         r = delete_user_cache()
         self.assertTrue(r >= 0)
         # populate the cache with artificial, somewhat "old", but still relevant data
-        timestamp = datetime.now() - timedelta(seconds=300)
+        timestamp = utc_now() - timedelta(seconds=300)
         UserCache("hans1", "hans1", "resolver1", "uid1", timestamp).save()
         UserCache("hans2", "hans2", "resolver1", "uid2", timestamp).save()
         # check that the cache is indeed queried
@@ -409,7 +410,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         # TODO: Interestingly, if we mock `datetime` here to increase the time by one
         # day, this test works, but a subsequent test (test_ui_certificate) will fail
         # with weird error messages. So we do not use the datetime mock for now.
-        #with self._patch_datetime_now('privacyidea.lib.usercache.datetime.datetime') as mock_datetime:
+        #with self._patch_utc_now() as mock_utc_now:
         with patch('privacyidea.lib.usercache.get_cache_time') as mock_get_cache_time:
             # Instead, we just decrease the cache time from 600 to 60 seconds,
             # which causes the entries above to be considered expired
@@ -421,7 +422,7 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
                 User("hans2", "realm1", "resolver1")
             self.assertEqual(get_username("uid3", "resolver1"), "")
             # We add another, "current" entry
-            UserCache("hans4", "hans4", "resolver1", "uid4", datetime.now()).save()
+            UserCache("hans4", "hans4", "resolver1", "uid4", utc_now()).save()
             self.assertEqual(UserCache.query.count(), 3)
             # we now remove old entries, only the newest remains
             delete_user_cache(expired=True)
@@ -507,8 +508,8 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         self._create_realm()
         corny = User("corny", self.realm1, self.resolvername1)
         root = User("root", self.realm1, self.resolvername1)
-        UserCache(corny.login, corny.login, self.resolvername1, corny.uid, datetime.now()).save()
-        UserCache(root.login, root.login, self.resolvername1, root.uid, datetime.now()).save()
+        UserCache(corny.login, corny.login, self.resolvername1, corny.uid, utc_now()).save()
+        UserCache(root.login, root.login, self.resolvername1, root.uid, utc_now()).save()
 
         # Check that the user is correctly fetched from the cache if only the login is given and only the uid is given
         cache_root = User(root.login, self.realm1, self.resolvername1)
@@ -547,10 +548,10 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         set_privacyidea_config(EXPIRATION_SECONDS, 600)
         delete_user_cache()
         try:
-            UserCache("renamed", "renamed", "reso1", "uid1", datetime.now() - timedelta(seconds=10)).save()
-            UserCache("current", "current", "reso1", "uid1", datetime.now()).save()
-            UserCache("expired", "expired", "reso1", "uid2", datetime.now() - timedelta(seconds=700)).save()
-            UserCache("other", "other", "reso2", "uid3", datetime.now()).save()
+            UserCache("renamed", "renamed", "reso1", "uid1", utc_now() - timedelta(seconds=10)).save()
+            UserCache("current", "current", "reso1", "uid1", utc_now()).save()
+            UserCache("expired", "expired", "reso1", "uid2", utc_now() - timedelta(seconds=700)).save()
+            UserCache("other", "other", "reso2", "uid3", utc_now()).save()
 
             # The latest entry wins, an expired entry and an entry of another resolver do not count
             self.assertDictEqual({"uid1": "current"},
@@ -583,6 +584,28 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         finally:
             set_privacyidea_config(EXPIRATION_SECONDS, 600)
             delete_user_cache()
+
+    def test_18_cache_entries_are_written_and_expired_in_utc(self):
+        self.addCleanup(delete_user_cache)
+        delete_user_cache()
+        with non_utc_time_zone():
+            before = utc_now()
+            add_to_cache("hans15", "hans15", "resolver1", "uid15")
+            entry = UserCache.query.filter_by(username="hans15").one()
+            # The entry was written just now, so it is neither expired nor older than the cache time
+            self.assertAlmostEqual(before, entry.timestamp, delta=timedelta(seconds=5))
+            self.assertEqual(UserCache.query.filter(create_filter(username="hans15", expired=False)).count(), 1)
+            self.assertEqual(UserCache.query.filter(create_filter(username="hans15", expired=True)).count(), 0)
+            # An entry from 30 seconds ago is still valid with the cache time of 600 seconds
+            UserCache("hans15b", "hans15b", "resolver1", "uid15b", utc_now() - timedelta(seconds=30)).save()
+            self.assertEqual(UserCache.query.filter(create_filter(username="hans15b", expired=False)).count(), 1)
+            # An entry from 700 seconds ago is expired
+            UserCache("hans15c", "hans15c", "resolver1", "uid15c", utc_now() - timedelta(seconds=700)).save()
+            self.assertEqual(UserCache.query.filter(create_filter(username="hans15c", expired=True)).count(), 1)
+            # The bulk insert of the orphaned check writes UTC as well
+            add_many_to_cache("resolver1", {"uid15d": "hans15d"})
+            entry = UserCache.query.filter_by(username="hans15d").one()
+            self.assertAlmostEqual(utc_now(), entry.timestamp, delta=timedelta(seconds=5))
 
     def test_99_unset_config(self):
         # Test early exit!

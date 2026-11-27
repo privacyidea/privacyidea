@@ -696,6 +696,20 @@ describe("AuthenticationLog", () => {
     expect(service.timestampTo()).toBe("2026-06-02T12:00:00.000Z");
   });
 
+  it("a typed date-only end includes that whole local day, as the same day picked as the end does", () => {
+    component.onRangeEndDateChange(new Date(2026, 10, 5));
+    const picked = service.timestampTo();
+
+    service.authenticationLogFilter.set(
+      new FilterValue().addEntry("start_time", "2026-11-05").addEntry("end_time", "2026-11-05")
+    );
+    fixture.detectChanges();
+
+    expect(service.timestampFrom()).toBe("2026-11-04T23:00:00.000Z");
+    expect(service.timestampTo()).toBe("2026-11-05T22:59:59.000Z");
+    expect(service.timestampTo()).toBe(picked);
+  });
+
   it("sizes the slider window to the span of the page", () => {
     respondWithEntries([
       { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" },

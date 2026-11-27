@@ -41,6 +41,26 @@
   A script that runs one of these commands for an object that does not exist now fails. An example is a script that
   deletes a policy on every run. Make sure that the object exists first, or accept the exit status 1.
 
+* **Audit entries are now written in UTC and marked in the new column `entry_version`.** New entries get the value `2`.
+  Older entries keep the local time of the server and the value `NULL`. `GET /audit/`, the CSV download and
+  `pi-manage audit dump` return the date of new entries with `+00:00` and older ones unchanged, so scripts that read
+  `pidea_audit` see both kinds. The schema update adds the column without rebuilding the table.
+
+  **If your audit log is written to a separate database** (`PI_AUDIT_SQL_URI`), add the column yourself and restart
+  the service. Until then, entries are written as before.
+
+  ```
+  ALTER TABLE pidea_audit ADD COLUMN entry_version INTEGER;  -- MySQL, MariaDB, PostgreSQL
+  ALTER TABLE pidea_audit ADD (entry_version INTEGER);       -- Oracle
+  ```
+
+* **These timestamps are now UTC with the offset `+00:00`:** `valid_until` in the challenge response of email, SMS,
+  4 Eyes, questionnaire and indexed secret tokens (before: local time without offset), `lastseen` of `GET /client/`
+  and `last_seen` of the subscription dashboard (before: `Fri, 01 May 2026 12:34:56 GMT`), and `timestamp` and
+  `startdate` of the logger audit module. Check scripts and log parsers that read them.
+
+* **The user cache is emptied once by the schema update.** It refills with the next logins.
+
 * **Email and SMS tokens are no longer resynchronized automatically.** privacyIDEA sends every value itself and moves
   the counter on for each, so the counter of these tokens can not fall behind. A value that matches only in the sync
   window is now refused, and the challenge no longer asks the user to resync the token (`resync_via_multichallenge`).

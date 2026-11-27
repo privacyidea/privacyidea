@@ -26,7 +26,7 @@ client type. Entries are populated automatically as clients hit the
 Access requires admin authentication and the admin policy action
 :ref:`policy_clienttype`.
 """
-from flask import (Blueprint, request)
+from flask import (Blueprint, Response, request)
 from .lib.utils import send_result
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
@@ -41,7 +41,7 @@ client_blueprint = Blueprint('client_blueprint', __name__)
 
 @client_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, PolicyAction.CLIENTTYPE)
-def get_clients():
+def get_clients() -> Response:
     """
     Return all client applications that have authenticated against
     privacyIDEA, grouped by client type. The result is a dictionary keyed
@@ -74,7 +74,7 @@ def get_clients():
           "value": {
             "PAM": [
               {"ip": "10.0.0.5", "hostname": "host1.example.com",
-               "lastseen": "2026-05-01 12:34:56"}
+               "lastseen": "2026-05-01T12:34:56+00:00"}
             ],
             "SAML": []
           }

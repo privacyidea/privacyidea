@@ -38,7 +38,7 @@ import time
 import traceback
 from dataclasses import dataclass, field, replace
 from datetime import time as dt_time
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, UTC
 from enum import StrEnum
 from importlib import import_module
 from importlib import metadata
@@ -1544,15 +1544,35 @@ def text_column_equals(column: sqlalchemy.ColumnElement, value: str) -> sqlalche
     return _TextColumnEquals(column, value)
 
 
-def convert_timestamp_to_utc(timestamp):
+def convert_timestamp_to_utc(timestamp: datetime) -> datetime:
     """
-    Convert a timezone-aware datetime object to a naive UTC datetime.
+    Convert a datetime object to a naive UTC datetime.
 
-    :param timestamp: datetime object that should be converted
-    :type timestamp: timezone-aware datetime object
-    :return: timezone-naive datetime object
+    A naive value is taken as the local time of the server and converted from it. Use this function for a value
+    that was read from the clock of the server. For a value that is already naive UTC, e.g. read from a timestamp
+    column, use :func:`naive_utc`, which returns a naive value unchanged.
+
+    :param timestamp: datetime object that should be converted, timezone-aware or naive local time of the server
+    :return: timezone-naive datetime object in UTC
     """
     return timestamp.astimezone(tzutc()).replace(tzinfo=None)
+
+
+def naive_utc(value: datetime) -> datetime:
+    """
+    Normalize a datetime to naive UTC, matching how timestamp columns are stored. A timezone-aware value is
+    converted to UTC and stripped of its tzinfo. A naive value is assumed to already be in UTC and returned unchanged.
+    This lets callers pass either form without risking a naive-vs-aware comparison against the column.
+
+    Use this function for a value that is aware or already naive UTC, e.g. a parsed request parameter or a column
+    value. For a naive value in the local time of the server, use :func:`convert_timestamp_to_utc`.
+
+    :param value: timezone-aware datetime or naive UTC datetime
+    :return: timezone-naive datetime object in UTC
+    """
+    if value.tzinfo is not None:
+        return value.astimezone(UTC).replace(tzinfo=None)
+    return value
 
 
 def censor_connect_string(connect_string):

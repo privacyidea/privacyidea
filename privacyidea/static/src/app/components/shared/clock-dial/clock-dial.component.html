@@ -1,0 +1,169 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  class="clock-dial__title"
+  [id]="id + '-title'">
+  {{ label() }}
+</div>
+<div
+  class="clock-dial__readout"
+  role="group"
+  [attr.aria-labelledby]="id + '-title'">
+  <!-- Typed time: two digits each, a keystroke past 0-23 / 0-59 or before the minimum is refused. The dial below picks
+       the same values. -->
+  <mat-form-field
+    class="input-width-xxs"
+    [class.clock-dial__part--active]="view() === 'hours'"
+    subscriptSizing="dynamic"
+    floatLabel="always">
+    <mat-label
+      [id]="id + '-hour-label'"
+      i18n="@@clockDial.hour"
+      >Hour</mat-label
+    >
+    <input
+      #hourField
+      matInput
+      class="clock-dial__field--hour"
+      type="text"
+      inputmode="numeric"
+      maxlength="2"
+      autocomplete="off"
+      placeholder="--"
+      [attr.aria-describedby]="hintId()"
+      [value]="hourDraft()"
+      (focus)="showHours()"
+      (click)="showHours()"
+      (input)="onHourInput($event)"
+      (keydown)="onFieldKeydown($event, 'hours')" />
+  </mat-form-field>
+  <span
+    class="clock-dial__colon"
+    aria-hidden="true"
+    >:</span
+  >
+  <mat-form-field
+    class="input-width-xxs"
+    [class.clock-dial__part--active]="view() === 'minutes'"
+    subscriptSizing="dynamic"
+    floatLabel="always">
+    <mat-label
+      [id]="id + '-minute-label'"
+      i18n="@@clockDial.minute"
+      >Minute</mat-label
+    >
+    <input
+      #minuteField
+      matInput
+      class="clock-dial__field--minute"
+      type="text"
+      inputmode="numeric"
+      maxlength="2"
+      autocomplete="off"
+      placeholder="--"
+      [attr.aria-describedby]="hintId()"
+      [value]="minuteDraft()"
+      (focus)="showMinutes()"
+      (click)="showMinutes()"
+      (input)="onMinuteInput($event)"
+      (keydown)="onFieldKeydown($event, 'minutes')" />
+  </mat-form-field>
+  <button
+    mat-icon-button
+    color="primary"
+    type="button"
+    aria-label="Confirm time"
+    i18n-aria-label="@@clockDial.confirm"
+    [disabled]="hour() === null || minute() === null"
+    (click)="emitTime()">
+    <mat-icon>check</mat-icon>
+  </button>
+</div>
+@if (minText(); as minText) {
+  <div
+    class="clock-dial__hint"
+    [id]="id + '-hint'"
+    i18n="@@clockDial.from">
+    From {{ minText }}
+  </div>
+}
+<div
+  #face
+  class="clock-dial__face"
+  role="slider"
+  tabindex="0"
+  aria-valuemin="0"
+  [attr.aria-labelledby]="view() === 'hours' ? id + '-hour-label' : id + '-minute-label'"
+  [attr.aria-describedby]="hintId()"
+  [attr.aria-valuemax]="view() === 'hours' ? 23 : 59"
+  [attr.aria-valuenow]="value()"
+  [attr.aria-valuetext]="valueText()"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp($event)"
+  (pointercancel)="onPointerCancel()"
+  (keydown)="onKeydown($event)">
+  <svg
+    [attr.viewBox]="'0 0 ' + size + ' ' + size"
+    aria-hidden="true">
+    <circle
+      class="clock-dial__plate"
+      [attr.cx]="center"
+      [attr.cy]="center"
+      [attr.r]="center" />
+    @if (hand(); as hand) {
+      <line
+        class="clock-dial__hand"
+        [attr.x1]="center"
+        [attr.y1]="center"
+        [attr.x2]="hand.x"
+        [attr.y2]="hand.y" />
+      <circle
+        class="clock-dial__pivot"
+        [attr.cx]="center"
+        [attr.cy]="center"
+        r="4" />
+      <circle
+        class="clock-dial__knob"
+        [attr.cx]="hand.x"
+        [attr.cy]="hand.y"
+        [attr.r]="hand.inner ? 16 : 20" />
+      @if (hand.between) {
+        <circle
+          class="clock-dial__knob-dot"
+          [attr.cx]="hand.x"
+          [attr.cy]="hand.y"
+          r="3" />
+      }
+    }
+    @for (mark of marks(); track mark.value) {
+      <text
+        class="clock-dial__mark"
+        [class.clock-dial__mark--inner]="mark.inner"
+        [class.clock-dial__mark--disabled]="mark.disabled"
+        [class.clock-dial__mark--selected]="mark.selected"
+        [attr.x]="mark.x"
+        [attr.y]="mark.y"
+        text-anchor="middle"
+        dominant-baseline="central">
+        {{ mark.text }}
+      </text>
+    }
+  </svg>
+</div>

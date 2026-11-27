@@ -65,7 +65,8 @@ $default-mode: "";
   $default-mode: $default-mode + ":not(.#{$mode})";
 }
 
-table#{$default-mode} {
+// The datepicker's calendar is a table as well, but its columns are weekdays, not data: no stripes.
+table#{$default-mode}:not(.mat-calendar-table) {
   @include table.column-stripes;
 }
 

@@ -13,7 +13,7 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
-                                    delete_privacyidea_config)
+                                    delete_privacyidea_config, get_from_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -25,8 +25,9 @@ from privacyidea.lib.tokens.emailtoken import log as email_log
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import Token, Config
+from privacyidea.models.utils import utc_now
 from . import smtpmock
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .base import MyTestCase, FakeFlaskG, FakeAudit, non_utc_time_zone
 
 PWFILE = "tests/testdata/passwords"
 TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
@@ -686,3 +687,28 @@ class EmailTokenTestCase(MyTestCase):
         self.assertEqual(2, token.check_otp("359152"))
         self.assertNotIn("otp1c", token.get_tokeninfo())
         self.assertNotIn("dueDate", token.get_tokeninfo())
+
+    @smtpmock.activate
+    def test_27_challenge_valid_until_carries_utc_offset(self):
+        smtpmock.setdata(response={"valid-until@tokens.example.org": (200, 'OK')})
+        # An earlier test may leave an email.identifier behind that points to a deleted SMTP server
+        for key in ("email.identifier", "email.mailserver", "email.tls"):
+            old_value = get_from_config(key)
+            self.addCleanup(set_privacyidea_config if old_value is not None else delete_privacyidea_config,
+                            *((key, old_value) if old_value is not None else (key,)))
+        delete_privacyidea_config("email.identifier")
+        set_privacyidea_config("email.mailserver", "localhost")
+        set_privacyidea_config("email.tls", False)
+        token = init_token({"type": "email", "serial": "PIEM_VALID_UNTIL",
+                            "email": "valid-until@tokens.example.org", "otpkey": self.otpkey})
+        validity = int(get_from_config("email.validtime", 120))
+
+        with non_utc_time_zone():
+            before = utc_now()
+            success, _message, _transaction_id, reply_dict = token.create_challenge()
+
+        self.assertTrue(success)
+        self.assert_valid_until_is_utc(reply_dict["attributes"]["valid_until"], validity, before)
+
+        # Clean up
+        remove_token("PIEM_VALID_UNTIL")

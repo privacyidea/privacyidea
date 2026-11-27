@@ -124,6 +124,11 @@ $input-focus-outline: theme.$focus-outline;
   gap: 8px;
 }
 
+.input-width-xxs {
+  width: 100%;
+  max-width: var(--input-width-xxs);
+}
+
 .input-width-xs {
   width: 100%;
   max-width: var(--input-width-xs);

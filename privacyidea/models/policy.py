@@ -25,7 +25,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from privacyidea.lib.utils import is_true
 from privacyidea.models import db
 from privacyidea.models.config import TimestampMethodsMixin
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -220,12 +220,12 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("description_seq"), primary_key=True)
     object_id: Mapped[int] = mapped_column(Integer, ForeignKey('policy.id'), nullable=False)
     object_type: Mapped[str] = mapped_column(Unicode(64), unique=False, nullable=False)
-    last_update: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow)
+    last_update: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now)
     description: Mapped[str | None] = mapped_column(UnicodeText())
 
-    def __init__(self, object_id, name="", object_type="", description=""):
+    def __init__(self, object_id: int, name: str = "", object_type: str = "", description: str = "") -> None:
         self.name = name
         self.object_type = object_type
         self.object_id = object_id
-        self.last_update = datetime.now()
+        self.last_update = utc_now()
         self.description = description
