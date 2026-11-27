@@ -21,6 +21,7 @@
     (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
     [enrolledInputData]="data.response.detail"
     [compact]="wizard"
+    [regenerateDisabled]="enrolling()"
     [tokenType]="tokenType"
     [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
 }

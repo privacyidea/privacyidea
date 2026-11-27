@@ -227,6 +227,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   // success step first opens, or when the enrollment stops before that step. A later reopen then keeps
   // the inputs that the user entered for the next token.
   private inputsResetPending = false;
+  // Set while the enrollment request runs, so a second click does not enroll a second token.
+  protected readonly enrolling = signal(false);
   // False keeps the inputs of the enrolled token, see the wizard.
   protected readonly resetsInputsAfterEnrollment: boolean = true;
   protected readonly successStepComponent: Type<EnrollmentStep> = TokenEnrollmentSuccessComponent;
@@ -361,6 +363,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   async enrollToken(): Promise<boolean> {
+    if (this.enrolling()) {
+      return false;
+    }
     const currentTokenType = this.tokenService.selectedTokenType();
     if (!currentTokenType) {
       this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
@@ -423,11 +428,14 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
 
     let enrollmentResponse: EnrollmentResponse | null;
+    this.enrolling.set(true);
     try {
       enrollmentResponse = await this._toPromise(this.tokenService.enrollToken(enrollmentArgs));
     } catch {
       // enrollToken() has already notified about the failure.
       return false;
+    } finally {
+      this.enrolling.set(false);
     }
 
     this.enrollmentFlow.start(

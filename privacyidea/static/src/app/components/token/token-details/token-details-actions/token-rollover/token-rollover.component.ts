@@ -58,12 +58,14 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     onStepClosed: () => this.tokenService.tokenDetailResource.reload()
   });
 
-  dialogActions = signal<DialogAction<boolean>[]>([
+  // Set while the rollover request runs, so a second click does not roll the token over again.
+  protected readonly rollingOver = signal(false);
+  dialogActions = computed<DialogAction<boolean>[]>(() => [
     {
       type: "confirm",
       label: $localize`:@@common.rollover:Rollover`,
       value: true,
-      disabled: false
+      disabled: this.rollingOver()
     }
   ]);
 
@@ -89,6 +91,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   }
 
   async rolloverToken() {
+    if (this.rollingOver()) {
+      return;
+    }
     if (!this.token()) {
       this.notificationService.warning($localize`:@@token.noTokenSelected:No token selected for rollover.`);
       return;
@@ -118,11 +123,14 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
 
     let enrollmentResponse: EnrollmentResponse | null;
+    this.rollingOver.set(true);
     try {
       enrollmentResponse = await this._toPromise(this.tokenService.enrollToken(enrollmentArgs));
     } catch {
       // enrollToken() has already notified about the failure.
       return;
+    } finally {
+      this.rollingOver.set(false);
     }
 
     this.enrollmentFlow.start(

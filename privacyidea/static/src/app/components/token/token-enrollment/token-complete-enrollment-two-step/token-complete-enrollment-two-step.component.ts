@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { form, FormField, readonly, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -60,13 +60,16 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
     readonly(f, () => this.enrolling());
   });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
+  private readonly enrollmentData = viewChild(TokenEnrollmentDataComponent);
+  // A completion crossing a regenerate request would combine the client part with a server part the app does not have.
+  protected readonly regenerating = computed(() => this.enrollmentData()?.regenerating() ?? false);
 
   override readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
-      disabled: this.invalidInputSignal() || this.enrolling()
+      disabled: this.invalidInputSignal() || this.enrolling() || this.regenerating()
     }
   ]);
 
@@ -81,7 +84,7 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   }
 
   enrollToken() {
-    if (this.enrolling()) {
+    if (this.enrolling() || this.regenerating()) {
       return;
     }
     // A copy, so a failed request does not change the parameters that Regenerate QR Code sends.

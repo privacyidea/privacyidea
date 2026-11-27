@@ -115,6 +115,25 @@ describe("TokenRolloverComponent", () => {
     expect(notificationService.error).not.toHaveBeenCalled();
   });
 
+  it("rolls the token over only once while the request runs, and disables Rollover meanwhile", async () => {
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({ data: {}, mapper: { map: (x: unknown) => x } })
+    });
+    let answer!: (response: EnrollmentResponse) => void;
+    tokenService.enrollToken.mockReturnValue(new Promise<EnrollmentResponse>((resolve) => (answer = resolve)));
+
+    const first = component.rolloverToken();
+    void component.rolloverToken();
+
+    expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+    expect(component.dialogActions()[0].disabled).toBe(true);
+
+    answer({ result: { status: true }, detail: { serial: "ABC123", rollout_state: "enrolled" } } as EnrollmentResponse);
+    await first;
+    expect(component.dialogActions()[0].disabled).toBe(false);
+  });
+
   it("should warn when the strategy cannot build the enrollment arguments", async () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
     installStrategy(component, { buildEnrollmentArgs: jest.fn().mockReturnValue(null) });

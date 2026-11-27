@@ -171,6 +171,12 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
       expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
     });
 
+    it("disables Regenerate QR Code, which would cross the completion", () => {
+      const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+
+      expect(enrollmentData.componentInstance.regenerateDisabled()).toBe(true);
+    });
+
     it("enables Enroll and the input again once the request ended", () => {
       component.clientPart.set("SOMEKEY");
       host.flow.sentInput.set(null);
@@ -179,6 +185,19 @@ describe("TokenCompleteEnrollmentTwoStepComponent", () => {
       expect(component.actions()[0].disabled).toBe(false);
       expect(fixture.nativeElement.querySelector("input").readOnly).toBe(false);
     });
+  });
+
+  it("does not send the client part while the QR code is being regenerated", () => {
+    const enrollmentData = fixture.debugElement.query(By.css("app-token-enrollment-data"));
+    enrollmentData.componentInstance.regenerating.set(true);
+    component.clientPart.set("SOMEKEY");
+    fixture.detectChanges();
+
+    component.onAction("enroll");
+
+    expect(component.actions()[0].disabled).toBe(true);
+    expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
+    expect(enrollmentData.componentInstance.regenerateDisabled()).toBe(false);
   });
 
   it("shows the sent client part read-only when it is reopened while the request runs", async () => {

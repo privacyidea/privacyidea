@@ -581,6 +581,31 @@ describe("TokenEnrollmentComponent", () => {
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
       });
 
+      it("enrolls only one token while the request runs, and disables Enroll Token meanwhile", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        let answer!: (response: unknown) => void;
+        tokenService.enrollToken.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+        const first = component.enrollToken();
+        await expect(component.enrollToken()).resolves.toBe(false);
+        fixture.detectChanges();
+
+        expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+        const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
+        expect(button.disabled).toBe(true);
+
+        answer({ result: { status: true }, detail: { serial: "OATH0001", rollout_state: "enrolled" } });
+        await expect(first).resolves.toBe(true);
+        fixture.detectChanges();
+        expect(button.disabled).toBe(false);
+      });
+
       // enrollToken() of the token service reports the failure itself. The component used to
       // notify a second time and then re-await the rejected promise, which aborted the rest
       // of the method with an unhandled rejection.
