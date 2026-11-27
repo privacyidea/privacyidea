@@ -22,6 +22,7 @@ import datetime
 import json
 from io import BytesIO
 import string
+from contextlib import suppress
 import unittest
 from urllib.parse import quote, urlencode
 
@@ -53,7 +54,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import (SCOPE, PolicyClass, delete_policies, delete_policy, enable_policy,
                                    get_policies, set_policy)
-from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
@@ -87,6 +88,8 @@ from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import NodeName, Token, db
 from privacyidea.models.token import TokenOwner
 
+from . import ldap3mock
+from .api_validate_common import LDAPDirectory
 from .base import PWFILE2, MyApiTestCase, clock_moved_forward
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import CERTIFICATE, REQUEST
@@ -7228,3 +7231,137 @@ class HideTokeninfoPerTokenTestCase(MyApiTestCase):
                            action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
                 self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
 
+
+
+class APITokenResolvedUserPolicyTestCase(MyApiTestCase):
+    """
+    The raw ``user`` parameter is the name as sent, neither split at the "@realm" nor resolved to the first login
+    name of the resolver. A policy for the user must match the name with the realm and a second login name.
+    """
+    realm = "ldaprealm"
+
+    def setup_ldap(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        save_resolver({"LDAPURI": "ldap://localhost", "LDAPBASE": "o=test",
+                       "BINDDN": "cn=manager,ou=example,o=test", "BINDPW": "ldaptest",
+                       "LOGINNAMEATTRIBUTE": "cn, sn", "LDAPSEARCHFILTER": "(cn=*)",
+                       "USERINFO": '{ "username": "cn","surname" : "sn", "givenname" : "givenName" }',
+                       "UIDTYPE": "DN", "resolver": "ldapres", "type": "ldapresolver"})
+        set_realm(self.realm, resolvers=[{"name": "ldapres"}])
+        set_default_realm(self.realm)
+
+    def tearDown(self):
+        for name in ("adm", "adm_alice", "adm_bob", "enr", "tok"):
+            with suppress(ResourceNotFoundError):
+                delete_policy(name)
+        with suppress(Exception):
+            remove_token("SCR1")
+        with suppress(Exception):
+            delete_realm(self.realm)
+            delete_resolver("ldapres")
+        super().tearDown()
+
+    def request(self, url, method="POST", data=None, headers=None):
+        with self.app.test_request_context(url, method=method, data=data if method != "GET" else None,
+                                           query_string=data if method == "GET" else None,
+                                           headers=headers or {"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.reset_flask_g()
+        return res
+
+    def user_variants(self):
+        # the first login name with the realm, a second login name
+        return [{"user": f"alice@{self.realm}"}, {"user": "Cooper", "realm": self.realm}]
+
+    def enroll(self, token_type, user_params, **kwargs):
+        res = self.request("/token/init", data=dict(user_params, type=token_type, genkey=1, **kwargs))
+        self.assertEqual(200, res.status_code, res.json)
+        serial = res.json["detail"]["serial"]
+        token = get_tokens(serial=serial)[0]
+        info = (token.token.otplen, token.get_tokeninfo("hashlib"))
+        remove_token(serial)
+        return info
+
+    @ldap3mock.activate
+    def test_01_hotp_defaults_for_user_policy(self):
+        self.setup_ldap()
+        set_policy("adm_alice", scope=SCOPE.ADMIN, user="alice",
+                   action="enrollHOTP, hotp_otplen=8, hotp_hashlib=sha256")
+        for variant in self.user_variants():
+            with self.subTest(variant=variant):
+                self.assertEqual((8, "sha256"), self.enroll("hotp", variant))
+
+    @ldap3mock.activate
+    def test_02_totp_and_daypassword_defaults_for_user_policy(self):
+        self.setup_ldap()
+        set_policy("adm_alice", scope=SCOPE.ADMIN, user="alice",
+                   action=f"enrollTOTP, totp_otplen=8, totp_hashlib=sha512, "
+                          f"enrollDAYPASSWORD, daypassword_otplen=8, daypassword_hashlib=sha256")
+        for variant in self.user_variants():
+            with self.subTest(variant=variant, token_type="totp"):
+                self.assertEqual((8, "sha512"), self.enroll("totp", variant))
+            with self.subTest(variant=variant, token_type="daypassword"):
+                self.assertEqual((8, "sha256"), self.enroll("daypassword", variant))
+
+    @ldap3mock.activate
+    def test_03_defaults_of_another_user_do_not_apply(self):
+        self.setup_ldap()
+        set_policy("adm_bob", scope=SCOPE.ADMIN, user="bob",
+                   action=f"enrollHOTP, hotp_otplen=8")
+        set_policy("adm_alice", scope=SCOPE.ADMIN, user="alice", action="enrollHOTP")
+        for variant in self.user_variants():
+            with self.subTest(variant=variant):
+                self.assertEqual(6, self.enroll("hotp", variant)[0])
+
+    @ldap3mock.activate
+    def test_04_getchallenges_for_user_policy(self):
+        self.setup_ldap()
+        init_token({"type": "hotp", "genkey": 1, "serial": "SCR1"}, user=User("alice", self.realm))
+        set_policy("adm_alice", scope=SCOPE.ADMIN, user="alice", action=PolicyAction.GETCHALLENGES)
+        for variant in self.user_variants():
+            with self.subTest(variant=variant):
+                res = self.request("/token/challenges/", method="GET", data=variant)
+                self.assertEqual(200, res.status_code, res.json)
+        # A policy for another user does not allow it, but the request with a serial only still passes
+        set_policy("adm_alice", scope=SCOPE.ADMIN, user="bob", action=PolicyAction.GETCHALLENGES)
+        for variant in self.user_variants():
+            with self.subTest(variant=variant, policy="bob"):
+                res = self.request("/token/challenges/", method="GET", data=variant)
+                self.assertEqual(403, res.status_code, res.json)
+        res = self.request("/token/challenges/", method="GET", data={"serial": "SCR1"})
+        self.assertEqual(200, res.status_code, res.json)
+
+    @ldap3mock.activate
+    def test_05_policies_with_user_object_do_not_raise_for_name_with_realm(self):
+        self.setup_ldap()
+        set_policy("adm", scope=SCOPE.ADMIN, user="alice",
+                   action=f"enrollHOTP, hotp_2step=allow, {PolicyAction.ENROLLPIN}, "
+                          f"{PolicyAction.OTPPINSETRANDOM}=8, setrandompin, {PolicyAction.SETDESCRIPTION}")
+        set_policy("enr", scope=SCOPE.ENROLL, user="alice",
+                   action="hotp_2step_clientsize=10, hotp_2step_serversize=10, hotp_2step_difficulty=10000, "
+                          "require_description=hotp")
+        set_policy("tok", scope=SCOPE.TOKEN, user="alice", action="require_description_on_edit=hotp")
+        init_token({"type": "hotp", "genkey": 1, "serial": "SCR1"}, user=User("alice", self.realm))
+        for variant in self.user_variants():
+            with self.subTest(variant=variant):
+                # init: enrollpin and require_description for alice apply
+                res = self.request("/token/init", data=dict(variant, type="hotp", genkey=1, pin="1234",
+                                                            description="d"))
+                self.assertEqual(200, res.status_code, res.json)
+                remove_token(res.json["detail"]["serial"])
+                res = self.request("/token/init", data=dict(variant, type="hotp", genkey=1))
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertIn("Description required", res.json["result"]["error"]["message"])
+                res = self.request("/token/init", data=dict(variant, type="hotp", genkey=1, description="d",
+                                                            **{"2stepinit": 1}))
+                self.assertEqual(200, res.status_code, res.json)
+                remove_token(res.json["detail"]["serial"])
+                # setrandompin: otp_pin_set_random for alice applies
+                res = self.request("/token/setrandompin", data=dict(variant, serial="SCR1"))
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(8, len(res.json["detail"]["pin"]))
+                # description: require_description_on_edit for alice applies
+                res = self.request("/token/description", data=dict(variant, serial="SCR1", description=""))
+                self.assertEqual(403, res.status_code, res.json)
+                res = self.request("/token/description", data=dict(variant, serial="SCR1", description="x"))
+                self.assertEqual(200, res.status_code, res.json)

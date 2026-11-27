@@ -1417,6 +1417,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         env["REMOTE_ADDR"] = "10.0.0.1"
         g.client_ip = env["REMOTE_ADDR"]
         req = Request(env)
+        req.User = User()
 
         # Set a policy that defines the default totp settings
         set_policy(name="pol1",
@@ -1451,6 +1452,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                                  headers={})
         env = builder.get_environ()
         req = Request(env)
+        req.User = User()
         # request, that matches the policy
         req.all_data = {
             "type": "hotp",

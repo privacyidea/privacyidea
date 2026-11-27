@@ -2268,7 +2268,7 @@ class TokenClass:
         return ""
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def get_default_settings(cls, g, params, user_object=None):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -2280,6 +2280,8 @@ class TokenClass:
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
+        :param user_object: The user of the request, already split and resolved
+        :type user_object: User or None
         :return: default parameters
         """
         return cls._get_default_settings(g)

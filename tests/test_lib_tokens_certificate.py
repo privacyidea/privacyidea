@@ -22,6 +22,8 @@ from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
+from privacyidea.lib.realm import set_realm, delete_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, import_tokens
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -31,6 +33,8 @@ from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.models import Token
+from . import ldap3mock
+from .api_validate_common import LDAPDirectory
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from .mscamock import CAServiceMock
 
@@ -543,6 +547,37 @@ class CertificateTokenTestCase(MyTestCase):
         # Check that the certificate from the container matches the returned one
         self.assertEqual(x509.load_pem_x509_certificate(detail["certificate"].encode()),
                          pkcs12_container[1])
+
+    @ldap3mock.activate
+    def test_05a_get_default_settings_for_second_login_name(self):
+        # The user param of an admin is the name as sent, the user object is resolved to the first login name
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        save_resolver({"LDAPURI": "ldap://localhost", "LDAPBASE": "o=test",
+                       "BINDDN": "cn=manager,ou=example,o=test", "BINDPW": "ldaptest",
+                       "LOGINNAMEATTRIBUTE": "cn, sn", "LDAPSEARCHFILTER": "(cn=*)",
+                       "USERINFO": '{ "username": "cn","surname" : "sn", "givenname" : "givenName" }',
+                       "UIDTYPE": "DN", "resolver": "ldapres_cert", "type": "ldapresolver"})
+        set_realm("ldaprealm_cert", resolvers=[{"name": "ldapres_cert"}])
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin", "realm": "", "role": "admin"}
+        set_policy("pol_alice", scope=SCOPE.ADMIN, user="alice",
+                   action=f"{ACTION.TRUSTED_CA_PATH!s}=tests/testdata/attestation/")
+        g.policy_object = PolicyClass()
+        user = User("Cooper", "ldaprealm_cert")
+        self.assertEqual("alice", user.login)
+        params = {"user": "Cooper", "realm": "ldaprealm_cert"}
+        self.assertEqual(["tests/testdata/attestation/"],
+                         CertificateTokenClass.get_default_settings(g, params, user).get(ACTION.TRUSTED_CA_PATH))
+        # A policy for another user does not apply
+        set_policy("pol_alice", scope=SCOPE.ADMIN, user="bob",
+                   action=f"{ACTION.TRUSTED_CA_PATH!s}=tests/testdata/attestation/")
+        g.policy_object = PolicyClass()
+        self.assertNotEqual(["tests/testdata/attestation/"],
+                            CertificateTokenClass.get_default_settings(g, params, user).get(ACTION.TRUSTED_CA_PATH))
+        delete_policy("pol_alice")
+        delete_realm("ldaprealm_cert")
+        delete_resolver("ldapres_cert")
 
     def test_05_get_default_settings(self):
         params = {}

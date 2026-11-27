@@ -67,7 +67,8 @@ from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
                                         Tokenkind)
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
-                                   hexlify_and_unicode, determine_logged_in_userparams)
+                                   hexlify_and_unicode, determine_logged_in_userparams,
+                                   get_resolved_admin_username)
 from .HMAC import HmacOtp
 from ..policies.actions import PolicyAction
 from ..user import User
@@ -795,7 +796,7 @@ class HotpTokenClass(TokenClass):
         return settings.get(key, "")
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def get_default_settings(cls, g, params, user_object=None):
         """
         This method returns a dictionary with default settings for token
         enrollment.
@@ -809,6 +810,8 @@ class HotpTokenClass(TokenClass):
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
+        :param user_object: The user of the request, already split and resolved
+        :type user_object: User or None
         :return: default parameters
         """
         ret = {}
@@ -816,6 +819,7 @@ class HotpTokenClass(TokenClass):
             return ret
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
+        username = get_resolved_admin_username(role, username, user_object)
         return cls._get_default_settings(g, role, username, userrealm, adminuser, adminrealm)
 
     @classmethod

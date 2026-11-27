@@ -2051,6 +2051,25 @@ def determine_logged_in_userparams(logged_in_user, params):
     return role, username, realm, admin_user, admin_realm
 
 
+def get_resolved_admin_username(role, username, user_object):
+    """
+    Return the name of the user an admin acts on, as it must be used to match policies.
+
+    The request parameter ``user`` (and so the ``username`` of ``determine_logged_in_userparams``) is the name as
+    sent: it is neither split at the "@realm" nor resolved to the first login name of the resolver. The
+    ``user_object`` of the request (``request.User``) already is both, so its login name is used instead.
+    A policy for "alice" then also matches "alice@realm" and a second login name of alice.
+
+    :param role: The role of the logged-in user
+    :param username: The user name from ``determine_logged_in_userparams``
+    :param user_object: The user object of the request or None
+    :return: The login name of the user object, otherwise the given username
+    """
+    if role == "admin" and username and user_object and user_object.resolver and user_object.login:
+        return user_object.login
+    return username
+
+
 def to_list(input):
     """
     Returns a list if either a list, a set or a single string is given.

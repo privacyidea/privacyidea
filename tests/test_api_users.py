@@ -1347,6 +1347,32 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             delete_resolver(resolver)
 
 
+    def test_27_create_user_with_admin_policy_for_the_user(self):
+        """The new user does not exist yet, so the name as sent is matched by the admin policy for the user."""
+        self.setUp_user_realms()
+        resolver = "sql_adduser_user_policy"
+        realm = "adduseruserrealm"
+        sql_parameters = dict(self.parameters, resolver=resolver, type="sqlresolver", Editable=True)
+        self.assertTrue(save_resolver(sql_parameters) > 0)
+        set_realm(realm, [{"name": resolver}])
+        set_policy("admin_adduser", scope=SCOPE.ADMIN, action=PolicyAction.ADDUSER, user="policyuser", realm=realm)
+        try:
+            for name, status in (("policyuser", 200), ("otheruser", 403)):
+                with self.app.test_request_context("/user/", method="POST",
+                                                   data={"user": name, "resolver": resolver,
+                                                         "password": "Test1234!"},
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(status, res.status_code, res.json)
+        finally:
+            for name in ("policyuser", "otheruser"):
+                with suppress(Exception):
+                    User(login=name, realm=realm).delete()
+            delete_policy("admin_adduser")
+            delete_realm(realm)
+            delete_resolver(resolver)
+
+
 class UserListScopeTestCase(MyApiTestCase):
     """
     Which users an administrator may list, and whether they may learn which of them own a token.

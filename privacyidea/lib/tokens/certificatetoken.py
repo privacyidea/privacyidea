@@ -59,7 +59,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import b64encode_and_unicode, to_byte_string
-from privacyidea.lib.utils import determine_logged_in_userparams
+from privacyidea.lib.utils import determine_logged_in_userparams, get_resolved_admin_username
 
 log = logging.getLogger(__name__)
 
@@ -359,7 +359,7 @@ class CertificateTokenClass(TokenClass):
         return ret
 
     @classmethod
-    def get_default_settings(cls, g, params):
+    def get_default_settings(cls, g, params, user_object=None):
         """
         This method returns a dictionary with additional settings for token
         enrollment.
@@ -371,11 +371,14 @@ class CertificateTokenClass(TokenClass):
         :param g: context object, see documentation of ``Match``
         :param params: The call parameters
         :type params: dict
+        :param user_object: The user of the request, already split and resolved
+        :type user_object: User or None
         :return: default parameters
         """
         ret = {ACTION.TRUSTED_CA_PATH: DEFAULT_CA_PATH}
         (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
                                                                                             params)
+        username = get_resolved_admin_username(role, username, user_object)
         # Now we fetch CA-pathes from the policies
         paths = Match.generic(g, scope=role,
                               action=ACTION.TRUSTED_CA_PATH,

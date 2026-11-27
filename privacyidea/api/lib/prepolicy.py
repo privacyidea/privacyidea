@@ -128,7 +128,8 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
 from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    generate_charlists_from_pin_policy,
                                    get_module_class, check_module_allowed,
-                                   determine_logged_in_userparams, parse_string_to_dict)
+                                   determine_logged_in_userparams, parse_string_to_dict,
+                                   get_resolved_admin_username)
 from privacyidea.lib.pinhandling.base import PIN_HANDLERS
 from privacyidea.config import ConfigKey
 
@@ -177,6 +178,18 @@ class prepolicy:
         return policy_wrapper
 
 
+def _username_for_match(username, user_object):
+    """
+    Return the user name to pass to ``Match.generic`` together with the ``user_object``.
+
+    The raw request parameter ``user`` is the name as sent: neither split at the "@realm" nor resolved to the first
+    login name, so it can differ from the user object. The user object (``request.User``) already is split and
+    resolved and carries the name to match, so no name is passed in addition.
+    Without a user object the given name is returned unchanged.
+    """
+    return None if user_object else username
+
+
 def _generate_pin_from_policy(policy, size=6):
     """
     This helper function creates a string of allowed characters from the value of a pincontents policy.
@@ -212,7 +225,7 @@ def set_random_pin(request=None, action=None):
                              scope=role,
                              adminrealm=adminrealm,
                              adminuser=adminuser,
-                             user=username,
+                             user=_username_for_match(username, user_object),
                              realm=realm,
                              user_object=user_object).action_values(unique=True)
 
@@ -836,7 +849,7 @@ def enroll_pin(request=None, action=None):
     allowed_action = Match.generic(g, scope=role,
                                    action=PolicyAction.ENROLLPIN,
                                    user_object=request.User,
-                                   user=username,
+                                   user=_username_for_match(username, request.User),
                                    resolver=resolver,
                                    realm=userrealm,
                                    adminrealm=adminrealm,
@@ -859,7 +872,7 @@ def init_token_defaults(request=None, action=None):
     params = request.all_data
     ttype = params.get("type") or "hotp"
     token_class = get_token_class(ttype)
-    default_settings = token_class.get_default_settings(g, params)
+    default_settings = token_class.get_default_settings(g, params, request.User)
     log.debug(f"Adding default settings {default_settings!s} for token type {ttype!s}")
     request.all_data.update(default_settings)
     return True
@@ -1080,7 +1093,7 @@ def twostep_enrollment_parameters(request=None, action=None):
             # SCOPE.ENROLL does not have an admin realm
             action_values = Match.generic(g, action=action,
                                           scope=SCOPE.ENROLL,
-                                          user=username,
+                                          user=_username_for_match(username, request.User),
                                           realm=userrealm,
                                           user_object=request.User).action_values(unique=True)
             if action_values:
@@ -1639,6 +1652,8 @@ def check_base_action(request=None, action=None, anonymous=False):
         if not realm and params.get("serial"):
             realm = get_realms_of_token(params.get("serial"),
                                         only_first_realm=True)
+        # The raw "user" parameter is not split at the "@realm" and not resolved to the first login name
+        username = get_resolved_admin_username(role, username, request.User)
 
     # In this case we do not pass the user_object, since the realm is also determined
     # by the pure serial number given.
@@ -2161,7 +2176,7 @@ def check_token_init(request: Request | None = None, action: str | None = None) 
             raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
 
     init_allowed = Match.generic(g, action=action,
-                                 user=username,
+                                 user=_username_for_match(username, request.User),
                                  resolver=resolver,
                                  realm=userrealm,
                                  scope=role,
@@ -3075,7 +3090,7 @@ def require_description(request=None, action=None):
                                   scope=SCOPE.ENROLL,
                                   adminrealm=admin_realm,
                                   adminuser=admin_user,
-                                  user=username,
+                                  user=_username_for_match(username, user_object),
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
@@ -3117,7 +3132,7 @@ def require_description_on_edit(request=None, action=None):
                                   scope=SCOPE.TOKEN,
                                   adminrealm=admin_realm,
                                   adminuser=admin_user,
-                                  user=username,
+                                  user=_username_for_match(username, user_object),
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
