@@ -46,27 +46,31 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container">
-      <button
-        (click)="onCreateNewWebhook()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-3">webhook</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@webhook.createWebhook">Create Webhook</span>
-      </button>
-      <button
-        (click)="deleteSelected()"
-        [disabled]="!selector.hasSelection()"
-        class="action-button-delete-secondary button-width-l"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@common.delete">Delete</span>
-      </button>
-    </div>
+    @if (canWrite()) {
+      <div class="actions-container">
+        <button
+          (click)="onCreateNewWebhook()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">webhook</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@webhook.createWebhook">Create Webhook</span>
+        </button>
+        <button
+          (click)="deleteSelected()"
+          [disabled]="!selector.hasSelection()"
+          class="action-button-delete-secondary button-width-l"
+          mat-stroked-button>
+          <mat-icon>delete_sweep</mat-icon>
+          <span i18n="@@common.delete">Delete</span>
+        </button>
+      </div>
+    }
     <table
+      aria-label="Webhooks"
+      i18n-aria-label="@@common.webhooks"
       [dataSource]="webhookDataSource()"
       class="webhooks-table"
       mat-table
@@ -77,6 +81,8 @@
           class="table-checkbox"
           mat-header-cell>
           <mat-checkbox
+            aria-label="Select all rows"
+            i18n-aria-label="@@common.selectAllRows"
             (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
             [checked]="selector.allRowsSelected()"
             [disabled]="!selector.hasVisibleRows()"
@@ -87,6 +93,8 @@
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
+            aria-label="Select row"
+            i18n-aria-label="@@common.selectRow"
             (change)="selector.setRowSelected(row, $event.checked)"
             (click)="$event.stopPropagation()"
             [checked]="selector.isRowSelected(row)" />
@@ -98,7 +106,8 @@
           *matHeaderCellDef
           i18n="@@common.identifier"
           mat-header-cell
-          mat-sort-header>Identifier
+          mat-sort-header
+          >Identifier
         </th>
         <td
           *matCellDef="let webhook"
@@ -121,7 +130,8 @@
           *matHeaderCellDef
           i18n="@@webhook.url"
           mat-header-cell
-          mat-sort-header>URL
+          mat-sort-header
+          >URL
         </th>
         <td
           *matCellDef="let webhook"
@@ -139,7 +149,8 @@
           *matHeaderCellDef
           i18n="@@webhook.httpMethod"
           mat-header-cell
-          mat-sort-header>Method
+          mat-sort-header
+          >Method
         </th>
         <td
           *matCellDef="let webhook"
@@ -153,7 +164,8 @@
           *matHeaderCellDef
           i18n="@@webhook.authType"
           mat-header-cell
-          mat-sort-header>Authentication
+          mat-sort-header
+          >Authentication
         </th>
         <td
           *matCellDef="let webhook"
@@ -167,7 +179,8 @@
           *matHeaderCellDef
           i18n="@@common.description"
           mat-header-cell
-          mat-sort-header>Description
+          mat-sort-header
+          >Description
         </th>
         <td
           *matCellDef="let webhook"
@@ -177,10 +190,10 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns()"
         mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: displayedColumns"
+        *matRowDef="let row; columns: displayedColumns()"
         mat-row></tr>
 
       <tr *matNoDataRow>
@@ -195,20 +208,21 @@
     <app-table-state
       [table]="tableState"
       heading="No webhooks yet"
-      hint="Create a webhook to notify another system from an event handler or a conditional access policy."
+      [hint]="emptyHint()"
       i18n-heading="@@webhook.noWebhooks"
-      i18n-hint="@@webhook.createWebhookHint"
       icon="webhook">
-      <button
-        (click)="onCreateNewWebhook()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-3">webhook</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@webhook.createWebhook">Create Webhook</span>
-      </button>
+      @if (canWrite()) {
+        <button
+          (click)="onCreateNewWebhook()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">webhook</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@webhook.createWebhook">Create Webhook</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

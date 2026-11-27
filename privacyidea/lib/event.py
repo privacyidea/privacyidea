@@ -33,10 +33,10 @@ from sqlalchemy import select, delete
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
-from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
+from privacyidea.lib.error import ConfigAdminError, HandlerAbortError, ParameterError
 from privacyidea.lib.utils import fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
-from privacyidea.lib.webhook import _stage_webhook, get_webhook, get_webhook_identifiers
+from privacyidea.lib.webhook import _stage_webhook, _validate, get_webhook, get_webhook_identifiers
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
                                 audit_column_length)
 
@@ -502,12 +502,23 @@ IMPORT_MARKER = "pi-import:webhook-from-inline-handler"
 MIGRATION_MARKER = "pi-migration:e1f2a3b4c5d6"
 
 
-def _free_webhook_identifier(base, handler_id):
+def _webhook_identifier_base(handler_name: str, handler_id: int) -> str:
     """
-    Return the identifier to create the webhook under: *base*, or the next free variant of it.
+    Return the identifier of the webhook of a converted WebHook handler. The e1f2a3b4c5d6 migration names the webhooks
+    by the same rule.
 
-    :param base: the identifier the naming rule produces for this handler
-    :param handler_id: the handler being converted, for the log message
+    :param handler_name: the name of the handler
+    :param handler_id: the id of the handler
+    :return: the identifier
+    """
+    return f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
+
+
+def _free_webhook_identifier(base: str) -> str:
+    """
+    Return the identifier to create the webhook of a converted handler under: *base*, or the next free variant of it.
+
+    :param base: the identifier that the naming rule gives the webhook of this handler
     :return: a free identifier, or the identifier of a webhook that the migration or an import created for this
         handler, which the caller links the handler to unchanged
     """
@@ -523,36 +534,70 @@ def _free_webhook_identifier(base, handler_id):
             return candidate
         suffix += 1
         candidate = f"{base}_{suffix}"
-
-    if candidate != base:
-        log.info(f"The webhook {base!r} already exists and was not created by a configuration "
-                 f"import or the migration, so imported WebHook handler {handler_id} gets "
-                 f"{candidate!r} instead.")
     return candidate
 
 
-def _inline_webhook_defect(options):
+def _inline_webhook_settings(options: dict) -> dict:
     """
-    Return why a WebHook definition in the inline shape cannot be converted, or None.
+    Return the settings of the webhook that the import creates from the inline options of a WebHook handler. With
+    them the webhook sends what the inline handler sent.
 
     :param options: the handler options as imported
-    :return: a short reason, or None when the definition can be converted
+    :return: the keyword arguments for ``_stage_webhook()``. The content type is None if the inline handler sends
+        nothing with the content type of the options.
     """
-    # Imported lazily: lib.event is imported by the handler modules' own dependencies, and this
-    # is the only place in it that needs the handler's content-type table.
-    from privacyidea.lib.eventhandler.webhookeventhandler import (ContentType,
-                                                                  DB_CONTENT_TYPE_MAP)
+    # Imported lazily: lib.event is imported by the handler modules' own dependencies, and this is the only place in
+    # it that needs the content-type table of the handler.
+    from privacyidea.lib.eventhandler.webhookeventhandler import DB_CONTENT_TYPE_MAP, TIMEOUT
 
-    if not options.get("URL"):
+    content_type = options.get("content_type")
+    return {"url": options.get("URL"),
+            "http_method": "POST",
+            # The inline handler sends only with a content type of this map. Without a content type it sends nothing.
+            "content_type": DB_CONTENT_TYPE_MAP.get(content_type) if isinstance(content_type, str) else None,
+            "auth_type": "none",
+            "verify_tls": True,
+            # The fixed timeout of the inline handler. A webhook created by hand gets 3 seconds.
+            "timeout": TIMEOUT,
+            # The inline handler puts the values of the placeholders into a form-encoded payload as they are.
+            "urlencode_values": False}
+
+
+def _inline_webhook_defect(handler_name: str, options: dict) -> str | None:
+    """
+    Return why a WebHook handler in the inline shape is not converted to a webhook, or None.
+
+    A handler is converted if the inline handler sends with its options and the webhook can be created from them. A
+    handler that sends nothing as it stands is not converted, so that the conversion does not start to send for it.
+    The webhook is checked with the validation of ``_stage_webhook()``, so that the conversion itself never fails.
+
+    :param handler_name: the name of the handler
+    :param options: the handler options as imported
+    :return: a short reason, or None if the handler can be converted
+    """
+    from privacyidea.lib.eventhandler.webhookeventhandler import ContentType
+
+    settings = _inline_webhook_settings(options)
+    if not settings["url"]:
         return "it has no URL"
-    raw_content_type = options.get("content_type") or ContentType.JSON
-    if "/" not in DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type):
+    if settings["content_type"] is None:
+        if not options.get("content_type"):
+            return "it has no content_type"
         return (f"its content_type {options.get('content_type')!r} is neither "
                 f"{ContentType.JSON} nor {ContentType.URLENCODED}")
+    try:
+        _validate(identifier=_webhook_identifier_base(handler_name, 0), url=settings["url"],
+                  http_method=settings["http_method"], content_type=settings["content_type"],
+                  auth_type=settings["auth_type"], timeout=settings["timeout"], username=None,
+                  client_certificate=None, headers=None)
+    except ParameterError as error:
+        # The URL of a webhook can be the credential of the receiving service. The messages of _validate() do not
+        # contain it.
+        return f"no webhook can be created from it: {error.message}"
     return None
 
 
-def _convert_inline_webhook_handler(handler_id, handler_name, options):
+def _convert_inline_webhook_handler(handler_id: int, handler_name: str, options: dict) -> str:
     """
     Give an imported WebHook handler a webhook object in place of its inline URL.
 
@@ -574,11 +619,8 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
     :param options: the handler options as imported
     :return: the identifier of the webhook the handler is to be linked to
     """
-    from privacyidea.lib.eventhandler.webhookeventhandler import (ContentType,
-                                                                  DB_CONTENT_TYPE_MAP)
-
-    base = f"from_{re.sub(r'[^a-zA-Z0-9_-]', '_', handler_name)[:40]}_{handler_id}"
-    identifier = _free_webhook_identifier(base, handler_id)
+    base = _webhook_identifier_base(handler_name, handler_id)
+    identifier = _free_webhook_identifier(base)
     if identifier in get_webhook_identifiers():
         if get_webhook(identifier).get("url") != options["URL"]:
             # Neither URL is logged: the URL of a webhook can be the credential of the receiving service.
@@ -586,24 +628,22 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
                      f"which keeps its URL. The URL in the imported options is a different one.")
         return identifier
 
-    raw_content_type = options.get("content_type") or ContentType.JSON
-    content_type = DB_CONTENT_TYPE_MAP.get(raw_content_type, raw_content_type)
-    # timeout=10 is the inline shape's fixed TIMEOUT, kept so the imported handler behaves
-    # exactly as it did (a webhook created by hand defaults to 3).
+    if identifier != base:
+        log.info(f"The webhook {base!r} already exists and was not created by a configuration "
+                 f"import or the migration, so imported WebHook handler {handler_id} gets "
+                 f"{identifier!r} instead.")
     _stage_webhook(identifier,
-                   url=options["URL"],
                    description=f"{IMPORT_MARKER} - created from the inline options of WebHook event "
                                f"handler {handler_id} (#5751)",
-                   http_method="POST",
-                   content_type=content_type,
-                   auth_type="none",
-                   verify_tls=True,
-                   timeout=10)
+                   **_inline_webhook_settings(options))
     return identifier
 
 
 def _is_inline_webhook(res_data: dict) -> bool:
-    """Return whether an imported event handler is a WebHook handler in the pre-3.15 inline shape."""
+    """
+    Return whether an imported event handler is a WebHook handler in the pre-3.15 inline shape. An empty ``webhook``
+    option names no webhook, so the inline handler also sends for such a definition.
+    """
     options = res_data.get("options") or {}
     return res_data.get("handlermodule") == "WebHook" and not options.get("webhook")
 
@@ -611,14 +651,48 @@ def _is_inline_webhook(res_data: dict) -> bool:
 def inline_webhook_defect(res_data: dict) -> str | None:
     """
     Return why :func:`import_event` does not import an event handler definition, because it is a WebHook handler in
-    the pre-3.15 inline shape that cannot be converted to a webhook. The import plan shows the same reason.
+    the pre-3.15 inline shape that is not converted to a webhook. The import plan shows the same reason.
 
     :param res_data: the event handler definition as exported
     :return: a short reason, or None if the definition is no such handler
     """
     if not _is_inline_webhook(res_data):
         return None
-    return _inline_webhook_defect(res_data.get("options") or {})
+    return _inline_webhook_defect(res_data.get("name") or "", res_data.get("options") or {})
+
+
+def inline_webhook_link(res_data: dict, handler_id: int) -> str | None:
+    """
+    Return the identifier of the webhook that :func:`import_event` links an event handler definition to, if it writes
+    the definition over the stored handler with this id. Nothing is written.
+
+    :param res_data: the event handler definition as exported
+    :param handler_id: the id of the stored handler
+    :return: the identifier, or None if the definition is no WebHook handler in the inline shape that is converted
+    """
+    if not _is_inline_webhook(res_data) or inline_webhook_defect(res_data):
+        return None
+    return _free_webhook_identifier(_webhook_identifier_base(res_data["name"], handler_id))
+
+
+def _stage_inline_webhook_handler(target_id: int | None, res_data: dict) -> int:
+    """
+    Write an imported WebHook handler in the inline shape and link it to its webhook, without a commit.
+
+    :param target_id: the id of the stored handler that the definition is written over, None for a new handler
+    :param res_data: the event handler definition as exported
+    :return: the id of the handler
+    """
+    # An empty webhook option names no webhook. The link replaces it, because a handler has each option only once.
+    options = {key: value for key, value in (res_data.get("options") or {}).items() if key != "webhook"}
+    handler_id = _stage_event(id=target_id, **{**res_data, "options": options})
+    identifier = _convert_inline_webhook_handler(handler_id, res_data["name"], options)
+    db.session.add(EventHandlerOption(
+        eventhandler_id=handler_id, Key="webhook", Value=identifier,
+        Description="Added by the configuration import: links this WebHook handler to "
+                    "the webhook created from its inline options (#5751)"))
+    log.info(f"Imported WebHook handler {handler_id} was converted to the webhook {identifier!r}.")
+    return handler_id
 
 
 @register_import('event')
@@ -636,10 +710,11 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
 
     :param data: the exported event handler definitions
     :param name: import only the definitions of this name (default: import all)
-    :param skip_invalid: If True, a WebHook definition that cannot be converted because it sends nothing as it
-        stands - no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded - is skipped. Without it
-        such a definition is reported in the ConfigAdminError, the way an unimportable policy is, so that a
-        configuration that cannot be restored faithfully does not look like one that was.
+    :param skip_invalid: If True, a WebHook definition in the inline shape that is not converted is skipped (see
+        :func:`inline_webhook_defect`): it sends nothing as it stands, or no webhook can be created from it. Without
+        it such a definition is reported in the ConfigAdminError, the way an unimportable policy is, so that a
+        configuration that cannot be restored faithfully does not look like one that was. Either way the other
+        definitions are imported.
     :param delete_ids: The ids of the event handlers of this system to delete in the same transaction. The import
         matches the imported event handlers with the remaining ones only, so if the import fails, the deleted event
         handlers are restored as well.
@@ -668,7 +743,7 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
         if defect:
             if skip_invalid:
                 log.warning(f'Skipping the import of WebHook event handler "{res_data["name"]}": '
-                            f'{defect}, so it sends nothing and cannot be given a webhook. '
+                            f'{defect}, so it is not converted to a webhook. '
                             f'Correct it in the exported configuration and import again.')
                 skipped.append(res_data["name"])
             else:
@@ -694,14 +769,10 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
             db.session.delete(fetch_one_resource(EventHandler, id=handler_id))
             log.info(f"Deleting event handler with id {handler_id}")
         for target_id, res_data in writes:
-            rid = _stage_event(id=target_id, **res_data)
             if _is_inline_webhook(res_data):
-                identifier = _convert_inline_webhook_handler(rid, res_data["name"], res_data.get("options") or {})
-                db.session.add(EventHandlerOption(
-                    eventhandler_id=rid, Key="webhook", Value=identifier,
-                    Description="Added by the configuration import: links this WebHook handler to "
-                                "the webhook created from its inline options (#5751)"))
-                log.info(f"Imported WebHook handler {rid} was converted to the webhook {identifier!r}.")
+                rid = _stage_inline_webhook_handler(target_id, res_data)
+            else:
+                rid = _stage_event(id=target_id, **res_data)
             log.info(f'Importing event "{res_data["name"]}", id: {rid}')
         save_config_timestamp()
         db.session.commit()
@@ -711,7 +782,7 @@ def import_event(data: list[dict], name: str | None = None, skip_invalid: bool =
         raise
     log.info(f"Import of {len(writes)} event handlers finished.")
     if skipped:
-        log.warning(f"Skipped WebHook event handlers that send nothing as they stand: {skipped}")
+        log.warning(f"Skipped WebHook event handlers that are not converted to a webhook: {skipped}")
 
     problems = []
     if conflicts:

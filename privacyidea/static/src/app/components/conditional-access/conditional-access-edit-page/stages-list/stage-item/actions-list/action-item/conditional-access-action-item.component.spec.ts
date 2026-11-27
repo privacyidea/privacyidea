@@ -84,6 +84,7 @@ describe("ConditionalAccessActionItemComponent", () => {
       auth_type: "none",
       verify_tls: true,
       timeout: 3,
+      urlencode_values: true,
       headers: {},
       secret_headers: []
     };

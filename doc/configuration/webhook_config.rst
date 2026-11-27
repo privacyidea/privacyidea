@@ -19,6 +19,10 @@ Each webhook is addressed by a *unique identifier*. Under
 *Config -> External Services -> Webhooks* you can list, create, edit and delete
 them.
 
+On MySQL and MariaDB with their default collation, the identifier does not
+depend on case: ``Hook`` and ``hook`` name the same webhook, and a save under
+the other spelling changes the stored webhook. PostgreSQL keeps them apart.
+
 Settings
 ~~~~~~~~
 
@@ -38,6 +42,16 @@ Default payload
    action. The call sites know different placeholders, so a body that is to
    carry them belongs there.
 
+URL-encode placeholder values
+   This setting applies to the content type ``application/x-www-form-urlencoded``.
+   If it is on, the values that replace the placeholders of a payload are
+   URL-encoded. A value with ``&`` or ``=`` then stays the value of one field. A
+   JSON payload is not affected.
+
+   The setting is on for a new webhook. It is off for a webhook that the upgrade
+   or the import creates from a WebHook handler of an earlier version, because
+   that handler sent the values unencoded.
+
 Authentication
    ``none`` (default), ``basic`` (username and password), ``header`` (the
    credential is one of the static headers below, marked as secret) or ``mtls``
@@ -50,6 +64,10 @@ Headers
    its place. Sending that placeholder back keeps the stored value, an empty
    value clears it.
 
+   A header name contains only letters, digits and the characters
+   ``!#$%&'*+-.^_`|~``. A header value must not start with a space or contain a
+   line break.
+
    .. note:: Renaming a header keeps its value, including a secret one.
 
 TLS
@@ -61,7 +79,10 @@ Proxy
    Separate proxies for ``http://`` and ``https://`` targets.
 
 Timeout
-   Seconds to wait for the endpoint, 3 by default. See
+   A whole number of seconds from 1 to 3600, 3 by default. The timeout limits
+   the connection, the wait for the answer and the read of the response body
+   together. An endpoint that sends the status line and the headers of its
+   answer very slowly can hold a delivery longer. See
    :ref:`webhook_synchronous` for why this matters more than it looks.
 
 Testing a webhook
@@ -100,6 +121,10 @@ available depends on the call site - see :ref:`webhookhandler` and
 A payload that is a JSON object or array is substituted value by value, so a
 placeholder carrying a quote cannot break the document. Anything else is
 substituted as plain text.
+
+In a plain-text payload of a webhook with the content type
+``application/x-www-form-urlencoded``, the values are URL-encoded if the setting
+**URL-encode placeholder values** is on.
 
 .. _webhook_outbound_guard:
 
@@ -169,8 +194,23 @@ Secrets
 
 The basic authentication password, the client key password and the values of
 headers marked as secret are **encrypted at rest** with the installation's
-encryption key. They are never returned in clear text: the API and the WebUI
-show ``__CENSORED__``, and so does an export.
+encryption key. The API and the WebUI never return them in clear text. They show
+``__CENSORED__``.
+
+``pi-manage config export`` writes the secrets in clear text. With ``--censor``,
+the export shows ``__CENSORED__`` for them. The URL, the proxy URLs and the
+values of the other headers are in the export as they are, also if they contain
+a token or a password.
+
+A stored secret goes only to the endpoint that it was saved for. If a change
+keeps the stored password or the stored value of a secret header, the change
+must not do these things:
+
+- change the URL, a proxy or the CA bundle
+- change the username, if the password is kept
+- turn off the certificate verification
+
+To make such a change, enter the secret again or clear it.
 
 Importing an export that carries ``__CENSORED__`` keeps an existing secret and
 leaves an unknown one empty - a censored export never wipes a stored credential,

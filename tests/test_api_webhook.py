@@ -124,6 +124,14 @@ class WebhookAPITestCase(MyApiTestCase):
             ({"url": URL, "timeout": "0"}, "timeout"),
             ({"url": URL, "content_type": "json"}, "legacy content type"),
             ({"url": URL, "auth_type": "basic"}, "basic without username"),
+            ({"url": URL, "timeout": 2.5}, "fractional timeout"),
+            ({"url": URL, "timeout": 3601}, "timeout above 3600"),
+            ({"url": URL, "verify_tls": "on"}, "unknown true word for verify_tls"),
+            ({"url": URL, "urlencode_values": "yes"}, "unknown true word for urlencode_values"),
+            ({"url": URL, "header.": "v"}, "empty header name"),
+            ({"url": URL, "header.X:Bad": "v"}, "header name with a colon"),
+            ({"url": URL, "header.X-Token": "v", "secret.header.X-Token": "yes"}, "unknown true word for a secret"),
+            ({"url": URL, "header.X-Token": "a\nb"}, "header value with a line break"),
         ]
         for data, label in cases:
             with self.subTest(case=label):
@@ -131,6 +139,46 @@ class WebhookAPITestCase(MyApiTestCase):
                 self.assertEqual(400, response.status_code, response.data)
         # None of the rejected requests may leave a row behind.
         self.assertEqual([], self._value(self._request("/webhook/")))
+
+    def _request_json(self, path, data):
+        """Dispatch an authenticated POST request with a JSON body."""
+        with self.app.test_request_context(path, method="POST", json=data, headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_08b_json_values_of_the_wrong_type_are_rejected(self):
+        for data in ({"url": 123}, {"url": URL, "http_method": 5}, {"url": URL, "content_type": 5},
+                     {"url": URL, "timeout": 2.5}, {"url": URL, "verify_tls": "on"},
+                     {"url": URL, "header.X-Count": 5}):
+            with self.subTest(data=data):
+                response = self._request_json("/webhook/bad", data)
+                self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual([], self._value(self._request("/webhook/")))
+
+    def test_08c_flags_accept_json_booleans_and_true_false_words(self):
+        self._value(self._request_json("/webhook/hook1", {"url": URL, "verify_tls": False,
+                                                          "urlencode_values": False}))
+        webhook = self._value(self._request("/webhook/hook1"))
+        self.assertFalse(webhook["verify_tls"])
+        self.assertFalse(webhook["urlencode_values"])
+
+        self._value(self._request("/webhook/hook1", "POST", {"verify_tls": "TRUE", "urlencode_values": "1",
+                                                             "header.X-Token": "t",
+                                                             "secret.header.X-Token": "true"}))
+        webhook = self._value(self._request("/webhook/hook1"))
+        self.assertTrue(webhook["verify_tls"])
+        self.assertTrue(webhook["urlencode_values"])
+        self.assertEqual(["X-Token"], webhook["secret_headers"])
+
+    def test_08d_a_changed_url_needs_the_stored_password(self):
+        self._value(self._create(auth_type="basic", username="svc", password="S3cretPW"))
+
+        response = self._request("/webhook/hook1", "POST", {"url": "https://other.example.net/collect",
+                                                            "password": "__CENSORED__"})
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertIn("password", response.json["result"]["error"]["message"])
+
+        self._value(self._request("/webhook/hook1", "POST", {"url": "https://other.example.net/collect",
+                                                             "password": "NewPW"}))
 
     def test_09_create_without_url_is_rejected(self):
         response = self._request("/webhook/hook1", "POST",
@@ -547,14 +595,15 @@ class WebhookAPIPolicyTestCase(MyApiTestCase):
         ("list", "/webhook/", "GET", None),
         ("get", "/webhook/hook1", "GET", None),
     ]
+    # The test call comes before the delete, so that it finds hook1 and sends its request.
     WRITE_CALLS = [
         ("create", "/webhook/hook2", "POST", {"url": URL}),
-        ("delete", "/webhook/hook1", "DELETE", None),
         ("test", "/webhook/hook1/test", "POST", None),
+        ("delete", "/webhook/hook1", "DELETE", None),
     ]
 
     def _assert_allowed(self, calls):
-        # The 'test' call fires a real request, so stub the endpoint: this
+        # The 'test' call sends a request, so the endpoint is stubbed: this
         # class is about authorisation, not about transport.
         with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
             rsps.add(responses.POST, URL, status=200)
@@ -562,6 +611,8 @@ class WebhookAPIPolicyTestCase(MyApiTestCase):
                 with self.subTest(call=label):
                     response = self._request(path, method, data)
                     self.assertNotEqual(403, response.status_code, response.data)
+                    self.assertNotEqual(404, response.status_code, response.data)
+            self.assertEqual(sum(label == "test" for label, *_ in calls), len(rsps.calls))
 
     def _assert_denied(self, calls):
         for label, path, method, data in calls:
@@ -583,8 +634,6 @@ class WebhookAPIPolicyTestCase(MyApiTestCase):
                    action=PolicyAction.WEBHOOKWRITE)
         try:
             self._assert_denied(self.READ_CALLS)
-            # 'test' fires a real request; a connection error is still a
-            # successful *authorisation*, which is all this asserts.
             self._assert_allowed(self.WRITE_CALLS)
         finally:
             delete_policy("webhookWriter")

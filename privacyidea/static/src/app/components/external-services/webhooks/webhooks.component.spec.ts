@@ -20,7 +20,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideRouter, Router } from "@angular/router";
+import { PRIMARY_OUTLET, provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { WebhooksComponent } from "@components/external-services/webhooks/webhooks.component";
 import { AuthService } from "@services/auth/auth.service";
@@ -30,6 +30,7 @@ import { Webhook, WebhookService } from "@services/webhook/webhook.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockAuthService, MockDialogService, MockTableUtilsService, MockWebhookService } from "@testing/mock-services";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { setRights } from "@testing/toolbar-actions";
 import { Subject } from "rxjs";
 
 describe("WebhooksComponent", () => {
@@ -48,6 +49,7 @@ describe("WebhooksComponent", () => {
     auth_type: "none",
     verify_tls: true,
     timeout: 3,
+    urlencode_values: true,
     headers: {},
     secret_headers: [],
     ...overrides
@@ -77,6 +79,7 @@ describe("WebhooksComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     confirmClosed = new Subject();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -125,20 +128,24 @@ describe("WebhooksComponent", () => {
   it("should navigate to the edit page", () => {
     const webhook = webhookServiceMock.webhooks()[0];
     component.onEditWebhook(webhook);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + webhook.identifier
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS, webhook.identifier]);
   });
 
-  it("encodes an identifier that is not URL-safe", () => {
-    // The editor restricts identifiers to [a-zA-Z0-9._-], but set_webhook() accepts any non-empty
-    // string, so one created through the API or a config import can carry a slash or a space -
-    // pasted raw into the path it produces a route that matches nothing and the page 404s.
-    component.onEditWebhook(buildWebhook("team/siem hook"));
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + "team%2Fsiem%20hook"
-    );
-  });
+  it.each(["hook(1)", "Notify SIEM (prod)", "50% & more;"])(
+    "keeps the identifier %p whole on its way to the editor",
+    (identifier) => {
+      // The editor restricts an identifier to [a-zA-Z0-9._-], but the server also accepts one created
+      // through the API or a config import. encodeURIComponent() leaves "(" and ")" as they are, and
+      // the router ends a path segment at "(": "hook(1)" opened the editor of "hook".
+      component.onEditWebhook(buildWebhook(identifier));
+      const commands = [ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS, identifier];
+      expect(router.navigate).toHaveBeenCalledWith(commands);
+
+      const url = router.serializeUrl(router.createUrlTree(commands));
+      const segments = router.parseUrl(url).root.children[PRIMARY_OUTLET].segments;
+      expect(segments.map((segment) => segment.path)).toEqual(["external-services", "webhooks", "details", identifier]);
+    }
+  );
 
   it("keeps the filter when the rows are replaced", async () => {
     // The data source is rebuilt whenever the list changes - a delete, or the reload button. A
@@ -174,5 +181,64 @@ describe("WebhooksComponent", () => {
     confirmClosed.complete();
 
     expect(webhookServiceMock.deleteWebhook).not.toHaveBeenCalled();
+  });
+
+  describe("webhook_write", () => {
+    const buttonLabels = (): string[] =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll("button")).map(
+        (button) => button.textContent?.trim() ?? ""
+      );
+    const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+    it("offers create, delete and row selection with webhook_write", () => {
+      setRights(fixture, ["webhook_read", "webhook_write"]);
+
+      expect(component.displayedColumns()).toContain("select");
+      expect(selectColumn()).not.toBeNull();
+      expect(buttonLabels().some((label) => label.includes("Create Webhook"))).toBe(true);
+      expect(buttonLabels().some((label) => label.includes("Delete"))).toBe(true);
+    });
+
+    it("hides create, delete and row selection without webhook_write", () => {
+      // POST and DELETE on /webhook/ need webhook_write, so these would only end in a 403.
+      setRights(fixture, ["webhook_read"]);
+
+      expect(component.displayedColumns()).not.toContain("select");
+      expect(selectColumn()).toBeNull();
+      expect(buttonLabels().some((label) => label.includes("Create Webhook"))).toBe(false);
+      expect(buttonLabels().some((label) => label.includes("Delete"))).toBe(false);
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      webhookServiceMock.webhooks.set([]);
+    });
+
+    it("offers the create button and hint with webhook_write", () => {
+      setRights(fixture, ["webhook_read", "webhook_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Webhook");
+      expect(state.textContent).toContain("Create a webhook to notify another system");
+    });
+
+    it("offers neither button nor hint without webhook_write", () => {
+      setRights(fixture, ["webhook_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create a webhook to notify another system");
+    });
+  });
+
+  it("names the table and the selection checkboxes for assistive technology", () => {
+    setRights(fixture, ["webhook_read", "webhook_write"]);
+
+    expect(fixture.nativeElement.querySelector("table").getAttribute("aria-label")).toBe("Webhooks");
+    const checkboxLabels = Array.from<HTMLInputElement>(
+      fixture.nativeElement.querySelectorAll("mat-checkbox input[type=checkbox]")
+    ).map((input) => input.getAttribute("aria-label"));
+    expect(checkboxLabels).toEqual(["Select all rows", "Select row", "Select row"]);
   });
 });

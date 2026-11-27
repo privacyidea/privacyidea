@@ -19,7 +19,7 @@
 
 import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required, validate } from "@angular/forms/signals";
+import { disabled, form, FormField, max, min, pattern, required, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -34,10 +34,14 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ERR, markRequired } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { reservedNames } from "@utils/reserved-names.utils";
 import {
+  isFormUrlencoded,
   Webhook,
   WEBHOOK_AUTH_TYPES,
   WEBHOOK_CONTENT_TYPES,
@@ -67,6 +71,25 @@ interface HeaderRow {
   originalKey?: string;
 }
 
+/**
+ * Characters of an HTTP header name: a `token` of RFC 9110, section 5.6.2. The server refuses a header
+ * with any other character, so the form does it first.
+ */
+const HEADER_NAME_PATTERN = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+
+/** Why a row of the header table cannot be saved. */
+type HeaderNameError = "required" | "invalid" | "duplicate";
+
+/** The server refuses a timeout that is not a whole number of seconds in this range. */
+const TIMEOUT_MIN_SECONDS = 1;
+const TIMEOUT_MAX_SECONDS = 3600;
+
+/** Error kinds of the rules in this form that the shared `ERR` kinds do not cover. */
+const WEBHOOK_ERR = {
+  wholeNumber: "wholeNumber",
+  headerAuthNeedsHeader: "headerAuthNeedsHeader"
+} as const;
+
 interface WebhookFormModel {
   identifier: string;
   description: string;
@@ -84,7 +107,9 @@ interface WebhookFormModel {
   client_key_password: string;
   http_proxy: string;
   https_proxy: string;
-  timeout: number;
+  // `number | null`: a number input writes null to the model while it is empty.
+  timeout: number | null;
+  urlencode_values: boolean;
 }
 
 const EMPTY_WEBHOOK_FORM: WebhookFormModel = {
@@ -105,7 +130,9 @@ const EMPTY_WEBHOOK_FORM: WebhookFormModel = {
   client_key_password: "",
   http_proxy: "",
   https_proxy: "",
-  timeout: 3
+  timeout: 3,
+  // Mirrors the server default for a new webhook.
+  urlencode_values: true
 };
 
 @Component({
@@ -153,22 +180,30 @@ export class NewWebhookComponent implements OnDestroy {
     // The same rule set_webhook() enforces; catching it here saves a round-trip to a 400.
     pattern(f.url, /^https?:\/\/.+/i);
     required(f.timeout);
-    validate(f.timeout, ({ value }) =>
-      Number(value()) > 0
-        ? null
-        : {
-          kind: "timeout",
-          message: $localize`:@@webhook.timeoutMustBePositive:The timeout must be a positive number.`
-        }
-    );
-    // Basic auth without a username is the one auth field the server insists on.
+    min(f.timeout, TIMEOUT_MIN_SECONDS);
+    max(f.timeout, TIMEOUT_MAX_SECONDS);
+    validate(f.timeout, ({ value }) => {
+      const timeout = value();
+      return timeout !== null && !Number.isInteger(timeout) ? { kind: WEBHOOK_ERR.wholeNumber } : null;
+    });
+    // The server refuses basic authentication without a username.
     validate(f.username, ({ value }) =>
       this.webhookModel().auth_type === "basic" && !value().trim()
         ? {
-          kind: "required",
-          message: $localize`:@@webhook.basicAuthNeedsUsername:Basic authentication needs a username.`
-        }
+            kind: "required",
+            message: $localize`:@@webhook.basicAuthNeedsUsername:Basic authentication needs a username.`
+          }
         : null
+    );
+    markRequired(f.username, () => this.webhookModel().auth_type === "basic");
+    // It also refuses mTLS without a client certificate, and header authentication without a header.
+    validate(f.client_certificate, ({ value }) =>
+      this.webhookModel().auth_type === "mtls" && !value().trim() ? { kind: ERR.required } : null
+    );
+    markRequired(f.client_certificate, () => this.webhookModel().auth_type === "mtls");
+    // The headers are not part of this form, so the rule sits on the field that asks for them.
+    validate(f.auth_type, ({ value }) =>
+      value() === "header" && this.namedHeaderCount() === 0 ? { kind: WEBHOOK_ERR.headerAuthNeedsHeader } : null
     );
     disabled(f.identifier, () => this.isEditMode());
     // Only consulted while verification is on, so it is not offered while it is off.
@@ -177,10 +212,51 @@ export class NewWebhookComponent implements OnDestroy {
   readonly showBasicAuth = computed(() => this.webhookModel().auth_type === "basic");
   readonly showMtls = computed(() => this.webhookModel().auth_type === "mtls");
   readonly showHeaderAuthNote = computed(() => this.webhookModel().auth_type === "header");
+  readonly showUrlencodeValues = computed(() => isFormUrlencoded(this.webhookModel().content_type));
+  /** A fraction, a value below the minimum and one above the maximum share one message. */
+  readonly timeoutOutOfRange = computed(() =>
+    [WEBHOOK_ERR.wholeNumber, ERR.min, ERR.max].some((kind) => hasError(this.webhookForm.timeout, kind))
+  );
+  /**
+   * One entry per row of the header table: why the row cannot be saved, or null. A row without a name
+   * and without a value is an unfinished row and is left out of the save, so it is no error. Names
+   * compare case-insensitively, as HTTP does: the server would store "X-Key" and "x-key" as two
+   * headers and send whichever comes last.
+   */
+  readonly headerNameErrors = computed<(HeaderNameError | null)[]>(() => {
+    const rows = this.headers();
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+      const name = row.key.trim().toLowerCase();
+      if (name) {
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    }
+    return rows.map((row) => {
+      const name = row.key.trim();
+      if (!name) {
+        return row.value ? "required" : null;
+      }
+      if (!HEADER_NAME_PATTERN.test(name)) {
+        return "invalid";
+      }
+      return (counts.get(name.toLowerCase()) ?? 0) > 1 ? "duplicate" : null;
+    });
+  });
+  readonly headersValid = computed(() => this.headerNameErrors().every((error) => error === null));
   protected readonly webhookService: WebhookServiceInterface = inject(WebhookService);
   protected readonly authTypes = WEBHOOK_AUTH_TYPES;
   protected readonly httpMethods = WEBHOOK_HTTP_METHODS;
   protected readonly contentTypes = WEBHOOK_CONTENT_TYPES;
+  protected readonly ERR = ERR;
+  protected readonly WEBHOOK_ERR = WEBHOOK_ERR;
+  /** The characters other than letters and digits that HEADER_NAME_PATTERN allows, for its error message. */
+  protected readonly headerNameSpecialCharacters = "! # $ % & ' * + - . ^ _ ` | ~";
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  /** POST, DELETE and the test call of /webhook/ all require webhook_write. */
+  protected readonly canWrite = computed(() => this.authService.actionAllowed("webhook_write"));
   protected data: Webhook | null = null;
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
@@ -188,11 +264,15 @@ export class NewWebhookComponent implements OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   private editIdentifier: string | null = null;
   private headersDirty = signal(false);
+  /** The rows of the header table that are sent, that is, the rows with a name. */
+  private readonly namedHeaderCount = computed(() => this.headers().filter((row) => row.key.trim()).length);
   /**
    * The test endpoint fires the *stored* definition, not what is on screen, so testing an unsaved
    * form would report on something else than what is being edited.
    */
-  readonly canTest = computed(() => this.isEditMode() && !this.headersDirty() && !this.webhookForm().dirty());
+  readonly canTest = computed(
+    () => this.canWrite() && this.isEditMode() && !this.headersDirty() && !this.webhookForm().dirty()
+  );
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -235,6 +315,9 @@ export class NewWebhookComponent implements OnDestroy {
   }
 
   get canSave(): boolean {
+    if (!this.canWrite()) {
+      return false;
+    }
     // In edit mode the form only describes the stored definition once the list has arrived. Until
     // then it holds the empty defaults, and saving those would POST them over a real webhook -
     // clearing its URL, auth and headers. The form does not catch it by itself: the identifier is
@@ -242,7 +325,7 @@ export class NewWebhookComponent implements OnDestroy {
     if (this.isEditMode() && !this.data) {
       return false;
     }
-    return this.webhookForm().valid();
+    return this.webhookForm().valid() && this.headersValid();
   }
 
   ngOnDestroy(): void {
@@ -269,7 +352,8 @@ export class NewWebhookComponent implements OnDestroy {
       return false;
     }
     const model = this.webhookModel();
-    // A header with no name is an unfinished row, not a header to send.
+    // A header with no name is an unfinished row, not a header to send. canSave() refuses a row with
+    // a value but no name, so only a row without both is left out here.
     const rows = this.headers().filter((row) => row.key.trim());
     const webhook: Webhook = {
       ...model,
@@ -360,7 +444,8 @@ export class NewWebhookComponent implements OnDestroy {
       client_key_password: data?.client_key_password || "",
       http_proxy: data?.http_proxy || "",
       https_proxy: data?.https_proxy || "",
-      timeout: data?.timeout ?? 3
+      timeout: data?.timeout ?? 3,
+      urlencode_values: data?.urlencode_values ?? true
     });
     const secretHeaders = data?.secret_headers ?? [];
     this.headers.set(

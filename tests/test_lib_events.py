@@ -6,6 +6,7 @@ lib/event.py (the decorator)
 """
 import json
 import os
+import re
 from collections import OrderedDict
 from datetime import datetime, timedelta, UTC
 
@@ -61,7 +62,7 @@ from privacyidea.lib.webhook import get_webhook, set_webhook
 from privacyidea.models.webhook import Webhook
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
-from privacyidea.models import db, EventHandler
+from privacyidea.models import db, EventHandler, EventHandlerOption
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from .test_lib_tokencontainer import MockSmartphone
 
@@ -5477,6 +5478,50 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(len(responses.calls), 1)
         self.assertEqual(responses.calls[0].request.url, self.WEBHOOK_URL)
 
+    def _post_form_with_client_ip(self, handler_options: dict) -> str:
+        """Run the handler with a client IP that contains form syntax, and return the body sent."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        g = self._make_g()
+        g.client_ip = "192.0.2.1&admin=1 +x"
+        self.assertTrue(self._do_webhook(self._make_options(
+            g, {"data": "ip={client_ip}&user={logged_in_user}", "replace": True, **handler_options})))
+        return responses.calls[0].request.body
+
+    @responses.activate
+    def test_02a_a_form_payload_gets_encoded_values(self):
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED)
+
+        body = self._post_form_with_client_ip({"webhook": "siem"})
+
+        self.assertEqual("ip=192.0.2.1%26admin%3D1+%2Bx&user=hans", body)
+
+    @responses.activate
+    def test_02a_a_converted_webhook_keeps_the_values_unencoded(self):
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED, urlencode_values=False)
+
+        body = self._post_form_with_client_ip({"webhook": "siem"})
+
+        self.assertEqual("ip=192.0.2.1&admin=1 +x&user=hans", body)
+
+    @responses.activate
+    def test_02a_an_inline_url_keeps_the_values_unencoded(self):
+        body = self._post_form_with_client_ip({"URL": self.INLINE_URL, "content_type": ContentType.URLENCODED})
+
+        self.assertEqual("ip=192.0.2.1&admin=1 +x&user=hans", body)
+
+    @responses.activate
+    def test_02a_a_json_payload_is_not_url_encoded(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+        g = self._make_g()
+        g.client_ip = "192.0.2.1&admin=1"
+
+        self.assertTrue(self._do_webhook(self._make_options(
+            g, {"webhook": "siem", "data": '{"ip": "{client_ip}"}', "replace": True})))
+
+        self.assertEqual({"ip": "192.0.2.1&admin=1"}, json.loads(responses.calls[0].request.body))
+
     @responses.activate
     def test_02b_an_inline_content_type_can_not_override_the_webhook(self):
         """
@@ -5864,7 +5909,7 @@ class WebhookObjectHandlerTestCase(MyTestCase):
 
             self.assertFalse(result)
             everything = "\n".join(logs.output)
-            self.assertIn("could not determine a port", everything)
+            self.assertIn("could not determine a host and a port", everything)
             self.assertNotIn("SUPERSECRETTOKEN", everything)
             self.assertEqual(0, len(responses.calls))
         finally:
@@ -6119,6 +6164,8 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         self.assertTrue(webhook["verify_tls"])
         # The inline shape's fixed TIMEOUT, so the imported handler behaves as it did.
         self.assertEqual(10, webhook["timeout"])
+        # The inline handler put the values of the placeholders into a form-encoded payload as they are.
+        self.assertFalse(webhook["urlencode_values"])
         self.assertTrue(webhook["description"].startswith(IMPORT_MARKER), webhook["description"])
 
     def test_the_rest_of_the_definition_survives_the_conversion(self):
@@ -6158,11 +6205,111 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         self.assertEqual("application/x-www-form-urlencoded",
                          get_webhook(identifier)["content_type"])
 
-    def test_a_missing_content_type_gets_the_default(self):
-        import_event(self._exported(options={"URL": self.URL}))
+    def test_a_definition_without_a_content_type_is_reported(self):
+        # The inline handler sends nothing without a content type. A webhook would send as JSON, so the import would
+        # start to send for the handler.
+        for options in ({"URL": self.URL}, {"URL": self.URL, "content_type": ""}):
+            with self.subTest(options=options):
+                with self.assertRaises(ConfigAdminError) as caught:
+                    import_event(self._exported(options=options))
 
+                self.assertIn("it has no content_type", str(caught.exception))
+                self.assertEqual([], EventConfiguration().events)
+                self.assertEqual(0, Webhook.query.count())
+
+    def test_a_definition_with_another_mime_type_is_reported(self):
+        # The inline handler sends only JSON and urlencoded data, also if the content type is another valid MIME type.
+        with self.assertRaises(ConfigAdminError) as caught:
+            import_event(self._exported(options={"URL": self.URL, "content_type": "text/plain"}))
+
+        self.assertIn("'text/plain' is neither", str(caught.exception))
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_a_url_that_is_not_text_is_reported(self):
+        from privacyidea.lib.event import inline_webhook_defect
+
+        reason = inline_webhook_defect({"name": "Coffee", "handlermodule": "WebHook",
+                                        "options": {"URL": 5, "content_type": "json"}})
+
+        self.assertEqual("no webhook can be created from it: The parameter 'url' must be a string, not int.", reason)
+
+    def test_a_url_without_a_scheme_is_reported_and_the_others_are_imported(self):
+        # The inline handler sends nothing to such a URL, and a webhook can not be created with it.
+        def exported_handlers() -> list[dict]:
+            broken = self._exported(name="Broken", options={"URL": "inline.example.com/hook",
+                                                            "content_type": "application/json"}, handler_id=1)
+            return broken + self._exported(name="Intact", handler_id=2)
+
+        with self.assertRaises(ConfigAdminError) as caught:
+            import_event(exported_handlers())
+        self.assertIn('"Broken" (no webhook can be created from it: The webhook URL must start with',
+                      str(caught.exception))
+        self.assertNotIn("inline.example.com", str(caught.exception))
+        self.assertEqual(["Intact"], [handler["name"] for handler in EventConfiguration().events])
+        self.assertEqual(1, Webhook.query.count())
+
+        self._cleanup()
+        import_event(exported_handlers(), skip_invalid=True)
+        self.assertEqual(["Intact"], [handler["name"] for handler in EventConfiguration().events])
+        self.assertEqual(1, Webhook.query.count())
+
+    def test_an_empty_webhook_option_is_replaced_by_the_link(self):
+        # An empty webhook option names no webhook, so the inline handler sends. The handler gets one webhook option.
+        import_event(self._exported(options={"URL": self.URL, "content_type": "application/json", "webhook": ""}))
+
+        handler = EventConfiguration().events[0]
+        self.assertEqual(f"from_Coffee_maker_{handler['id']}", handler["options"]["webhook"])
+        self.assertEqual(self.URL, get_webhook(handler["options"]["webhook"])["url"])
+        stored_options = db.session.scalars(select(EventHandlerOption).where(
+            EventHandlerOption.eventhandler_id == handler["id"], EventHandlerOption.Key == "webhook")).all()
+        self.assertEqual(1, len(stored_options))
+
+    @staticmethod
+    def _inline_handler_sends(options: dict) -> bool:
+        """Return whether the inline WebHook handler sends a request with these options."""
+        with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked:
+            mocked.add(responses.POST, re.compile(r".*"), status=200)
+            try:
+                WebHookHandler()._post_inline(options, "{}", False, None, None)
+            except Exception:
+                # A handler that raises sends nothing as well
+                pass
+            return len(mocked.calls) == 1
+
+    def test_the_import_and_the_upgrade_convert_the_handlers_that_send(self):
+        # The import and the e1f2a3b4c5d6 migration convert exactly the inline WebHook handlers that the inline
+        # handler sends for. A handler that sends nothing stays as it is, so that the conversion does not start to
+        # send for it.
+        from privacyidea.lib.event import inline_webhook_defect
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import _inline_defect
+
+        url = "https://hook.example.com/coffee"
+        cases = [(url, "application/json"), (url, "json"), (url, "urlencoded"),
+                 (url, "application/x-www-form-urlencoded"), ("HTTPS://hook.example.com/coffee", "json"),
+                 (f" {url}", "json"), (None, "json"), ("", "json"), ("   ", "json"), (url, None), (url, ""),
+                 (url, "text/plain"), (url, "JSON"), (url, "application/json; charset=utf-8"), (url, "nonsense"),
+                 ("hook.example.com/coffee", "json"), ("ftp://hook.example.com/coffee", "json"),
+                 ("mailto:admin@example.com", "json")]
+        for case_url, content_type in cases:
+            with self.subTest(url=case_url, content_type=content_type):
+                options = {key: value for key, value in (("URL", case_url), ("content_type", content_type))
+                           if value is not None}
+                sends = self._inline_handler_sends(options)
+                handler = {"name": "Coffee maker", "handlermodule": "WebHook", "options": options}
+                self.assertEqual(sends, inline_webhook_defect(handler) is None)
+                self.assertEqual(sends, _inline_defect(case_url, content_type) is None)
+
+    def test_a_linked_webhook_keeps_its_url_encoding(self):
+        # The import does not change a webhook that it links a handler to, also not the URL encoding.
+        import_event(self._exported())
         identifier = EventConfiguration().events[0]["options"]["webhook"]
-        self.assertEqual("application/json", get_webhook(identifier)["content_type"])
+        set_webhook(identifier, urlencode_values=True)
+
+        import_event(self._exported(options={"URL": self.URL, "content_type": "urlencoded"}))
+
+        self.assertEqual(identifier, EventConfiguration().events[0]["options"]["webhook"])
+        self.assertTrue(get_webhook(identifier)["urlencode_values"])
 
     def test_a_definition_that_already_names_a_webhook_is_untouched(self):
         set_webhook("siem", url="https://siem.example.com/hook")

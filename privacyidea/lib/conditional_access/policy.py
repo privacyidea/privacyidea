@@ -111,7 +111,9 @@ conditions applies to every request - and is validated against the registries in
 unknown realm or a misspelled role would otherwise silently never match.
 """
 
+import json
 import logging
+import re
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -627,6 +629,8 @@ _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "su
 _EMAIL_REQUIRED_TEXT = ("subject", "body")
 _EMAIL_MIMETYPES = frozenset({"plain", "html"})
 _WEBHOOK_KEYS = frozenset({"webhook", "payload"})
+#: A placeholder of a payload template: a tag name with an optional conversion and format specification.
+_PLACEHOLDER = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*(?:![rsa])?(?::[^{}]*)?\}")
 
 
 def _validate_duration_action_value(action_type: str, action_value) -> None:
@@ -730,6 +734,42 @@ def _validate_webhook_action_value(action_type: str, action_value) -> None:
     if not (action_value.get("webhook") or "").strip():
         raise ParameterError(f"Action '{action_type}' needs a non-empty 'webhook' in its action_value: the "
                              f"identifier of the webhook definition that owns the endpoint.")
+    _check_webhook_payload(action_type, action_value.get("payload"))
+
+
+def _is_json_document(text: str) -> bool:
+    """Return True if *text* is a JSON object or array."""
+    try:
+        return isinstance(json.loads(text), (dict, list))
+    except ValueError:
+        return False
+
+
+def _check_webhook_payload(action_type: str, payload: str | None) -> None:
+    """
+    Refuse a JSON payload with a placeholder outside quotes, such as ``{"count": {count}}``.
+
+    The engine substitutes a JSON object or array value by value. Such a payload is not valid JSON, so the engine
+    substitutes it as plain text, where ``str.format()`` reads the braces of the document as placeholders. The
+    substitution then fails, and the engine sends the payload unchanged, with all of its placeholders.
+
+    A payload is such a payload if it is no JSON document as written, but becomes one when each placeholder is
+    replaced by ``0``, and if braces of the document stay outside the placeholders. A text payload such as
+    ``{username} logged in`` stays no JSON document. A JSON array such as ``[{count}]`` has no other braces, so the
+    plain-text substitution gives ``[5]``. Both are accepted.
+
+    :param action_type: the action type, for the error message
+    :param payload: the payload template of the action
+    :raises ParameterError: if the payload is JSON with a placeholder outside quotes
+    """
+    if not payload or _is_json_document(payload):
+        return
+    without_placeholders = _PLACEHOLDER.sub("", payload)
+    braces_outside_placeholders = "{" in without_placeholders or "}" in without_placeholders
+    if braces_outside_placeholders and _is_json_document(_PLACEHOLDER.sub("0", payload)):
+        raise ParameterError(f"The payload of '{action_type}' is JSON with a placeholder outside quotes, so the "
+                             f"placeholders can not be replaced. Put each placeholder in quotes, for example "
+                             f"\"count\": \"{{count}}\".")
 
 
 def _validate_no_action_value(action_type: str, action_value) -> None:

@@ -38,8 +38,19 @@ export type WebhookHttpMethod = "GET" | "POST" | "PUT" | "PATCH";
 export const WEBHOOK_AUTH_TYPES: readonly WebhookAuthType[] = ["none", "basic", "header", "mtls"];
 export const WEBHOOK_HTTP_METHODS: readonly WebhookHttpMethod[] = ["GET", "POST", "PUT", "PATCH"];
 
+/** The content type whose placeholder values `urlencode_values` encodes. */
+export const WEBHOOK_FORM_URLENCODED = "application/x-www-form-urlencoded";
+
 /** The content types offered in the editor; any valid MIME type may be typed instead. */
-export const WEBHOOK_CONTENT_TYPES: readonly string[] = ["application/json", "application/x-www-form-urlencoded"];
+export const WEBHOOK_CONTENT_TYPES: readonly string[] = ["application/json", WEBHOOK_FORM_URLENCODED];
+
+/**
+ * True when a content type is application/x-www-form-urlencoded. Only the media type counts: the part
+ * before a parameter such as "; charset=utf-8", trimmed and compared in lower case.
+ */
+export function isFormUrlencoded(contentType: string): boolean {
+  return contentType.split(";")[0].trim().toLowerCase() === WEBHOOK_FORM_URLENCODED;
+}
 
 /**
  * A webhook definition as GET /webhook/ returns it. The endpoint belongs to the object (URL, method,
@@ -65,6 +76,11 @@ export interface Webhook {
   http_proxy?: string;
   https_proxy?: string;
   timeout: number;
+  /**
+   * Whether the values that replace the placeholders of a payload are URL-encoded. Only used while the
+   * content type is application/x-www-form-urlencoded: encoded, a value with & or = stays one field.
+   */
+  urlencode_values: boolean;
   headers: Record<string, string>;
   /**
    * Names of the headers whose values are stored encrypted. Sent back as `secret.header.*` so a
@@ -137,7 +153,8 @@ export class WebhookService implements WebhookServiceInterface {
    * Flatten a webhook into the parameters POST /webhook/<identifier> expects: the headers go out as
    * `header.<name>`, their secret flags as `secret.header.<name>`, and `clear_headers` is what says
    * "remove the last one" - with no `header.*` parameter at all the server keeps the stored set,
-   * so an emptied header table would otherwise be a silent no-op.
+   * so an emptied header table would otherwise be a silent no-op. The other fields, `urlencode_values`
+   * included, go out as they are: the request body is JSON, so a boolean stays a boolean.
    */
   private static toRequestBody(webhook: Webhook, headerRenames?: Record<string, string>): Record<string, unknown> {
     // `id` is the database key the list carries; the endpoint takes the identifier from the path.

@@ -581,6 +581,23 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                     self._create_with_action, {"action_type": "WEBHOOK", "action_value": action_value},
                 )
 
+    def test_a_json_payload_with_a_placeholder_outside_quotes_is_refused(self):
+        # The engine can not replace the placeholders of such a payload and would send it unchanged.
+        for payload in ('{"count": {count}}', '{"ip": "{client_ip}", "count": {count}}', '[{"n": {count:03d}}]'):
+            with self.subTest(payload=payload):
+                self.assertRaisesRegex(
+                    ParameterError, "placeholder in quotes",
+                    self._create_with_action,
+                    {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},
+                )
+        # JSON with quoted placeholders, a JSON array of a placeholder, a form body and plain text are accepted.
+        for index, payload in enumerate(('{"count": "{count}"}', "[{count}]", "user={username}&ip={client_ip}",
+                                         "{username} failed {count} times"), start=1):
+            with self.subTest(payload=payload):
+                self._create_with_action(
+                    {"action_type": "WEBHOOK", "action_value": {"webhook": "ca-hook", "payload": payload}},
+                    name=f"Hook{index}", priority=index)
+
     def test_webhook_action_value_vocabulary_is_checked(self):
         self.assertRaisesRegex(
             ParameterError, "url",

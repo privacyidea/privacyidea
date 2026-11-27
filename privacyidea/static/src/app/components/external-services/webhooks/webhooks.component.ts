@@ -96,12 +96,22 @@ export class WebhooksComponent {
     allowed: () => this.authService.actionAllowed("webhook_read"),
     resetFilter: () => this.resetFilter()
   });
+  /** POST and DELETE on /webhook/ require webhook_write, so create, delete and row selection need it too. */
+  protected readonly canWrite = computed(() => this.authService.actionAllowed("webhook_write"));
+  readonly emptyHint = computed(() =>
+    this.canWrite()
+      ? $localize`:@@webhook.createWebhookHint:Create a webhook to notify another system from an event handler or a conditional access policy.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "identifier", "url", "http_method", "auth_type", "description"];
+  readonly displayedColumns = computed(() => {
+    const columns = ["identifier", "url", "http_method", "auth_type", "description"];
+    return this.canWrite() ? ["select", ...columns] : columns;
+  });
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private readonly router = inject(Router);
 
@@ -110,11 +120,12 @@ export class WebhooksComponent {
   }
 
   onEditWebhook(webhook: Webhook): void {
-    // Encoded, like WebhookService does for its API URLs: the editor restricts an identifier to
-    // [a-zA-Z0-9._-], but set_webhook() accepts any non-empty string, so one created through the
-    // API or a config import can carry a space or a slash - and "team/siem" pasted raw into the
-    // path is a route that matches nothing.
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + encodeURIComponent(webhook.identifier));
+    // The identifier goes in as a command of its own rather than as part of a URL string. The
+    // editor restricts an identifier to [a-zA-Z0-9._-], but the server also accepts one created
+    // through the API or a config import, such as "Notify SIEM (prod)". The router encodes a
+    // command for its path segment, parentheses included. encodeURIComponent() leaves "(" and ")"
+    // as they are, and the router then ends the segment at the "(".
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS, webhook.identifier]);
   }
 
   deleteSelected(): void {

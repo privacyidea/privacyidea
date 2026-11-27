@@ -3152,6 +3152,37 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
         self.assertEqual("user=cornelius&count=3", responses.calls[0].request.body)
 
+    def _fire_form_payload_on_a_source_ip_policy(self, tried_login: str) -> str:
+        """Trip a source-IP policy whose WEBHOOK action sends a form body, and return the body."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        ip = "10.0.0.7"
+        self._make_policy(
+            name="hookform", counter_type=AuthEventType.PASSWORD_FAIL, target=ConditionalAccessTarget.SOURCE_IP,
+            stages=(StageDefinition(3, [StageActionDefinition(
+                ConditionalAccessAction.WEBHOOK,
+                {"webhook": "ca-hook", "payload": "user={username}&ip={client_ip}&severity=low"})]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        evaluate_conditional_access_policies(CAContext(None, ip, username=tried_login), AuthEventType.PASSWORD_FAIL)
+        return responses.calls[0].request.body
+
+    @responses.activate
+    def test_webhook_action_encodes_the_values_of_a_form_payload(self):
+        # The tried login name comes from the client. Encoded, it stays the value of one field.
+        self._make_webhook(content_type=ContentType.URLENCODED)
+
+        body = self._fire_form_payload_on_a_source_ip_policy("ghost&severity=none&ack=1")
+
+        self.assertEqual("user=ghost%26severity%3Dnone%26ack%3D1&ip=10.0.0.7&severity=low", body)
+
+    @responses.activate
+    def test_webhook_action_keeps_the_values_unencoded_if_the_webhook_says_so(self):
+        # The setting of a webhook converted from an old WebHook handler, which sent the values unencoded
+        self._make_webhook(content_type=ContentType.URLENCODED, urlencode_values=False)
+
+        body = self._fire_form_payload_on_a_source_ip_policy("ghost&severity=none")
+
+        self.assertEqual("user=ghost&severity=none&ip=10.0.0.7&severity=low", body)
+
     @responses.activate
     def test_webhook_action_without_a_payload_sends_the_webhooks_own_default(self):
         # The payload is optional: one webhook can then serve several policies with one body.

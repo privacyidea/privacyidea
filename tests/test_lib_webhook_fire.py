@@ -9,17 +9,24 @@ collect the library function itself as a test case.
 """
 import json
 import ssl
-from unittest.mock import patch
+import tempfile
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest.mock import MagicMock, patch
 
 import requests
 import responses
+from sqlalchemy import update
 
+from privacyidea.lib.crypto import encryptPassword
 from privacyidea.lib.webhook import (
-    AuthType, ContentType, MAX_RESPONSE_LENGTH,
-    _mtls_ssl_context, fire_webhook, get_webhook, set_webhook,
+    AuthType, ContentType, MAX_RESPONSE_BYTES, MAX_RESPONSE_LENGTH,
+    _mtls_ssl_context, _read_response_text, fire_webhook, get_webhook, set_webhook,
     test_webhook as run_webhook_test,
 )
-from privacyidea.models.webhook import Webhook
+from privacyidea.models import db
+from privacyidea.models.webhook import Webhook, WebhookHeader
 from .base import MyTestCase
 
 URL = "https://hook.example.com/endpoint"
@@ -210,7 +217,9 @@ class FireWebhookTestCase(MyTestCase):
         with patch("privacyidea.lib.webhook.requests.request") as mock_request:
             mock_request.return_value.ok = True
             mock_request.return_value.status_code = 200
-            mock_request.return_value.text = ""
+            # The body is read in parts from the raw response, see _read_response_text()
+            mock_request.return_value.raw.read1.return_value = b""
+            mock_request.return_value.encoding = "utf-8"
             fire_webhook(identifier, payload="x")
         return mock_request.call_args
 
@@ -244,8 +253,10 @@ class FireWebhookTestCase(MyTestCase):
         self.assertIsNone(args.kwargs["proxies"])
 
     def test_timeout_is_forwarded(self):
+        """The timeout limits the connection and the wait for the first data together."""
         args = self._capture_kwargs("hook", timeout=11)
-        self.assertEqual(args.kwargs["timeout"], 11)
+        self.assertEqual(args.kwargs["timeout"].total, 11)
+        self.assertTrue(args.kwargs["stream"])
 
     def test_mtls_cert_tuple_is_forwarded(self):
         args = self._capture_kwargs(
@@ -276,7 +287,9 @@ class FireWebhookTestCase(MyTestCase):
             session = session_cls.return_value
             session.request.return_value.ok = True
             session.request.return_value.status_code = 200
-            session.request.return_value.text = ""
+            # The body is read in parts from the raw response, see _read_response_text()
+            session.request.return_value.raw.read1.return_value = b""
+            session.request.return_value.encoding = "utf-8"
 
             result = fire_webhook("hook", payload="x")
 
@@ -344,7 +357,9 @@ class FireWebhookTestCase(MyTestCase):
             session = session_cls.return_value
             session.request.return_value.ok = True
             session.request.return_value.status_code = 200
-            session.request.return_value.text = ""
+            # The body is read in parts from the raw response, see _read_response_text()
+            session.request.return_value.raw.read1.return_value = b""
+            session.request.return_value.encoding = "utf-8"
 
             fire_webhook("hook", payload="x")
 
@@ -552,3 +567,128 @@ class TestWebhookHelperTestCase(MyTestCase):
         result = run_webhook_test("does-not-exist")
         self.assertFalse(result["success"])
         self.assertIsNotNone(result["error"])
+
+
+class _TrickleHandler(BaseHTTPRequestHandler):
+    """Answer at once, then send the body one byte every 0.3 seconds."""
+
+    def do_POST(self) -> None:
+        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.send_response(200)
+        self.send_header("Content-Length", "20")
+        self.end_headers()
+        for _ in range(20):
+            self.wfile.write(b"x")
+            self.wfile.flush()
+            time.sleep(0.3)
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
+class _QuietServer(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request: object, client_address: tuple) -> None:
+        # The client closes the connection at its deadline, so the handler fails to write.
+        pass
+
+
+class FireWebhookLimitsTestCase(MyTestCase):
+    """The delivery keeps to its timeout and keeps secrets out of its errors."""
+
+    def setUp(self):
+        super().setUp()
+        for webhook in Webhook.query.all():
+            webhook.delete()
+
+    def tearDown(self):
+        for webhook in Webhook.query.all():
+            webhook.delete()
+        super().tearDown()
+
+    def test_the_timeout_limits_a_slow_response_body(self):
+        """requests limits each wait for data, so 20 bytes at 0.3 s each take 6 s without the deadline."""
+        server = _QuietServer(("127.0.0.1", 0), _TrickleHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            set_webhook("slow", url=f"http://127.0.0.1:{server.server_address[1]}/hook", timeout=1)
+            start = time.monotonic()
+            result = fire_webhook("slow", payload="x")
+            duration = time.monotonic() - start
+        finally:
+            server.shutdown()
+            server.server_close()
+
+        self.assertFalse(result["success"])
+        self.assertIn("Timeout", result["error"])
+        self.assertLess(duration, 2.5)
+
+    @responses.activate
+    def test_only_the_start_of_a_long_body_is_kept(self):
+        responses.add(responses.POST, URL, body=b"y" * 100000, status=200)
+        set_webhook("hook", url=URL)
+
+        result = fire_webhook("hook", payload="x")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(f"{'y' * MAX_RESPONSE_LENGTH}... [truncated]", result["response"])
+
+    def test_the_body_is_read_only_up_to_the_limit(self):
+        """An endpoint that sends an endless body does not hold the delivery until the deadline."""
+        response = MagicMock()
+        response.encoding = "utf-8"
+        response.raw.read1.side_effect = lambda amount, decode_content: b"z" * min(amount, 1000)
+
+        text = _read_response_text(response, time.monotonic() + 5)
+
+        self.assertEqual(MAX_RESPONSE_BYTES, len(text))
+
+    def test_a_ca_directory_is_loaded_as_capath(self):
+        """ssl.create_default_context(cafile=<directory>) fails, so a directory goes to capath, as in requests."""
+        with (tempfile.TemporaryDirectory() as directory,
+              patch("privacyidea.lib.webhook.ssl.create_default_context") as create_context):
+            _mtls_ssl_context({"client_certificate": "/etc/ssl/client.pem", "client_key": "/etc/ssl/client.key"},
+                              directory, "keypw")
+
+        create_context.assert_called_once_with(cafile=None, capath=directory)
+
+    @responses.activate
+    def test_an_invalid_stored_header_is_not_sent_and_not_quoted(self):
+        set_webhook("hook", url=URL, headers={"X-Token": "valid"}, secret_headers=["X-Token"])
+        # A value that set_webhook() refuses, written directly, as an import from an older version could have.
+        db.session.execute(update(WebhookHeader).where(WebhookHeader.key == "X-Token")
+                           .values(value=encryptPassword("Bearer LEAKME-TOKEN\n")))
+        db.session.commit()
+
+        with self.assertLogs("privacyidea.lib.webhook", level="WARNING") as logs:
+            result = fire_webhook("hook", payload="x")
+
+        self.assertFalse(result["success"])
+        self.assertIn("'X-Token'", result["error"])
+        self.assertNotIn("LEAKME", result["error"])
+        self.assertNotIn("LEAKME", "\n".join(logs.output))
+        self.assertEqual(0, len(responses.calls))
+
+    def test_secrets_quoted_in_a_transport_error_are_redacted(self):
+        set_webhook("hook", url=URL, auth_type=AuthType.BASIC, username="svc", password="S3cretPW",
+                    headers={"X-Token": "tok\\en"}, secret_headers=["X-Token"])
+        error = requests.exceptions.ConnectionError("failed with S3cretPW and 'tok\\\\en'")
+
+        with patch("privacyidea.lib.webhook.requests.request", side_effect=error):
+            result = fire_webhook("hook", payload="x")
+
+        self.assertNotIn("S3cretPW", result["error"])
+        self.assertNotIn("tok", result["error"])
+
+    def test_a_path_that_requests_quotes_again_is_redacted(self):
+        """requests sends /t/SéCRET?token=a b as /t/S%C3%A9CRET?token=a%20b, and its error quotes that form."""
+        set_webhook("hook", url="http://127.0.0.1:1/t/SéCRET?token=a b", timeout=1)
+
+        result = fire_webhook("hook", payload="x")
+
+        self.assertFalse(result["success"])
+        self.assertIn("127.0.0.1", result["error"])
+        for part in ("SéCRET", "S%C3%A9CRET", "token=a"):
+            self.assertNotIn(part, result["error"])

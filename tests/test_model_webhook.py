@@ -3,6 +3,8 @@ Tests for the Webhook and WebhookHeader database models.
 
 See https://github.com/privacyidea/privacyidea/issues/5751 (step 1.1)
 """
+from sqlalchemy import delete, update
+
 from privacyidea.lib.crypto import encryptPassword
 from privacyidea.models import db
 from privacyidea.models.webhook import Webhook, WebhookHeader
@@ -221,24 +223,46 @@ class WebhookModelTestCase(MyTestCase):
         self.assertEqual(d["headers"]["X-Tenant"], "acme")
 
     def test_cascade_delete_removes_headers(self):
-        """Deleting a webhook also deletes its headers."""
+        """
+        The database deletes the headers of a deleted webhook row (ON DELETE CASCADE).
+
+        The row is deleted with a plain DELETE statement, because Webhook.delete() deletes the headers itself.
+        SQLite enforces foreign keys only after "PRAGMA foreign_keys=ON" on the connection.
+        """
         wh = Webhook(identifier="cascade-hook", url="https://c.example.com")
         wh_id = wh.save()
-
         h1_id = WebhookHeader(webhook_id=wh_id, key="H1", value="v1").save()
         h2_id = WebhookHeader(webhook_id=wh_id, key="H2", value="v2").save()
+        db.session.close()
 
-        # Verify headers exist
-        self.assertIsNotNone(db.session.get(WebhookHeader, h1_id))
-        self.assertIsNotNone(db.session.get(WebhookHeader, h2_id))
+        with db.engine.connect() as connection:
+            sqlite = connection.dialect.name == "sqlite"
+            if sqlite:
+                connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            try:
+                connection.execute(delete(Webhook).where(Webhook.id == wh_id))
+                connection.commit()
+            finally:
+                if sqlite:
+                    connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
 
-        # Delete the parent
-        loaded = db.session.get(Webhook, wh_id)
-        loaded.delete()
-
-        # Headers should be gone
         self.assertIsNone(db.session.get(WebhookHeader, h1_id))
         self.assertIsNone(db.session.get(WebhookHeader, h2_id))
+
+    def test_a_header_value_read_as_null_is_an_empty_string(self):
+        """Oracle stores an empty string as NULL. The header is still sent, with an empty value."""
+        wh_id = Webhook(identifier="null-header", url="https://n.example.com").save()
+        header_id = WebhookHeader(webhook_id=wh_id, key="X-Empty", value="").save()
+        # The ORM writes the column default for None, so the NULL that Oracle stores is written directly.
+        db.session.execute(update(WebhookHeader).where(WebhookHeader.id == header_id).values(value=None))
+        db.session.commit()
+
+        self.assertEqual({"X-Empty": ""}, db.session.get(Webhook, wh_id).header_dict)
+
+    def test_urlencode_values_is_on_by_default(self):
+        wh_id = Webhook(identifier="encoded", url="https://e.example.com").save()
+
+        self.assertTrue(db.session.get(Webhook, wh_id).get()["urlencode_values"])
 
     def test_query_by_identifier(self):
         """Webhooks can be queried by identifier."""

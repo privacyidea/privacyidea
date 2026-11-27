@@ -35,6 +35,12 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// A rule of the section that no single field shows, such as header authentication without a header.
+.section-error {
+  margin: 0 0 16px;
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
 .test-result {
   margin-top: 8px;
   padding: 8px 12px;

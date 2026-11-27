@@ -33,7 +33,8 @@ from privacyidea.lib.error import UserError, ResourceNotFoundError
 from privacyidea.lib.log import get_url_origin
 from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
                                      get_webhook_identifiers, guard_target,
-                                     media_type, outbound_guard_check, redact_url)
+                                     media_type, outbound_guard_check, placeholder_values,
+                                     redact_url)
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -59,7 +60,7 @@ def _warn_inline_shape_is_deprecated(handler_def):
         f"WebHook handler {handler_def.get('name')!r} posts to an inline URL. The URL and "
         f"content_type options are deprecated since privacyIDEA 3.15 and will be removed in "
         f"3.16; the handler then sends nothing until it is repaired. Configure a webhook under "
-        f"Config -> Webhooks and select it in the handler's 'webhook' option. Unlike the inline "
+        f"External Services -> Webhooks and select it in the handler's 'webhook' option. Unlike the inline "
         f"URL, a webhook can carry authentication, headers, TLS, proxy and timeout settings, and "
         f"keeps its URL out of the audit log."
     )
@@ -164,13 +165,15 @@ class WebHookHandler(BaseEventHandler):
         }}
         return actions
 
-    def _replace_tags(self, webhook_text, content_type, g, request, response=None):
+    def _replace_tags(self, webhook_text, content_type, g, request, response=None, urlencode_values=False):
         """
         Substitute the placeholders in the payload.
 
         A JSON payload is parsed and substituted key by key and value by
         value, so that a tag containing a quote cannot break the document.
-        Any other content type is substituted as plain text.
+        Any other content type is substituted as plain text. In a form-encoded
+        payload the values are URL-encoded if the webhook says so, see
+        :func:`~privacyidea.lib.webhook.placeholder_values`.
 
         Substitution is :func:`~privacyidea.lib.utils.safe_format` throughout, the same treatment
         a Conditional Access WEBHOOK payload gets: an unknown placeholder is left as written
@@ -183,6 +186,8 @@ class WebHookHandler(BaseEventHandler):
         :param g: the flask g object
         :param request: the request that triggered the event
         :param response: the response of the request, for a post handler
+        :param urlencode_values: the setting ``urlencode_values`` of the webhook. The inline URL of an old handler
+            has no such setting, and its values stay unencoded, as before.
         :return: the payload with the placeholders replaced, and None. If the placeholders can not be replaced, the
             payload as it is configured and the reason for the audit entry.
         """
@@ -247,7 +252,7 @@ class WebHookHandler(BaseEventHandler):
 
             if isinstance(document, (dict, list)):
                 return json.dumps(replace_recursive(document)), None
-            return safe_format(webhook_text, tags), None
+            return safe_format(webhook_text, placeholder_values(tags, content_type, urlencode_values)), None
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
         except (ValueError, TypeError) as err:
@@ -306,7 +311,8 @@ class WebHookHandler(BaseEventHandler):
 
         replace_problem = None
         if replace and webhook_text:
-            webhook_text, replace_problem = self._replace_tags(webhook_text, content_type, g, request, response)
+            webhook_text, replace_problem = self._replace_tags(webhook_text, content_type, g, request, response,
+                                                               urlencode_values=config["urlencode_values"])
 
         log.info(f"Posting to the webhook {identifier!r}")
         result = fire_webhook(identifier, payload=webhook_text or None, config=config)

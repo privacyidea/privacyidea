@@ -124,6 +124,34 @@ class CheckOutboundTargetTestCase(MyTestCase):
         self.assertIsNotNone(result)
         self.assertIn("127.0.0.1", result)
 
+    def test_the_guard_checks_the_host_that_requests_connects_to(self):
+        """
+        urlsplit() finds the host example.com in this URL, but requests connects to 127.0.0.1 and sends the rest as
+        the path /%5C@example.com/hook.
+        """
+        url = "http://127.0.0.1:8080\\@example.com/hook"
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"127.0.0.1": ["127.0.0.1"], "example.com": ["93.184.215.14"]})):
+            result = check_outbound_target(url, mode=GuardMode.ENFORCE)
+            allowed_by_name = check_outbound_target(url, mode=GuardMode.ENFORCE, allowlist=["example.com"])
+
+        self.assertIn("127.0.0.1", result)
+        self.assertIn("127.0.0.1", allowed_by_name)
+
+    def test_the_guard_checks_the_host_of_an_ipv6_url(self):
+        with patch("socket.getaddrinfo", _fake_getaddrinfo({"::1": ["::1"]})):
+            result = check_outbound_target("http://[::1]:8080/hook", mode=GuardMode.ENFORCE)
+            allowed = check_outbound_target("http://[::1]:8080/hook", mode=GuardMode.ENFORCE,
+                                            allowlist=["[::1]:8080"])
+
+        self.assertIn("::1", result)
+        self.assertIsNone(allowed)
+
+    def test_a_url_that_requests_can_not_use_is_refused(self):
+        result = check_outbound_target("http://example.com:99999/", mode=GuardMode.ENFORCE)
+
+        self.assertIn("could not determine a host and a port", result)
+
     def test_enforce_blocks_private_rfc1918(self):
         with patch("socket.getaddrinfo",
                    _fake_getaddrinfo({"siem.corp": ["10.1.2.3"]})):

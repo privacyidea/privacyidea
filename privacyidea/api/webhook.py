@@ -60,6 +60,30 @@ SECRET_HEADER_PREFIX = "secret.header."
 RENAME_HEADER_PREFIX = "rename.header."
 
 
+def _parse_flag(value, name: str) -> bool:
+    """
+    Read a true/false parameter strictly.
+
+    :func:`~privacyidea.lib.utils.is_true` reads every unknown word as false. For ``verify_tls`` or a secret flag,
+    a value such as "on" or "yes" then turns a protection off without a message. So this function refuses a value
+    that is not one of true, false, 1 and 0.
+
+    :param value: the parameter value, a bool, 0, 1 or a string
+    :param name: the parameter name for the error message
+    :return: the value as bool
+    :raises ParameterError: if the value is not true or false
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str) and value.strip().lower() in ("1", "true"):
+        return True
+    if isinstance(value, str) and value.strip().lower() in ("0", "false"):
+        return False
+    raise ParameterError(f"The parameter {name!r} must be true or false, not {value!r}.")
+
+
 def _parse_headers(param):
     """
     Extract the ``header.*`` and ``secret.header.*`` parameters.
@@ -86,7 +110,7 @@ def _parse_headers(param):
         "leave them alone". Only a ``header.*`` sets it: a flag or a rename is a property of a
         header, not a header, so neither can express "these are all of them".
     :raises ParameterError: if a ``secret.header.*`` or ``rename.header.*`` has no ``header.*`` of
-        the same name, or if a header is renamed to itself
+        the same name, if a header is renamed to itself, or if a ``secret.header.*`` is not true or false
     """
     headers = {}
     secret_flags = set()
@@ -101,7 +125,7 @@ def _parse_headers(param):
             # branches independent.
             name = key[len(SECRET_HEADER_PREFIX):]
             secret_flags.add(name)
-            if is_true(value):
+            if _parse_flag(value, key):
                 secret_headers.add(name)
         elif key.startswith(RENAME_HEADER_PREFIX):
             renames[key[len(RENAME_HEADER_PREFIX):]] = value
@@ -207,15 +231,22 @@ def set_webhook_api(identifier=None):
         ``urlencoded`` are rejected; send a real MIME type.
     :jsonparam default_payload: body template used when the call site
         supplies no payload of its own.
+    :jsonparam urlencode_values: whether the values that replace the
+        placeholders of a payload are URL-encoded when the content type is
+        ``application/x-www-form-urlencoded``. ``true`` (default) or ``false``.
     :jsonparam auth_type: ``none`` (default), ``basic``, ``header`` or
         ``mtls``.
     :jsonparam username: username for basic authentication.
     :jsonparam password: password for basic authentication (stored
         encrypted). ``__CENSORED__`` keeps the stored value, an empty
-        string clears it.
-    :jsonparam verify_tls: whether to verify the server certificate.
-        Omitting it keeps the stored setting -- it never silently defaults
-        to disabled.
+        string clears it. A request that keeps a stored password or the
+        stored value of a secret header must not change ``url``,
+        ``http_proxy``, ``https_proxy``, ``tls_ca_bundle`` or (for the
+        password) ``username``, and must not set ``verify_tls`` to false.
+        Send the secret again to change these settings.
+    :jsonparam verify_tls: whether to verify the server certificate,
+        ``true`` or ``false``. Other values result in a 400. Omitting it
+        keeps the stored setting -- it never silently defaults to disabled.
     :jsonparam tls_ca_bundle: path to a CA bundle used for verification.
         Ignored while ``verify_tls`` is false.
     :jsonparam client_certificate: path to the client certificate (mTLS).
@@ -224,12 +255,16 @@ def set_webhook_api(identifier=None):
         encrypted), same ``__CENSORED__`` semantics as ``password``.
     :jsonparam http_proxy: proxy URL for ``http://`` requests.
     :jsonparam https_proxy: proxy URL for ``https://`` requests.
-    :jsonparam timeout: request timeout in seconds, default ``3``.
+    :jsonparam timeout: request timeout in seconds, a whole number from 1
+        to 3600, default ``3``.
     :jsonparam header.*: a static HTTP header, e.g. ``header.X-Api-Key``
         sets the ``X-Api-Key`` header. Sending any ``header.*`` parameter
-        replaces the stored header set entirely, so send them all.
+        replaces the stored header set entirely, so send them all. A header
+        name contains only letters, digits and ``!#$%&'*+-.^_`|~``. A header
+        value must not start with whitespace or contain a line break.
     :jsonparam secret.header.*: mark a header as secret so its value is
-        stored encrypted, e.g. ``secret.header.X-Api-Key=1``. It is a
+        stored encrypted, e.g. ``secret.header.X-Api-Key=1``. The value is
+        ``true`` or ``false``, other values result in a 400. It is a
         property of a header of the set being sent, so it requires a
         ``header.*`` of the same name; a flag on its own results in a 400.
     :jsonparam rename.header.*: the name a header is currently stored under,
@@ -253,7 +288,10 @@ def set_webhook_api(identifier=None):
 
     verify_tls = get_optional(param, "verify_tls")
     if verify_tls is not None:
-        verify_tls = is_true(verify_tls)
+        verify_tls = _parse_flag(verify_tls, "verify_tls")
+    urlencode_values = get_optional(param, "urlencode_values")
+    if urlencode_values is not None:
+        urlencode_values = _parse_flag(urlencode_values, "urlencode_values")
 
     webhook_id = set_webhook(
         identifier,
@@ -262,6 +300,7 @@ def set_webhook_api(identifier=None):
         http_method=get_optional(param, "http_method"),
         content_type=get_optional(param, "content_type"),
         default_payload=get_optional(param, "default_payload"),
+        urlencode_values=urlencode_values,
         auth_type=get_optional(param, "auth_type"),
         username=get_optional(param, "username"),
         password=get_optional(param, "password"),

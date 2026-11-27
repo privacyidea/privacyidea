@@ -60,6 +60,7 @@ import copy
 from unittest import mock
 
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, delete_conditional_access_policy
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.container import (init_container, set_container_realms, delete_container_by_serial,
                                        find_container_by_serial)
@@ -80,7 +81,7 @@ from privacyidea.lib.token import init_token, remove_token, get_realms_of_token
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.lib.webhook import set_webhook, delete_webhook, get_webhook_identifiers
 from privacyidea.lib.utils.import_plan import (build_import_plan, format_import_plan, apply_import_plan,
-                                               plan_has_changes, DELETE_ORDER, _ADAPTERS)
+                                               plan_has_changes, DELETE_ORDER, _ADAPTERS, PlanEntry, TypePlan)
 from privacyidea.models import Config, db
 from .base import MyTestCase, PWFILE, PWFILE2
 
@@ -235,6 +236,22 @@ def add_entries(typ: str, typ_data: list | dict, more: list | dict) -> None:
 def import_directly(typ: str, typ_data: list | dict) -> None:
     """Store the import data of one type with its importer, without a plan."""
     IMPORT_FUNCTIONS[typ]["func"](copy.deepcopy(typ_data))
+
+
+def inline_webhook_handler(name: str, options: dict | None = None) -> dict:
+    """A WebHook event handler with an inline URL, as privacyIDEA 3.14 and older export it."""
+    return {"name": name, "active": True, "ordering": 0, "position": "post", "abort_on_error": False,
+            "event": ["validate_check"], "handlermodule": "WebHook", "action": "post_webhook", "condition": "",
+            "conditions": {},
+            "options": options if options is not None else {"URL": "https://hook.example.org/coffee",
+                                                             "content_type": "json", "data": '{"a": 1}'}}
+
+
+def delete_converted_webhooks() -> None:
+    """Delete the webhooks that the import created for the event handlers of the tests."""
+    for identifier in get_webhook_identifiers():
+        if identifier.startswith(f"from_{PREFIX}"):
+            delete_webhook(identifier)
 
 
 class ImportPlanTestCase(MyTestCase):
@@ -991,3 +1008,176 @@ class ImportPlanTestCase(MyTestCase):
                 self.assertEqual(stored_url, handlers["imp-ev-hook"]["options"]["URL"])
                 self.assertIn("webhook", handlers["imp-ev-newhook"]["options"])
                 delete_object("event", "imp-ev-newhook")
+
+    def test_28_replace_keeps_the_webhook_that_an_imported_handler_links_to(self) -> None:
+        # Data of privacyIDEA 3.14 has no webhooks. With --replace, the import must not delete the webhook that it links
+        # an inline WebHook handler to, also not on the next import of the same data.
+        self.addCleanup(delete_converted_webhooks)
+        data = {"webhook": {}, "event": [inline_webhook_handler("imp-ev-coffee")]}
+
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"], replace=True)
+        self.assertEqual([], apply_import_plan(plans))
+        handler = export("event", {"imp-ev-coffee"})[0]
+        identifier = handler["options"]["webhook"]
+        self.assertEqual(f"from_imp-ev-coffee_{handler['id']}", identifier)
+
+        # The handler is stored in the form that the import writes, so the second import changes nothing.
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"], replace=True)
+        self.assertEqual([], self._type_plan(plans, "webhook").entries)
+        self.assertEqual([("unchanged", ("imp-ev-coffee", "WebHook"))],
+                         [(entry.action, entry.key) for entry in self._type_plan(plans, "event").entries])
+        lines = format_import_plan(plans)
+        self.assertIn(f'  Webhook "{identifier}" is not deleted: an event handler uses it.', lines)
+        self.assertNotIn(f'  delete webhook "{identifier}"', lines)
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertIn(identifier, get_webhook_identifiers())
+        self.assertEqual(identifier, export("event", {"imp-ev-coffee"})[0]["options"]["webhook"])
+
+        # The same for a handler that the import writes again
+        data["event"][0]["ordering"] = 5
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"], replace=True)
+        self.assertEqual([], self._type_plan(plans, "webhook").entries)
+        self.assertEqual([("update", ["ordering"])],
+                         [(entry.action, entry.changed_fields) for entry in self._type_plan(plans, "event").entries])
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertIn(identifier, get_webhook_identifiers())
+        self.assertEqual(identifier, export("event", {"imp-ev-coffee"})[0]["options"]["webhook"])
+
+    def test_29_replace_keeps_a_webhook_that_a_remaining_event_handler_uses(self) -> None:
+        set_webhook("imp-hook-used", url="https://hook.example.org/used")
+        set_webhook("imp-hook-unused", url="https://hook.example.org/unused")
+        set_event("imp-ev-user", ["token_init"], "WebHook", "post_webhook", conditions={},
+                  options={"webhook": "imp-hook-used"})
+        data = {"webhook": export("webhook", names_on_system("webhook") - {"imp-hook-used", "imp-hook-unused"})}
+
+        # The event handlers are not part of the import, so all of them stay.
+        plans = build_import_plan(copy.deepcopy(data), ["webhook"], replace=True)
+        self.assertEqual({"imp-hook-unused": "delete"},
+                         {entry.key: entry.action for entry in self._type_plan(plans, "webhook").entries})
+        self.assertIn('  Webhook "imp-hook-used" is not deleted: an event handler uses it.',
+                      format_import_plan(plans))
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertIn("imp-hook-used", names_on_system("webhook"))
+        self.assertNotIn("imp-hook-unused", names_on_system("webhook"))
+
+        # An import that deletes the event handler deletes its webhook as well.
+        data["event"] = export("event", names_on_system("event") - {"imp-ev-user"})
+        plans = build_import_plan(copy.deepcopy(data), ["webhook", "event"], replace=True)
+        self.assertEqual({"imp-hook-used": "delete"},
+                         {entry.key: entry.action for entry in self._type_plan(plans, "webhook").entries})
+        self.assertEqual({("imp-ev-user", "WebHook"): "delete"},
+                         {entry.key: entry.action for entry in self._type_plan(plans, "event").entries})
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertNotIn("imp-hook-used", names_on_system("webhook"))
+        self.assertNotIn("imp-ev-user", names_on_system("event"))
+
+    def test_30_a_planned_delete_keeps_a_webhook_that_an_event_handler_uses(self) -> None:
+        # The id of a handler that the import creates, and with it the webhook that an inline handler is linked to, is
+        # known only when the handler is written. So the deletion of a webhook checks the event handlers again.
+        set_webhook("imp-hook-used", url="https://hook.example.org/used")
+        set_event("imp-ev-user", ["token_init"], "WebHook", "post_webhook", conditions={},
+                  options={"webhook": "imp-hook-used"})
+        errors = []
+
+        failed = apply_import_plan([TypePlan(typ="webhook", entries=[PlanEntry("delete", "imp-hook-used")])],
+                                   on_error=lambda typ, entry, exx: errors.append((typ, entry.key, str(exx))))
+
+        self.assertEqual(["webhook"], failed)
+        self.assertEqual(1, len(errors), errors)
+        self.assertEqual(("webhook", "imp-hook-used"), errors[0][:2])
+        self.assertIn("imp-ev-user", errors[0][2])
+        self.assertIn("imp-hook-used", names_on_system("webhook"))
+
+    def test_31_replace_keeps_a_webhook_that_a_conditional_access_policy_uses(self) -> None:
+        # The import does not carry conditional access policies, so a policy names its webhook after the import too.
+        set_webhook("imp-hook-ca", url="https://hook.example.org/ca")
+        set_webhook("imp-hook-unused", url="https://hook.example.org/unused")
+        policy_id = create_conditional_access_policy(
+            "imp-ca-policy", 600, ["PIN_FAIL"],
+            [{"failure_threshold": 5, "actions": [{"action_type": "WEBHOOK", "action_value": {"webhook": "imp-hook-ca"},
+                                                   "retrigger_above_threshold": False}]}],
+            target="user", priority=1)
+        self.addCleanup(delete_conditional_access_policy, policy_id)
+
+        plans = build_import_plan({"webhook": {}}, ["webhook"], replace=True)
+        webhook_plan = self._type_plan(plans, "webhook")
+        failed = apply_import_plan(plans)
+
+        self.assertNotIn("imp-hook-ca", self._by_key(webhook_plan))
+        self.assertIn('Webhook "imp-hook-ca" is not deleted: the conditional access policy \'imp-ca-policy\' uses it.',
+                      webhook_plan.notes)
+        self.assertEqual("delete", self._by_key(webhook_plan)["imp-hook-unused"].action)
+        self.assertEqual([], failed)
+        self.assertIn("imp-hook-ca", names_on_system("webhook"))
+        self.assertNotIn("imp-hook-unused", names_on_system("webhook"))
+
+        # A delete planned before the policy named the webhook is refused when it is applied.
+        errors = []
+        failed = apply_import_plan([TypePlan(typ="webhook", entries=[PlanEntry("delete", "imp-hook-ca")])],
+                                   on_error=lambda typ, entry, exx: errors.append(str(exx)))
+        self.assertEqual(["webhook"], failed)
+        self.assertIn("imp-ca-policy", errors[0])
+        self.assertIn("imp-hook-ca", names_on_system("webhook"))
+
+    def test_32_an_inline_webhook_handler_is_compared_in_its_linked_form(self) -> None:
+        # import_event links an inline WebHook handler to its webhook. The plan compares the handler in this form, so
+        # that the import of data of privacyIDEA 3.14 is unchanged after the first import.
+        self.addCleanup(delete_converted_webhooks)
+        import_directly("event", [inline_webhook_handler("imp-ev-coffee")])
+        identifier = export("event", {"imp-ev-coffee"})[0]["options"]["webhook"]
+
+        # An empty webhook option names no webhook. import_event replaces it with the link.
+        for options in ({"URL": "https://hook.example.org/coffee", "content_type": "json", "data": '{"a": 1}'},
+                        {"URL": "https://hook.example.org/coffee", "content_type": "json", "data": '{"a": 1}',
+                         "webhook": ""}):
+            with self.subTest(options=options):
+                plans = build_import_plan({"event": [inline_webhook_handler("imp-ev-coffee", options)]}, ["event"])
+                self.assertEqual([("unchanged", [])], [(entry.action, entry.changed_fields)
+                                                       for entry in self._type_plan(plans, "event").entries])
+
+        # A handler that an administrator linked to another webhook is linked to its own webhook again.
+        set_webhook("imp-hook-other", url="https://hook.example.org/other")
+        stored = export("event", {"imp-ev-coffee"})[0]
+        set_event(id=stored["id"], name=stored["name"], event=stored["event"], handlermodule="WebHook",
+                  action="post_webhook", options={**stored["options"], "webhook": "imp-hook-other"})
+        plans = build_import_plan({"event": [inline_webhook_handler("imp-ev-coffee")]}, ["event"])
+        self.assertEqual([("update", ["options.webhook"])], [(entry.action, entry.changed_fields)
+                                                             for entry in self._type_plan(plans, "event").entries])
+        self.assertEqual([], apply_import_plan(plans))
+        self.assertEqual(identifier, export("event", {"imp-ev-coffee"})[0]["options"]["webhook"])
+
+    def test_33_plan_skips_an_inline_webhook_handler_that_is_not_converted(self) -> None:
+        # The import converts exactly the inline WebHook handlers that send today, and only if the webhook can be
+        # created. The plan shows the others as skipped with the reason, and the import writes the other handlers.
+        self.addCleanup(delete_converted_webhooks)
+        url = "https://hook.example.org/coffee"
+        cases = {
+            "imp-ev-noscheme": ({"URL": "hook.example.org/coffee", "content_type": "json"},
+                                "no webhook can be created from it: The webhook URL must start with 'http://' or "
+                                "'https://'."),
+            "imp-ev-nocontenttype": ({"URL": url}, "it has no content_type"),
+            "imp-ev-text": ({"URL": url, "content_type": "text/plain"},
+                            "its content_type 'text/plain' is neither application/json nor "
+                            "application/x-www-form-urlencoded"),
+        }
+
+        def import_data() -> dict:
+            return {"event": [inline_webhook_handler(name, options) for name, (options, _) in cases.items()]
+                    + [inline_webhook_handler("imp-ev-intact")]}
+
+        plans = build_import_plan(import_data(), ["event"])
+        entries = self._by_key(self._type_plan(plans, "event"))
+        lines = format_import_plan(plans)
+        for name, (_, reason) in cases.items():
+            self.assertEqual(("skip", reason), (entries[(name, "WebHook")].action, entries[(name, "WebHook")].reason))
+            self.assertIn(f'  skip event "{name}" (WebHook): {reason}', lines)
+        self.assertEqual("create", entries[("imp-ev-intact", "WebHook")].action)
+
+        # Without skip_invalid the import reports the skipped handlers, with it not. Both times it writes the others.
+        for skip_invalid, expected_failures in ((False, ["event"]), (True, [])):
+            with self.subTest(skip_invalid=skip_invalid):
+                plans = build_import_plan(import_data(), ["event"])
+                self.assertEqual(expected_failures, apply_import_plan(plans, skip_invalid=skip_invalid))
+                self.assertEqual({"imp-ev-intact"}, {name for name in names_on_system("event")
+                                                     if name.startswith(PREFIX)})
+                delete_object("event", "imp-ev-intact")

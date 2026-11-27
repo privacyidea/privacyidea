@@ -78,7 +78,8 @@ If enabled, the placeholders in the data are replaced.
     A payload that is a JSON object or array is substituted value by value, so a placeholder carrying a quote
     cannot break the document. Anything else -- including a plain sentence sent to a webhook whose content type
     is ``application/json`` -- is substituted as plain text. With ``application/x-www-form-urlencoded``,
-    replaced values are not URL-encoded.
+    the replaced values are URL-encoded if the setting **URL-encode placeholder values** of the webhook is on,
+    see :ref:`webhook_config`. A handler with an inline ``URL`` sends the values unencoded.
 
 .. deprecated:: 3.15
     Before privacyIDEA 3.15 the handler carried the endpoint itself, in its own ``URL`` and ``content_type``
@@ -87,15 +88,26 @@ If enabled, the placeholders in the data are replaced.
     privacyIDEA 3.16, after which it sends nothing.
 
     Convert it before that release by selecting a webhook above. The upgrade to 3.15 does it automatically,
-    and ``pi-manage config import`` converts an export taken before 3.15 on the way in. If the upgrade or an
-    earlier import already created the webhook of the handler, the import links the handler to it and does not
-    change the webhook. The webhook holds the endpoint after the conversion, so a different ``URL`` in the
-    export is not used. To use it, edit the webhook. A handler that sends
-    nothing as it stands -- no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded -- cannot
-    be converted: the upgrade names it in the log and leaves it alone. The import plan shows it as ``skip``
-    with the reason, and the import does not write it. The import writes the other event handlers. Without
-    ``--skip-invalid``, the command then ends with an error. With ``--replace``, the event handlers of the
-    same name and handler module stay on the system. Correct the handler and run the upgrade or import again.
+    and ``pi-manage config import`` converts an export taken before 3.15 on the way in. The webhook that the
+    conversion creates sends the same request as the handler. It uses ``POST`` and a timeout of 10 seconds,
+    and it does not URL-encode the replaced values. If the upgrade or an earlier import already created the
+    webhook of the handler, the import links the handler to it and does not change the webhook. The webhook
+    holds the endpoint after the conversion, so a different ``URL`` in the export is not used. To use it, edit
+    the webhook. With ``--replace``, the import keeps the webhook of a converted handler, also if the export
+    has no webhooks.
+
+    The conversion leaves a handler alone that sends nothing as it stands, so that the handler does not start
+    to send. Such a handler has one of these options:
+
+    * no ``URL``, or a ``URL`` that does not start with ``http://`` or ``https://``
+    * no ``content_type``, or a ``content_type`` other than ``json``, ``urlencoded``, ``application/json`` and
+      ``application/x-www-form-urlencoded``
+
+    The upgrade names such a handler in its output and in the log. To repair it, select a webhook in it. The
+    import plan shows such a handler as ``skip`` with the reason, and the import does not write it. The import
+    writes the other event handlers. Without ``--skip-invalid``, the command then ends with an error. With
+    ``--replace``, the event handlers of the same name and handler module stay on the system. Correct the
+    handler in the export and import it again.
 
 Auditing
 ~~~~~~~~

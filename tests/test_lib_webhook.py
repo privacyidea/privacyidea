@@ -626,8 +626,8 @@ class WebhookCrudTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             get_webhook("hook")
 
-    def test_delete_cascades_to_headers(self):
-        """Deleting a webhook removes its header rows."""
+    def test_delete_removes_the_headers(self):
+        """Deleting a webhook removes its header rows. test_model_webhook checks ON DELETE CASCADE itself."""
         from privacyidea.models.webhook import WebhookHeader
 
         set_webhook("hook", url="https://example.com",
@@ -832,3 +832,148 @@ class WebhookExportImportTestCase(MyTestCase):
     def test_import_of_empty_data_is_a_noop(self):
         import_webhook({})
         self.assertEqual(get_webhook_identifiers(), [])
+
+
+class WebhookStoredSecretTestCase(MyTestCase):
+    """A stored secret goes only to the endpoint that it was saved for."""
+
+    def setUp(self):
+        super().setUp()
+        for webhook in Webhook.query.all():
+            webhook.delete()
+        set_webhook("siem", url="https://siem.example.com/collect", auth_type=AuthType.BASIC, username="svc",
+                    password="S3cretPW", headers={"X-Token": "token-value", "X-Source": "pi"},
+                    secret_headers=["X-Token"])
+
+    def tearDown(self):
+        for webhook in Webhook.query.all():
+            webhook.delete()
+        super().tearDown()
+
+    def test_a_changed_url_needs_the_secrets(self):
+        with self.assertRaisesRegex(ParameterError, "url.*password and the value of the header 'X-Token'"):
+            set_webhook("siem", url="https://other.example.net/collect")
+        self.assertEqual("https://siem.example.com/collect", get_webhook("siem")["url"])
+
+    def test_a_changed_proxy_or_ca_bundle_or_username_needs_the_secrets(self):
+        for changes in ({"https_proxy": "http://proxy.example.net:3128"}, {"http_proxy": "http://proxy:3128"},
+                        {"tls_ca_bundle": "/etc/ssl/other.pem"}, {"username": "other"}):
+            with self.subTest(changes=changes), self.assertRaises(ParameterError):
+                set_webhook("siem", **changes)
+
+    def test_turning_off_the_tls_verification_needs_the_secrets(self):
+        with self.assertRaisesRegex(ParameterError, "verify_tls"):
+            set_webhook("siem", verify_tls=False)
+        self.assertTrue(get_webhook("siem")["verify_tls"])
+
+    def test_the_censored_placeholder_keeps_the_secrets(self):
+        with self.assertRaises(ParameterError):
+            set_webhook("siem", url="https://other.example.net/collect", password=CENSORED,
+                        headers={"X-Token": CENSORED, "X-Source": "pi"}, secret_headers=["X-Token"])
+
+    def test_a_kept_secret_header_alone_blocks_the_change(self):
+        with self.assertRaisesRegex(ParameterError, "value of the header 'X-Token'") as context:
+            set_webhook("siem", url="https://other.example.net/collect", password="NewPW",
+                        headers={"X-Token": CENSORED, "X-Source": "pi"}, secret_headers=["X-Token"])
+        self.assertNotIn("password and", str(context.exception))
+
+    def test_the_url_can_change_with_new_secrets(self):
+        set_webhook("siem", url="https://other.example.net/collect", password="NewPW",
+                    headers={"X-Token": "new-token", "X-Source": "pi"}, secret_headers=["X-Token"])
+
+        webhook = get_webhook("siem")
+        self.assertEqual("https://other.example.net/collect", webhook["url"])
+        self.assertEqual("NewPW", webhook["password"])
+        self.assertEqual("new-token", webhook["headers"]["X-Token"])
+
+    def test_the_url_can_change_when_the_secrets_are_cleared(self):
+        set_webhook("siem", url="https://other.example.net/collect", password="",
+                    headers={"X-Source": "pi"}, secret_headers=[])
+
+        self.assertEqual("https://other.example.net/collect", get_webhook("siem")["url"])
+
+    def test_unchanged_settings_and_safe_changes_keep_the_secrets(self):
+        set_webhook("siem", url="https://siem.example.com/collect", username="svc", description="new",
+                    timeout=7, verify_tls=True, password=CENSORED)
+
+        webhook = get_webhook("siem")
+        self.assertEqual("new", webhook["description"])
+        self.assertEqual("S3cretPW", webhook["password"])
+
+    def test_turning_on_the_tls_verification_keeps_the_secrets(self):
+        set_webhook("plain", url="https://plain.example.com", verify_tls=False, auth_type=AuthType.BASIC,
+                    username="svc", password="pw")
+
+        set_webhook("plain", verify_tls=True)
+
+        self.assertTrue(get_webhook("plain")["verify_tls"])
+
+    def test_a_webhook_without_secrets_can_change_its_url(self):
+        set_webhook("open", url="https://open.example.com", headers={"X-Source": "pi"})
+
+        set_webhook("open", url="https://moved.example.com")
+
+        self.assertEqual("https://moved.example.com", get_webhook("open")["url"])
+
+
+class WebhookParameterCheckTestCase(MyTestCase):
+    """set_webhook() refuses what can not be sent, before it is stored."""
+
+    def setUp(self):
+        super().setUp()
+        for webhook in Webhook.query.all():
+            webhook.delete()
+
+    def tearDown(self):
+        for webhook in Webhook.query.all():
+            webhook.delete()
+        super().tearDown()
+
+    def test_invalid_header_names_are_refused(self):
+        for name in ("", "X:Bad", "X Bad", "X\nBad", "Ü"):
+            with self.subTest(name=name), self.assertRaisesRegex(ParameterError, "not a valid header name"):
+                set_webhook("hook", url="https://example.com", headers={name: "v"})
+        self.assertEqual([], get_webhooks())
+
+    def test_an_invalid_header_value_is_refused_without_the_value_in_the_message(self):
+        for value in ("Bearer LEAKME-TOKEN\n", " LEAKME-TOKEN", "LEAKME\r\nX-Other: 1"):
+            with self.subTest(value=value), self.assertRaises(ParameterError) as context:
+                set_webhook("hook", url="https://example.com", headers={"X-Token": value},
+                            secret_headers=["X-Token"])
+            self.assertIn("'X-Token'", str(context.exception))
+            self.assertNotIn("LEAKME", str(context.exception))
+
+    def test_a_header_value_must_be_a_string(self):
+        with self.assertRaisesRegex(ParameterError, "must be a string"):
+            set_webhook("hook", url="https://example.com", headers={"X-Count": 5})
+
+    def test_valid_headers_are_stored(self):
+        headers = {"X-Api-Key": "a b c", "Empty": "", "Odd!#$%&'*+-.^_`|~1": "v"}
+        set_webhook("hook", url="https://example.com", headers=headers)
+
+        self.assertEqual(headers, get_webhook("hook")["headers"])
+
+    def test_a_text_parameter_must_be_a_string(self):
+        for name in ("url", "http_method", "content_type", "description", "http_proxy"):
+            with self.subTest(name=name), self.assertRaisesRegex(ParameterError, f"'{name}' must be a string"):
+                set_webhook("hook", **{"url": "https://example.com", name: 5})
+
+    def test_the_timeout_is_a_whole_number_from_1_to_3600(self):
+        for timeout in (0, 3601, 2 ** 31, 2.5, "2.5", True):
+            with self.subTest(timeout=timeout), self.assertRaisesRegex(ParameterError, "timeout"):
+                set_webhook("hook", url="https://example.com", timeout=timeout)
+        set_webhook("hook", url="https://example.com", timeout=3600)
+        self.assertEqual(3600, get_webhook("hook")["timeout"])
+
+    def test_urlencode_values_is_stored_exported_and_imported(self):
+        set_webhook("hook", url="https://example.com")
+        self.assertTrue(get_webhook("hook")["urlencode_values"])
+
+        set_webhook("hook", urlencode_values=False)
+        self.assertFalse(get_webhook("hook")["urlencode_values"])
+
+        exported = export_webhook()
+        self.assertFalse(exported["hook"]["urlencode_values"])
+        delete_webhook("hook")
+        import_webhook(exported)
+        self.assertFalse(get_webhook("hook")["urlencode_values"])

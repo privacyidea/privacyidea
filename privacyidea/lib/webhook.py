@@ -18,15 +18,19 @@ import inspect
 import ipaddress
 import json
 import logging
+import os
+import re
 import socket
 import ssl
 import time
 from collections.abc import Iterable
-from urllib.parse import urlsplit
+from urllib.parse import quote_plus, urlsplit
 
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter
+from urllib3.exceptions import LocationParseError
+from urllib3.util import Timeout, parse_url
 from werkzeug.http import parse_options_header
 from sqlalchemy import select
 
@@ -36,7 +40,8 @@ from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
-from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.smtpserver import check_number
+from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource
 from privacyidea.lib.utils.export import register_import, register_export
 from privacyidea.models import db
 from privacyidea.models.webhook import Webhook, WebhookHeader
@@ -61,6 +66,8 @@ log = logging.getLogger(__name__)
 #: synchronous, so a slow endpoint directly adds latency to the triggering
 #: request.
 DEFAULT_TIMEOUT = 3
+#: The largest timeout in seconds, the same as for an SMTP server.
+MAX_TIMEOUT = 3600
 
 
 class AuthType:
@@ -93,6 +100,14 @@ class ContentType:
 SECRET_KEYS = ("password", "client_key_password")
 
 MAX_RESPONSE_LENGTH = 1000
+#: The number of bytes of a response body that are read. UTF-8 uses at most four bytes for a character, so this is
+#: enough for MAX_RESPONSE_LENGTH characters and shows that the body is longer.
+MAX_RESPONSE_BYTES = 4 * MAX_RESPONSE_LENGTH + 1
+
+#: A header name as RFC 9110 defines it: a token of the characters below.
+_HEADER_NAME = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
+#: A header value that requests accepts: empty, or no leading whitespace and no line break.
+_HEADER_VALUE = re.compile(r"\S[^\r\n]*|")
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +163,21 @@ def _validate_identifier(identifier: str) -> None:
             f"its name in the URL path, where it would be removed as a path segment.")
 
 
+def _check_text_parameters(**parameters: object) -> None:
+    """
+    Make sure that every given parameter is a string or None.
+
+    A JSON request or an import can carry a number or a list where a text is expected. Without this check, such a
+    value fails later with an AttributeError or a TypeError, which the API answers with HTTP 500.
+
+    :param parameters: the parameters by name
+    :raises ParameterError: if a parameter is neither a string nor None
+    """
+    for name, value in parameters.items():
+        if value is not None and not isinstance(value, str):
+            raise ParameterError(f"The parameter {name!r} must be a string, not {type(value).__name__}.")
+
+
 def _validate(identifier: str, url: str | None, http_method: str | None,
               content_type: str | None, auth_type: str | None,
               timeout, username: str | None,
@@ -159,6 +189,8 @@ def _validate(identifier: str, url: str | None, http_method: str | None,
     Raises :class:`ParameterError` on the first problem found. Returns the
     normalised ``(url, http_method, content_type, auth_type, timeout)`` tuple.
     """
+    _check_text_parameters(url=url, http_method=http_method, content_type=content_type, auth_type=auth_type,
+                           username=username, client_certificate=client_certificate)
     if not identifier or not identifier.strip():
         raise ParameterError("The webhook identifier must not be empty.")
     _validate_identifier(identifier)
@@ -190,13 +222,7 @@ def _validate(identifier: str, url: str | None, http_method: str | None,
 
     if timeout is None:
         timeout = DEFAULT_TIMEOUT
-    try:
-        timeout = int(timeout)
-    except (TypeError, ValueError):
-        raise ParameterError(f"The timeout must be an integer, got {timeout!r}.")
-    if timeout <= 0:
-        raise ParameterError(
-            f"The timeout must be a positive number of seconds, got {timeout}.")
+    timeout = check_number(timeout, "timeout", 1, MAX_TIMEOUT)
 
     # Auth-type specific requirements.
     if auth_type == AuthType.BASIC and not username:
@@ -211,6 +237,88 @@ def _validate(identifier: str, url: str | None, http_method: str | None,
             "(e.g. 'Authorization' or 'X-API-Key').")
 
     return url, http_method, content_type, auth_type, timeout
+
+
+def check_header(name: str, value: str) -> None:
+    """
+    Make sure that requests can send a header, without the header value in the error message.
+
+    requests refuses an invalid header with a message that quotes the value. The value of a secret header must not
+    appear in an error, a log line or an audit entry, so the header is checked here first. The name is checked
+    against the token syntax of RFC 9110, which is stricter than requests: an empty name or a name with a colon or
+    a space is refused.
+
+    :param name: the header name
+    :param value: the header value, or the ``__CENSORED__`` placeholder for a stored value
+    :raises ParameterError: if requests can not send the header
+    """
+    if not isinstance(name, str) or not _HEADER_NAME.fullmatch(name):
+        raise ParameterError(f"{name!r} is not a valid header name. A header name contains only letters, digits "
+                             f"and the characters !#$%&'*+-.^_`|~.")
+    if not isinstance(value, str):
+        raise ParameterError(f"The value of the header {name!r} must be a string.")
+    if not _HEADER_VALUE.fullmatch(value):
+        raise ParameterError(f"The value of the header {name!r} must not start with whitespace or contain a line "
+                             f"break.")
+
+
+def _kept_secrets(stored: dict, password: str | None, headers: dict | None, header_renames: dict | None) -> list[str]:
+    """
+    Name the stored secrets that a write keeps without the client sending them.
+
+    A client that never received a secret sends ``__CENSORED__`` for it or omits it, and the stored secret stays.
+
+    :param stored: the stored configuration, as :meth:`Webhook.get` returns it
+    :param password: the requested password
+    :param headers: the requested header set, or None to keep the stored headers
+    :param header_renames: dict of new header name -> the name it is stored under
+    :return: the kept secrets for the error message, for example ``["password", "value of the header
+        'X-Token'"]``
+    """
+    kept = []
+    if stored.get("password") and (password is None or is_censored(password)):
+        kept.append("password")
+    stored_values = stored.get("headers") or {}
+    secret_names = [name for name in stored.get("secret_headers") or () if stored_values.get(name)]
+    if headers is None:
+        kept_headers = secret_names
+    else:
+        kept_headers = []
+        for name, value in headers.items():
+            stored_name = (header_renames or {}).get(name, name)
+            if stored_name not in stored_values:
+                # A rename that the stored rows show as done already
+                stored_name = name
+            if is_censored(value) and stored_name in secret_names:
+                kept_headers.append(stored_name)
+    kept.extend(f"value of the header {name!r}" for name in sorted(kept_headers))
+    return kept
+
+
+def _check_kept_secrets(identifier: str, stored: dict, kept: list[str], url: str | None, username: str | None,
+                        verify_tls: bool | None, tls_ca_bundle: str | None, http_proxy: str | None,
+                        https_proxy: str | None) -> None:
+    """
+    Make sure that a stored secret is sent only to the endpoint it was saved for.
+
+    The password and the values of the secret headers go to the URL, through the proxies, with the TLS settings of
+    the saved webhook. If a write keeps one of them, it must not change these settings: an administrator who can
+    write webhooks must not be able to send a credential to another host without knowing it. Turning on the TLS
+    verification is allowed. A requested value of None does not change a setting.
+
+    :raises ParameterError: if a secret is kept and one of the settings changes
+    """
+    if not kept:
+        return
+    saved_settings = {"url": stored.get("url") or "", "http_proxy": stored.get("http_proxy") or "",
+                      "https_proxy": stored.get("https_proxy") or "", "verify_tls": bool(stored.get("verify_tls")),
+                      "tls_ca_bundle": stored.get("tls_ca_bundle") or "", "username": stored.get("username") or ""}
+    requested_settings = {"url": url.strip() if isinstance(url, str) else url, "http_proxy": http_proxy,
+                          "https_proxy": https_proxy, "verify_tls": False if verify_tls is False else None,
+                          "tls_ca_bundle": tls_ca_bundle,
+                          "username": username if "password" in kept else None}
+    check_stored_secret_settings("webhook", identifier, saved_settings, requested_settings, " and the ".join(kept),
+                                 "save")
 
 
 def _webhook_to_dict(webhook, censor=False):
@@ -460,7 +568,7 @@ def get_webhook_identifiers():
 # reads to see that the write happened.
 @log_with(log, log_entry=False)
 def set_webhook(identifier, url=None, description=None, http_method=None,
-                content_type=None, default_payload=None,
+                content_type=None, default_payload=None, urlencode_values=None,
                 auth_type=None, username=None, password=None,
                 verify_tls=None, tls_ca_bundle=None,
                 client_certificate=None, client_key=None,
@@ -488,6 +596,10 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :param content_type: MIME type of the request body (default application/json)
     :param default_payload: optional body template used when the call site
         supplies no payload of its own
+    :param urlencode_values: whether the values that replace the placeholders of
+        a payload are URL-encoded when the content type is
+        ``application/x-www-form-urlencoded`` (default True)
+    :type urlencode_values: bool or None
     :param auth_type: one of 'none', 'basic', 'header', 'mtls'
     :param username: username for basic authentication
     :param password: password for basic authentication (stored encrypted)
@@ -516,8 +628,8 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     """
     webhook_id = _stage_webhook(identifier, url=url, description=description, http_method=http_method,
                                 content_type=content_type, default_payload=default_payload,
-                                auth_type=auth_type, username=username, password=password,
-                                verify_tls=verify_tls, tls_ca_bundle=tls_ca_bundle,
+                                urlencode_values=urlencode_values, auth_type=auth_type, username=username,
+                                password=password, verify_tls=verify_tls, tls_ca_bundle=tls_ca_bundle,
                                 client_certificate=client_certificate, client_key=client_key,
                                 client_key_password=client_key_password,
                                 http_proxy=http_proxy, https_proxy=https_proxy, timeout=timeout,
@@ -528,7 +640,8 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
 
 def _stage_webhook(identifier: str, url: str | None = None, description: str | None = None,
                    http_method: str | None = None, content_type: str | None = None,
-                   default_payload: str | None = None, auth_type: str | None = None, username: str | None = None,
+                   default_payload: str | None = None, urlencode_values: bool | None = None,
+                   auth_type: str | None = None, username: str | None = None,
                    password: str | None = None, verify_tls: bool | None = None, tls_ca_bundle: str | None = None,
                    client_certificate: str | None = None, client_key: str | None = None,
                    client_key_password: str | None = None, http_proxy: str | None = None,
@@ -538,6 +651,12 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
     Write the webhook like :func:`set_webhook`, but do not commit, so that the configuration import can write
     webhooks and event handlers in one transaction.
     """
+    _check_text_parameters(url=url, description=description, http_method=http_method, content_type=content_type,
+                           default_payload=default_payload, auth_type=auth_type, username=username,
+                           password=password, tls_ca_bundle=tls_ca_bundle, client_certificate=client_certificate,
+                           client_key=client_key, client_key_password=client_key_password, http_proxy=http_proxy,
+                           https_proxy=https_proxy)
+
     stmt = select(Webhook).filter(Webhook.identifier == identifier)
     webhook = db.session.execute(stmt).scalar_one_or_none()
     creating = webhook is None
@@ -564,6 +683,14 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
         client_certificate=pick(client_certificate, "client_certificate"),
         headers=pick(headers, "headers"),
     )
+    # Checked before anything is written: a refused header must not leave a new webhook in the session.
+    for key, value in (headers or {}).items():
+        check_header(key, "" if is_censored(value) else value)
+    if webhook is not None:
+        _check_kept_secrets(identifier, stored, _kept_secrets(stored, password, headers, header_renames),
+                            url=url, username=username,
+                            verify_tls=None if verify_tls is None else bool(verify_tls),
+                            tls_ca_bundle=tls_ca_bundle, http_proxy=http_proxy, https_proxy=https_proxy)
 
     encrypted_password = None
     if password is not None and not is_censored(password):
@@ -588,6 +715,8 @@ def _stage_webhook(identifier: str, url: str | None = None, description: str | N
         webhook.description = description
     if default_payload is not None:
         webhook.default_payload = default_payload
+    if urlencode_values is not None:
+        webhook.urlencode_values = bool(urlencode_values)
     if username is not None:
         webhook.username = username
     if encrypted_password is not None:
@@ -730,6 +859,29 @@ def media_type(content_type):
     return parse_options_header(content_type or "")[0].strip().lower()
 
 
+def placeholder_values(tags: dict, content_type: str | None, urlencode_values: bool) -> dict:
+    """
+    Return the values for the placeholders of a plain-text payload.
+
+    In a form-encoded body (``application/x-www-form-urlencoded``), ``&`` separates the fields and ``=`` separates
+    the name from the value. A value with one of these characters, a ``+`` or a ``%`` changes the fields that the
+    endpoint reads, unless it is URL-encoded. The setting ``urlencode_values`` of the webhook encodes the values. It
+    is off for the webhooks that the upgrade and the import create from an inline WebHook handler, because that
+    handler sent the values unencoded.
+
+    Only text values are encoded. Another value, such as a number, contains none of these characters, and it keeps
+    its type for a format specification such as ``{count:03d}``.
+
+    :param tags: the values of the placeholders
+    :param content_type: the content type of the webhook
+    :param urlencode_values: the setting of the webhook
+    :return: the tags, with URL-encoded text values if the setting applies to the content type
+    """
+    if not urlencode_values or media_type(content_type) != ContentType.URLENCODED:
+        return tags
+    return {key: quote_plus(value) if isinstance(value, str) else value for key, value in tags.items()}
+
+
 def _mtls_ssl_context(config, verify, key_password):
     """
     Build the SSL context for a webhook whose client key carries a password.
@@ -754,8 +906,15 @@ def _mtls_ssl_context(config, verify, key_password):
     :return: the context to mount for this request
     """
     # cafile=None is what create_default_context() does by itself, so the system store still
-    # applies when no bundle is configured.
-    context = ssl.create_default_context(cafile=verify if isinstance(verify, str) else None)
+    # applies when no bundle is configured. A directory of CA certificates goes to capath, as requests
+    # does it: cafile only reads a file.
+    ca_file = ca_path = None
+    if isinstance(verify, str):
+        if os.path.isdir(verify):
+            ca_path = verify
+        else:
+            ca_file = verify
+    context = ssl.create_default_context(cafile=ca_file, capath=ca_path)
     if verify is False:
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
@@ -796,6 +955,18 @@ def _resolve_body(config, payload):
 REDACTED = "<redacted>"
 
 
+def _prepared_url(url: str) -> str:
+    """
+    Return *url* as requests sends it: the host in IDNA form, and the path and the query quoted.
+
+    :raises requests.exceptions.RequestException: if requests can not use the URL
+    :raises urllib3.exceptions.LocationParseError: if urllib3 can not parse the URL
+    """
+    prepared = requests.models.PreparedRequest()
+    prepared.prepare_url(url, None)
+    return prepared.url
+
+
 def redact_url(text, url):
     """
     Remove the sensitive part of a webhook's URL from a message about it.
@@ -811,22 +982,88 @@ def redact_url(text, url):
     the entire record of a broken integration. A host that is itself the secret (a token used as a
     subdomain) is not covered - the endpoint should carry it in the path.
 
+    The parts are taken from the URL as configured and from the URL as requests sends it. requests quotes the path
+    and the query again, so a message about the request contains, for example, ``/t/S%C3%A9CRET`` for the configured
+    ``/t/SéCRET``.
+
     :param text: the message to sanitise
     :param url: the webhook's configured URL
     :return: the message with the path and query of *url* replaced
     """
     if not text or not url:
         return text
+    candidates = [url]
     try:
-        split = urlsplit(url)
-    except ValueError:
-        # An unparsable URL has no parts to remove individually, so the whole string is.
-        return text.replace(url, REDACTED)
-    query = f"?{split.query}" if split.query else ""
-    parts = {url, f"{split.path}{query}", split.path, query}
+        candidates.append(_prepared_url(url))
+    except Exception:
+        # requests refuses the URL, so no message contains its prepared form.
+        pass
+    parts = set()
+    for candidate in candidates:
+        try:
+            split = urlsplit(candidate)
+        except ValueError:
+            # An unparsable URL has no parts to remove individually, so the whole string is.
+            parts.add(candidate)
+            continue
+        query = f"?{split.query}" if split.query else ""
+        parts |= {candidate, f"{split.path}{query}", split.path, query}
     # "/" is every path's prefix and carries nothing; replacing it would shred the message.
     for part in sorted((p for p in parts if p and p != "/"), key=len, reverse=True):
         text = text.replace(part, REDACTED)
+    return text
+
+
+def _read_response_text(response: requests.Response, deadline: float) -> str:
+    """
+    Read the start of the response body before the deadline of the delivery.
+
+    requests applies its timeout to each wait for data. An endpoint that sends one byte at a time can thus hold a
+    delivery much longer than the timeout. The body is read in small parts, and the deadline is checked before each
+    part. Only the start of the body is read: the result and the log keep MAX_RESPONSE_LENGTH characters.
+
+    :param response: a response of a request with ``stream=True``
+    :param deadline: the value of :func:`time.monotonic` when the delivery must end
+    :return: the start of the body as text
+    :raises requests.exceptions.Timeout: if the deadline passes before the body is read
+    """
+    # read1() returns as soon as data is available. urllib3 before 2.1 does not have it, and read() waits until it
+    # has the requested number of bytes, so it reads small parts.
+    read1 = getattr(response.raw, "read1", None)
+    data = bytearray()
+    while len(data) < MAX_RESPONSE_BYTES:
+        if time.monotonic() > deadline:
+            raise requests.exceptions.Timeout("the endpoint did not send its answer within the timeout")
+        if read1 is not None:
+            chunk = read1(MAX_RESPONSE_BYTES - len(data), decode_content=True)
+        else:
+            chunk = response.raw.read(min(256, MAX_RESPONSE_BYTES - len(data)), decode_content=True)
+        if not chunk:
+            break
+        data.extend(chunk)
+    try:
+        return bytes(data).decode(response.encoding or "utf-8", errors="replace")
+    except LookupError:
+        # The endpoint names a character set that Python does not know.
+        return bytes(data).decode("utf-8", errors="replace")
+
+
+def _redact_secrets(text: str, config: dict) -> str:
+    """
+    Remove the password and the values of the secret headers of a webhook from a message about it.
+
+    requests quotes a header value in some errors, as it is or as a Python string literal.
+
+    :param text: the message to sanitise
+    :param config: the webhook configuration with the decrypted secrets
+    :return: the message without the secrets
+    """
+    headers = config.get("headers") or {}
+    secrets = {config.get("password"), config.get("client_key_password")}
+    secrets.update(headers.get(name) for name in config.get("secret_headers") or ())
+    for secret in sorted((secret for secret in secrets if secret), key=len, reverse=True):
+        for form in sorted({secret, repr(secret)[1:-1]}, key=len, reverse=True):
+            text = text.replace(form, REDACTED)
     return text
 
 
@@ -1000,17 +1237,20 @@ def check_outbound_target(url, mode=GuardMode.OFF, allowlist=None):
         return None
 
     allowlist = allowlist or ()
-    parsed = urlsplit(url)
-    host = parsed.hostname
+    # The host and the port come from the URL as requests sends it, read with the parser of urllib3, which opens the
+    # connection. urlsplit() reads some URLs differently: in "http://127.0.0.1:8080\@example.com/" it finds the
+    # host example.com, but the connection goes to 127.0.0.1. requests adds "http://" to a proxy URL without a scheme.
+    try:
+        parsed = parse_url(_prepared_url(requests.utils.prepend_scheme_if_needed(url, "http")))
+    except (requests.exceptions.RequestException, LocationParseError, ValueError):
+        # _validate() only checks the scheme prefix, so a stored URL may carry something that is not a host or a
+        # port. The guard cannot judge a target it cannot parse, so it refuses it rather than waving it through.
+        return f"could not determine a host and a port to check in {url!r}"
+    # urllib3 keeps the brackets of an IPv6 address
+    host = (parsed.host or "").removeprefix("[").removesuffix("]")
     if not host:
         return f"could not determine a host to check in {url!r}"
-    try:
-        port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    except ValueError:
-        # _validate() only checks the scheme prefix, so a stored URL may carry
-        # something that is not a port. The guard cannot judge a target it
-        # cannot parse, so it refuses it rather than waving it through.
-        return f"could not determine a port to check in {url!r}"
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
 
     if any(_entry_matches(entry, host, None, port) for entry in allowlist):
         return None
@@ -1112,9 +1352,13 @@ def fire_webhook(identifier, payload=None, config=None):
     """
     Send the request described by the webhook ``identifier``.
 
-    Delivery is **synchronous**: the caller waits for the response (bounded by
-    the webhook's timeout). Pointing a webhook at a slow endpoint therefore
-    adds latency to the triggering request. There are no retries.
+    Delivery is **synchronous**: the caller waits for the response. The
+    webhook's timeout limits the connection, the wait for the answer and the
+    read of the start of the response body together. An endpoint that sends
+    the status line and the headers of its answer very slowly can still hold
+    a delivery longer, because requests limits each wait for data only.
+    Pointing a webhook at a slow endpoint therefore adds latency to the
+    triggering request. There are no retries.
 
     This function **never raises**. Any transport problem is caught, logged at
     WARNING and reported through the returned dict, so that a dead webhook can
@@ -1176,6 +1420,9 @@ def fire_webhook(identifier, payload=None, config=None):
                         "error": f"blocked by the outbound request guard "
                                  f"({mode}): {rejection}"}
 
+        # requests quotes an invalid header value in its error, and the value can be a secret.
+        for name, value in (config["headers"] or {}).items():
+            check_header(name, value)
         # Case-insensitive, as HTTP header names are: a configured "content-type" has to keep the
         # setdefault() below from adding a second entry, which requests would let win.
         headers = requests.structures.CaseInsensitiveDict(config["headers"] or {})
@@ -1196,6 +1443,10 @@ def fire_webhook(identifier, payload=None, config=None):
         else:
             requester = requests.request
 
+        timeout = config["timeout"] or DEFAULT_TIMEOUT
+        deadline = time.monotonic() + timeout
+        # total limits the connection and the wait for the first data together. The body is read in
+        # _read_response_text(), which checks the deadline.
         response = requester(
             config["http_method"], config["url"],
             headers=headers,
@@ -1204,9 +1455,14 @@ def fire_webhook(identifier, payload=None, config=None):
             cert=cert,
             verify=verify,
             proxies=proxies,
-            timeout=config["timeout"],
+            timeout=Timeout(total=timeout),
             allow_redirects=follow_redirects,
+            stream=True,
         )
+        try:
+            body_text = _truncate(_read_response_text(response, deadline))
+        finally:
+            response.close()
         # requests.Response.ok is true for anything below 400, so a 3xx counts as a success by
         # default. With redirects not followed that is wrong twice over: nothing was delivered,
         # and the caller - an event handler, or a Conditional Access WEBHOOK action - would
@@ -1214,7 +1470,6 @@ def fire_webhook(identifier, payload=None, config=None):
         # http->https rewrite, a load balancer), so this is the common case, not a corner one.
         unfollowed_redirect = not follow_redirects and 300 <= response.status_code < 400
         success = response.ok and not unfollowed_redirect
-        body_text = _truncate(response.text)
 
         log.info(f"Webhook {identifier!r} answered with HTTP "
                  f"{response.status_code}")
@@ -1242,7 +1497,7 @@ def fire_webhook(identifier, payload=None, config=None):
         return {"success": success, "status_code": response.status_code,
                 "response": body_text, "error": error}
     except Exception as ex:
-        message = redact_url(f"{ex.__class__.__name__}: {ex}", config["url"])
+        message = _redact_secrets(redact_url(f"{ex.__class__.__name__}: {ex}", config["url"]), config)
         log.warning(f"Webhook {identifier!r} could not be delivered: {message}")
         _record_webhook_call(identifier, start, False, error=True)
         return {"success": False, "status_code": None, "response": "",
@@ -1295,9 +1550,12 @@ def export_webhook(name=None, censor=False):
     :param censor: if True, the basic-auth password, the client key password
         and the values of headers marked as encrypted are replaced by the
         ``__CENSORED__`` placeholder instead of being exported in clear text.
-        Such an export is safe to share, but can only be re-imported on the
-        instance it came from, where the placeholder means "keep the stored
-        secret".
+        Such an export can only be re-imported on the instance it came from,
+        where the placeholder means "keep the stored secret". The URL, the
+        proxy URLs and the values of the other headers stay in the export as
+        they are, also if they contain a token or a password. The default is
+        False, as for ``pi-manage config export`` without ``--censor``: the
+        export then contains every secret in clear text.
     :return: dict of identifier -> webhook configuration
     """
     result = {}

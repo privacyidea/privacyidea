@@ -10,8 +10,8 @@ the token config and the connections to external services.
 
 In the WebUI, user ID resolvers and realms are found under *Users*, the system config,
 the token config and the :ref:`periodic_tasks` under *Configuration*, and SMTP servers,
-RADIUS servers, privacyIDEA servers, SMS gateways, CA connectors and service IDs under
-*External Services*. The :ref:`policies`, the :ref:`eventhandler` and the API clients are
+RADIUS servers, privacyIDEA servers, SMS gateways, CA connectors, service IDs and webhooks
+under *External Services*. The :ref:`policies`, the :ref:`eventhandler` and the API clients are
 found under *Policies*.
 
 .. toctree::

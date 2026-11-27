@@ -45,6 +45,7 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.utils import safe_format as _safe_format
 from privacyidea.lib.utils import canonical_client_ip
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
@@ -2078,7 +2079,8 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
     return False
 
 
-def _render_webhook_payload(payload: str, tags: dict) -> str:
+def _render_webhook_payload(payload: str, tags: dict, content_type: str | None = None,
+                            urlencode_values: bool = False) -> str:
     """
     Render the ``{tag}`` placeholders of a WEBHOOK action's payload template.
 
@@ -2087,21 +2089,33 @@ def _render_webhook_payload(payload: str, tags: dict) -> str:
     document — the same treatment the WebHookHandler gives a JSON payload
     (:meth:`~privacyidea.lib.eventhandler.webhookeventhandler.WebHookHandler._replace_tags`).
     Anything else is substituted as plain text. The distinction is made on the
-    payload itself rather than on the webhook's ``content_type``, so no second
-    read of the webhook definition is needed to render what is about to be sent.
+    payload itself rather than on the webhook's ``content_type``.
+
+    In a plain-text payload with the content type ``application/x-www-form-urlencoded``, the
+    values are URL-encoded if the webhook says so (:func:`~privacyidea.lib.webhook.placeholder_values`).
+    Some values come from the client: ``{username}`` is the login name the client tried. Without
+    the encoding, a login name with ``&`` adds fields to the body.
 
     Substitution is :func:`_safe_format` throughout: an unknown placeholder is
     left as written rather than dropping the notification, which matters more
     here than elsewhere, because the payload is what the receiving system reads.
+
+    :param payload: the payload template of the action
+    :param tags: the values of the placeholders
+    :param content_type: the content type of the webhook
+    :param urlencode_values: the setting ``urlencode_values`` of the webhook
+    :return: the payload with the placeholders replaced
     """
+    from privacyidea.lib.webhook import placeholder_values
+    text_tags = placeholder_values(tags, content_type, urlencode_values)
     try:
         document = json.loads(payload)
     except (ValueError, TypeError):
-        return _safe_format(payload, tags)
+        return _safe_format(payload, text_tags)
     if not isinstance(document, (dict, list)):
         # A bare JSON scalar ("5", "true", a quoted string) is a plain payload
         # that happens to parse; substituting it as text keeps it verbatim.
-        return _safe_format(payload, tags)
+        return _safe_format(payload, text_tags)
 
     def substitute(value):
         if isinstance(value, dict):
@@ -2143,16 +2157,23 @@ def _fire_action_webhook(stage_action: ConditionalAccessStageAction, tags: dict)
         log.warning(f"WEBHOOK action {stage_action.id}: needs a 'webhook' identifier in action_value; skipping.")
         return False
 
-    payload = webhook_config.get("payload")
-    if payload:
-        payload = _render_webhook_payload(str(payload), tags)
-
     # Imported lazily, mirroring the SMTP import in _send_action_email: the engine's hot path is evaluated on
     # every request and must not carry the webhook module's requests/TLS imports for the sake of an action that
     # fires rarely.
-    from privacyidea.lib.webhook import fire_webhook
+    from privacyidea.lib.webhook import fire_webhook, get_webhook
+    try:
+        # Read once: the payload needs the content type, and fire_webhook() takes the configuration.
+        config = get_webhook(identifier)
+    except ResourceNotFoundError:
+        # fire_webhook() reads the webhook again and reports that it does not exist.
+        config = None
+
+    payload = webhook_config.get("payload")
+    if payload and config is not None:
+        payload = _render_webhook_payload(str(payload), tags, config["content_type"], config["urlencode_values"])
+
     # The identifier is logged, never the URL: it is a property of the webhook definition and may embed a token.
-    result = fire_webhook(identifier, payload=payload or None)
+    result = fire_webhook(identifier, payload=payload or None, config=config)
     if result["success"]:
         log.info(f"WEBHOOK action {stage_action.id} fired webhook {identifier!r} "
                  f"(status {result['status_code']}).")

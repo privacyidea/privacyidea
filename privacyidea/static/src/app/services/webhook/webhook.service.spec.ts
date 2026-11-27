@@ -27,7 +27,7 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { Webhook, WebhookService } from "./webhook.service";
+import { isFormUrlencoded, Webhook, WEBHOOK_CENSORED, WebhookService } from "./webhook.service";
 
 describe("WebhookService", () => {
   let service: WebhookService;
@@ -48,6 +48,7 @@ describe("WebhookService", () => {
     auth_type: "none",
     verify_tls: true,
     timeout: 3,
+    urlencode_values: true,
     headers: {},
     secret_headers: []
   });
@@ -198,12 +199,91 @@ describe("WebhookService", () => {
   });
 
   it("sends an overriding payload only when one is given", async () => {
-    const promise = service.testWebhook("siem", "{\"ping\": true}");
+    const promise = service.testWebhook("siem", '{"ping": true}');
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/webhook/siem/test`);
-    expect(req.request.body).toEqual({ payload: "{\"ping\": true}" });
+    expect(req.request.body).toEqual({ payload: '{"ping": true}' });
     req.flush(MockPiResponse.fromValue({ success: true, status_code: 200, response: "", error: null }));
 
     await promise;
+  });
+
+  it("sends urlencode_values as a JSON boolean", async () => {
+    const promise = service.postWebhook({ ...buildWebhook(), urlencode_values: false });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/webhook/siem`);
+    expect(req.request.body["urlencode_values"]).toBe(false);
+    req.flush(MockPiResponse.fromValue(1));
+
+    await promise;
+  });
+
+  describe("header renames", () => {
+    /** Posts a webhook with these headers and renames, and returns the request body. */
+    const postedBody = async (
+      headers: Record<string, string>,
+      headerRenames: Record<string, string>
+    ): Promise<Record<string, unknown>> => {
+      const promise = service.postWebhook({ ...buildWebhook(), headers }, headerRenames);
+      const req = httpMock.expectOne(`${environment.proxyUrl}/webhook/siem`);
+      const body = req.request.body as Record<string, unknown>;
+      req.flush(MockPiResponse.fromValue(1));
+      await promise;
+      return body;
+    };
+
+    const renameParameters = (body: Record<string, unknown>): Record<string, unknown> =>
+      Object.fromEntries(Object.entries(body).filter(([key]) => key.startsWith("rename.header.")));
+
+    it("tells the server which stored header a renamed one was", async () => {
+      const body = await postedBody({ "X-API-Key": WEBHOOK_CENSORED }, { "X-API-Key": "X-Api-Key" });
+
+      expect(renameParameters(body)).toEqual({ "rename.header.X-API-Key": "X-Api-Key" });
+      // The placeholder goes out under the new name, and the rename tells the server where it is stored.
+      expect(body["header.X-API-Key"]).toBe(WEBHOOK_CENSORED);
+    });
+
+    it("drops a rename whose new name is not among the headers sent", async () => {
+      // The row was renamed and then removed, so there is nothing left to rename.
+      const body = await postedBody({ "X-Source": "privacyidea" }, { "X-Removed": "X-Old" });
+
+      expect(renameParameters(body)).toEqual({});
+    });
+
+    it("drops a rename to the same name", async () => {
+      const body = await postedBody({ "X-Source": "privacyidea" }, { "X-Source": "X-Source" });
+
+      expect(renameParameters(body)).toEqual({});
+    });
+
+    it("sends both renames of a swap", async () => {
+      const body = await postedBody({ "X-A": "first", "X-B": "second" }, { "X-A": "X-B", "X-B": "X-A" });
+
+      expect(renameParameters(body)).toEqual({ "rename.header.X-A": "X-B", "rename.header.X-B": "X-A" });
+      expect(body["header.X-A"]).toBe("first");
+      expect(body["header.X-B"]).toBe("second");
+    });
+
+    it("sends a rename next to a new header under the old name", async () => {
+      // X-Old was renamed to X-New, and the admin then added a new header called X-Old.
+      const body = await postedBody({ "X-New": WEBHOOK_CENSORED, "X-Old": "fresh" }, { "X-New": "X-Old" });
+
+      expect(renameParameters(body)).toEqual({ "rename.header.X-New": "X-Old" });
+      expect(body["header.X-New"]).toBe(WEBHOOK_CENSORED);
+      expect(body["header.X-Old"]).toBe("fresh");
+    });
+  });
+
+  describe("isFormUrlencoded", () => {
+    it.each([
+      ["application/x-www-form-urlencoded", true],
+      ["Application/X-WWW-Form-Urlencoded", true],
+      [" application/x-www-form-urlencoded ; charset=utf-8", true],
+      ["application/json", false],
+      ["application/x-www-form-urlencoded-extra", false],
+      ["", false]
+    ])("reads %p as form-urlencoded: %p", (contentType, expected) => {
+      expect(isFormUrlencoded(contentType)).toBe(expected);
+    });
   });
 });

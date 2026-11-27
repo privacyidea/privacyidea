@@ -5,11 +5,15 @@ converts inline WebHook event handler options to first-class webhook objects.
 See https://github.com/privacyidea/privacyidea/issues/5751 (steps 1.1-1.3)
 """
 import datetime
+import inspect
 import json
 import os
+import pathlib
 import tempfile
+import textwrap
 
 import pytest
+import sqlalchemy as sa
 
 from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
@@ -150,6 +154,8 @@ class TestMigrateInlineWebhooks(WebhookMigrationTestBase):
         assert wh.timeout == 10  # preserved from old TIMEOUT constant
         assert wh.auth_type == "none"
         assert wh.verify_tls
+        # The inline handler put the values of the placeholders into a form-encoded payload as they are
+        assert wh.urlencode_values is False
         assert "Slack_Notify" in wh.identifier
         assert str(eh.id) in wh.identifier
 
@@ -302,27 +308,39 @@ class TestMigrateInlineWebhooks(WebhookMigrationTestBase):
         assert EventHandlerOption.query.filter_by(
             eventhandler_id=eh.id, Key="URL").one().Value == "https://bad.example.com"
 
-    def test_an_empty_content_type_gets_the_default_like_a_missing_one(self):
-        # Absent and present-but-empty are the same thing - a setting nobody made - and the inline
-        # handler refuses both, so filling in the default repairs the handler instead of changing
-        # what it does. `opts.get(key, default)` only covers the absent half.
-        _create_webhook_handler(name="Empty", url="https://empty.example.com", content_type="")
+    @pytest.mark.parametrize("url, content_type", [
+        # The inline handler sends nothing without a content type. A webhook would send as JSON.
+        ("https://no-ct.example.com", None),
+        ("https://no-ct.example.com", ""),
+        # The inline handler sends only JSON and urlencoded data, also for another valid MIME type.
+        ("https://text.example.com", "text/plain"),
+        # The inline handler sends nothing to a URL without the scheme http or https.
+        ("no-scheme.example.com/hook", "application/json"),
+        ("ftp://ftp.example.com/hook", "application/json"),
+    ])
+    def test_a_handler_that_sends_nothing_is_not_converted(self, capsys, url, content_type):
+        eh = _create_webhook_handler(name="Sends nothing", url=url, content_type=content_type)
+
+        assert self._run_migration() == 0
+
+        assert Webhook.query.count() == 0
+        assert self._webhook_option(eh.id) is None
+        # The output of the upgrade names the handler.
+        assert "were not converted to a webhook: Sends nothing." in capsys.readouterr().out
+
+    def test_an_empty_webhook_option_is_replaced_by_the_link(self):
+        # An empty webhook option names no webhook, so the inline handler sends. The handler is converted and keeps one
+        # webhook option.
+        eh = _create_webhook_handler(name="Empty link", url="https://empty-link.example.com")
+        db.session.add(EventHandlerOption(eventhandler_id=eh.id, Key="webhook", Value=""))
+        db.session.commit()
 
         assert self._run_migration() == 1
 
-        assert Webhook.query.one().content_type == "application/json"
-
-    def test_missing_content_type_defaults_to_json(self):
-        """A handler without a content_type option defaults to application/json."""
-        _create_webhook_handler(
-            name="No CT",
-            url="https://no-ct.example.com",
-            content_type=None,  # no content_type option inserted
-        )
-
-        self._run_migration()
-
-        assert Webhook.query.one().content_type == "application/json"
+        webhook = Webhook.query.one()
+        assert webhook.url == "https://empty-link.example.com"
+        options = EventHandlerOption.query.filter_by(eventhandler_id=eh.id, Key="webhook").all()
+        assert [option.Value for option in options] == [webhook.identifier]
 
 
 class TestWebhookMigrationSnapshot(WebhookMigrationTestBase):
@@ -689,6 +707,78 @@ class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
         # And the upgrade can now start over cleanly.
         assert self._run_migration() == 1
         assert Webhook.query.count() == 1
+
+    def _back_to_parent_with_handlers(self, *names: str) -> list[int]:
+        """Downgrade to the parent revision and create inline WebHook handlers. Return their ids."""
+        db.session.remove()
+        self._downgrade()
+        handler_ids = [_create_webhook_handler(name=name, url=f"https://hook{index}.example.com").id
+                       for index, name in enumerate(names)]
+        db.session.remove()
+        return handler_ids
+
+    def test_restore_of_a_re_run_snapshot_lets_the_next_upgrade_convert_again(self, tmp_path):
+        # Every run of the upgrade writes a snapshot. The snapshot of a re-run holds the link that the earlier run
+        # wrote. The restore deletes the webhook that the link names, so it must not restore the link: the next
+        # upgrade skips a handler with a link.
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            restore_snapshot
+        )
+        handler_ids = self._back_to_parent_with_handlers("Hook A", "Hook B")
+        # The first run converts one handler and fails after its link.
+        self._upgrade_failing_after(r"INSERT INTO eventhandleroption\b")
+        # The second run resumes with the other handler and fails after its webhook.
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = str(tmp_path)
+        self._upgrade_failing_after(r"INSERT INTO webhook\b")
+        [rerun_snapshot] = [str(path) for path in tmp_path.iterdir()]
+        with open(rerun_snapshot, encoding="utf-8") as fh:
+            assert [opt["Key"] for opt in json.load(fh)["eventhandleroption"]].count("webhook") == 1
+
+        with db.engine.begin() as conn:
+            restore_snapshot(conn, rerun_snapshot)
+        db.session.remove()
+        assert Webhook.query.count() == 0
+        assert EventHandlerOption.query.filter_by(Key="webhook").count() == 0
+
+        self._upgrade()
+        db.session.remove()
+        identifiers = {webhook.identifier for webhook in Webhook.query.all()}
+        assert len(identifiers) == 2
+        for handler_id in handler_ids:
+            assert self._webhook_option(handler_id).Value in identifiers
+
+    def test_the_printed_restore_statements_commit(self, capsys):
+        # When the data migration fails, the upgrade prints the statements that restore the snapshot in
+        # 'pi-manage shell'. Nothing else commits there, so the statements must commit.
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _eventhandleroption, _restore_commands, _webhook, restore_snapshot
+        )
+        self._back_to_parent_with_handlers("Siem Hook")
+        capsys.readouterr()
+        self._upgrade_failing_after(r"INSERT INTO eventhandleroption\b")
+        printed = capsys.readouterr().out
+        [snapshot] = [os.path.join(self.tmpdir, name) for name in os.listdir(self.tmpdir)]
+        statements = printed.split("enter these statements:\n\n", 1)[1].split("\n     Then run", 1)[0]
+        assert statements == _restore_commands(snapshot)
+        # The docstring of restore_snapshot() and the pi-manage documentation show the same statements.
+        documented = _restore_commands("/var/lib/privacyidea/backup/privacyidea-e1f2a3b4c5d6-<timestamp>.json")
+        assert textwrap.indent(documented, "    ") in inspect.cleandoc(restore_snapshot.__doc__)
+        pi_manage_doc = pathlib.Path(__file__).parent.parent / "doc/installation/system/pi-manage.rst"
+        assert textwrap.indent(documented, "   ") in pi_manage_doc.read_text(encoding="utf-8")
+
+        # Run the statements as an administrator enters them
+        exec(statements, {})
+
+        # A new connection sees the restore.
+        db.session.remove()
+        engine = self._engine()
+        try:
+            with engine.connect() as conn:
+                assert conn.execute(sa.select(sa.func.count()).select_from(_webhook)).scalar() == 0
+                assert conn.execute(sa.select(sa.func.count()).select_from(_eventhandleroption)
+                                    .where(_eventhandleroption.c.Key == "webhook")).scalar() == 0
+        finally:
+            engine.dispose()
 
 
 class TestSnapshotDirectory:

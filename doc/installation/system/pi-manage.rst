@@ -251,6 +251,27 @@ and columns with their data. A relative revision has to follow ``--``, e.g.
    or change migration scripts. They are meant for the development of
    privacyIDEA and must not be used on an installation.
 
+The upgrade to privacyIDEA 3.15 converts the WebHook event handlers with an
+inline URL to webhooks, see :ref:`webhookhandler`. Before it changes them, it
+writes a snapshot of their options to a file. The file goes to
+``/var/lib/privacyidea/backup`` if this directory exists and is writable, else
+to the temporary directory of the system. The environment variable
+``PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR`` sets another directory, and
+``PRIVACYIDEA_MIGRATION_NO_SNAPSHOT=1`` turns the snapshot off.
+
+If the conversion fails, run ``pi-manage db upgrade`` again. It continues where
+it stopped. To undo the conversion instead, start ``pi-manage shell`` and enter
+these statements, with the path of the snapshot file that the upgrade printed::
+
+   from privacyidea.models import db
+   from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import restore_snapshot
+   with db.engine.begin() as conn:
+       restore_snapshot(conn, '/var/lib/privacyidea/backup/privacyidea-e1f2a3b4c5d6-<timestamp>.json')
+
+The statements delete the webhooks that the conversion created and restore the
+options of the WebHook event handlers. The ``with`` block commits the changes
+at its end. The next ``pi-manage db upgrade`` converts the handlers again.
+
 .. _pimanage_backup:
 
 Backup and Restore
@@ -858,8 +879,11 @@ remaining configuration::
 
    pi-manage config import -i backup.json --skip-invalid
 
-``--skip-invalid`` currently only works for policies. It removes actions that this version
-does not know. If no action is left, the policy is not imported.
+``--skip-invalid`` works for policies and event handlers. For a policy, it removes actions
+that this version does not know. If no action is left, the policy is not imported. For the
+event handlers, it skips a WebHook event handler in the format before privacyIDEA 3.15 that
+the import does not convert to a webhook, see :ref:`webhookhandler`. The other event
+handlers are imported with or without ``--skip-invalid``.
 
 The import plan
 ~~~~~~~~~~~~~~~
@@ -892,6 +916,12 @@ the object given with ``-n`` limit what is deleted as well::
 * Nothing is forced. A realm that still contains tokens or containers, or a
   resolver that is used by a realm, is kept and reported as an error. The other
   deletions go on.
+* A webhook that an event handler or a conditional access policy uses after the
+  import is not deleted. The import does not carry conditional access policies,
+  so all of them stay. The plan shows a note for such a webhook instead of a
+  ``delete`` line. This includes the webhook that the import links a WebHook
+  event handler in the format before privacyIDEA 3.15 to, see
+  :ref:`webhookhandler`.
 * The type ``config`` is never replaced. Global configuration keys that are
   missing from the import are kept.
 * If the realms are replaced (without ``-n``) and no realm in the file is marked

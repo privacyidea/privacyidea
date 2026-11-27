@@ -287,6 +287,17 @@ Actions
     placeholders are replaced only in this payload; the default payload of the
     webhook is sent unchanged.
 
+    A payload that is a JSON object or array is substituted value by value. Put
+    each placeholder of a JSON payload in quotes, for example
+    ``{"count": "{count}"}``. A JSON payload with a placeholder outside quotes,
+    such as ``{"count": {count}}``, is refused when the policy is saved.
+
+    Any other payload is substituted as plain text. If the webhook has the
+    content type ``application/x-www-form-urlencoded`` and the setting
+    **URL-encode placeholder values** is on, the values are URL-encoded. Use
+    this setting for a form payload: ``{username}`` is the login name that the
+    client sent, so it can contain ``&`` or ``=``.
+
     ``{email}``, ``{givenname}`` and ``{surname}`` are **not** available here:
     they are read from the resolver and are fetched only for an email action.
 

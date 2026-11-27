@@ -62,6 +62,10 @@ class Webhook(MethodsMixin, db.Model):
     # Optional default body template (overridable per call site)
     default_payload: Mapped[str | None] = mapped_column(
         UnicodeText(), default=None)
+    # URL-encode the values that replace the placeholders of a form-encoded payload. Off only for the webhooks that
+    # the upgrade and the import create from an inline WebHook handler, which sent the values unencoded.
+    urlencode_values: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default='1')
 
     # --- Authentication --------------------------------------------------
     # Supported values: 'none', 'basic', 'header', 'mtls'
@@ -140,7 +144,9 @@ class Webhook(MethodsMixin, db.Model):
         values = {}
         secret_keys = []
         for header in self.headers:
-            value = header.value
+            # Oracle stores an empty string as NULL. requests drops a header whose value is None, so the empty
+            # header that the administrator configured would not be sent.
+            value = header.value if header.value is not None else ""
             if header.encrypted:
                 secret_keys.append(header.key)
                 if value:
@@ -187,6 +193,7 @@ class Webhook(MethodsMixin, db.Model):
             "http_method": self.http_method,
             "content_type": self.content_type,
             "default_payload": self.default_payload,
+            "urlencode_values": self.urlencode_values,
             "auth_type": self.auth_type,
             "username": self.username,
             "password": self.password,

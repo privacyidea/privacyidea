@@ -11,6 +11,13 @@ handler options to first-class webhook objects:
   2. Creates a webhook row with the extracted URL and content_type
   3. Adds a 'webhook' option to the handler pointing at the new identifier
 
+It converts exactly the handlers that the inline handler sends for: a URL that starts
+with http:// or https://, and a content_type that is json, urlencoded or one of their
+MIME types. A handler that sends nothing as it stands is named in the log and left
+alone, so that the upgrade does not start to send for it. The webhook sends what the
+inline handler sent: POST, the fixed timeout of 10 seconds, and the values of the
+placeholders in a form-encoded payload without URL encoding.
+
 The inline URL/content_type option rows are intentionally left in place so
 that a downgrade is trivially safe.
 
@@ -107,9 +114,9 @@ def _option_description(handler_id):
     """
     The ``Description`` of the ``webhook`` option row linking a handler to its webhook.
 
-    Provenance for whoever reads the row later, nothing more: no code matches on it. The column
-    would otherwise be empty, and "why does this handler have an option I never added?" is a fair
-    question to find an answer to in the row itself.
+    It tells whoever reads the row later where it comes from. :func:`restore_snapshot` matches on
+    it: the snapshot of a re-run holds the rows that the earlier run wrote, and a restore must not
+    bring them back.
     """
     return (f"Added by the privacyIDEA 3.15 webhook migration: links WebHook event handler "
             f"{handler_id} to the webhook object created from its inline options (#5751)")
@@ -175,11 +182,51 @@ _webhook = sa.table(
     sa.column('auth_type', sa.Unicode(50)),
     sa.column('verify_tls', sa.Boolean),
     sa.column('timeout', sa.Integer),
+    sa.column('urlencode_values', sa.Boolean),
 )
+
 
 def _sanitize_name(name):
     """Turn a handler name into a safe identifier fragment (ASCII, max 40 chars)."""
     return re.sub(r'[^a-zA-Z0-9_-]', '_', name)[:40]
+
+
+def _inline_defect(url: str | None, content_type: str | None) -> str | None:
+    """
+    Return why a WebHook handler with these inline options is not converted, or None.
+
+    The rules are those of the inline WebHookHandler, which sends nothing without a URL and with a
+    content type that is not in its map (also without one), and of the URL check of
+    ``set_webhook()``: the inline handler sends nothing to a URL that does not start with
+    http:// or https:// either. tests/test_migration_e1f2a3b4c5d6.py checks that the configuration
+    import, which uses the code of privacyIDEA, gives the same answers.
+
+    :param url: the value of the ``URL`` option, or None
+    :param content_type: the value of the ``content_type`` option, or None
+    :return: a short reason, or None if the handler is converted
+    """
+    if not url:
+        return "it has no URL"
+    if content_type not in _CONTENT_TYPE_MAP:
+        if not content_type:
+            return "it has no content_type"
+        return f"its content_type {content_type!r} is neither json nor urlencoded"
+    if not url.strip().lower().startswith(("http://", "https://")):
+        return "its URL does not start with 'http://' or 'https://'"
+    return None
+
+
+def _restore_commands(path: str) -> str:
+    """
+    Return the Python statements that restore the snapshot at *path* in ``pi-manage shell``.
+
+    ``db.engine.begin()`` commits the restore at the end of the block. :func:`restore_snapshot`
+    itself does not commit, so a connection without a commit loses the restore.
+    """
+    return ("from privacyidea.models import db\n"
+            "from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import restore_snapshot\n"
+            "with db.engine.begin() as conn:\n"
+            f"    restore_snapshot(conn, {path!r})\n")
 
 
 # ---------------------------------------------------------------------------
@@ -288,19 +335,29 @@ def _write_snapshot(conn):
 
 def restore_snapshot(conn, path):
     """
-    Restore the exact pre-migration state captured by :func:`_write_snapshot`.
+    Restore the pre-migration state of the WebHook handlers from a snapshot of :func:`_write_snapshot`.
 
     Use this instead of ``downgrade()`` when a migration run failed partway
-    through and the database is in a mixed state::
+    through and the database is in a mixed state. Enter these statements in
+    ``pi-manage shell``, with the path of the snapshot file::
 
-        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables \\
-            import restore_snapshot
-        restore_snapshot(db.engine.connect(), "/tmp/privacyidea-e1f2a3b4c5d6-...json")
+        from privacyidea.models import db
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import restore_snapshot
+        with db.engine.begin() as conn:
+            restore_snapshot(conn, '/var/lib/privacyidea/backup/privacyidea-e1f2a3b4c5d6-<timestamp>.json')
+
+    This function does not commit. ``db.engine.begin()`` commits at the end of the block.
+
+    Every run of the upgrade writes a snapshot. The snapshot of a re-run also holds the
+    ``webhook`` option rows that the earlier run wrote. They are not restored, because the
+    webhooks they name are deleted. So after the restore of any snapshot, the next
+    ``pi-manage db upgrade`` converts the handlers again.
 
     The webhook tables themselves are left in place — they are empty of
-    migration-created rows afterwards and harmless. Re-running
-    ``pi-manage db upgrade`` after a restore is safe.
+    migration-created rows afterwards and harmless.
 
+    :param conn: the connection to restore on. The caller commits.
+    :param path: the path of the snapshot file
     :return: the number of ``eventhandleroption`` rows restored
     """
     with open(path, encoding="utf-8") as fh:
@@ -313,7 +370,11 @@ def restore_snapshot(conn, path):
         )
 
     handler_ids = snapshot.get("handler_ids") or []
-    options = snapshot.get("eventhandleroption") or []
+    # A snapshot of a re-run holds the links that the earlier run wrote. Restored, they would name
+    # the webhooks deleted below, and the next upgrade would skip these handlers.
+    options = [opt for opt in snapshot.get("eventhandleroption") or []
+               if not (opt.get("Key") == "webhook"
+                       and opt.get("Description") == _option_description(opt.get("eventhandler_id")))]
 
     # 1. Drop the webhook objects this migration created.
     #
@@ -369,6 +430,8 @@ def _create_webhook_table():
         sa.Column('content_type', sa.Unicode(length=100), nullable=True,
                   server_default='application/json'),
         sa.Column('default_payload', sa.UnicodeText(), nullable=True),
+        # Whether the values of the placeholders are URL-encoded in a form-encoded payload
+        sa.Column('urlencode_values', sa.Boolean(), nullable=False, server_default='1'),
         # Authentication
         sa.Column('auth_type', sa.Unicode(length=50), nullable=True, server_default='none'),
         sa.Column('username', sa.Unicode(length=255), nullable=True, server_default=''),
@@ -480,16 +543,19 @@ def _run_data_migration(conn):
         return 0
 
     migrated = 0
+    not_converted = []
     for handler_id, handler_name in handlers:
-        # 2. Idempotency: skip if this handler already has a "webhook" option.
+        # 2. Idempotency: skip if this handler already has a "webhook" option that names a webhook.
+        #    An empty one names no webhook: the inline handler sends for such a handler, so it is
+        #    converted, and the link takes the place of the empty option.
         existing_webhook_opt = conn.execute(
-            sa.select(_eventhandleroption.c.Value)
+            sa.select(_eventhandleroption.c.id, _eventhandleroption.c.Value)
             .where(
                 _eventhandleroption.c.eventhandler_id == handler_id,
                 _eventhandleroption.c.Key == 'webhook',
             )
         ).fetchone()
-        if existing_webhook_opt:
+        if existing_webhook_opt is not None and existing_webhook_opt.Value:
             continue
 
         # 3. Read inline options (URL, content_type).
@@ -504,43 +570,27 @@ def _run_data_migration(conn):
         for key, value in rows:
             opts[key] = value
 
-        url = opts.get('URL')
-        if not url:
+        # 4. Convert only a handler that sends today. One that sends nothing as it stands is left
+        #    on its inline configuration, so that the upgrade does not start to send for it.
+        defect = _inline_defect(opts.get('URL'), opts.get('content_type'))
+        if defect:
             log.warning(
-                f"WebHook handler {handler_id} has no URL option — skipping migration."
+                f"WebHook handler {handler_id} ({handler_name or '<unnamed>'}) is not converted to a "
+                f"webhook: {defect}. It sends nothing as it stands. To repair it, select a webhook "
+                f"in the handler."
             )
+            not_converted.append(handler_name or f"<unnamed handler {handler_id}>")
             continue
+        url = opts['URL']
+        # The legacy "json"/"urlencoded" shorthand becomes the MIME type.
+        content_type = _CONTENT_TYPE_MAP[opts['content_type']]
 
-        # 4. Build a unique identifier for the new webhook object.
+        # 5. Build a unique identifier for the new webhook object.
         if handler_name:
             safe_name = _sanitize_name(handler_name)
             identifier = f"from_{safe_name}_{handler_id}"
         else:
             identifier = f"webhook_from_handler_{handler_id}"
-
-        # 5. Normalize content_type (handle legacy "json"/"urlencoded" shorthand).
-        #
-        #    No content type at all - the option absent, or present with an empty value - is a
-        #    setting that was never made, and it gets the same default a webhook created today
-        #    gets. Such a handler sends nothing as it stands (the inline WebHookHandler maps the
-        #    value through DB_CONTENT_TYPE_MAP, which has no default, and refuses anything that is
-        #    not JSON or urlencoded), so filling it in repairs the handler rather than changing
-        #    what it does. `opts.get(..., default)` alone would miss the empty case.
-        #
-        #    A value that *is* set but is not a MIME type is different: someone typed it. Storing
-        #    it raw would put it past set_webhook()/_validate(), which this code writes around, and
-        #    reading it as JSON would be a guess about what was meant. The handler is left on its
-        #    inline configuration instead, the way one without a URL is - it sends nothing today
-        #    either, and an admin can correct the value and run the upgrade again.
-        raw_ct = opts.get('content_type') or 'application/json'
-        content_type = _CONTENT_TYPE_MAP.get(raw_ct, raw_ct)
-        if '/' not in content_type:
-            log.warning(
-                f"WebHook handler {handler_id} has an unusable content_type "
-                f"({opts.get('content_type')!r}) — skipping migration. It sends nothing today "
-                f"either; correct the option and run the upgrade again."
-            )
-            continue
 
         # 6. Insert the webhook row - unless a previous, interrupted run already did.
         #
@@ -552,8 +602,9 @@ def _run_data_migration(conn):
         #    printed advice to "just re-run" promises to resolve. So the leftover is adopted instead.
         identifier, reused = _free_identifier(conn, identifier, handler_id)
         if not reused:
-            #    timeout=10 matches the handler's current TIMEOUT constant to preserve
-            #    existing behaviour (the new default for manually created webhooks is 3).
+            # The webhook sends what the inline handler sent: timeout=10 is the TIMEOUT constant of
+            # the handler (a webhook created by hand gets 3), and the handler put the values of the
+            # placeholders into a form-encoded payload without URL encoding.
             conn.execute(
                 _webhook.insert().values(
                     identifier=identifier,
@@ -564,17 +615,26 @@ def _run_data_migration(conn):
                     auth_type='none',
                     verify_tls=True,
                     timeout=10,
+                    urlencode_values=False,
                 )
             )
 
-        # 7. Add a "webhook" option to the handler pointing at the identifier.
-        conn.execute(_eventhandleroption.insert().values(
-            eventhandler_id=handler_id,
-            Key='webhook',
-            Value=identifier,
-            Type='',
-            Description=_option_description(handler_id),
-        ))
+        # 7. Add a "webhook" option to the handler pointing at the identifier, in the place of an
+        #    empty one.
+        if existing_webhook_opt is not None:
+            conn.execute(
+                _eventhandleroption.update()
+                .where(_eventhandleroption.c.id == existing_webhook_opt.id)
+                .values(Value=identifier, Description=_option_description(handler_id))
+            )
+        else:
+            conn.execute(_eventhandleroption.insert().values(
+                eventhandler_id=handler_id,
+                Key='webhook',
+                Value=identifier,
+                Type='',
+                Description=_option_description(handler_id),
+            ))
 
         migrated += 1
         log.info(
@@ -586,6 +646,10 @@ def _run_data_migration(conn):
         print(f"Migrated {migrated} inline WebHook handler(s) to first-class webhook objects.")
     else:
         log.info("All WebHook handlers were already migrated — nothing to do.")
+    if not_converted:
+        print(f"These WebHook handlers send nothing as they stand and were not converted to a "
+              f"webhook: {', '.join(not_converted)}. The log names the reason. To repair such a "
+              f"handler, select a webhook in it.")
 
     return migrated
 
@@ -610,17 +674,17 @@ def upgrade():
         print("\n" + "=" * 72)
         print("The webhook data migration FAILED.")
         if snapshot_path:
+            # Not indented, so that the statements can be pasted into the Python shell as they are
             print(
                 f"\nThe pre-migration state of the affected eventhandleroption rows\n"
                 f"was saved to:\n    {snapshot_path}\n"
                 f"\nRecovery options, in order of preference:\n"
                 f"  1. Re-run 'pi-manage db upgrade'. This migration is idempotent\n"
                 f"     and additive, so it resumes where it stopped.\n"
-                f"  2. Restore just this migration's changes:\n"
-                f"       from privacyidea.migrations.versions."
-                f"e1f2a3b4c5d6_add_webhook_tables \\\n"
-                f"           import restore_snapshot\n"
-                f"       restore_snapshot(conn, {snapshot_path!r})\n"
+                f"  2. Restore just this migration's changes. Start 'pi-manage shell'\n"
+                f"     and enter these statements:\n\n"
+                f"{_restore_commands(snapshot_path)}\n"
+                f"     Then run 'pi-manage db upgrade' again.\n"
                 f"  3. Only as a last resort, restore a full backup made with\n"
                 f"     'pi-manage backup create' -- note this also reverts every\n"
                 f"     other migration applied in this run.\n"
