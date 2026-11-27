@@ -22,8 +22,10 @@
   gap: 8px;
 }
 
+// Each field keeps its own height, so an error under the duration does not stretch the unit field.
 .block-dialog-duration {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   margin-top: 16px;
 }
