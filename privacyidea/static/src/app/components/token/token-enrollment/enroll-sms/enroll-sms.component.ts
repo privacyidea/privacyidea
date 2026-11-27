@@ -72,11 +72,15 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
   );
   /**
    * The server refuses any sms.identifier without an sms_gateways policy for the target. Then the field is not
-   * offered, also not while the policies load, and no gateway is sent, so the server uses its default gateway.
+   * offered and no gateway is sent, so the server uses its default gateway. A container template has no target
+   * ("unrestricted"), there any gateway can be stored.
    */
   readonly gatewayRestricted = computed(() => this.policyGateways().length > 0);
+  private readonly gatewaySelectable = computed(
+    () => this.gatewayRestricted() || this.enrollmentPolicies().state === "unrestricted"
+  );
   readonly gatewayFieldShown = computed(
-    () => this.gatewayRestricted() || this.enrollmentPolicies().state === "pending"
+    () => this.gatewaySelectable() || this.enrollmentPolicies().state === "pending"
   );
   private readonly defaultGatewayId = computed<string | undefined>(() =>
     this.systemService.systemConfigResource.hasValue()
@@ -100,7 +104,8 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
 
   readNumberDynamicallyForm = form(this.readNumberDynamically);
   smsGatewayForm = form(this.smsGateway, (f) => {
-    required(f, { when: () => this.gatewayRestricted() });
+    // Empty means "use the system gateway", which the server accepts when one is set.
+    required(f, { when: () => this.gatewayRestricted() && !this.defaultSMSGatewayIsSet() });
     disabled(f, () => this.disabled() || this.enrollmentPolicies().state === "pending");
   });
 
@@ -115,7 +120,8 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
     disabled(f, () => this.disabled() || this.readNumberDynamically());
   });
 
-  // A gateway list from the enrollment policies is offered as it is, otherwise all gateways plus the default.
+  // A gateway list from the enrollment policies is offered as it is, otherwise (container template) all gateways
+  // plus the default.
   smsGatewayOptions = computed(() => {
     const allowed = this.policyGateways();
     if (allowed.length > 0) return [...allowed];
@@ -150,7 +156,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
     const enrollmentData: SmsEnrollmentOptions = {
       ...basicOptions,
       type: "sms",
-      ...(this.gatewayRestricted() && { smsGateway: this.smsGateway() }),
+      ...(this.gatewaySelectable() && { smsGateway: this.smsGateway() }),
       readNumberDynamically: this.readNumberDynamically()
     };
     if (!this.readNumberDynamically()) {

@@ -47,6 +47,13 @@
           gateway here.</mat-hint
         >
         <mat-select [formField]="smsGatewayForm">
+          @if (defaultSMSGatewayIsSet()) {
+            <mat-option
+              value=""
+              i18n="@@token.useSystemSmsGateway"
+              >Use the system wide SMS gateway</mat-option
+            >
+          }
           @for (option of smsGatewayOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }

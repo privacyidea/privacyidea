@@ -86,10 +86,11 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   readonly canListSmsGateways = computed<boolean>(() => this.authService.actionAllowed("smsgateway_read"));
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
+    // Enrollment and rollover take the gateways from the sms_gateways policy, only a container template lists all.
     const onPageUsingTheList =
       this.contentService.onExternalSms() ||
       this.contentService.onConfigurationTokenTypes() ||
-      this.contentService.onTokenEnrollmentLikely();
+      this.contentService.onAnyContainerTemplatesRoute();
     if (!onPageUsingTheList || !this.canListSmsGateways()) {
       return undefined;
     }

@@ -157,8 +157,8 @@ describe("SmsGatewayService", () => {
       httpMock.expectOne((r) => r.url === "/smsgateway/providers");
     });
 
-    it("requests the gateway list on the token enrollment page", () => {
-      contentServiceMock.onTokenEnrollmentLikely = signal(true);
+    it("requests the gateway list in the container template editor", () => {
+      contentServiceMock.onAnyContainerTemplatesRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
@@ -167,9 +167,16 @@ describe("SmsGatewayService", () => {
       httpMock.expectNone((r) => r.url === "/smsgateway/providers");
     });
 
-    it("does not request the gateway list on the enrollment page without smsgateway_read", () => {
-      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    it("does not request the gateway list on enrollment or rollover, the gateways come from the policy", () => {
       contentServiceMock.onTokenEnrollmentLikely = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/smsgateway/");
+    });
+
+    it("does not request the gateway list in the container template editor without smsgateway_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.onAnyContainerTemplatesRoute = signal(true);
       TestBed.tick();
 
       httpMock.expectNone((r) => r.url === "/smsgateway/");

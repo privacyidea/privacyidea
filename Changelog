@@ -12,7 +12,9 @@ Version 3.15
   Fixes:
   * WebUI: The token enrollment, the token wizard and the rollover dialog take the values of the enrollment policies,
     like the hash algorithm, OTP length or SMS gateways, for the selected user, realm or token instead of the
-    logged-in administrator. The new endpoint `GET /token/init/policies` returns these values (#6253)
+    logged-in administrator. The new endpoint `GET /token/init/policies` returns these values. A container template
+    sets the two-step enrollment and the SMS gateway of its tokens regardless of these policies, which apply when the
+    template is used. An empty SMS gateway uses the system default gateway (#6253)
 
 Version 3.14.1
 

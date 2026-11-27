@@ -44,7 +44,7 @@ export class SmsApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
   override toApiPayload(data: SmsEnrollmentData): SmsEnrollmentPayload {
     const payload: SmsEnrollmentPayload = {
       ...super.toApiPayload(data),
-      ...(data.smsGateway != null && { "sms.identifier": data.smsGateway }),
+      ...(data.smsGateway && { "sms.identifier": data.smsGateway }),
       phone: data.readNumberDynamically ? "" : (data.phoneNumber ?? ""),
       dynamic_phone: data.readNumberDynamically ?? false
     };

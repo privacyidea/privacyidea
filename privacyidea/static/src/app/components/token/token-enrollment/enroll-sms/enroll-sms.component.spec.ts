@@ -253,6 +253,49 @@ describe("EnrollSmsComponent", () => {
     });
   });
 
+  describe("container template editor without a policy target", () => {
+    const gatewayField = () => fixture.nativeElement.querySelector("mat-select");
+
+    beforeEach(() => {
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({ "sms.identifier": "gw0" })
+      );
+      smsGatewayServiceMock.smsGateways.set([
+        { name: "gw1", providermodule: "m", options: {}, headers: {} },
+        { name: "gw2", providermodule: "m", options: {}, headers: {} }
+      ]);
+      fixture.componentRef.setInput("enrollmentPolicies", { state: "unrestricted" });
+      component.phoneNumber.set("+12345678");
+    });
+
+    it("offers the gateway field with all gateways and the system gateway choice", async () => {
+      await flushFixture(fixture);
+
+      expect(gatewayField()).not.toBeNull();
+      await pickOption(fixture, matSelectAt(fixture), 2);
+
+      expect(component.smsGateway()).toBe("gw2");
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args!.mapper.toApiPayload(args!.data)["sms.identifier"]).toBe("gw2");
+    });
+
+    it("keeps the gateway of a stored template on save", () => {
+      fixture.componentRef.setInput("enrollmentData", { type: "sms", smsGateway: "gw1" } as SmsEnrollmentData);
+      fixture.detectChanges();
+
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args!.mapper.toApiPayload(args!.data)["sms.identifier"]).toBe("gw1");
+    });
+
+    it("sends no gateway for the system gateway choice", () => {
+      component.smsGateway.set("");
+
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args).not.toBeNull();
+      expect(args!.mapper.toApiPayload(args!.data)).not.toHaveProperty("sms.identifier");
+    });
+  });
+
   describe("defaultSMSGatewayIsSet", () => {
     it("should be false when no sms gateway is configured", () => {
       (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
@@ -266,6 +309,51 @@ describe("EnrollSmsComponent", () => {
         MockPiResponse.fromValue({ "sms.identifier": "main-gw" })
       );
       expect(component.defaultSMSGatewayIsSet()).toBe(true);
+    });
+  });
+
+  describe("optional gateway with a system default", () => {
+    const setDefault = (id?: string) =>
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        id ? MockPiResponse.fromValue({ "sms.identifier": id }) : MockPiResponse.fromValue({})
+      );
+    const settle = () => {
+      fixture.detectChanges();
+      TestBed.tick();
+    };
+
+    it("leaves the gateway empty and valid when the default is not on the policy list, and sends no identifier", () => {
+      setDefault("gw0");
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1"] }));
+      settle();
+      component.phoneNumber.set("+12345678");
+
+      expect(component.smsGateway()).toBe("");
+      expect(component.smsGatewayForm().valid()).toBe(true);
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args).not.toBeNull();
+      expect(args!.mapper.toApiPayload(args!.data)).not.toHaveProperty("sms.identifier");
+    });
+
+    it("keeps the gateway required without a system default", () => {
+      setDefault();
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1"] }));
+      settle();
+      component.phoneNumber.set("+12345678");
+
+      expect(component.smsGatewayForm().valid()).toBe(false);
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+    });
+
+    it("preselects and sends the default when it is on the policy list", () => {
+      setDefault("gw1");
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1", "gw2"] }));
+      settle();
+      component.phoneNumber.set("+12345678");
+
+      expect(component.smsGateway()).toBe("gw1");
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args!.mapper.toApiPayload(args!.data)).toEqual(expect.objectContaining({ "sms.identifier": "gw1" }));
     });
   });
 
