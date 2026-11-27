@@ -228,9 +228,21 @@
 
 // The floated label of an outlined field sits on the top border and reaches above it. The field keeps that room inside
 // its own box, so no sticky header, clipping container or scrolling dialog body can cover or cut off the label.
-// Padding, not margin: a margin collapses with its parent's and reserves nothing inside a clipping container.
-.mat-mdc-form-field.mat-form-field-appearance-outline {
+// Padding, not margin: a margin collapses with its parent's and reserves nothing inside a clipping container. A field
+// without a label (the paginator's page size, a policy action's value) has nothing to float and keeps its height. No
+// specificity, so a field that sets its own top padding keeps it.
+:where(
+  .mat-mdc-form-field.mat-form-field-appearance-outline:has(
+    > .mat-mdc-text-field-wrapper:not(.mdc-text-field--no-label)
+  )
+) {
   padding-top: var(--form-field-label-room);
+}
+
+// The sticky controls centre their items, and a field's box includes the room above its outline. The other items take
+// the same room, so they centre on the outline.
+.sticky-controls:has(> .mat-form-field-appearance-outline) > :not(.mat-form-field-appearance-outline) {
+  margin-top: var(--form-field-label-room);
 }
 
 // The outline of a field keeps the two tones of the flat depth border and follows the light source the same way: the
