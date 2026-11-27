@@ -253,8 +253,9 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   // Centring the row would centre on those too, so give the paginator the input's own height, starting where the input
   // starts, and centre it inside that - it then lines up on the middle of the input itself, whether or not a hint is
   // showing. It also grows into the free space in the row, so its controls are kept against the right edge of that
-  // space rather than the left one flex would start them at.
-  > .mat-mdc-paginator {
+  // space rather than the left one flex would start them at. A wrapper that holds only the paginator takes its place.
+  > .mat-mdc-paginator,
+  > :has(> .mat-mdc-paginator:only-child) {
     align-self: flex-start;
     margin-top: var(--form-field-label-room);
     height: table.$field-input-height;

@@ -325,13 +325,15 @@
 
       <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
         <div class="flex-column input-width-l">
-          <mat-checkbox
-            [formField]="httpForm.Editable"
-            i18n="@@resolver.editUserStore"
-            >Edit User Store</mat-checkbox
-          >
+          <div class="checkbox-beside-field">
+            <mat-checkbox
+              [formField]="httpForm.Editable"
+              i18n="@@resolver.editUserStore"
+              >Edit User Store</mat-checkbox
+            >
+          </div>
           <span
-            class="hint margin-bottom-16 margin-top-16"
+            class="hint margin-bottom-16"
             i18n="@@resolver.userDataUserStore"
             >The user data in this user store can be modified from within privacyIDEA.</span
           >
@@ -363,12 +365,13 @@
       </div>
 
       <div class="flex-row gap-16 margin-bottom-16">
-        <mat-checkbox
-          [formField]="httpForm.verify_tls"
-          class="input-width-l"
-          i18n="@@resolver.verifyTlsCertificate"
-          >Verify TLS certificate of the server.</mat-checkbox
-        >
+        <div class="checkbox-beside-field input-width-l">
+          <mat-checkbox
+            [formField]="httpForm.verify_tls"
+            i18n="@@resolver.verifyTlsCertificate"
+            >Verify TLS certificate of the server.</mat-checkbox
+          >
+        </div>
 
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.caCertificate">CA Certificate</mat-label>

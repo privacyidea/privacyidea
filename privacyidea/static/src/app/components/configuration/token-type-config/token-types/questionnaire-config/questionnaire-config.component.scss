@@ -20,3 +20,8 @@
   display: grid;
   gap: 16px;
 }
+
+// Centred on the question field's outline, below the room for its label.
+.question-delete {
+  margin-top: calc(var(--form-field-label-room) + 8px);
+}
