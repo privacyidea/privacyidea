@@ -105,9 +105,10 @@ Entries written by privacyIDEA 3.15 or later store ``date`` and ``startdate``
 in UTC. The API returns them with the offset ``+00:00``. The current WebUI
 shows them in the local time of the browser. Older entries keep the local time
 of the server that wrote them. The API returns them without an offset. The
-column ``entry_version`` of the audit table tells the two kinds apart. It holds
-``2`` for an entry in UTC and is empty (``NULL``) for an older entry in the
-local time of the server.
+current WebUI shows them as stored and marks their *Start Date* with a
+crossed-out globe. The column ``entry_version``
+of the audit table tells the two kinds apart. It holds ``2`` for an entry in
+UTC and is empty (``NULL``) for an older entry in the local time of the server.
 
 A time interval compares older entries in the local time of the server. A text
 filter on ``date`` or ``startdate`` compares the stored value. It matches older
