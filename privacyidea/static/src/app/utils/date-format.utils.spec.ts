@@ -122,25 +122,83 @@ describe("atLocalTimeIso", () => {
 describe("parseFilterTimestamp", () => {
   // Expectations are built with the local Date constructor, so they hold in any zone. In a zone away from UTC
   // (as on a developer machine) a bound read as UTC instead of local fails them.
-  it("reads a typed date and time without an offset as the viewer's local time", () => {
-    expect(parseFilterTimestamp("2026-11-05 10:00:00")).toBe(new Date(2026, 10, 5, 10, 0, 0, 0).toISOString());
+  it("reads every ISO 8601 form a bound may be typed in as the instant it names", () => {
+    // Local wall-clock time as ISO, built with the local Date constructor so it holds in any zone. Month is 1-based.
+    const local = (year: number, month: number, day = 1, hour = 0, minute = 0, second = 0, ms = 0): string =>
+      new Date(year, month - 1, day, hour, minute, second, ms).toISOString();
+    const expected: Record<string, string> = {
+      // A date alone is the start of that local period, local midnight and not UTC midnight
+      "2026": local(2026, 1),
+      "2026-11": local(2026, 11),
+      "2026-11-05": local(2026, 11, 5),
+      // A date and time without an offset is the viewer's local time, with a space or a T, with or without seconds
+      "2026-11-05 10:00:00": local(2026, 11, 5, 10),
+      "2026-11-05 10:00": local(2026, 11, 5, 10),
+      "2026-11-05T10:00:00": local(2026, 11, 5, 10),
+      "2026-11-05T10:00": local(2026, 11, 5, 10),
+      // A valid leap day is read, unlike 2026-02-29
+      "2028-02-29 10:00": local(2028, 2, 29, 10),
+      // Fractions of a second, also longer than the 3 digits new Date() takes
+      "2026-11-05 10:00:00.123": local(2026, 11, 5, 10, 0, 0, 123),
+      "2026-11-05T10:00:00.123456Z": "2026-11-05T10:00:00.123Z",
+      // Z or an offset names the instant, with or without a colon and with or without a space before it (the filter
+      // text mirrors "yyyy-MM-dd HH:mm:ss +01:00")
+      "2026-11-05T10:00:00Z": "2026-11-05T10:00:00.000Z",
+      "2026-11-05T10:00 Z": "2026-11-05T10:00:00.000Z",
+      "2026-11-05 10:00:00 +01:00": "2026-11-05T09:00:00.000Z",
+      "2026-11-05T10:00+01:00": "2026-11-05T09:00:00.000Z",
+      "2026-11-05T10:00:00+0100": "2026-11-05T09:00:00.000Z",
+      "2026-11-05 10:00 +0100": "2026-11-05T09:00:00.000Z",
+      "2026-11-05T10:00:00 -05:00": "2026-11-05T15:00:00.000Z",
+      // A lowercase t or z reads as its uppercase form
+      "2026-11-05t10:00": local(2026, 11, 5, 10),
+      "2026-11-05t10:00:00z": "2026-11-05T10:00:00.000Z",
+      "2026-11-05 10:00:00 z": "2026-11-05T10:00:00.000Z"
+    };
+    for (const [value, iso] of Object.entries(expected)) {
+      expect({ value, parsed: parseFilterTimestamp(value) }).toEqual({ value, parsed: iso });
+    }
   });
 
-  it("reads a typed date without a time as local midnight, not UTC midnight", () => {
-    expect(parseFilterTimestamp("2026-11-05")).toBe(new Date(2026, 10, 5, 0, 0, 0, 0).toISOString());
-    expect(parseFilterTimestamp("2026-11")).toBe(new Date(2026, 10, 1, 0, 0, 0, 0).toISOString());
-  });
-
-  it("keeps a bound with Z or an offset at the instant it names", () => {
-    expect(parseFilterTimestamp("2026-11-05T10:00:00Z")).toBe("2026-11-05T10:00:00.000Z");
-    expect(parseFilterTimestamp("2026-11-05 10:00:00 +01:00")).toBe("2026-11-05T09:00:00.000Z");
-  });
-
-  it("returns null for an empty or unparsable value", () => {
-    expect(parseFilterTimestamp("")).toBeNull();
-    expect(parseFilterTimestamp("2026-11-05 10:0x")).toBeNull();
-    expect(parseFilterTimestamp("2026-13")).toBeNull();
-    expect(parseFilterTimestamp("2026-02-31")).toBeNull();
+  it("returns null for text that is no ISO 8601 date and time instead of letting the browser guess or roll it over", () => {
+    const values = [
+      // German date with dots (the browser reads M.D.Y)
+      "5.11.2026",
+      "05.11.2026",
+      "5.11.2026 10:00",
+      // Slashes
+      "11/5/2026",
+      "5/11/2026",
+      "2026/11/05",
+      // English month or weekday names
+      "Nov 5",
+      "5 Nov 2026",
+      "November 5, 2026",
+      "Thu Nov 05 2026",
+      // Free text and bare numbers
+      "foo 1",
+      "abc 2026",
+      "today",
+      "1",
+      "12",
+      // Impossible days with a time (would roll over)
+      "2026-02-31 10:00",
+      "2026-11-31T10:00",
+      "2026-02-30T10:00:00Z",
+      "2026-02-29 10:00",
+      // ISO with trailing text or a fraction without seconds
+      "2026-11-05T10:00 foo",
+      "2026-11-05T10:00.123",
+      // Empty, malformed or impossible date alone
+      "",
+      "2026-11-05 10:0x",
+      "2026-13",
+      "2026-02-31"
+    ];
+    for (const value of values) {
+      expect({ value, parsed: parseFilterTimestamp(value) }).toEqual({ value, parsed: null });
+    }
+    expect(parseFilterEndTimestamp("5.11.2026")).toBeNull();
   });
 });
 

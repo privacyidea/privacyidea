@@ -19,12 +19,12 @@
 
 import { formatDate } from "@angular/common";
 
-// Matches server-supplied "YYYY-MM-DD HH:mm:ss[.fraction][offset]" timestamps that use a
+// Matches server-supplied "YYYY-MM-DD HH:mm[:ss][.fraction][offset]" timestamps that use a
 // space instead of "T", a fractional-seconds part longer than the 3 digits (milliseconds)
 // the Date Time String Format allows, or an offset without a colon. All three are only
 // reliably parsed by new Date() on some engines, so normalize to a spec-conformant ISO
 // string before parsing.
-const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
+const LOOSE_ISO_DATE_TIME_REGEX = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/i;
 // True for a timestamp without Z or offset, as audit entries written before UTC storage carry (server local time).
 export function hasNoTimeZoneOffset(value: string | null | undefined): boolean {
   const match = value ? LOOSE_ISO_DATE_TIME_REGEX.exec(value.trim()) : null;
@@ -107,7 +107,8 @@ function typedLocalPeriod(value: string): { first: Date; last: Date } | null | u
 
 /**
  * Inverse of toFilterDisplay for the editable time filter chips: parses the mirrored display, plain ISO
- * or a partial typed datetime into an ISO string, returning null for an empty or unparsable value.
+ * or a partial typed datetime into an ISO string, returning null for an empty value, for a value that is no ISO 8601
+ * date and time, and for an impossible date.
  * A value without an offset is the viewer's local time, as everywhere in the WebUI, a date alone included: it is local
  * midnight, where new Date("2026-11-05") would give UTC midnight. A value with Z or an offset names that instant.
  */
@@ -120,15 +121,16 @@ export function parseFilterTimestamp(value: string | null | undefined): string |
   if (period !== undefined) {
     return period ? period.first.toISOString() : null;
   }
-  // Normalize the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form to ISO (space->T, drop the space before the offset),
-  // then fall back to the raw text so plain ISO input still parses.
-  for (const candidate of [trimmed.replace(" ", "T").replace(/\s+(?=[+\-Z])/, ""), trimmed]) {
-    const date = new Date(candidate);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString();
-    }
+  // Drop the space before the offset of the mirrored "yyyy-MM-dd HH:mm:ss +00:00" form. Only the ISO 8601 date and
+  // time is read: anything else would be guessed by the browser (5.11.2026 as 11 May) and goes to the API as typed.
+  const candidate = trimmed.replace(/\s+(?=[+\-z])/i, "");
+  const match = LOOSE_ISO_DATE_TIME_REGEX.exec(candidate);
+  // An impossible day must not roll over into the next month, as for a date alone.
+  if (!match || typedLocalPeriod(match[1]) === null) {
+    return null;
   }
-  return null;
+  const date = new Date(normalizeDateTimeString(candidate));
+  return isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 /**
