@@ -26,10 +26,7 @@ import { MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsApiPayloadMapper, SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { loadedEnrollmentPolicies, sameEntries } from "@components/token/token-enrollment/enrollment-policy-values";
 import { SMS_GATEWAY } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -42,7 +39,7 @@ import { hasError } from "@utils/form-state.utils";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
-  smsGateway: string;
+  smsGateway?: string;
   phoneNumber?: string;
   readNumberDynamically: boolean;
 }
@@ -50,21 +47,9 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-sms",
   standalone: true,
-  imports: [
-    MatCheckbox,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatSelect,
-    MatOption,
-    MatHint,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatSelect, MatOption, MatHint, MatError, FormField],
   templateUrl: "./enroll-sms.component.html",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSmsComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSmsComponent) }]
 })
 export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: SmsApiPayloadMapper = inject(SmsApiPayloadMapper);
@@ -84,6 +69,14 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
   private readonly policyGateways = computed(
     () => loadedEnrollmentPolicies(this.enrollmentPolicies())?.sms_gateways ?? [],
     { equal: sameEntries }
+  );
+  /**
+   * The server refuses any sms.identifier without an sms_gateways policy for the target. Then the field is not
+   * offered, also not while the policies load, and no gateway is sent, so the server uses its default gateway.
+   */
+  readonly gatewayRestricted = computed(() => this.policyGateways().length > 0);
+  readonly gatewayFieldShown = computed(
+    () => this.gatewayRestricted() || this.enrollmentPolicies().state === "pending"
   );
   private readonly defaultGatewayId = computed<string | undefined>(() =>
     this.systemService.systemConfigResource.hasValue()
@@ -107,7 +100,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
 
   readNumberDynamicallyForm = form(this.readNumberDynamically);
   smsGatewayForm = form(this.smsGateway, (f) => {
-    required(f);
+    required(f, { when: () => this.gatewayRestricted() });
     disabled(f, () => this.disabled() || this.enrollmentPolicies().state === "pending");
   });
 
@@ -157,7 +150,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
     const enrollmentData: SmsEnrollmentOptions = {
       ...basicOptions,
       type: "sms",
-      smsGateway: this.smsGateway(),
+      ...(this.gatewayRestricted() && { smsGateway: this.smsGateway() }),
       readNumberDynamically: this.readNumberDynamically()
     };
     if (!this.readNumberDynamically()) {

@@ -274,7 +274,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     { equal: (a, b) => JSON.stringify(a) === JSON.stringify(b) }
   );
 
-  private lastLoadedPolicies: EnrollmentPolicies | undefined;
+  /** The last loaded policies and the token type they belong to, only policies of the same type are kept while loading. */
+  private lastLoadedPolicies: { type: string; policies: EnrollmentPolicies } | undefined;
   /** Emits when a policy request ended, so an Enroll clicked while loading can go on with the new policies. */
   private readonly policiesSettled = new Subject<void>();
 
@@ -286,10 +287,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
         if (!target) {
           return of({ status: "idle" });
         }
-        return loadEnrollmentPolicies(this.tokenService.getEnrollmentPolicies(target), this.lastLoadedPolicies).pipe(
+        return loadEnrollmentPolicies(
+          this.tokenService.getEnrollmentPolicies(target),
+          this.lastLoadedPolicies?.type === target.type ? this.lastLoadedPolicies.policies : undefined
+        ).pipe(
           tap((load) => {
             if (load.status === "loaded") {
-              this.lastLoadedPolicies = load.policies;
+              this.lastLoadedPolicies = { type: target.type, policies: load.policies };
             }
             if (load.status !== "loading") {
               this.policiesSettled.next();
@@ -327,9 +331,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly showOnlyAddToRealm = computed(
     () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenType()?.key ?? "")
   );
-  protected readonly showPinFields = computed(
-    () => !NO_PIN_TOKEN_TYPES.includes(this.tokenType()?.key ?? "")
-  );
+  protected readonly showPinFields = computed(() => !NO_PIN_TOKEN_TYPES.includes(this.tokenType()?.key ?? ""));
 
   description = signal<string>("");
   setPin = signal<string>("");
@@ -457,9 +459,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   private registerPendingChanges(): void {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
-    this.pendingChangesService.registerValidChanges(
-      () => !!this.tokenType()?.key && !this.isFormInvalid()
-    );
+    this.pendingChangesService.registerValidChanges(() => !!this.tokenType()?.key && !this.isFormInvalid());
     this.pendingChangesService.registerSave(() => this.enrollToken());
   }
 
@@ -515,9 +515,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   revealFieldErrors(): void {
     if (!this.isFormInvalid()) return;
     this.touchFields();
-    this.enrollSwitch()
-      ?.currentStrategy()
-      ?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenType().key));
+    this.enrollSwitch()?.currentStrategy()?.markFieldsTouched(this.basicEnrollmentOptions(this.tokenType().key));
   }
 
   private basicEnrollmentOptions(tokenTypeKey: TokenTypeKey): TokenEnrollmentData {

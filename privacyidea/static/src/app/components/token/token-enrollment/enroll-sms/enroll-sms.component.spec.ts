@@ -203,24 +203,76 @@ describe("EnrollSmsComponent", () => {
     });
   });
 
+  describe("gateway of the policies", () => {
+    const gatewayField = () => fixture.nativeElement.querySelector("mat-select");
+    const applyPolicies = (gateways: string[]) => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: gateways }));
+      fixture.detectChanges();
+      TestBed.tick();
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => {
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({ "sms.identifier": "gw0" })
+      );
+      component.phoneNumber.set("+12345678");
+    });
+
+    it("hides the gateway field and sends no gateway without an sms_gateways policy", () => {
+      applyPolicies([]);
+
+      expect(gatewayField()).toBeNull();
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args).not.toBeNull();
+      expect(Object.keys(args!.mapper.toApiPayload(args!.data))).not.toContain("sms.identifier");
+    });
+
+    it("sends no gateway of the enrollment data without an sms_gateways policy", () => {
+      fixture.componentRef.setInput("enrollmentData", { type: "sms", smsGateway: "gw1" } as SmsEnrollmentData);
+      applyPolicies([]);
+
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(Object.keys(args!.mapper.toApiPayload(args!.data))).not.toContain("sms.identifier");
+    });
+
+    it("shows the gateway field and sends the gateway with an sms_gateways policy", () => {
+      applyPolicies(["gw0", "gw1"]);
+
+      expect(gatewayField()).not.toBeNull();
+      const args = component.buildEnrollmentArgs(basicOptions);
+      expect(args!.mapper.toApiPayload(args!.data)["sms.identifier"]).toBe("gw0");
+    });
+
+    it("keeps the gateway field, disabled, while the policies load", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", { state: "pending" });
+      fixture.detectChanges();
+
+      expect(gatewayField()).not.toBeNull();
+      expect(component.smsGatewayForm().disabled()).toBe(true);
+    });
+  });
+
   describe("defaultSMSGatewayIsSet", () => {
     it("should be false when no sms gateway is configured", () => {
-      (
-        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
-      ).value.set(MockPiResponse.fromValue({}));
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({})
+      );
       expect(component.defaultSMSGatewayIsSet()).toBe(false);
     });
 
     it("should be true when sms.identifier is configured", () => {
-      (
-        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
-      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "main-gw" }));
+      (systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>).value.set(
+        MockPiResponse.fromValue({ "sms.identifier": "main-gw" })
+      );
       expect(component.defaultSMSGatewayIsSet()).toBe(true);
     });
   });
 
   describe("buildEnrollmentArgs", () => {
     it("should return null and mark smsGateway form touched when no gateway selected", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1", "gw-b"] }));
+      TestBed.tick();
       component.smsGateway.set("");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
@@ -247,6 +299,8 @@ describe("EnrollSmsComponent", () => {
     });
 
     it("should include phoneNumber when readNumberDynamically is false", () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw1", "gw-b"] }));
+      TestBed.tick();
       component.smsGateway.set("gw1");
       component.readNumberDynamically.set(false);
       component.phoneNumber.set("+12345678");
@@ -313,7 +367,7 @@ describe("EnrollSmsComponent", () => {
     });
 
     it("writes the picked SMS gateway to the model", async () => {
-      smsGatewayServiceMock.smsGateways.set([{ name: "gw-a" }, { name: "gw-b" }] as SmsGateway[]);
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw-a", "gw-b"] }));
       await flushFixture(fixture);
 
       await pickOption(fixture, matSelectAt(fixture), 1);
@@ -323,6 +377,8 @@ describe("EnrollSmsComponent", () => {
     });
 
     it("renders the required error of the gateway select once the build was refused", async () => {
+      fixture.componentRef.setInput("enrollmentPolicies", loadedPolicies({ sms_gateways: ["gw-a", "gw-b"] }));
+      TestBed.tick();
       expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
       await flushFixture(fixture);
 

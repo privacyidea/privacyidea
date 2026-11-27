@@ -285,7 +285,12 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
-      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
+      tokenService.selectedTokenType.set({
+        key: "custom_plugin_type",
+        name: "Custom Type",
+        info: "",
+        text: ""
+      } as unknown as TokenType);
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -1781,6 +1786,26 @@ describe("TokenEnrollmentComponent", () => {
       const state = fresh.enrollmentPolicyState();
       expect(loadedEnrollmentPolicies(state)?.["2step"]).toBe("allow");
       expect(state.state).toBe("pending");
+    });
+
+    it("does not show the policies of the previous token type while those of the new type load", () => {
+      const next = new Subject<PiResponse<EnrollmentPolicies>>();
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.getEnrollmentPolicies.mockReturnValueOnce(
+        of(MockPiResponse.fromValue<EnrollmentPolicies>({ ...policies, defaults: { hashlib: "sha512" } }))
+      );
+      const freshFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      const fresh = freshFixture.componentInstance;
+      freshFixture.detectChanges();
+      expect(loadedEnrollmentPolicies(fresh.enrollmentPolicyState())?.defaults.hashlib).toBe("sha512");
+
+      tokenService.getEnrollmentPolicies.mockReturnValue(next);
+      tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+      freshFixture.detectChanges();
+
+      const state = fresh.enrollmentPolicyState();
+      expect(state.state).toBe("pending");
+      expect(loadedEnrollmentPolicies(state)).toBeNull();
     });
 
     it("blocks Enroll with the policy error", () => {
