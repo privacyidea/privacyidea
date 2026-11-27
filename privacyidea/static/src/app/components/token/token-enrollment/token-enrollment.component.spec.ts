@@ -436,6 +436,31 @@ describe("TokenEnrollmentComponent", () => {
         expect(component.enrollmentFlow.dialogData()).toBeNull();
       });
 
+      it("leaves the page with Save only once the enrollment dialog is closed", async () => {
+        tokenService.selectedTokenType.set({ key: "push", name: "Push", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "push" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          }),
+          firstStep: jest.fn().mockReturnValue({ kind: "push" })
+        });
+        tokenService.enrollToken.mockReturnValueOnce(
+          of({ result: { status: true }, detail: { serial: "PIPU0001", rollout_state: "clientwait" } })
+        );
+        const save = (pendingChangesService.registerSave as jest.Mock).mock.calls.at(-1)[0] as () => Promise<boolean>;
+        let saved: boolean | undefined;
+
+        void save().then((result) => (saved = result));
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(enrollmentDialogsOpened()).toBe(1);
+        expect(saved).toBeUndefined();
+
+        component.enrollmentFlow.close();
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(saved).toBe(true);
+      });
+
       it("resets the pending enrollment when the complete dialog cancels it", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
         installStrategy(component, {
@@ -554,6 +579,31 @@ describe("TokenEnrollmentComponent", () => {
 
         expect(component.enrollmentFlow.dialogData()?.showEnrollData).toBe(true);
         expect(component.enrollmentFlow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      });
+
+      it("enrolls only one token while the request runs, and disables Enroll Token meanwhile", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, {
+          buildEnrollmentArgs: jest.fn().mockReturnValue({
+            data: { type: "hotp" },
+            mapper: jest.fn() as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          })
+        });
+        let answer!: (response: unknown) => void;
+        tokenService.enrollToken.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+        const first = component.enrollToken();
+        await expect(component.enrollToken()).resolves.toBe(false);
+        fixture.detectChanges();
+
+        expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+        const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
+        expect(button.disabled).toBe(true);
+
+        answer({ result: { status: true }, detail: { serial: "OATH0001", rollout_state: "enrolled" } });
+        await expect(first).resolves.toBe(true);
+        fixture.detectChanges();
+        expect(button.disabled).toBe(false);
       });
 
       // enrollToken() of the token service reports the failure itself. The component used to

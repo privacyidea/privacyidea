@@ -2589,6 +2589,16 @@ class ValidateAPITestCase(MyApiTestCase):
             error_msg = result.get("error").get("message")
             self.assertEqual("ERR905: You need to specify a serial, user or credential_id.", error_msg)
 
+        # A false cancel_enrollment does not make the request a cancellation, so it still needs a user or serial
+        for value in ["0", "false"]:
+            with self.subTest(cancel_enrollment=value):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"pass": "test", "cancel_enrollment": value}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(400, res.status_code, res)
+                    error_msg = res.json["result"]["error"]["message"]
+                    self.assertEqual("ERR905: You need to specify a serial, user or credential_id.", error_msg)
+
         # wrong username
         with self.app.test_request_context('/validate/check',
                                            method='POST',

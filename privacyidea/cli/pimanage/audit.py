@@ -93,6 +93,12 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     engine = create_engine(audit_db_uri, **get_audit_engine_options(current_app.config))
     # create a configured "Session" class
     session = sessionmaker(bind=engine)()
+    # Close the session and then the connections of the engine when the command ends, also after an error.
+    # Otherwise the process exits with the connection still open, and the database server logs an aborted
+    # connection. Click calls these in reverse order.
+    command_context = click.get_current_context()
+    command_context.call_on_close(engine.dispose)
+    command_context.call_on_close(session.close)
     # create a Session
     metadata.create_all(engine)
     if config:

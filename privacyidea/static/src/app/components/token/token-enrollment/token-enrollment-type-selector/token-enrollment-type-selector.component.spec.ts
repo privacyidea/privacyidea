@@ -77,6 +77,14 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       expect(button.disabled).toBe(true);
     });
 
+    it("enroll button is disabled while the enrollment request runs", () => {
+      fixture.componentRef.setInput("formInvalid", false);
+      fixture.componentRef.setInput("enrolling", true);
+      fixture.detectChanges();
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
+      expect(button.disabled).toBe(true);
+    });
+
     it("shows the reason on the enroll button while the enrollment is blocked", () => {
       fixture.componentRef.setInput("formInvalid", true);
       fixture.componentRef.setInput("enrollBlockedReason", "needs privacyideaserver_read");

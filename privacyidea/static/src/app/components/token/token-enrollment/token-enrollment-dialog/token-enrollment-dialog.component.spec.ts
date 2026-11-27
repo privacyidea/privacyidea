@@ -388,6 +388,25 @@ describe("TokenEnrollmentDialogComponent", () => {
       expect(cardLabels()).toEqual(["Token", "User", "Realm"]);
     });
 
+    it("shows the container the server added the token to, also on the success step", () => {
+      setRole("admin");
+      open(response({ rollout_state: "verify", verify: { message: "Enter OTP" }, container_serial: "CONT0001" }));
+      expect(cardLabels()).toEqual(["Token", "Container"]);
+
+      harness.flow.finishStep(enrolled());
+      harness.fixture.detectChanges();
+      expect(cardLabels()).toEqual(["Token", "Container"]);
+    });
+
+    it("shows no container the server did not add the token to", () => {
+      setRole("admin");
+      open(enrolled(), {
+        enrollParameters: { data: { containerSerial: "CONT0001" } } as unknown as EnrollTokenArguments
+      });
+
+      expect(cardLabels()).toEqual(["Token"]);
+    });
+
     it("leaves out the user and the realm in self-service", () => {
       setRole("user");
       open(twoStep(), withUser);

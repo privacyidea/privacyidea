@@ -368,6 +368,9 @@ def resolver_create_internal(ctx, name):
     from sqlalchemy import Table, MetaData, Column, Identity
     from sqlalchemy import Integer, String
     engine = create_engine(sqluri)
+    # Close the connections of the engine when the command ends, also after an error. Otherwise the process exits
+    # with the connection still open, and the database server logs an aborted connection.
+    ctx.call_on_close(engine.dispose)
     metadata = MetaData()
     Table(f'users_{name}',
           metadata,

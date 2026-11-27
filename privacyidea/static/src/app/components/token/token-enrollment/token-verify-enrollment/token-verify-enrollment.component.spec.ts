@@ -28,7 +28,6 @@ import { axe } from "@testing/axe";
 import { MockEnrollmentStepHost, mockEnrollmentStepHost } from "@testing/enrollment-step-host";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
-import { of, Subject } from "rxjs";
 import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
 
 describe("TokenVerifyEnrollmentComponent", () => {
@@ -134,11 +133,15 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(component.actions().map((action) => action.value)).toEqual(["verify"]);
   });
 
-  it("reports the verified token to the flow", () => {
+  it("lets the flow check the OTP and finishes the step with the verified token", () => {
+    const verified = { result: { status: true }, detail: { rollout_state: "enrolled", serial: "123" } };
     component.verifyOTP_value.set("123456");
     component.onAction("verify");
+
     expect(mockTokenService.verifyToken).toHaveBeenCalledWith("123", "123456");
-    expect(host.flow.finishStep).toHaveBeenCalled();
+    const [request, toResult] = host.flow.sendStepRequest.mock.calls[0];
+    expect(request).toBe(mockTokenService.verifyToken.mock.results[0].value);
+    expect(toResult(verified)).toBe(verified);
   });
 
   it("does not send a verify request without the serial of the enrolled token", () => {
@@ -147,51 +150,34 @@ describe("TokenVerifyEnrollmentComponent", () => {
     component.verifyOTP_value.set("123456");
     component.onAction("verify");
     expect(mockTokenService.verifyToken).not.toHaveBeenCalled();
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
+    expect(host.flow.sendStepRequest).not.toHaveBeenCalled();
   });
 
   it("does not finish the step if the rollout state is not enrolled", () => {
-    mockTokenService.verifyToken = jest.fn().mockReturnValue(
-      of({
-        result: { status: true },
-        detail: { rollout_state: "client_wait", serial: "123", type: "hotp" },
-        type: "hotp"
-      })
-    );
     component.verifyOTP_value.set("123456");
     component.onAction("verify");
-    expect(mockTokenService.verifyToken).toHaveBeenCalled();
-    expect(host.flow.finishStep).not.toHaveBeenCalled();
+
+    const toResult = host.flow.sendStepRequest.mock.calls[0][1];
+    expect(toResult({ result: { status: true }, detail: { rollout_state: "clientwait", serial: "123" } })).toBeNull();
   });
 
-  describe("while the OTP is checked", () => {
-    let request: Subject<unknown>;
-
+  describe("while the flow checks the OTP", () => {
     beforeEach(() => {
-      request = new Subject();
-      mockTokenService.verifyToken = jest.fn().mockReturnValue(request);
+      host.flow.sentInput.set("");
       component.verifyOTP_value.set("123456");
-      component.onAction("verify");
     });
 
-    it("checks the OTP only once and disables Verify", () => {
+    it("disables Verify and does not check it again", () => {
       component.onAction("verify");
 
-      expect(mockTokenService.verifyToken).toHaveBeenCalledTimes(1);
       expect(component.actions()[0].disabled).toBe(true);
+      expect(mockTokenService.verifyToken).not.toHaveBeenCalled();
     });
 
-    it("enables Verify again once the check failed", () => {
-      request.error(new Error("failed"));
+    it("enables Verify again once the check ended", () => {
+      host.flow.sentInput.set(null);
 
       expect(component.actions()[0].disabled).toBe(false);
-    });
-
-    it("ignores a response that arrives after the step was left", () => {
-      fixture.destroy();
-      request.next({ result: { status: true }, detail: { rollout_state: "enrolled", serial: "123" } });
-
-      expect(host.flow.finishStep).not.toHaveBeenCalled();
     });
   });
 

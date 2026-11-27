@@ -28,7 +28,7 @@ from privacyidea.lib.config import (set_privacyidea_config,
                                     delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       delete_container_by_serial, delete_container_template)
+                                       delete_container_by_serial, delete_container_template, get_all_containers)
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
@@ -60,7 +60,7 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
@@ -1209,3 +1209,147 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
         delete_policy("pol_multienroll_optional")
+
+    @staticmethod
+    def _remove_enrollments(user: User) -> None:
+        for token in get_tokens(user=user):
+            remove_token(token.get_serial())
+        for container in get_all_containers(user=user)["containers"]:
+            delete_container_by_serial(container.serial)
+
+    def _cancel_enroll_with_user(self, enroll_type: str) -> None:
+        """
+        A cancellation that also names the user the enrollment was created for ends the login like one without the
+        user: the authentication succeeds, and no new enrollment starts in the same response.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+        alice = User("alice", "ldaprealm")
+        self.addCleanup(self._remove_enrollments, alice)
+
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.PASSTHRU: True,
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE: enroll_type,
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: True})
+        self.addCleanup(delete_policy, "pol_multienroll")
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        self.addCleanup(delete_policy, "registration")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            detail = res.json["detail"]
+            self.assertTrue(detail[PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL], detail)
+            transaction_id = detail["transaction_id"]
+        self.reset_flask_g()
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "alice", "transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json["result"]
+            self.assertTrue(result["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, result["authentication"], res.json)
+            detail = res.json["detail"]
+            self.assertIn("Cancelled enrollment via multichallenge", detail["message"])
+            self.assertNotIn("transaction_id", detail)
+            self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE, detail)
+        self.reset_flask_g()
+
+        # The cancelled enrollment is removed, and alice has no other token or container
+        self.assertEqual(0, len(get_tokens(user=alice)))
+        self.assertEqual(0, len(get_all_containers(user=alice)["containers"]))
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=alice,
+                                        transaction_id=transaction_id, endpoint='/validate/check')
+
+    @ldap3mock.activate
+    def test_12_cancel_enroll_HOTP_with_user(self):
+        self._cancel_enroll_with_user("hotp")
+
+    @ldap3mock.activate
+    def test_13_cancel_enroll_smartphone_with_user(self):
+        self._cancel_enroll_with_user("smartphone")
+
+    @ldap3mock.activate
+    def test_14_false_cancel_enrollment_starts_enrollment(self):
+        """
+        Only a true value of cancel_enrollment makes a request a cancellation. A login with a false value starts the
+        enrollment that the policy requires, like a login without the parameter.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+        alice = User("alice", "ldaprealm")
+        self.addCleanup(self._remove_enrollments, alice)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.PASSTHRU: True, PolicyAction.ENROLL_VIA_MULTICHALLENGE: "hotp"})
+        self.addCleanup(delete_policy, "pol_multienroll")
+
+        for value in ["0", "false"]:
+            with self.subTest(cancel_enrollment=value):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "alice", "pass": "alicepw",
+                                                         "cancel_enrollment": value}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res)
+                    result = res.json["result"]
+                    self.assertFalse(result["value"], res.json)
+                    self.assertEqual(AUTH_RESPONSE.CHALLENGE, result["authentication"], res.json)
+                    detail = res.json["detail"]
+                    self.assertEqual("hotp", detail["type"], detail)
+                self.reset_flask_g()
+                tokens = get_tokens(user=alice)
+                self.assertEqual(1, len(tokens))
+                self.assertEqual(detail["serial"], tokens[0].get_serial())
+                self._remove_enrollments(alice)
+
+    @ldap3mock.activate
+    def test_15_cancel_expired_enrollment(self):
+        """
+        The cancellation of an enrollment whose challenge expired fails: the login is over, and the token stays, as
+        after the cleanup of the challenge.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+        alice = User("alice", "ldaprealm")
+        self.addCleanup(self._remove_enrollments, alice)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action={PolicyAction.PASSTHRU: True,
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE: "hotp",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: True})
+        self.addCleanup(delete_policy, "pol_multienroll")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            serial = detail["serial"]
+        self.reset_flask_g()
+        force_expire_challenges(transaction_id)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": 1}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json["result"]
+            self.assertFalse(result["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"], res.json)
+            self.assertIn("Failed to cancel enrollment via multichallenge", res.json["detail"]["message"])
+        self.reset_flask_g()
+
+        tokens = get_tokens(user=alice)
+        self.assertEqual(1, len(tokens))
+        self.assertEqual(serial, tokens[0].get_serial())
+        auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED,
+                                                      AuthEventType.ENROLLMENT_CANCELED_FAIL],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_CANCELED_FAIL], user=alice,
+                                        transaction_id=transaction_id, endpoint='/validate/check')

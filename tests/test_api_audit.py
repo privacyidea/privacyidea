@@ -16,7 +16,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import Audit, db
-from .base import MyApiTestCase
+from .base import MyApiTestCase, connections_of_new_engines
 
 PWFILE = "tests/testdata/passwords"
 
@@ -769,6 +769,21 @@ class APIAuditTestCase(MyApiTestCase):
                     self.assertIn(self.realm1a, rows[0])
         finally:
             delete_policy("audit_realm1a")
+
+    def test_12_the_download_closes_its_database_connection(self):
+        # The endpoint sends the lines after the teardown of the request, so the connection it reads them with is only
+        # closed when the response is complete. The request context ends before the test reads the lines, as in
+        # production.
+        Audit(action="enroll", success=1, realm="download").save()
+        with connections_of_new_engines("privacyidea.lib.auditmodules.sqlaudit.create_engine") as (opened, closed):
+            with self.app.test_request_context('/audit/audit.csv', method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertIn("download", res.get_data(as_text=True))
+
+        self.assertTrue(opened, "The download opened no connection, so the test proves nothing.")
+        self.assertEqual({id(connection) for connection in opened}, {id(connection) for connection in closed})
 
 
 class AuditDownloadRealmTestCase(MyApiTestCase):

@@ -41,7 +41,7 @@
         [matTooltip]="enrollmentBlockedReason() ?? ''"
         [matTooltipDisabled]="!enrollmentBlockedReason()">
         <button
-          [disabled]="isFormInvalid()"
+          [disabled]="isFormInvalid() || enrolling()"
           class="action-button-primary button-width-m"
           mat-stroked-button
           type="submit">

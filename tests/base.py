@@ -1,14 +1,17 @@
 """Base test configuration to set up/teardown tests."""
+import logging
 import pathlib
 import threading
 import unittest
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import mock
 from flask import Flask, g, request
-from sqlalchemy import Sequence, select, text
+from sqlalchemy import Sequence, create_engine, event, select, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
 from testfixtures import Replace, test_datetime
@@ -23,7 +26,8 @@ from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.conditional_access.request_context import reset_ca_context
 from privacyidea.lib.conditional_access.session import close_ca_session
-from privacyidea.lib.lifecycle import call_finalizers
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.lifecycle import APP_CONTEXT_FINALIZERS_KEY, call_finalizers
 
 
 PWFILE = "tests/testdata/passwords"
@@ -39,6 +43,30 @@ def clock_moved_forward(seconds: int) -> Iterator[None]:
     with (Replace("privacyidea.models.utils.datetime", test_datetime(later, delta=0)),
           Replace("privacyidea.lib.tokens.sent_otp_validity.datetime", test_datetime(later, delta=0))):
         yield
+
+
+@contextmanager
+def connections_of_new_engines(create_engine_target: str) -> Iterator[tuple[list[Any], list[Any]]]:
+    """
+    Record the database connections that the engines made through ``create_engine_target`` open and close.
+
+    A connection that is still open when a request or a command ends stays open until the garbage collector or the
+    end of the process closes it, and the database server then logs an aborted connection. The first list holds the
+    opened connections, the second one the closed ones.
+    """
+    opened_connections = []
+    closed_connections = []
+
+    def create_engine_with_listeners(*args: Any, **kwargs: Any) -> Engine:
+        engine = create_engine(*args, **kwargs)
+        event.listen(engine, "connect",
+                     lambda dbapi_connection, _record: opened_connections.append(dbapi_connection))
+        event.listen(engine, "close",
+                     lambda dbapi_connection, _record: closed_connections.append(dbapi_connection))
+        return engine
+
+    with mock.patch(create_engine_target, create_engine_with_listeners):
+        yield opened_connections, closed_connections
 
 
 def run_in_parallel(app: Flask, functions: list) -> list:
@@ -293,8 +321,22 @@ def _start_request_with_empty_g() -> None:
     if request.environ.get("privacyidea.tests.g_emptied"):
         return
     request.environ["privacyidea.tests.g_emptied"] = True
+    _empty_g()
+
+
+def _empty_g() -> None:
+    """
+    Remove everything from ``g`` except the finalizers that were registered outside a request.
+
+    They belong to the app context of the test class, which outlives the requests of a test, and they run at the end
+    of the test (see the fixture ``_finalizers_called_at_the_end_of_the_test``). Without them, an object that a test
+    creates outside a request, for example an SQL audit module, keeps its database connection open.
+    """
+    app_context_finalizers = get_request_local_store().get(APP_CONTEXT_FINALIZERS_KEY)
     for key in list(iter(g)):
         g.pop(key)
+    if app_context_finalizers:
+        get_request_local_store()[APP_CONTEXT_FINALIZERS_KEY] = app_context_finalizers
 
 
 class MyTestCase(unittest.TestCase):
@@ -369,8 +411,7 @@ class MyTestCase(unittest.TestCase):
         tests on values another request left behind. Call this before dispatching a request, and between
         requests if a test dispatches several.
         """
-        for key in list(iter(self.app_context.g)):
-            self.app_context.g.pop(key)
+        _empty_g()
 
     def pin_to_database(self, *features: str) -> None:
         """Keep the named Redis workloads off for this test class.
@@ -598,6 +639,13 @@ class MyTestCase(unittest.TestCase):
             return res.json["result"]["value"]["auditdata"][0]
 
 
+def file_handlers_of_all_loggers() -> list[tuple[logging.Logger, logging.Handler]]:
+    loggers = [logging.getLogger()]
+    loggers += [logger for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)]
+    return [(logger, handler) for logger in loggers for handler in logger.handlers
+            if isinstance(handler, logging.FileHandler)]
+
+
 class OverrideConfigTestCase(MyTestCase):
     """
     helper class that allows to modify the app config processed by ``create_app``.
@@ -610,8 +658,20 @@ class OverrideConfigTestCase(MyTestCase):
     @classmethod
     def setUpClass(cls):
         """ override privacyidea.config.config["testing"] with the inner config class """
+        cls.file_handlers_before = file_handlers_of_all_loggers()
         with mock.patch.dict("privacyidea.config.config", {"testing": cls.Config}):
             MyTestCase.setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        # A logging configuration of the inner Config class, for example PI_LOGCONFIG, can attach file handlers to
+        # loggers that the logging configuration of the next app does not touch, like the root logger. That one closes
+        # them, but leaves them attached, and the next message opens the file again.
+        for logger, handler in file_handlers_of_all_loggers():
+            if (logger, handler) not in cls.file_handlers_before:
+                logger.removeHandler(handler)
+                handler.close()
+        super().tearDownClass()
 
 
 class MyApiTestCase(MyTestCase):

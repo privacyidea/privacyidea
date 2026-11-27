@@ -28,7 +28,10 @@ import { TokenCompleteEnrollmentPushComponent } from "@components/token/token-en
 import { TokenCompleteEnrollmentTwoStepComponent } from "@components/token/token-enrollment/token-complete-enrollment-two-step/token-complete-enrollment-two-step.component";
 import { TokenEnrollmentDialogComponent } from "@components/token/token-enrollment/token-enrollment-dialog/token-enrollment-dialog.component";
 import { TokenEnrollmentSuccessComponent } from "@components/token/token-enrollment/token-enrollment-success/token-enrollment-success.component";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import {
+  ENROLLMENT_CANCELLED,
+  EnrollmentStepResult
+} from "@components/token/token-enrollment/token-enrollment.constants";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
@@ -294,6 +297,227 @@ describe("EnrollmentFlow", () => {
     expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
     expect(options.onCompleted).toHaveBeenCalledTimes(1);
     expect(options.onIncomplete).not.toHaveBeenCalled();
+  });
+
+  describe("with the request that finishes a step", () => {
+    const first = response({ rollout_state: "clientwait" });
+    let finishes: boolean;
+    const toResponse = (result: EnrollmentResponse) => (finishes ? result : null);
+    let flow: EnrollmentFlow;
+    let request: Subject<EnrollmentResponse>;
+
+    beforeEach(() => {
+      finishes = true;
+      flow = startFlow(first);
+      flow.continue(first);
+      request = new Subject<EnrollmentResponse>();
+      flow.sendStepRequest(request, toResponse, "CLIENTPART");
+    });
+
+    const answer = (result: EnrollmentResponse) => {
+      request.next(result);
+      request.complete();
+    };
+
+    it("keeps the sent input while the request runs and moves on with its response", () => {
+      expect(flow.sentInput()).toBe("CLIENTPART");
+
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      expect(flow.sentInput()).toBeNull();
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not send a second request while one runs", () => {
+      const second = new Subject<EnrollmentResponse>();
+
+      flow.sendStepRequest(second, toResponse, "OTHER");
+
+      expect(second.observed).toBe(false);
+      expect(flow.sentInput()).toBe("CLIENTPART");
+    });
+
+    it("stays at the step when the response does not finish it, or the request failed", () => {
+      finishes = false;
+      request.next(response({ rollout_state: "clientwait" }));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+
+      request.error(new Error("failed"));
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.sentInput()).toBeNull();
+    });
+
+    it("moves on without opening the dialog after it was closed, and the reopen shows the next step", () => {
+      flow.close();
+      answer(response({ rollout_state: "verify", verify: { message: "Enter OTP" } }));
+
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+      expect(flow.step()).toBe("verify");
+
+      flow.resume();
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(flow.stepComponent()).toBe(TokenVerifyEnrollmentComponent);
+    });
+
+    it("reports a token completed after the dialog was closed", () => {
+      flow.close();
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(options.onIncomplete).toHaveBeenCalledTimes(1);
+      expect(options.onCompleted).toHaveBeenCalledTimes(1);
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+
+      flow.resume();
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+    });
+
+    it("keeps the sent input for a step reopened while the request runs", () => {
+      flow.close();
+      flow.resume();
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.sentInput()).toBe("CLIENTPART");
+    });
+
+    it("ignores the response once the enrollment was reset or another one started", () => {
+      flow.reset();
+      expect(flow.sentInput()).toBeNull();
+      const next = response({ serial: "OATH0002", rollout_state: "clientwait" });
+      flow.start({ response: next, enrollParameters: {} as EnrollTokenArguments, tokenType: "hotp" });
+      flow.continue(next);
+      flow.sendStepRequest(new Subject<EnrollmentResponse>(), toResponse, "NEXT");
+
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentTwoStepComponent);
+      expect(flow.dialogData()?.response).toBe(next);
+      expect(flow.sentInput()).toBe("NEXT");
+    });
+  });
+
+  describe("with the final request of a FIDO2 registration", () => {
+    const first = response({ rollout_state: "clientwait" });
+    let flow: EnrollmentFlow;
+    let request: Subject<EnrollmentStepResult>;
+
+    beforeEach(() => {
+      flow = startFlow(first, { kind: "fido2", register: jest.fn() });
+      flow.continue(first);
+      request = new Subject<EnrollmentStepResult>();
+      flow.sendStepRequest(request, (result) => result);
+    });
+
+    const answer = (result: EnrollmentStepResult) => {
+      request.next(result);
+      request.complete();
+    };
+
+    it("keeps the enrollment when the dialog closes while the request runs, and the reopen waits for it", () => {
+      expect(flow.resumable()).toBe(true);
+
+      flow.close();
+      expect(options.onIncomplete).toHaveBeenCalledTimes(1);
+      expect(flow.dialogData()).not.toBeNull();
+
+      flow.resume();
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(2);
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentFido2Component);
+    });
+
+    it("moves on to the success step without opening the dialog once the request ends after the close", () => {
+      flow.close();
+      answer(response({ rollout_state: "enrolled" }));
+
+      expect(flow.step()).toBe("success");
+      expect(options.onCompleted).toHaveBeenCalledTimes(1);
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    it("ends the enrollment once the request failed after the close", () => {
+      flow.close();
+      answer(null);
+
+      expect(flow.dialogData()).toBeNull();
+      expect(flow.step()).toBeNull();
+    });
+
+    it("reports a token deleted after the close", () => {
+      flow.close();
+      answer(ENROLLMENT_CANCELLED);
+
+      expect(options.onCancelled).toHaveBeenCalledTimes(1);
+      expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports a failed request in the open dialog, which then cannot be resumed", () => {
+      answer(null);
+
+      expect(flow.stepRequestFailed()).toBe(true);
+      expect(flow.stepComponent()).toBe(TokenCompleteEnrollmentFido2Component);
+      expect(flow.resumable()).toBe(false);
+
+      flow.sendStepRequest(new Subject<EnrollmentStepResult>(), (result) => result);
+      expect(flow.stepRequestFailed()).toBe(false);
+    });
+  });
+
+  it("tells when the dialog is closed, at any step", async () => {
+    const first = response({ rollout_state: "clientwait" });
+    const flow = startFlow(first);
+    await expect(flow.whenClosed()).resolves.toBeUndefined();
+
+    flow.continue(first);
+    let closed = false;
+    void flow.whenClosed().then(() => (closed = true));
+    flow.finishStep(response({ rollout_state: "enrolled" }));
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(closed).toBe(false);
+
+    flow.close();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(closed).toBe(true);
+  });
+
+  describe("container", () => {
+    it("keeps the container of the first response when later responses do not repeat it", () => {
+      const first = response({ rollout_state: "clientwait", container_serial: "CONT0001" });
+      const flow = startFlow(first, { kind: "fido2", register: jest.fn() });
+      flow.continue(first);
+
+      flow.finishStep(response({ rollout_state: "verify", verify: { message: "Enter OTP" } }));
+      expect(flow.containerSerial()).toBe("CONT0001");
+
+      flow.finishStep(response({ rollout_state: "enrolled" }));
+      expect(flow.stepComponent()).toBe(TokenEnrollmentSuccessComponent);
+      expect(flow.containerSerial()).toBe("CONT0001");
+    });
+
+    it("shows no container the server did not add the token to", () => {
+      const first = response({ rollout_state: "enrolled" });
+      const flow = TestBed.runInInjectionContext(() => new EnrollmentFlow(options));
+      flow.start({
+        response: first,
+        enrollParameters: { data: { containerSerial: "CONT0001" } } as unknown as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+
+      expect(flow.containerSerial()).toBe("");
+    });
+
+    it("forgets the container of an earlier enrollment", () => {
+      const flow = startFlow(response({ rollout_state: "enrolled", container_serial: "CONT0001" }));
+
+      flow.reset();
+      expect(flow.containerSerial()).toBe("");
+
+      flow.start({
+        response: response({ rollout_state: "enrolled" }),
+        enrollParameters: {} as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+      expect(flow.containerSerial()).toBe("");
+    });
   });
 
   it("reads the success step when it opens", () => {

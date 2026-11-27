@@ -31,22 +31,23 @@ import {
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TokenEnrollmentDialogData } from "@services/token/token.service";
-import { defer, Observable, Subject, tap } from "rxjs";
+import { defer, finalize, firstValueFrom, Observable, Subject, tap } from "rxjs";
 
 export type EnrollmentStepKind = "push" | "fido2" | "complete" | "verify" | "success";
 
 /**
  * The step a token type needs right after its first response. Push waits for the app to register and starts again
  * when the dialog is reopened. WebAuthn and passkey run the browser registration, which cannot be reopened: it shows
- * nothing the user keeps, and its challenge expires.
+ * nothing the user keeps, and its challenge expires. Only their final request can be waited for after a reopen.
  */
 export type EnrollmentFirstStep =
   | { kind: "push" }
   | {
       kind: "fido2";
-      // Ends with the response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null when the
-      // registration failed and can be retried. The signal aborts once the step is left.
-      register: (signal: AbortSignal) => Promise<EnrollmentStepResult>;
+      // Runs the browser registration, which the signal aborts once the step is left. Ends with the final request, or
+      // with null when the registration failed and can be retried. The final request emits the response to continue
+      // with, ENROLLMENT_CANCELLED once the token was deleted, or null when the registration failed.
+      register: (signal: AbortSignal) => Promise<Observable<EnrollmentStepResult> | null>;
     };
 
 export interface EnrollmentFlowOptions {
@@ -95,8 +96,9 @@ export class EnrollmentFlow {
   // that opens at the success step shows only that and fits its content.
   readonly fixedSize = signal(false);
 
-  // Whether resume() can finish the enrollment once the dialog is closed in the current step.
-  readonly resumable = computed(() => this.step() !== "fido2");
+  // Whether resume() can finish the enrollment once the dialog is closed in the current step. A FIDO2 registration
+  // can only be waited for while its final request runs.
+  readonly resumable = computed(() => this.step() !== "fido2" || this.sentInput() !== null);
 
   private readonly stepFinishedSubject = new Subject<void>();
   // Emits when the current step is left: for the next step, or because the dialog closed.
@@ -106,6 +108,13 @@ export class EnrollmentFlow {
   firstStep: EnrollmentFirstStep | null = null;
   // Whether the dialog was opened again with the reopen button, see the push polling.
   reopened = false;
+  // The input of the request that finishes the current step, while it runs. It outlives the step, so a reopened
+  // step shows what was sent and does not send it again.
+  readonly sentInput = signal<string | null>(null);
+  // Set when the request of the current step ended without finishing it.
+  readonly stepRequestFailed = signal(false);
+  // The container the server added the token to. Later responses, e.g. of a verification, do not repeat it.
+  readonly containerSerial = signal("");
 
   private dialogRef: MatDialogRef<unknown> | null = null;
   private cancelled = false;
@@ -113,6 +122,10 @@ export class EnrollmentFlow {
   private deleting = false;
   // A step result that arrived while the token was being deleted.
   private heldResult: EnrollmentStepResult | undefined = undefined;
+  // Counts the enrollments, so a request of an earlier one does not change the current one.
+  private run = 0;
+  // Set while a step result that arrived after the dialog closed is applied: the next step waits for the reopen.
+  private keepClosed = false;
 
   constructor(private readonly options: EnrollmentFlowOptions) {}
 
@@ -126,7 +139,7 @@ export class EnrollmentFlow {
     data: Omit<TokenEnrollmentDialogData, "onEnrollmentResponseChange">,
     firstStep: EnrollmentFirstStep | null = null
   ): void {
-    this.step.set(null);
+    this.newRun();
     this.firstStep = firstStep;
     this.reopened = false;
     this.cancelled = false;
@@ -135,10 +148,13 @@ export class EnrollmentFlow {
       ...data,
       onEnrollmentResponseChange: (response) => this.setResponse(response)
     });
+    if (data.response) {
+      this.keepContainerSerial(data.response);
+    }
   }
 
   reset(): void {
-    this.step.set(null);
+    this.newRun();
     this.firstStep = null;
     this.dialogData.set(null);
   }
@@ -190,6 +206,11 @@ export class EnrollmentFlow {
       return;
     }
     if (result === ENROLLMENT_CANCELLED) {
+      if (!this.dialogRef) {
+        // The token was deleted after the dialog closed.
+        this.options.onCancelled?.();
+        return;
+      }
       this.cancelled = true;
       this.close();
       return;
@@ -214,9 +235,65 @@ export class EnrollmentFlow {
     this.finish(result);
   }
 
+  /**
+   * Sends the request that finishes the current step. The request outlives the step: a response that arrives after
+   * the dialog closed moves the enrollment on without opening the dialog, and the reopen shows the next step.
+   *
+   * @param request The request. It has notified about its failure itself.
+   * @param toResult The response to continue with, ENROLLMENT_CANCELLED once the token was deleted, or null if the
+   *   step is not finished.
+   * @param input What the user entered for the request, shown again if the step is reopened while it runs.
+   */
+  sendStepRequest<T>(request: Observable<T>, toResult: (response: T) => EnrollmentStepResult, input = ""): void {
+    if (this.sentInput() !== null) {
+      return;
+    }
+    const run = this.run;
+    let finished = false;
+    this.stepRequestFailed.set(false);
+    this.sentInput.set(input);
+    request
+      .pipe(
+        finalize(() => {
+          if (run !== this.run) {
+            return;
+          }
+          this.sentInput.set(null);
+          if (finished) {
+            return;
+          }
+          this.stepRequestFailed.set(true);
+          // The close kept a step that cannot be resumed while its request ran.
+          if (!this.dialogRef && !this.resumable()) {
+            this.reset();
+          }
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          const result = toResult(response);
+          if (!result || run !== this.run) {
+            return;
+          }
+          finished = true;
+          this.keepClosed = !this.dialogRef;
+          this.finishStep(result);
+          this.keepClosed = false;
+        },
+        error: () => undefined
+      });
+  }
+
   // Closes the dialog without asking. Before the success step, the enrollment stays unfinished.
   close(): void {
     this.dialogRef?.close();
+  }
+
+  // Resolves once the dialog is closed, at once if it is not open.
+  async whenClosed(): Promise<void> {
+    if (this.dialogRef) {
+      await firstValueFrom(this.dialogRef.afterClosed());
+    }
   }
 
   /**
@@ -264,7 +341,7 @@ export class EnrollmentFlow {
   private show(step: EnrollmentStepKind): void {
     this.stepFinishedSubject.next();
     this.step.set(step);
-    if (!this.dialogRef) {
+    if (!this.dialogRef && !this.keepClosed) {
       this.openDialog();
     }
   }
@@ -301,7 +378,25 @@ export class EnrollmentFlow {
     });
   }
 
+  private newRun(): void {
+    this.run++;
+    this.step.set(null);
+    this.sentInput.set(null);
+    this.stepRequestFailed.set(false);
+    this.containerSerial.set("");
+  }
+
   private setResponse(response: EnrollmentResponse): void {
     this.dialogData.update((data) => (data ? { ...data, response } : data));
+    if (this.dialogData()) {
+      this.keepContainerSerial(response);
+    }
+  }
+
+  private keepContainerSerial(response: EnrollmentResponse): void {
+    const containerSerial = response.detail?.["container_serial"] as string | undefined;
+    if (containerSerial) {
+      this.containerSerial.set(containerSerial);
+    }
   }
 }

@@ -217,6 +217,23 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component.regenerating()).toBe(false);
   });
 
+  it("should not regenerate while another request for the token runs", () => {
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "data:image/png;base64,QR", value: "otpauth://hotp/OATH0001" }
+    });
+    fixture.componentRef.setInput("regenerateDisabled", true);
+    fixture.detectChanges();
+    mockTokenService.enrollToken = jest.fn();
+
+    component.regenerateQRCode();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector("button");
+    expect(button.textContent).toContain("Regenerate QR Code");
+    expect(button.disabled).toBe(true);
+    expect(mockTokenService.enrollToken).not.toHaveBeenCalled();
+  });
+
   it("should not overwrite the displayed token when a response for another one arrives late", () => {
     const pending = new Subject<EnrollmentResponse>();
     mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);

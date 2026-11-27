@@ -16,17 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, DestroyRef, inject, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, required } from "@angular/forms/signals";
+import { Component, computed, inject, signal, viewChild } from "@angular/core";
+import { form, FormField, readonly, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollmentStep } from "@components/token/token-enrollment/enrollment-step";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { finalize } from "rxjs";
 
 // The second request of a two-step enrollment, with the part of the key that the authenticator app generated.
 @Component({
@@ -36,7 +34,6 @@ import { finalize } from "rxjs";
 })
 export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly title = signal($localize`:@@token.completeToken:Complete Token Enrollment`).asReadonly();
   readonly headerState = "incomplete";
@@ -54,21 +51,25 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
     );
   });
 
-  clientPart = signal<string>("");
+  // A second request would arrive after the token left clientwait, and the server would store the client part as
+  // the whole key. The flow keeps the request, also when the dialog is closed and reopened meanwhile.
+  protected readonly enrolling = computed(() => this.flow.sentInput() !== null);
+  clientPart = signal<string>(this.flow.sentInput() ?? "");
   clientPartForm = form(this.clientPart, (f) => {
     required(f);
+    readonly(f, () => this.enrolling());
   });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
-  // A second request would arrive after the token left clientwait, and the server would store the client part as
-  // the whole key.
-  protected readonly enrolling = signal(false);
+  private readonly enrollmentData = viewChild(TokenEnrollmentDataComponent);
+  // A completion crossing a regenerate request would combine the client part with a server part the app does not have.
+  protected readonly regenerating = computed(() => this.enrollmentData()?.regenerating() ?? false);
 
   override readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`:@@token.enroll:Enroll`,
       type: "confirm",
       value: "enroll",
-      disabled: this.invalidInputSignal() || this.enrolling()
+      disabled: this.invalidInputSignal() || this.enrolling() || this.regenerating()
     }
   ]);
 
@@ -83,33 +84,21 @@ export class TokenCompleteEnrollmentTwoStepComponent extends EnrollmentStep {
   }
 
   enrollToken() {
-    if (this.enrolling()) {
+    if (this.enrolling() || this.regenerating()) {
       return;
     }
-    this.enrolling.set(true);
-    this.enrollParameters.data.serial = this.enrollDetails?.serial;
+    // A copy, so a failed request does not change the parameters that Regenerate QR Code sends.
+    const data: TokenEnrollmentData = { ...this.enrollParameters.data, serial: this.enrollDetails?.serial };
     if (this.clientPart()) {
-      this.enrollParameters.data["otpKey"] = this.clientPart();
-      this.enrollParameters.data["otpKeyFormat"] = "base32check";
-      this.enrollParameters.data["generateOnServer"] = false;
-      if (this.enrollParameters.data["twoStepInit"]) {
-        delete this.enrollParameters.data["twoStepInit"];
-      }
+      data["otpKey"] = this.clientPart();
+      data["otpKeyFormat"] = "base32check";
+      data["generateOnServer"] = false;
+      delete data["twoStepInit"];
     }
-    this.tokenService
-      .enrollToken(this.enrollParameters)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.enrolling.set(false))
-      )
-      .subscribe({
-        next: (response) => {
-          if (response?.result?.status && response?.detail?.rollout_state !== "client_wait") {
-            this.flow.finishStep(response);
-          }
-        },
-        // enrollToken() has already notified about the failure; Enroll works again.
-        error: () => undefined
-      });
+    this.flow.sendStepRequest(
+      this.tokenService.enrollToken({ ...this.enrollParameters, data }),
+      (response) => (response?.result?.status && response?.detail?.rollout_state !== "clientwait" ? response : null),
+      this.clientPart()
+    );
   }
 }

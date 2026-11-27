@@ -85,9 +85,10 @@ class WebUIDefaultConfigTestCase(MyTestCase):
     def test_the_webui_assets_are_served(self):
         """The WebUI reads its policy templates and its logo from below /static/public/, which is
         the source directory rather than the copy the build makes."""
-        response = self.app.test_client().get("/static/public/policy-templates/index.json")
-        self.assertEqual(200, response.status_code)
-        self.assertIn("application/json", response.headers["Content-Type"])
+        # A static file is sent from the open file, which the response closes
+        with self.app.test_client().get("/static/public/policy-templates/index.json") as response:
+            self.assertEqual(200, response.status_code)
+            self.assertIn("application/json", response.headers["Content-Type"])
 
     def test_the_root_redirects_to_the_webui_when_it_is_built(self):
         """With a build present, / sends the browser to the application instead of rendering the
@@ -124,7 +125,9 @@ class LegacyWebUIConfigTestCase(MyTestCase):
         client = self.app.test_client()
         for path in ["/static/favicon.png", "/static/css/menu.css", "/static/templates/baseline.html",
                      "/static/contrib/css/bootstrap-theme.css"]:
-            self.assertEqual(200, client.get(path).status_code, path)
+            # A static file is sent from the open file, which the response closes
+            with client.get(path) as response:
+                self.assertEqual(200, response.status_code, path)
 
     def test_the_legacy_assets_are_cache_busted(self):
         """The previous WebUI serves its assets under stable names, so the version the versioned
