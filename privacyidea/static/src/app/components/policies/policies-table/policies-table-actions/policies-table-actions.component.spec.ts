@@ -76,9 +76,11 @@ describe("PoliciesTableActionsComponent", () => {
   });
 
   it("should call delete on confirmed policies", async () => {
-    jest
-      .spyOn(dialogService, "openDialog")
-      .mockReturnValue({ afterClosed: () => of(true) } as unknown as MatDialogRef<AbstractDialogComponent<unknown, unknown>, unknown>);
+    const dialogRef = { afterClosed: () => of(true) } as unknown as MatDialogRef<
+      AbstractDialogComponent<unknown, unknown>,
+      unknown
+    >;
+    jest.spyOn(dialogService, "openDialog").mockReturnValue(dialogRef);
     const spy = jest.spyOn(policyService, "deletePolicy");
     await component.deleteSelectedPolicies();
     expect(spy).toHaveBeenCalledWith("policy1");

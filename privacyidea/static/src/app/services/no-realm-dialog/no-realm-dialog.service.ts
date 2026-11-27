@@ -26,7 +26,8 @@ import { Subscription, take } from "rxjs";
 
 /**
  * Opens a dialog once per authenticated session (login or app start) when an administrator who may
- * create realms finds that no realm exists. The dialog points to the resolver creation if no resolver exists either. Nothing is created automatically.
+ * create realms finds that no realm exists. The dialog points to the resolver creation if no resolver
+ * exists either. Nothing is created automatically.
  */
 @Injectable()
 export class NoRealmDialogService {

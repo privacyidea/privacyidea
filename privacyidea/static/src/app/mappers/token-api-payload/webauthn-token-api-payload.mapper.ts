@@ -49,7 +49,8 @@ export interface WebauthnFinalizeData extends WebAuthnEnrollmentData {
   serial: string;
   credential_id: string; // The ID of the credential created
   rawId: string; // Base64-encoded raw ID of the credential
-  authenticatorAttachment: string | null; // Attachment type of the authenticator (e.g, 'platform', 'cross-platform', or null)
+  // Attachment type of the authenticator (e.g, 'platform', 'cross-platform', or null)
+  authenticatorAttachment: string | null;
   regdata: string; // Base64-encoded attestation object
   clientdata: string; // Base64-encoded client data JSON
   credProps?: CredentialPropertiesOutput; // Optional credential properties, if available

@@ -40,7 +40,8 @@ export class WidgetPaletteComponent {
 
   protected readonly availableWidgetTypes: Signal<WidgetComponentType[]> = computed(() =>
     this.widgetTypes.filter(
-      (widget) => this.layoutService.isWidgetTypeAllowed(widget.type) && !this.layoutService.hasWidgetOfType(widget.type)
+      (widget) =>
+        this.layoutService.isWidgetTypeAllowed(widget.type) && !this.layoutService.hasWidgetOfType(widget.type)
     )
   );
 

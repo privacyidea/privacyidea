@@ -45,7 +45,8 @@ export class TooltipAriaLabelDirective implements AfterViewInit, DoCheck, OnDest
   private readonly ngZone = inject(NgZone);
   private observer?: MutationObserver;
   private started = false;
-  // The aria-label this directive wrote and still owns; undefined while another writer or visible text names the element.
+  // The aria-label this directive wrote and still owns; undefined while another writer or visible text names the
+  // element.
   private applied: string | undefined;
   private lastMessage: string | undefined;
 

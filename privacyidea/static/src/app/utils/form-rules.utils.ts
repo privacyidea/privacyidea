@@ -48,7 +48,10 @@ export const ERR = {
  */
 export const IDENTIFIER_PATTERN = /^[a-zA-Z0-9._-]*$/;
 
-/** A whole number of at least 0, written as plain digits: a count, a length or a time span, never signed or fractional. */
+/**
+ * A whole number of at least 0, written as plain digits: a count, a length or a time span, never signed or
+ * fractional.
+ */
 export const WHOLE_NUMBER_PATTERN = /^\d+$/;
 
 /** Like {@link IDENTIFIER_PATTERN} and additionally allows the space, which event handler names may contain. */

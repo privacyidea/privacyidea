@@ -42,7 +42,10 @@ describe("TokenDetailsDescriptionComponent", () => {
   const textarea = (): HTMLTextAreaElement | null =>
     fixture.nativeElement.querySelector(".details-card--description textarea");
 
-  /** Clicks a button of the edit buttons; the parent's `isAnyEditingOrRevoked` follows the registry like in the details. */
+  /**
+   * Clicks a button of the edit buttons; the parent's `isAnyEditingOrRevoked` follows the registry like in the
+   * details.
+   */
   const clickButton = (label: string): void => {
     fixture.nativeElement.querySelector(`button[aria-label="${label}"]`).click();
     fixture.componentRef.setInput("isAnyEditingOrRevoked", registry.anyEditing());

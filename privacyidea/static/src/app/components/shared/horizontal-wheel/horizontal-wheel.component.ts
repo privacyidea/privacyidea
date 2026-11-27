@@ -90,7 +90,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
       // Timeout to ensure view rendering and stability after initial setup.
       const initialIndex = this.values().indexOf(this.selectedValue());
-      this.centerElementByIndex(initialIndex, { retrys: 3 }); // 3 retrys to ensure centering after potential layout shifts.
+      // 3 retrys to ensure centering after potential layout shifts.
+      this.centerElementByIndex(initialIndex, { retrys: 3 });
     }
   }
 

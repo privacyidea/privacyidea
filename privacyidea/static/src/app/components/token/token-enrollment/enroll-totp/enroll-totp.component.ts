@@ -115,7 +115,8 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
       parseInt(this.systemService.systemConfig()[TOTP_TIME_STEP], 10) ||
       30
   );
-  // A value set by the user or the enrollment data is kept when the preset changes later, even one that equals the preset.
+  // A value set by the user or the enrollment data is kept when the preset changes later, even one that equals the
+  // preset.
   private otpLengthChosen = signal(false);
   private hashAlgorithmChosen = signal(false);
   private timeStepChosen = signal(false);

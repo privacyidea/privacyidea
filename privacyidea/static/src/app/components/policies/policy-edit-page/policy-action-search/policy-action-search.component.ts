@@ -27,7 +27,8 @@ import { clearField } from "@utils/form-state.utils";
 /**
  * The search field for policy actions. It filters both action panels, and is rendered either at
  * the top of the actions tab or, once the page header reaches it, inside that header - so it lives
- * in two places and keeps no state of its own. Focus, on the input with its caret or on the clear button, is handed over when it moves.
+ * in two places and keeps no state of its own. Focus, on the input with its caret or on the clear
+ * button, is handed over when it moves.
  */
 @Component({
   selector: "app-policy-action-search",
@@ -44,7 +45,10 @@ export class PolicyActionSearchComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>("input");
 
-  /** Which control in this copy has focus, with the caret range and its direction for the input; null when focus is elsewhere. */
+  /**
+   * Which control in this copy has focus, with the caret range and its direction for the input; null when focus is
+   * elsewhere.
+   */
   focusState(): SearchFocus | null {
     const active = document.activeElement;
     const input = this.input().nativeElement;

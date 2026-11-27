@@ -789,8 +789,8 @@ export class AuthenticationLog {
   }
 
   // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. The parts
-  // are gathered and handled together once the pick's events are through, so the end's handling reads the bounds as they
-  // were before the pick.
+  // are gathered and handled together once the pick's events are through, so the end's handling reads the bounds as
+  // they were before the pick.
   onRangePickerStartChange(date: Date | null): void {
     this.queuePick({ start: date });
   }
@@ -897,7 +897,8 @@ export class AuthenticationLog {
   }
 
   // The date range submenu's calendar keeps every key but Escape: arrows/Home/End/Page move the active day and Tab
-  // moves through the calendar's controls. Escape closes just the submenu and hands focus back to its "Date range" item.
+  // moves through the calendar's controls. Escape closes just the submenu and hands focus back to its "Date range"
+  // item.
   keepCalendarKeysInMenu(event: KeyboardEvent): void {
     if (event.key === "Escape") {
       return;
