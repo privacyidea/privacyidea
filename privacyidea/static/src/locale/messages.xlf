@@ -10,11 +10,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">51</context>
+          <context context-type="linenumber">59</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">56</context>
+          <context context-type="linenumber">64</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.downloadTakeLong" datatype="html">
@@ -50,70 +50,70 @@
         <source>Start date</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">85</context>
+          <context context-type="linenumber">127</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeEnd" datatype="html">
         <source>End date</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">91</context>
+          <context context-type="linenumber">133</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeStartTime" datatype="html">
         <source>Start time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">450</context>
+          <context context-type="linenumber">505</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeEndTime" datatype="html">
         <source>End time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">449</context>
+          <context context-type="linenumber">504</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeSummaryStart" datatype="html">
         <source>Start</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">459</context>
+          <context context-type="linenumber">514</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeSummaryEnd" datatype="html">
         <source>End</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">460</context>
+          <context context-type="linenumber">515</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeHintStartDay" datatype="html">
         <source>Pick the start day</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">525</context>
+          <context context-type="linenumber">529</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeHintStartTime" datatype="html">
         <source>Pick the start time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">528</context>
+          <context context-type="linenumber">532</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeHintEndDay" datatype="html">
         <source>Pick the end day, or close to filter this day</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">531</context>
+          <context context-type="linenumber">535</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.rangeHintEndTime" datatype="html">
         <source>Pick the end time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">533</context>
+          <context context-type="linenumber">537</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.timeZoneUnknown" datatype="html">
@@ -126,22 +126,22 @@
       <trans-unit id="audit.selectTime" datatype="html">
         <source>Time</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/logs/audit/audit-date-range-header.component.ts</context>
-          <context context-type="linenumber">48</context>
+          <context context-type="sourcefile">src/app/components/logs/audit/audit-date-range-header.component.html</context>
+          <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
       <trans-unit id="clockDial.hour" datatype="html">
         <source>Hour</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.html</context>
+          <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="clockDial.minute" datatype="html">
         <source>Minute</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
-          <context context-type="linenumber">122</context>
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.html</context>
+          <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.filterInput" datatype="html">
@@ -255,29 +255,29 @@
         <source>Example query: &apos;action: GET success: false&apos;</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">40</context>
+          <context context-type="linenumber">41</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">39</context>
+          <context context-type="linenumber">40</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.auditDataTable" datatype="html">
         <source>Audit Data Table</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">85</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">63</context>
+          <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.number" datatype="html">
         <source>Number</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">110</context>
+          <context context-type="linenumber">188</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.action" datatype="html">
@@ -300,7 +300,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">111</context>
+          <context context-type="linenumber">189</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
@@ -311,14 +311,14 @@
         <source>Success</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">112</context>
+          <context context-type="linenumber">190</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.authentication" datatype="html">
         <source>Authentication</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">113</context>
+          <context context-type="linenumber">191</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.serial" datatype="html">
@@ -337,11 +337,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">114</context>
+          <context context-type="linenumber">192</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">162</context>
+          <context context-type="linenumber">168</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/reason-detail-dialog/reason-detail-dialog.html</context>
@@ -368,7 +368,7 @@
         <source>Container Serial</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">193</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/dialog/container-picker-dialog/container-picker-dialog.component.html</context>
@@ -395,7 +395,7 @@
         <source>Start Date</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">194</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.duration" datatype="html">
@@ -406,7 +406,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">117</context>
+          <context context-type="linenumber">195</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
@@ -421,7 +421,7 @@
         <source>Token Type</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">118</context>
+          <context context-type="linenumber">196</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
@@ -440,11 +440,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">120</context>
+          <context context-type="linenumber">198</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">156</context>
+          <context context-type="linenumber">162</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.html</context>
@@ -495,25 +495,25 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="linenumber">199</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.actionDetail" datatype="html">
         <source>Action Detail</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">122</context>
+          <context context-type="linenumber">200</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.info" datatype="html">
         <source>Info</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">123</context>
+          <context context-type="linenumber">201</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">179</context>
+          <context context-type="linenumber">185</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.policies" datatype="html">
@@ -528,7 +528,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">124</context>
+          <context context-type="linenumber">202</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table-actions/policies-table-actions.component.ts</context>
@@ -547,11 +547,11 @@
         <source>Client</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">125</context>
+          <context context-type="linenumber">203</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">158</context>
+          <context context-type="linenumber">164</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/view-conditions-column/view-conditions-column.component.ts</context>
@@ -570,7 +570,7 @@
         <source>User Agent</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">126</context>
+          <context context-type="linenumber">204</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
@@ -589,42 +589,42 @@
         <source>User Agent Version</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">127</context>
+          <context context-type="linenumber">205</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.privacyideaServer" datatype="html">
         <source>PrivacyIDEA Server</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">128</context>
+          <context context-type="linenumber">206</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.logLevel" datatype="html">
         <source>Log Level</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">129</context>
+          <context context-type="linenumber">207</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.clearanceLevel" datatype="html">
         <source>Clearance Level</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">208</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.signatureCheck" datatype="html">
         <source>Signature Check</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">209</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.missingLine" datatype="html">
         <source>Missing Line</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">132</context>
+          <context context-type="linenumber">210</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.resolver" datatype="html">
@@ -639,7 +639,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">211</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.html</context>
@@ -674,7 +674,7 @@
         <source>Thread ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">212</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.containerType" datatype="html">
@@ -701,7 +701,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">135</context>
+          <context context-type="linenumber">213</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.knownClients" datatype="html">
@@ -4266,6 +4266,10 @@
           <context context-type="linenumber">93</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit-date-range-header.component.html</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
           <context context-type="linenumber">215</context>
         </context-group>
@@ -7065,7 +7069,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">195</context>
+          <context context-type="linenumber">283</context>
         </context-group>
       </trans-unit>
       <trans-unit id="nav.externalServices" datatype="html">
@@ -8429,7 +8433,7 @@
         <source>Timestamp</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">135</context>
+          <context context-type="linenumber">141</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.ts</context>
@@ -8440,7 +8444,7 @@
         <source>Transaction ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">165</context>
+          <context context-type="linenumber">171</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.ts</context>
@@ -8856,11 +8860,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
-          <context context-type="linenumber">119</context>
+          <context context-type="linenumber">197</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">155</context>
+          <context context-type="linenumber">161</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/user-roles.ts</context>
@@ -11307,6 +11311,14 @@
           <context context-type="linenumber">55</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
           <context context-type="linenumber">55</context>
         </context-group>
@@ -11835,7 +11847,7 @@
         <source>Endpoint</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">161</context>
+          <context context-type="linenumber">167</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -13438,7 +13450,7 @@
         <source>Failed to download audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/audit/audit.service.ts</context>
-          <context context-type="linenumber">229</context>
+          <context context-type="linenumber">323</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.successfullySaved" datatype="html">
@@ -16460,18 +16472,18 @@
         <source>Every action performed in privacyIDEA is recorded in the audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">246</context>
+          <context context-type="linenumber">318</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.noAuditEntries" datatype="html">
         <source>No audit entries yet</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.html</context>
-          <context context-type="linenumber">245</context>
+          <context context-type="linenumber">317</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">230</context>
+          <context context-type="linenumber">249</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.noKnownClients" datatype="html">
@@ -16485,7 +16497,7 @@
         <source>Your authentications and token actions are recorded in the audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
-          <context context-type="linenumber">231</context>
+          <context context-type="linenumber">250</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.createCAConnector" datatype="html">
@@ -18196,7 +18208,7 @@
         <source>The name the client gave itself in the request&apos;s client_id parameter.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">278</context>
+          <context context-type="linenumber">251</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.adminGroupNotifyE" datatype="html">
@@ -18402,7 +18414,7 @@
         <source>Event Type</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">147</context>
+          <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.smtpServer" datatype="html">
@@ -18617,7 +18629,7 @@
         <source>Filter by conditional access outcome. All conditions must match one and the same outcome.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">720</context>
+          <context context-type="linenumber">699</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.action2" datatype="html">
@@ -18754,7 +18766,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">157</context>
+          <context context-type="linenumber">163</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist.component.html</context>
@@ -18779,7 +18791,7 @@
         <source>Last 30 days</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">248</context>
+          <context context-type="linenumber">239</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.showFullMessage" datatype="html">
@@ -19012,7 +19024,7 @@
         <source>Last year</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">251</context>
+          <context context-type="linenumber">242</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.errorMessage" datatype="html">
@@ -19066,7 +19078,7 @@
         <source>Last 6 months</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">250</context>
+          <context context-type="linenumber">241</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.filterConditionalAccessPolicies" datatype="html">
@@ -19094,7 +19106,7 @@
         <source>Dry run only</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">219</context>
+          <context context-type="linenumber">225</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.dryRun" datatype="html">
@@ -19270,7 +19282,7 @@
         <source>The User-Agent header the client sent; it names no particular integration.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">282</context>
+          <context context-type="linenumber">255</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.time" datatype="html">
@@ -19478,7 +19490,7 @@
         <source>Last 7 days</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">247</context>
+          <context context-type="linenumber">238</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.failedDisableConditionalAccess" datatype="html">
@@ -19895,7 +19907,7 @@
         <source>user agent</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">281</context>
+          <context context-type="linenumber">254</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.lockUser" datatype="html">
@@ -19979,7 +19991,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">551</context>
+          <context context-type="linenumber">524</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.resetLock" datatype="html">
@@ -20060,7 +20072,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">456</context>
+          <context context-type="linenumber">429</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.untilAdministratorUnlocksUser" datatype="html">
@@ -20088,7 +20100,7 @@
         <source>Attempt ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">146</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.threshold" datatype="html">
@@ -20316,7 +20328,7 @@
         <source>Reasons</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">154</context>
+          <context context-type="linenumber">160</context>
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.showHowClientAddress" datatype="html">
@@ -20436,7 +20448,7 @@
         <source>client id</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">277</context>
+          <context context-type="linenumber">250</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.targetWhichPolicyCounts" datatype="html">
@@ -20664,7 +20676,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">472</context>
+          <context context-type="linenumber">445</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.perRequest" datatype="html">
@@ -20745,7 +20757,7 @@
         <source>Conditional Access Outcome</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">174</context>
+          <context context-type="linenumber">180</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.enforce" datatype="html">
@@ -20871,7 +20883,7 @@
         <source>Last 3 months</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">249</context>
+          <context context-type="linenumber">240</context>
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.decidingPolicies" datatype="html">
@@ -20989,7 +21001,7 @@
         <source>Enforced only</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">218</context>
+          <context context-type="linenumber">224</context>
         </context-group>
       </trans-unit>
       <trans-unit id="nav.authenticationLog" datatype="html">
@@ -21004,7 +21016,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">365</context>
+          <context context-type="linenumber">338</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mustLeast" datatype="html">
@@ -21089,7 +21101,7 @@
         <source>Last 24 hours</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
-          <context context-type="linenumber">246</context>
+          <context context-type="linenumber">237</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindowS" datatype="html">
@@ -23838,6 +23850,41 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">53</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.confirm" datatype="html">
+        <source>Confirm time</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.html</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.earliest" datatype="html">
+        <source>Earliest <x id="TIME" equiv-text="formatClockTime(min)"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
+          <context context-type="linenumber">301</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.from" datatype="html">
+        <source>From <x id="INTERPOLATION" equiv-text="{{ minText }}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.html</context>
+          <context context-type="linenumber">103</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.hourValue" datatype="html">
+        <source>Hour <x id="HOUR" equiv-text="this.hourText()"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
+          <context context-type="linenumber">171</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="clockDial.pickMinute" datatype="html">
+        <source>Pick the minute</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/clock-dial/clock-dial.component.ts</context>
+          <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
     </body>
